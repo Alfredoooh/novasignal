@@ -1,5 +1,5 @@
 //lib/screens/conversor_page.dart
-import 'package:flutter/material.dart'
+import 'package:flutter/material.dart';
 
 class ConversorPage extends StatelessWidget {
   const ConversorPage({super.key});
