@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uni_links/uni_links.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
 
 class DerivAuthService {
@@ -12,28 +13,22 @@ class DerivAuthService {
   factory DerivAuthService() => _instance;
   DerivAuthService._internal();
 
-  // IMPORTANTE: Substitua pelo seu App ID do Deriv
-  static const String APP_ID = '1089'; // SUBSTITUA PELO SEU APP_ID
+  // ⚠️ SEU APP ID DO DERIV
+  static const String APP_ID = '71954';
   
   // URLs base
   static const String _wsUrl = 'wss://ws.derivws.com/websockets/v3?app_id=$APP_ID';
   static const String _oauthUrl = 'https://oauth.deriv.com/oauth2/authorize';
   
   // Deep Link para Android
-  static const String _deepLinkScheme = 'novasignal'; // Pode personalizar
+  static const String _deepLinkScheme = 'novasignal';
   static const String _deepLinkHost = 'deriv-callback';
   
-  // Redirect URL para Web
-  static String get _redirectUrl {
-    if (kIsWeb) {
-      // Para web, use o domínio da sua aplicação
-      return '${Uri.base.origin}/deriv-callback';
-    } else {
-      // Para Android, use deep link
-      return '$_deepLinkScheme://$_deepLinkHost';
-    }
-  }
-
+  // Redirect URLs configurados no Deriv Dashboard
+  // SUBSTITUA pelas suas URLs reais de redirect
+  static const String _androidRedirectUrl = 'https://SEU-DOMINIO.com/deriv-redirect-android.html';
+  static const String _webRedirectUrl = 'https://SEU-DOMINIO.com/deriv-redirect-web.html';
+  
   WebSocketChannel? _channel;
   StreamController<Map<String, dynamic>>? _messageController;
   StreamSubscription? _deepLinkSubscription;
@@ -81,7 +76,6 @@ class DerivAuthService {
   void _handleDeepLink(Uri uri) {
     if (kDebugMode) print('Deep link received: $uri');
 
-    // Extrair tokens da URL
     final Map<String, String> params = uri.queryParameters;
     
     if (params.containsKey('token1')) {
@@ -100,11 +94,15 @@ class DerivAuthService {
   /// MÉTODO 2: Conectar com OAuth (Deriv Auth)
   Future<bool> connectWithOAuth() async {
     try {
+      // Determinar qual redirect URL usar
+      final redirectUrl = kIsWeb ? _webRedirectUrl : _androidRedirectUrl;
+      
       // Construir URL de autorização OAuth
       final authUrl = Uri.parse(_oauthUrl).replace(queryParameters: {
         'app_id': APP_ID,
-        'l': 'PT', // Idioma (pode ser EN, ES, etc)
+        'l': 'PT', // Idioma português
         'brand': 'deriv',
+        'redirect_uri': redirectUrl, // URL de redirect configurada
       });
 
       if (kDebugMode) print('Opening OAuth URL: $authUrl');
@@ -168,7 +166,7 @@ class DerivAuthService {
       
       _isConnected = true;
       
-      // Salvar token localmente (SharedPreferences ou Firebase)
+      // Salvar token localmente
       await _saveTokenLocally(apiToken, isOAuth: isOAuth);
       
       _onAuthSuccess?.call(apiToken);
@@ -248,22 +246,27 @@ class DerivAuthService {
     }
   }
 
-  /// Salvar token localmente
+  /// Salvar token localmente com SharedPreferences
   Future<void> _saveTokenLocally(String token, {required bool isOAuth}) async {
-    // TODO: Implementar com SharedPreferences ou Firebase
-    // Exemplo:
-    // final prefs = await SharedPreferences.getInstance();
-    // await prefs.setString('deriv_token', token);
-    // await prefs.setBool('deriv_is_oauth', isOAuth);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('deriv_token', token);
+      await prefs.setBool('deriv_is_oauth', isOAuth);
+      if (kDebugMode) print('Token saved locally');
+    } catch (e) {
+      if (kDebugMode) print('Error saving token: $e');
+    }
   }
 
   /// Carregar token salvo
   Future<String?> loadSavedToken() async {
-    // TODO: Implementar com SharedPreferences ou Firebase
-    // Exemplo:
-    // final prefs = await SharedPreferences.getInstance();
-    // return prefs.getString('deriv_token');
-    return null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('deriv_token');
+    } catch (e) {
+      if (kDebugMode) print('Error loading token: $e');
+      return null;
+    }
   }
 
   /// Verificar se há token salvo e conectar automaticamente
@@ -308,6 +311,11 @@ class DerivAuthService {
     try {
       await _channel?.sink.close();
       await _messageController?.close();
+      
+      // Remover token salvo
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('deriv_token');
+      await prefs.remove('deriv_is_oauth');
       
       _channel = null;
       _messageController = null;
