@@ -1,5 +1,5 @@
 // lib/screens/bot_page.dart
-import 'package:flutter/material.dart'
+import 'package:flutter/material.dart';
 
 class BotPage extends StatelessWidget {
   const BotPage({super.key});
