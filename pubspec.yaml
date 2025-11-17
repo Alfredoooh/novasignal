@@ -60,6 +60,6 @@ flutter:
     - assets/profile_icon.svg
     - assets/settings_icon.svg
     - assets/logo.svg
-    
+    - assets/arrow_back_icon.svg
     # Outras pastas
     - assets/translations/
