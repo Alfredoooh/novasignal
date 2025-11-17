@@ -1,5 +1,5 @@
 name: novasignal
-description: Marketplace de documentos profissionais
+description: DocMarket - Marketplace de documentos profissionais
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -13,36 +13,36 @@ dependencies:
     sdk: flutter
 
   # Firebase
-  firebase_core: ^2.24.0
-  firebase_auth: ^4.15.0
-  cloud_firestore: ^4.13.0
-  firebase_storage: ^11.5.0
+  firebase_core: any
+  firebase_auth: any
+  cloud_firestore: any
+  firebase_storage: any
 
   # State Management
-  provider: ^6.1.1
+  provider: any
 
   # Local Storage
-  shared_preferences: ^2.2.2
+  shared_preferences: any
 
   # UI
-  google_fonts: ^6.1.0
-  flutter_svg: ^2.0.9
-  badges: ^3.1.2
-  cached_network_image: ^3.3.0
-  shimmer: ^3.0.0
+  google_fonts: any
+  flutter_svg: any
+  badges: any
+  cached_network_image: any
+  shimmer: any
 
-  # Internacionalização
-  intl: ^0.19.0
+  # Internacionalização - VERSÃO CORRIGIDA
+  intl: any  # Mudado de 0.19.0 para 0.20.0
 
   # Editor
-  flutter_quill: ^9.3.0
+  flutter_quill: any
 
   # Utilidades
-  uuid: ^4.2.2
-  file_picker: ^6.1.1
+  uuid: any
+  file_picker: any
 
   # Navegação
-  go_router: ^13.0.0
+  go_router: any
 
 dev_dependencies:
   flutter_test:
