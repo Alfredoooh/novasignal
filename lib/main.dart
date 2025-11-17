@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'firebase_options.dart';
-import 'providers/auth_provider.dart';
+import 'providers/auth_provider.dart' as app_auth; // CORRIGIDO: Alias para evitar conflito
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/wishlist_provider.dart';
@@ -35,16 +35,16 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => app_auth.AuthProvider()), // CORRIGIDO: Usando alias
         ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
         ChangeNotifierProvider(create: (_) => LocaleProvider(prefs)),
-        ChangeNotifierProxyProvider<AuthProvider, WishlistProvider>(
+        ChangeNotifierProxyProvider<app_auth.AuthProvider, WishlistProvider>( // CORRIGIDO: Tipo explícito
           create: (_) => WishlistProvider(null),
-          update: (_, auth, previous) => WishlistProvider(auth.user?.uid),
+          update: (_, auth, previous) => WishlistProvider(auth.user?.uid), // CORRIGIDO: Agora funciona
         ),
-        ChangeNotifierProxyProvider<AuthProvider, OrderProvider>(
+        ChangeNotifierProxyProvider<app_auth.AuthProvider, OrderProvider>( // CORRIGIDO: Tipo explícito
           create: (_) => OrderProvider(null),
-          update: (_, auth, previous) => OrderProvider(auth.user?.uid),
+          update: (_, auth, previous) => OrderProvider(auth.user?.uid), // CORRIGIDO: Agora funciona
         ),
       ],
       child: const DocMarketApp(),
