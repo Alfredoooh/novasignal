@@ -1,4 +1,4 @@
-// providers/order_provider.dart
+// lib/providers/order_provider.dart
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../services/firebase/firestore_service.dart';
@@ -23,16 +23,20 @@ class OrderProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   void _loadOrders() {
-    if (_userId == null) return;
+    // CORRIGIDO: Verificação explícita de null
+    final userId = _userId;
+    if (userId == null) return;
     
-    _firestoreService.getUserOrders(_userId).listen((orders) {
+    _firestoreService.getUserOrders(userId).listen((orders) {
       _orders = orders;
       notifyListeners();
     });
   }
 
   Future<bool> createOrder(List<OrderDocumentItem> documents) async {
-    if (_userId == null) return false;
+    // CORRIGIDO: Verificação explícita de null
+    final userId = _userId;
+    if (userId == null) return false;
     
     try {
       _isLoading = true;
@@ -46,7 +50,7 @@ class OrderProvider with ChangeNotifier {
 
       final order = OrderModel(
         id: const Uuid().v4(),
-        userId: _userId,
+        userId: userId, // CORRIGIDO: Agora é String não-nulo
         documents: documents,
         totalPrice: totalPrice,
         createdAt: DateTime.now(),
