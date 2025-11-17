@@ -25,7 +25,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   Future<void> _checkDerivConnection() async {
-    final isConnected = await _derivService.isConnected();
+    // CORRIGIDO: Removido os parênteses () - agora é um getter
+    final isConnected = await _derivService.isConnected;
     if (mounted) {
       setState(() {
         _isConnectedToDeriv = isConnected;
@@ -65,7 +66,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       'Desconectar Deriv',
       'Tem certeza que deseja desconectar sua conta Deriv?',
     );
-    
+
     if (confirm) {
       await _derivService.disconnect();
       setState(() {
