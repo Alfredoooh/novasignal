@@ -52,5 +52,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-   # - assets/images/
+    # Ícones SVG
+    - assets/menu_icon.svg
+    - assets/search_icon.svg
+    - assets/home_icon.svg
+    - assets/editor_icon.svg
+    - assets/profile_icon.svg
+    - assets/settings_icon.svg
+    - assets/logo.svg
+    
+    # Outras pastas
     - assets/translations/
