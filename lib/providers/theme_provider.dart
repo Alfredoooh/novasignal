@@ -1,4 +1,4 @@
-// providers/theme_provider.dart
+// lib/providers/theme_provider.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,7 +13,7 @@ class ThemeProvider with ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
 
-  // Tema Claro
+  // Tema Claro - CORRIGIDO
   ThemeData get lightTheme => ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
@@ -26,7 +26,7 @@ class ThemeProvider with ChangeNotifier {
       centerTitle: true,
       elevation: 0,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData( // CORRIGIDO: CardTheme -> CardThemeData
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -40,7 +40,7 @@ class ThemeProvider with ChangeNotifier {
     ),
   );
 
-  // Tema Escuro
+  // Tema Escuro - CORRIGIDO
   ThemeData get darkTheme => ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
@@ -53,7 +53,7 @@ class ThemeProvider with ChangeNotifier {
       centerTitle: true,
       elevation: 0,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData( // CORRIGIDO: CardTheme -> CardThemeData
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
