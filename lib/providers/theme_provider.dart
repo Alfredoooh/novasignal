@@ -16,70 +16,74 @@ class ThemeProvider with ChangeNotifier {
   // Azul do Facebook
   static const Color facebookBlue = Color(0xFF1877F2);
   
-  // Cinza profundo 90% (quase preto)
-  static const Color deepGray = Color(0xFF1A1A1A);
+  // Branco puro
+  static const Color pureWhite = Color(0xFFFFFFFF);
+  
+  // Carvão profundo (não cinza)
+  static const Color deepCharcoal = Color(0xFF0D0D0D);
+  static const Color charcoalSurface = Color(0xFF1A1A1A);
 
-  // Tema Claro - Azul Facebook
+  // Tema Claro - BRANCO PURO
   ThemeData get lightTheme => ThemeData(
-    useMaterial3: true,
+    useMaterial3: false,
     brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: facebookBlue,
-      brightness: Brightness.light,
+    primaryColor: facebookBlue,
+    scaffoldBackgroundColor: pureWhite,
+    colorScheme: ColorScheme.light(
       primary: facebookBlue,
+      secondary: facebookBlue,
+      surface: pureWhite,
+      background: pureWhite,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onSurface: Colors.black,
+      onBackground: Colors.black,
     ),
-    textTheme: GoogleFonts.interTextTheme(),
+    textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
     appBarTheme: AppBarTheme(
-      centerTitle: true,
       elevation: 0,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black87,
+      backgroundColor: pureWhite,
+      foregroundColor: Colors.black,
+      iconTheme: IconThemeData(color: Colors.black),
     ),
     cardTheme: CardThemeData(
-      elevation: 2,
+      elevation: 0,
+      color: Color(0xFFF5F5F5),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      filled: true,
     ),
   );
 
-  // Tema Escuro - Cinza Profundo 90%
+  // Tema Escuro - CARVÃO PROFUNDO
   ThemeData get darkTheme => ThemeData(
-    useMaterial3: true,
+    useMaterial3: false,
     brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: facebookBlue,
-      brightness: Brightness.dark,
+    primaryColor: facebookBlue,
+    scaffoldBackgroundColor: deepCharcoal,
+    colorScheme: ColorScheme.dark(
       primary: facebookBlue,
-      surface: deepGray,
-      background: deepGray,
+      secondary: facebookBlue,
+      surface: charcoalSurface,
+      background: deepCharcoal,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onSurface: Colors.white,
+      onBackground: Colors.white,
     ),
-    scaffoldBackgroundColor: deepGray,
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
     appBarTheme: AppBarTheme(
-      centerTitle: true,
       elevation: 0,
-      backgroundColor: deepGray,
+      backgroundColor: deepCharcoal,
       foregroundColor: Colors.white,
+      iconTheme: IconThemeData(color: Colors.white),
     ),
     cardTheme: CardThemeData(
-      elevation: 2,
-      color: Color(0xFF2A2A2A),
+      elevation: 0,
+      color: charcoalSurface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      filled: true,
     ),
   );
 
