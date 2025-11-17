@@ -1,12 +1,11 @@
 // lib/services/auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Stream de estado de autenticação
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -57,20 +56,20 @@ class AuthService {
     }
   }
 
-  // Login com Google
+  // Login com Google (Web e Mobile)
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
+      UserCredential userCredential;
+      
+      if (kIsWeb) {
+        // Para Web: usar popup
+        GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        userCredential = await _auth.signInWithPopup(googleProvider);
+      } else {
+        // Para Mobile: usar o pacote google_sign_in
+        // Nota: você precisaria adicionar google_sign_in e fazer import condicional
+        throw 'Google Sign-In não disponível em mobile nesta versão';
+      }
 
       // Criar ou atualizar documento do usuário
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
@@ -89,7 +88,6 @@ class AuthService {
 
   // Logout
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await _auth.signOut();
   }
 
