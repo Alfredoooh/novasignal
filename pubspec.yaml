@@ -1,5 +1,5 @@
 name: novasignal
-description: Sua plataforma de trading inteligente
+description: Marketplace de documentos profissionais
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,60 +9,48 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
-  # Ícones do app
-  cupertino_icons: any
+  # Firebase
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.15.0
+  cloud_firestore: ^4.13.0
+  firebase_storage: ^11.5.0
 
-  # WebSocket para Deriv API
-  web_socket_channel: any
+  # State Management
+  provider: ^6.1.1
 
-  # Deep Links para Android
-  uni_links: any
+  # Local Storage
+  shared_preferences: ^2.2.2
 
-  # URL Launcher para OAuth
-  url_launcher: any
+  # UI
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  badges: ^3.1.2
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
 
-  # Storage local
-  shared_preferences: any
+  # Internacionalização
+  intl: ^0.19.0
 
-  # Firebase (para autenticação e database)
-  firebase_core: any
-  firebase_auth: any
-  cloud_firestore: any
-  google_sign_in: any
+  # Editor
+  flutter_quill: ^9.3.0
 
-  # HTTP client
-  http: any
+  # Utilidades
+  uuid: ^4.2.2
+  file_picker: ^6.1.1
 
-  # State management
-  provider: any
-
-  # Biometria
-  local_auth: any
-
-  # JSON
-  json_annotation: any
+  # Navegação
+  go_router: ^13.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  flutter_lints: any
-  json_serializable: any
-  build_runner: any
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
-
-  # Assets
-  # assets:
-  #   - images/
-  #   - icons/
-
-  # Fonts personalizadas (opcional)
-  # fonts:
-  #   - family: CustomFont
-  #     fonts:
-  #       - asset: fonts/CustomFont-Regular.ttf
-  #       - asset: fonts/CustomFont-Bold.ttf
-  #         weight: 700
+  assets:
+    - assets/images/
+    - assets/translations/
