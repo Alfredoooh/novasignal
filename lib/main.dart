@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'firebase_options.dart';
-import 'providers/auth_provider.dart' as app_auth; // CORRIGIDO: Alias para evitar conflito
+import 'providers/auth_provider.dart' as app_auth;
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/wishlist_provider.dart';
@@ -23,28 +23,28 @@ import 'core/localization/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Inicializar Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   // Carregar preferências do usuário
   final prefs = await SharedPreferences.getInstance();
-  
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => app_auth.AuthProvider()), // CORRIGIDO: Usando alias
+        ChangeNotifierProvider(create: (_) => app_auth.AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
         ChangeNotifierProvider(create: (_) => LocaleProvider(prefs)),
-        ChangeNotifierProxyProvider<app_auth.AuthProvider, WishlistProvider>( // CORRIGIDO: Tipo explícito
+        ChangeNotifierProxyProvider<app_auth.AuthProvider, WishlistProvider>(
           create: (_) => WishlistProvider(null),
-          update: (_, auth, previous) => WishlistProvider(auth.user?.uid), // CORRIGIDO: Agora funciona
+          update: (_, auth, previous) => WishlistProvider(auth.user?.id),
         ),
-        ChangeNotifierProxyProvider<app_auth.AuthProvider, OrderProvider>( // CORRIGIDO: Tipo explícito
+        ChangeNotifierProxyProvider<app_auth.AuthProvider, OrderProvider>(
           create: (_) => OrderProvider(null),
-          update: (_, auth, previous) => OrderProvider(auth.user?.uid), // CORRIGIDO: Agora funciona
+          update: (_, auth, previous) => OrderProvider(auth.user?.id),
         ),
       ],
       child: const DocMarketApp(),
@@ -63,12 +63,12 @@ class DocMarketApp extends StatelessWidget {
     return MaterialApp(
       title: 'DocMarket',
       debugShowCheckedModeBanner: false,
-      
+
       // Configuração de Temas (Claro, Escuro, Automático)
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
       themeMode: themeProvider.themeMode,
-      
+
       // Configuração de Localização (4 idiomas)
       locale: localeProvider.locale,
       supportedLocales: const [
@@ -83,7 +83,7 @@ class DocMarketApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      
+
       // Verificação de Autenticação com StreamBuilder
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
@@ -102,7 +102,7 @@ class DocMarketApp extends StatelessWidget {
           return const LoginScreen();
         },
       ),
-      
+
       // Rotas nomeadas do app
       routes: {
         '/login': (context) => const LoginScreen(),
@@ -114,7 +114,7 @@ class DocMarketApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/settings': (context) => const SettingsScreen(),
       },
-      
+
       // Handler para rotas desconhecidas
       onUnknownRoute: (settings) {
         return MaterialPageRoute(
