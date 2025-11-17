@@ -1,4 +1,6 @@
-// models/wishlist_item_model.dart
+// lib/models/wishlist_item_model.dart
+import 'document_model.dart'; // CORRIGIDO: Import adicionado
+
 class WishlistItemModel {
   final String documentId;
   final String documentTitle;
@@ -38,6 +40,7 @@ class WishlistItemModel {
     );
   }
 
+  // CORRIGIDO: Agora com import correto do DocumentModel
   factory WishlistItemModel.fromDocument(DocumentModel doc) {
     return WishlistItemModel(
       documentId: doc.id,
