@@ -1,4 +1,4 @@
-// providers/wishlist_provider.dart
+// lib/providers/wishlist_provider.dart
 import 'package:flutter/material.dart';
 import '../services/firebase/firestore_service.dart';
 import '../models/wishlist_item_model.dart';
@@ -22,29 +22,39 @@ class WishlistProvider with ChangeNotifier {
   int get itemCount => _items.length;
 
   void _loadWishlist() {
-    if (_userId == null) return;
+    // CORRIGIDO: Verificação explícita de null
+    final userId = _userId;
+    if (userId == null) return;
     
-    _firestoreService.getWishlist(_userId).listen((items) {
+    _firestoreService.getWishlist(userId).listen((items) {
       _items = items;
       notifyListeners();
     });
   }
 
   Future<void> addToWishlist(DocumentModel document) async {
-    if (_userId == null) return;
+    // CORRIGIDO: Verificação explícita de null
+    final userId = _userId;
+    if (userId == null) return;
     
     final item = WishlistItemModel.fromDocument(document);
-    await _firestoreService.addToWishlist(_userId, item);
+    await _firestoreService.addToWishlist(userId, item);
   }
 
   Future<void> removeFromWishlist(String documentId) async {
-    if (_userId == null) return;
-    await _firestoreService.removeFromWishlist(_userId, documentId);
+    // CORRIGIDO: Verificação explícita de null
+    final userId = _userId;
+    if (userId == null) return;
+    
+    await _firestoreService.removeFromWishlist(userId, documentId);
   }
 
   Future<bool> isInWishlist(String documentId) async {
-    if (_userId == null) return false;
-    return await _firestoreService.isInWishlist(_userId, documentId);
+    // CORRIGIDO: Verificação explícita de null
+    final userId = _userId;
+    if (userId == null) return false;
+    
+    return await _firestoreService.isInWishlist(userId, documentId);
   }
 
   void clearWishlist() {
