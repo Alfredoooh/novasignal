@@ -10,51 +10,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
-  late AnimationController _drawerController;
-  late Animation<Offset> _drawerAnimation;
-  bool _isDrawerOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _drawerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _drawerAnimation = Tween<Offset>(
-      begin: const Offset(-1.0, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _drawerController,
-      curve: Curves.easeInOut,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _drawerController.dispose();
-    super.dispose();
-  }
-
-  void _toggleDrawer() {
-    if (_isDrawerOpen) {
-      _drawerController.reverse();
-    } else {
-      _drawerController.forward();
-    }
-    setState(() {
-      _isDrawerOpen = !_isDrawerOpen;
-    });
-  }
-
-  void _closeDrawer() {
-    if (_isDrawerOpen) {
-      _drawerController.reverse();
-      setState(() {
-        _isDrawerOpen = false;
-      });
-    }
-  }
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _pages = [
     const HomePage(),
@@ -64,176 +20,66 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      key: _scaffoldKey,
+      drawer: CustomDrawer(),
+      body: Column(
         children: [
-          // Conteúdo principal
-          Column(
-            children: [
-              // AppBar customizada
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+          // AppBar customizada
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        // Botão do drawer (SVG)
-                        GestureDetector(
-                          onTap: _toggleDrawer,
-                          child: SvgPicture.asset(
-                            'assets/menu_icon.svg',
-                            width: 24,
-                            height: 24,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context).colorScheme.onSurface,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Título
-                        Expanded(
-                          child: Text(
-                            'NovaSignal',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        // Botão de pesquisa (SVG)
-                        GestureDetector(
-                          onTap: () {
-                            showSearch(
-                              context: context,
-                              delegate: CustomSearchDelegate(),
-                            );
-                          },
-                          child: SvgPicture.asset(
-                            'assets/search_icon.svg',
-                            width: 24,
-                            height: 24,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context).colorScheme.onSurface,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              // Corpo da página
-              Expanded(child: _pages[_currentIndex]),
-            ],
-          ),
-
-          // Overlay escuro quando drawer está aberto
-          if (_isDrawerOpen)
-            GestureDetector(
-              onTap: _closeDrawer,
-              child: AnimatedOpacity(
-                opacity: _isDrawerOpen ? 0.5 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Container(
-                  color: Colors.black,
-                ),
-              ),
+              ],
             ),
-
-          // Drawer customizado
-          SlideTransition(
-            position: _drawerAnimation,
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.75,
-              height: MediaQuery.of(context).size.height,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(4, 0),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Column(
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
                   children: [
-                    // Header do drawer
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/logo.svg',
-                            width: 60,
-                            height: 60,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'NovaSignal',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                        ],
+                    // Botão do drawer
+                    IconButton(
+                      icon: Icon(Icons.menu),
+                      onPressed: () {
+                        _scaffoldKey.currentState?.openDrawer();
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    // Título
+                    Expanded(
+                      child: Text(
+                        'NovaSignal',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // Opções do menu
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          // Profile
-                          _DrawerItem(
-                            icon: 'assets/profile_icon.svg',
-                            title: 'Perfil',
-                            onTap: () {
-                              _closeDrawer();
-                              Navigator.pushNamed(context, '/profile');
-                            },
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Settings
-                          _DrawerItem(
-                            icon: 'assets/settings_icon.svg',
-                            title: 'Configurações',
-                            onTap: () {
-                              _closeDrawer();
-                              Navigator.pushNamed(context, '/settings');
-                            },
-                          ),
-                        ],
-                      ),
+                    // Botão de pesquisa
+                    IconButton(
+                      icon: Icon(Icons.search),
+                      onPressed: () {
+                        showSearch(
+                          context: context,
+                          delegate: CustomSearchDelegate(),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
             ),
           ),
+          // Corpo da página
+          Expanded(child: _pages[_currentIndex]),
         ],
       ),
 
-      // BottomAppBar com ícones SVG
+      // BottomAppBar
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
@@ -249,16 +95,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SvgPicture.asset(
-                        'assets/home_icon.svg',
-                        width: 24,
-                        height: 24,
-                        colorFilter: ColorFilter.mode(
-                          _currentIndex == 0
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
-                          BlendMode.srcIn,
-                        ),
+                      Icon(
+                        Icons.home,
+                        color: _currentIndex == 0
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -288,16 +129,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SvgPicture.asset(
-                        'assets/editor_icon.svg',
-                        width: 24,
-                        height: 24,
-                        colorFilter: ColorFilter.mode(
-                          _currentIndex == 1
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
-                          BlendMode.srcIn,
-                        ),
+                      Icon(
+                        Icons.edit_document,
+                        color: _currentIndex == 1
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -324,9 +160,133 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 }
 
+// Drawer Customizado
+class CustomDrawer extends StatelessWidget {
+  const CustomDrawer({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: Container(
+        color: Theme.of(context).colorScheme.surface,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header do drawer
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 35,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'NovaSignal',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Menu Principal',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+
+              // Opções do menu
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    // Profile
+                    _DrawerItem(
+                      icon: Icons.person,
+                      title: 'Perfil',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/profile');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Settings
+                    _DrawerItem(
+                      icon: Icons.settings,
+                      title: 'Configurações',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/settings');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Wishlist
+                    _DrawerItem(
+                      icon: Icons.favorite,
+                      title: 'Favoritos',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/wishlist');
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Orders
+                    _DrawerItem(
+                      icon: Icons.shopping_bag,
+                      title: 'Pedidos',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/order-form');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              // Logout
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _DrawerItem(
+                  icon: Icons.logout,
+                  title: 'Sair',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // Widget customizado para itens do drawer
 class _DrawerItem extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String title;
   final VoidCallback onTap;
 
@@ -349,14 +309,10 @@ class _DrawerItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            SvgPicture.asset(
+            Icon(
               icon,
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                Theme.of(context).colorScheme.onSurface,
-                BlendMode.srcIn,
-              ),
+              size: 24,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             const SizedBox(width: 16),
             Text(
@@ -382,14 +338,10 @@ class HomePage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-            'assets/home_icon.svg',
-            width: 100,
-            height: 100,
-            colorFilter: ColorFilter.mode(
-              Theme.of(context).colorScheme.primary,
-              BlendMode.srcIn,
-            ),
+          Icon(
+            Icons.home,
+            size: 100,
+            color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 20),
           Text(
@@ -417,14 +369,10 @@ class EditorPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-            'assets/editor_icon.svg',
-            width: 100,
-            height: 100,
-            colorFilter: ColorFilter.mode(
-              Theme.of(context).colorScheme.primary,
-              BlendMode.srcIn,
-            ),
+          Icon(
+            Icons.edit_document,
+            size: 100,
+            color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 20),
           Text(
