@@ -13,20 +13,29 @@ class ThemeProvider with ChangeNotifier {
 
   ThemeMode get themeMode => _themeMode;
 
-  // Tema Claro - CORRIGIDO
+  // Azul do Facebook
+  static const Color facebookBlue = Color(0xFF1877F2);
+  
+  // Cinza profundo 90% (quase preto)
+  static const Color deepGray = Color(0xFF1A1A1A);
+
+  // Tema Claro - Azul Facebook
   ThemeData get lightTheme => ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF6200EE),
+      seedColor: facebookBlue,
       brightness: Brightness.light,
+      primary: facebookBlue,
     ),
     textTheme: GoogleFonts.interTextTheme(),
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black87,
     ),
-    cardTheme: CardThemeData( // CORRIGIDO: CardTheme -> CardThemeData
+    cardTheme: CardThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -40,21 +49,28 @@ class ThemeProvider with ChangeNotifier {
     ),
   );
 
-  // Tema Escuro - CORRIGIDO
+  // Tema Escuro - Cinza Profundo 90%
   ThemeData get darkTheme => ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF6200EE),
+      seedColor: facebookBlue,
       brightness: Brightness.dark,
+      primary: facebookBlue,
+      surface: deepGray,
+      background: deepGray,
     ),
+    scaffoldBackgroundColor: deepGray,
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
+      backgroundColor: deepGray,
+      foregroundColor: Colors.white,
     ),
-    cardTheme: CardThemeData( // CORRIGIDO: CardTheme -> CardThemeData
+    cardTheme: CardThemeData(
       elevation: 2,
+      color: Color(0xFF2A2A2A),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
