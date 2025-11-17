@@ -11,36 +11,36 @@ dependencies:
     sdk: flutter
 
   # Ícones do app
-  cupertino_icons: ^1.0.6
+  cupertino_icons: any
 
   # WebSocket para Deriv API
-  web_socket_channel: ^2.4.0
+  web_socket_channel: any
 
   # Deep Links para Android
   uni_links: ^0.5.1
 
   # URL Launcher para OAuth
-  url_launcher: ^6.2.2
+  url_launcher: any
 
   # Storage local
-  shared_preferences: ^2.2.2
+  shared_preferences: any
 
   # Firebase (opcional, para autenticação e database)
-    firebase_core: ^2.24.2
-    firebase_auth: ^4.15.3
-    cloud_firestore: ^4.13.6
+    firebase_core: any
+    firebase_auth: any
+    cloud_firestore: any
 
   # HTTP client
-  http: ^1.1.2
+  http: any
 
   # State management (opcional)
-  provider: ^6.1.1
+  provider: any
 
   # Biometria
-  local_auth: ^2.1.8
+  local_auth: any
 
   # JSON
-  json_annotation: ^4.8.1
+  json_annotation: any
 
 dev_dependencies:
   flutter_test:
