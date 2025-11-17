@@ -17,7 +17,7 @@ dependencies:
   web_socket_channel: any
 
   # Deep Links para Android
-  uni_links: ^0.5.1
+  uni_links: any
 
   # URL Launcher para OAuth
   url_launcher: any
@@ -25,15 +25,15 @@ dependencies:
   # Storage local
   shared_preferences: any
 
-  # Firebase (opcional, para autenticação e database)
-    firebase_core: any
-    firebase_auth: any
-    cloud_firestore: any
+  # Firebase (para autenticação e database)
+  firebase_core: any
+  firebase_auth: any
+  cloud_firestore: any
 
   # HTTP client
   http: any
 
-  # State management (opcional)
+  # State management
   provider: any
 
   # Biometria
@@ -46,9 +46,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^3.0.0
-  json_serializable: ^6.7.1
-  build_runner: ^2.4.7
+  flutter_lints: any
+  json_serializable: any
+  build_runner: any
 
 flutter:
   uses-material-design: true
