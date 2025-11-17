@@ -1,10 +1,13 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'dart:io';
 import 'home_page.dart';
 import 'bot_page.dart';
 import 'conversor_page.dart';
 import 'trade_page.dart';
 import 'user_profile_page.dart';
+import 'settings_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,6 +57,22 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _currentIndex = index);
   }
 
+  void _openSettings() {
+    if (Platform.isIOS) {
+      Navigator.of(context).push(
+        CupertinoPageRoute(
+          builder: (context) => const SettingsPage(),
+        ),
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const SettingsPage(),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const bgColor = Color(0xFF0A0A0A);
@@ -92,14 +111,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const Spacer(),
                             IconButton(
-                              icon: const Icon(Icons.notifications_outlined),
+                              icon: Platform.isIOS
+                                  ? const Icon(CupertinoIcons.bell)
+                                  : const Icon(Icons.notifications_outlined),
                               color: textColor,
                               onPressed: () {},
                             ),
                             IconButton(
-                              icon: const Icon(Icons.settings_outlined),
+                              icon: Platform.isIOS
+                                  ? const Icon(CupertinoIcons.ellipsis)
+                                  : const Icon(Icons.more_vert),
                               color: textColor,
-                              onPressed: () {},
+                              onPressed: _openSettings,
                             ),
                           ],
                         ),
@@ -130,40 +153,52 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildVerticalTabItem(
                       index: 0,
-                      icon: Icons.home_outlined,
-                      activeIcon: Icons.home,
+                      child: CustomIcons.home,
+                      activeChild: CustomIcons.homeFilled,
                       activeColor: activeColor,
                       inactiveColor: secondaryColor,
                     ),
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 1,
-                      icon: Icons.smart_toy_outlined,
-                      activeIcon: Icons.smart_toy,
+                      child: Platform.isIOS
+                          ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 28)
+                          : const Icon(Icons.bar_chart, size: 28),
+                      activeChild: Platform.isIOS
+                          ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 28)
+                          : const Icon(Icons.bar_chart, size: 28),
                       activeColor: activeColor,
                       inactiveColor: secondaryColor,
                     ),
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 2,
-                      icon: Icons.currency_exchange_outlined,
-                      activeIcon: Icons.currency_exchange,
+                      child: Platform.isIOS
+                          ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 28)
+                          : const Icon(Icons.currency_exchange_outlined, size: 28),
+                      activeChild: Platform.isIOS
+                          ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 28)
+                          : const Icon(Icons.currency_exchange, size: 28),
                       activeColor: activeColor,
                       inactiveColor: secondaryColor,
                     ),
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 3,
-                      icon: Icons.trending_up_outlined,
-                      activeIcon: Icons.trending_up,
+                      child: CustomIcons.trade,
+                      activeChild: CustomIcons.tradeFilled,
                       activeColor: activeColor,
                       inactiveColor: secondaryColor,
                     ),
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 4,
-                      icon: Icons.person_outline,
-                      activeIcon: Icons.person,
+                      child: Platform.isIOS
+                          ? const Icon(CupertinoIcons.person, size: 28)
+                          : const Icon(Icons.person_outline, size: 28),
+                      activeChild: Platform.isIOS
+                          ? const Icon(CupertinoIcons.person_fill, size: 28)
+                          : const Icon(Icons.person, size: 28),
                       activeColor: activeColor,
                       inactiveColor: secondaryColor,
                     ),
@@ -194,40 +229,52 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       _buildTabItem(
                         index: 0,
-                        icon: Icons.home_outlined,
-                        activeIcon: Icons.home,
+                        child: CustomIcons.home,
+                        activeChild: CustomIcons.homeFilled,
                         label: 'Home',
                         activeColor: activeColor,
                         inactiveColor: secondaryColor,
                       ),
                       _buildTabItem(
                         index: 1,
-                        icon: Icons.smart_toy_outlined,
-                        activeIcon: Icons.smart_toy,
+                        child: Platform.isIOS
+                            ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 24)
+                            : const Icon(Icons.bar_chart, size: 24),
+                        activeChild: Platform.isIOS
+                            ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 24)
+                            : const Icon(Icons.bar_chart, size: 24),
                         label: 'Bot',
                         activeColor: activeColor,
                         inactiveColor: secondaryColor,
                       ),
                       _buildTabItem(
                         index: 2,
-                        icon: Icons.currency_exchange_outlined,
-                        activeIcon: Icons.currency_exchange,
+                        child: Platform.isIOS
+                            ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 24)
+                            : const Icon(Icons.currency_exchange_outlined, size: 24),
+                        activeChild: Platform.isIOS
+                            ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 24)
+                            : const Icon(Icons.currency_exchange, size: 24),
                         label: 'Conversor',
                         activeColor: activeColor,
                         inactiveColor: secondaryColor,
                       ),
                       _buildTabItem(
                         index: 3,
-                        icon: Icons.trending_up_outlined,
-                        activeIcon: Icons.trending_up,
+                        child: CustomIcons.trade,
+                        activeChild: CustomIcons.tradeFilled,
                         label: 'Trade',
                         activeColor: activeColor,
                         inactiveColor: secondaryColor,
                       ),
                       _buildTabItem(
                         index: 4,
-                        icon: Icons.person_outline,
-                        activeIcon: Icons.person,
+                        child: Platform.isIOS
+                            ? const Icon(CupertinoIcons.person, size: 24)
+                            : const Icon(Icons.person_outline, size: 24),
+                        activeChild: Platform.isIOS
+                            ? const Icon(CupertinoIcons.person_fill, size: 24)
+                            : const Icon(Icons.person, size: 24),
                         label: 'Perfil',
                         activeColor: activeColor,
                         inactiveColor: secondaryColor,
@@ -243,8 +290,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTabItem({
     required int index,
-    required IconData icon,
-    required IconData activeIcon,
+    required Widget child,
+    required Widget activeChild,
     required String label,
     required Color activeColor,
     required Color inactiveColor,
@@ -257,10 +304,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              active ? activeIcon : icon,
-              size: 24,
-              color: active ? activeColor : inactiveColor,
+            IconTheme(
+              data: IconThemeData(
+                color: active ? activeColor : inactiveColor,
+                size: 24,
+              ),
+              child: active ? activeChild : child,
             ),
             const SizedBox(height: 4),
             Text(
@@ -279,8 +328,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildVerticalTabItem({
     required int index,
-    required IconData icon,
-    required IconData activeIcon,
+    required Widget child,
+    required Widget activeChild,
     required Color activeColor,
     required Color inactiveColor,
   }) {
@@ -296,12 +345,101 @@ class _HomeScreenState extends State<HomeScreen> {
           color: active ? activeColor.withOpacity(0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(
-          active ? activeIcon : icon,
-          size: 28,
-          color: active ? activeColor : inactiveColor,
+        child: Center(
+          child: IconTheme(
+            data: IconThemeData(
+              color: active ? activeColor : inactiveColor,
+              size: 28,
+            ),
+            child: active ? activeChild : child,
+          ),
         ),
       ),
     );
   }
+}
+
+// Ícones customizados
+class CustomIcons {
+  static const Widget home = Icon(
+    Icons.home_outlined,
+    size: 24,
+  );
+
+  static const Widget homeFilled = Icon(
+    Icons.home,
+    size: 24,
+  );
+
+  static final Widget trade = CustomPaint(
+    size: const Size(24, 24),
+    painter: TradePainter(filled: false),
+  );
+
+  static final Widget tradeFilled = CustomPaint(
+    size: const Size(24, 24),
+    painter: TradePainter(filled: true),
+  );
+}
+
+// Painter para o ícone de Trade customizado
+class TradePainter extends CustomPainter {
+  final bool filled;
+
+  TradePainter({required this.filled});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = filled ? PaintingStyle.fill : PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final path = Path();
+
+    // Desenha uma linha de tendência ascendente com pontos
+    path.moveTo(size.width * 0.15, size.height * 0.75);
+    path.lineTo(size.width * 0.35, size.height * 0.55);
+    path.lineTo(size.width * 0.55, size.height * 0.65);
+    path.lineTo(size.width * 0.85, size.height * 0.25);
+
+    canvas.drawPath(path, paint);
+
+    // Desenha pontos nos vértices
+    final pointPaint = Paint()..style = PaintingStyle.fill;
+
+    canvas.drawCircle(
+      Offset(size.width * 0.15, size.height * 0.75),
+      3,
+      pointPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.35, size.height * 0.55),
+      3,
+      pointPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.55, size.height * 0.65),
+      3,
+      pointPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.85, size.height * 0.25),
+      3,
+      pointPaint,
+    );
+
+    // Desenha seta no final
+    final arrowPath = Path();
+    arrowPath.moveTo(size.width * 0.85, size.height * 0.25);
+    arrowPath.lineTo(size.width * 0.75, size.height * 0.25);
+    arrowPath.lineTo(size.width * 0.85, size.height * 0.25);
+    arrowPath.lineTo(size.width * 0.85, size.height * 0.35);
+
+    canvas.drawPath(arrowPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
