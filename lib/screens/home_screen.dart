@@ -1,7 +1,7 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'home_page.dart';
 import 'bot_page.dart';
 import 'conversor_page.dart';
@@ -27,6 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'Trade',
     'Perfil',
   ];
+
+  bool get _isIOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   Widget _getPage(int index) {
     if (_pages[index] != null) return _pages[index]!;
@@ -58,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openSettings() {
-    if (Platform.isIOS) {
+    if (_isIOS) {
       Navigator.of(context).push(
         CupertinoPageRoute(
           builder: (context) => const SettingsPage(),
@@ -111,14 +113,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const Spacer(),
                             IconButton(
-                              icon: Platform.isIOS
+                              icon: _isIOS
                                   ? const Icon(CupertinoIcons.bell)
                                   : const Icon(Icons.notifications_outlined),
                               color: textColor,
                               onPressed: () {},
                             ),
                             IconButton(
-                              icon: Platform.isIOS
+                              icon: _isIOS
                                   ? const Icon(CupertinoIcons.ellipsis)
                                   : const Icon(Icons.more_vert),
                               color: textColor,
@@ -153,18 +155,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildVerticalTabItem(
                       index: 0,
-                      child: CustomIcons.home,
-                      activeChild: CustomIcons.homeFilled,
+                      child: const Icon(Icons.home_outlined, size: 28),
+                      activeChild: const Icon(Icons.home, size: 28),
                       activeColor: activeColor,
                       inactiveColor: secondaryColor,
                     ),
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 1,
-                      child: Platform.isIOS
+                      child: _isIOS
                           ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 28)
                           : const Icon(Icons.bar_chart, size: 28),
-                      activeChild: Platform.isIOS
+                      activeChild: _isIOS
                           ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 28)
                           : const Icon(Icons.bar_chart, size: 28),
                       activeColor: activeColor,
@@ -173,10 +175,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 2,
-                      child: Platform.isIOS
+                      child: _isIOS
                           ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 28)
                           : const Icon(Icons.currency_exchange_outlined, size: 28),
-                      activeChild: Platform.isIOS
+                      activeChild: _isIOS
                           ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 28)
                           : const Icon(Icons.currency_exchange, size: 28),
                       activeColor: activeColor,
@@ -185,18 +187,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 3,
-                      child: CustomIcons.trade,
-                      activeChild: CustomIcons.tradeFilled,
+                      child: const TradeIcon(filled: false),
+                      activeChild: const TradeIcon(filled: true),
                       activeColor: activeColor,
                       inactiveColor: secondaryColor,
                     ),
                     const SizedBox(height: 8),
                     _buildVerticalTabItem(
                       index: 4,
-                      child: Platform.isIOS
+                      child: _isIOS
                           ? const Icon(CupertinoIcons.person, size: 28)
                           : const Icon(Icons.person_outline, size: 28),
-                      activeChild: Platform.isIOS
+                      activeChild: _isIOS
                           ? const Icon(CupertinoIcons.person_fill, size: 28)
                           : const Icon(Icons.person, size: 28),
                       activeColor: activeColor,
@@ -229,18 +231,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       _buildTabItem(
                         index: 0,
-                        child: CustomIcons.home,
-                        activeChild: CustomIcons.homeFilled,
+                        child: const Icon(Icons.home_outlined, size: 24),
+                        activeChild: const Icon(Icons.home, size: 24),
                         label: 'Home',
                         activeColor: activeColor,
                         inactiveColor: secondaryColor,
                       ),
                       _buildTabItem(
                         index: 1,
-                        child: Platform.isIOS
+                        child: _isIOS
                             ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 24)
                             : const Icon(Icons.bar_chart, size: 24),
-                        activeChild: Platform.isIOS
+                        activeChild: _isIOS
                             ? const Icon(CupertinoIcons.chart_bar_alt_fill, size: 24)
                             : const Icon(Icons.bar_chart, size: 24),
                         label: 'Bot',
@@ -249,10 +251,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       _buildTabItem(
                         index: 2,
-                        child: Platform.isIOS
+                        child: _isIOS
                             ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 24)
                             : const Icon(Icons.currency_exchange_outlined, size: 24),
-                        activeChild: Platform.isIOS
+                        activeChild: _isIOS
                             ? const Icon(CupertinoIcons.arrow_2_circlepath, size: 24)
                             : const Icon(Icons.currency_exchange, size: 24),
                         label: 'Conversor',
@@ -261,18 +263,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       _buildTabItem(
                         index: 3,
-                        child: CustomIcons.trade,
-                        activeChild: CustomIcons.tradeFilled,
+                        child: const TradeIcon(filled: false),
+                        activeChild: const TradeIcon(filled: true),
                         label: 'Trade',
                         activeColor: activeColor,
                         inactiveColor: secondaryColor,
                       ),
                       _buildTabItem(
                         index: 4,
-                        child: Platform.isIOS
+                        child: _isIOS
                             ? const Icon(CupertinoIcons.person, size: 24)
                             : const Icon(Icons.person_outline, size: 24),
-                        activeChild: Platform.isIOS
+                        activeChild: _isIOS
                             ? const Icon(CupertinoIcons.person_fill, size: 24)
                             : const Icon(Icons.person, size: 24),
                         label: 'Perfil',
@@ -359,55 +361,47 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Ícones customizados
-class CustomIcons {
-  static const Widget home = Icon(
-    Icons.home_outlined,
-    size: 24,
-  );
+// Ícone Trade que respeita IconTheme
+class TradeIcon extends StatelessWidget {
+  final bool filled;
+  const TradeIcon({this.filled = false, super.key});
 
-  static const Widget homeFilled = Icon(
-    Icons.home,
-    size: 24,
-  );
-
-  static final Widget trade = CustomPaint(
-    size: const Size(24, 24),
-    painter: TradePainter(filled: false),
-  );
-
-  static final Widget tradeFilled = CustomPaint(
-    size: const Size(24, 24),
-    painter: TradePainter(filled: true),
-  );
+  @override
+  Widget build(BuildContext context) {
+    final color = IconTheme.of(context).color ?? Colors.white;
+    return CustomPaint(
+      size: const Size(24, 24),
+      painter: TradePainter(filled: filled, color: color),
+    );
+  }
 }
 
 // Painter para o ícone de Trade customizado
 class TradePainter extends CustomPainter {
   final bool filled;
+  final Color color;
 
-  TradePainter({required this.filled});
+  TradePainter({required this.filled, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
+      ..color = color
       ..style = filled ? PaintingStyle.fill : PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     final path = Path();
-
-    // Desenha uma linha de tendência ascendente com pontos
     path.moveTo(size.width * 0.15, size.height * 0.75);
     path.lineTo(size.width * 0.35, size.height * 0.55);
     path.lineTo(size.width * 0.55, size.height * 0.65);
     path.lineTo(size.width * 0.85, size.height * 0.25);
-
     canvas.drawPath(path, paint);
 
-    // Desenha pontos nos vértices
-    final pointPaint = Paint()..style = PaintingStyle.fill;
+    final pointPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
 
     canvas.drawCircle(
       Offset(size.width * 0.15, size.height * 0.75),
@@ -430,7 +424,6 @@ class TradePainter extends CustomPainter {
       pointPaint,
     );
 
-    // Desenha seta no final
     final arrowPath = Path();
     arrowPath.moveTo(size.width * 0.85, size.height * 0.25);
     arrowPath.lineTo(size.width * 0.75, size.height * 0.25);
@@ -441,5 +434,5 @@ class TradePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant TradePainter old) => old.filled != filled || old.color != color;
 }
