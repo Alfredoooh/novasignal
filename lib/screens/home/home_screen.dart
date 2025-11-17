@@ -8,9 +8,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _pages = [
     const HomePage(),
@@ -20,137 +19,384 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: CustomDrawer(),
-      body: Column(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Stack(
         children: [
-          // AppBar customizada
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    // Botão do drawer
-                    IconButton(
-                      icon: Icon(Icons.menu),
-                      onPressed: () {
-                        _scaffoldKey.currentState?.openDrawer();
-                      },
+          // Conteúdo principal
+          Column(
+            children: [
+              // AppBar customizada simples
+              Container(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    child: Row(
+                      children: [
+                        // Botão menu (SVG)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MenuScreen(),
+                              ),
+                            );
+                          },
+                          child: SvgPicture.asset(
+                            'assets/menu_icon.svg',
+                            width: 24,
+                            height: 24,
+                            colorFilter: ColorFilter.mode(
+                              Theme.of(context).colorScheme.onBackground,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Logo (SVG)
+                        SvgPicture.asset(
+                          'assets/logo.svg',
+                          height: 28,
+                          colorFilter: ColorFilter.mode(
+                            Theme.of(context).primaryColor,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const Spacer(),
+                        // Botão de pesquisa (SVG)
+                        GestureDetector(
+                          onTap: () {
+                            showSearch(
+                              context: context,
+                              delegate: CustomSearchDelegate(),
+                            );
+                          },
+                          child: SvgPicture.asset(
+                            'assets/search_icon.svg',
+                            width: 24,
+                            height: 24,
+                            colorFilter: ColorFilter.mode(
+                              Theme.of(context).colorScheme.onBackground,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Avatar (SVG)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(context, '/profile');
+                          },
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                'J',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    // Título
-                    Expanded(
-                      child: Text(
-                        'NovaSignal',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Corpo da página
+              Expanded(child: _pages[_currentIndex]),
+            ],
+          ),
+
+          // Bottom Navigation Bar FLUTUANTE
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 20,
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Tab Home
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _currentIndex = 0),
+                      child: Container(
+                        color: Colors.transparent,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/home_icon.svg',
+                              width: 24,
+                              height: 24,
+                              colorFilter: ColorFilter.mode(
+                                _currentIndex == 0
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Início',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _currentIndex == 0
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey,
+                                fontWeight: _currentIndex == 0
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    // Botão de pesquisa
-                    IconButton(
-                      icon: Icon(Icons.search),
-                      onPressed: () {
-                        showSearch(
-                          context: context,
-                          delegate: CustomSearchDelegate(),
-                        );
-                      },
+                  ),
+
+                  // Tab Editor
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _currentIndex = 1),
+                      child: Container(
+                        color: Colors.transparent,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/editor_icon.svg',
+                              width: 24,
+                              height: 24,
+                              colorFilter: ColorFilter.mode(
+                                _currentIndex == 1
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Editor',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _currentIndex == 1
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.grey,
+                                fontWeight: _currentIndex == 1
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// TELA DE MENU (como no Freepik)
+class MenuScreen extends StatelessWidget {
+  const MenuScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header com arrow back
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: SvgPicture.asset(
+                      'assets/arrow_back_icon.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(
+                        Theme.of(context).colorScheme.onBackground,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  SvgPicture.asset(
+                    'assets/logo.svg',
+                    height: 28,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).primaryColor,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Tipo de conta (Personal)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'P',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Personal',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    SvgPicture.asset(
+                      'assets/arrow_down_icon.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: ColorFilter.mode(
+                        Theme.of(context).colorScheme.onSurface,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-          // Corpo da página
-          Expanded(child: _pages[_currentIndex]),
-        ],
-      ),
 
-      // BottomAppBar
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Tab Home
-            Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _currentIndex = 0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.home,
-                        color: _currentIndex == 0
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Home',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _currentIndex == 0
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
-                          fontWeight: _currentIndex == 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: 8),
 
-            // Tab Editor
+            // Opções do menu
             Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _currentIndex = 1),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.edit_document,
-                        color: _currentIndex == 1
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Editor',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _currentIndex == 1
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey,
-                          fontWeight: _currentIndex == 1
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ],
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _MenuItem(
+                    icon: 'assets/home_icon.svg',
+                    title: 'Início',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
                   ),
-                ),
+                  _MenuItem(
+                    icon: 'assets/suite_icon.svg',
+                    title: 'Suite IA',
+                    onTap: () {},
+                  ),
+                  _MenuItem(
+                    icon: 'assets/stock_icon.svg',
+                    title: 'Stock',
+                    hasArrow: true,
+                    onTap: () {},
+                  ),
+                  _MenuItem(
+                    icon: 'assets/community_icon.svg',
+                    title: 'Comunidade',
+                    onTap: () {},
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  _MenuItem(
+                    icon: 'assets/generate_image_icon.svg',
+                    title: 'Gerar imagens',
+                    onTap: () {},
+                  ),
+                  _MenuItem(
+                    icon: 'assets/generate_video_icon.svg',
+                    title: 'Gerar vídeos',
+                    onTap: () {},
+                  ),
+                  _MenuItem(
+                    icon: 'assets/assistant_icon.svg',
+                    title: 'Assistente',
+                    onTap: () {},
+                  ),
+                  _MenuItem(
+                    icon: 'assets/tools_icon.svg',
+                    title: 'Todas as ferramentas',
+                    hasArrow: true,
+                    onTap: () {},
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  _MenuItem(
+                    icon: 'assets/history_icon.svg',
+                    title: 'Histórico',
+                    onTap: () {},
+                  ),
+                  _MenuItem(
+                    icon: 'assets/profile_icon.svg',
+                    title: 'Perfil',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                  ),
+                  _MenuItem(
+                    icon: 'assets/settings_icon.svg',
+                    title: 'Configurações',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/settings');
+                    },
+                  ),
+                ],
               ),
             ),
           ],
@@ -160,167 +406,62 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 }
 
-// Drawer Customizado
-class CustomDrawer extends StatelessWidget {
-  const CustomDrawer({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: Container(
-        color: Theme.of(context).colorScheme.surface,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header do drawer
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        size: 40,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'NovaSignal',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Menu Principal',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 20),
-
-              // Opções do menu
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    // Profile
-                    _DrawerItem(
-                      icon: Icons.person,
-                      title: 'Perfil',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/profile');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Settings
-                    _DrawerItem(
-                      icon: Icons.settings,
-                      title: 'Configurações',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/settings');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Wishlist
-                    _DrawerItem(
-                      icon: Icons.favorite,
-                      title: 'Favoritos',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/wishlist');
-                      },
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Orders
-                    _DrawerItem(
-                      icon: Icons.shopping_bag,
-                      title: 'Pedidos',
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/order-form');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // Logout
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _DrawerItem(
-                  icon: Icons.logout,
-                  title: 'Sair',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushReplacementNamed(context, '/login');
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Widget customizado para itens do drawer
-class _DrawerItem extends StatelessWidget {
-  final IconData icon;
+// Item do menu
+class _MenuItem extends StatelessWidget {
+  final String icon;
   final String title;
+  final bool hasArrow;
   final VoidCallback onTap;
 
-  const _DrawerItem({
+  const _MenuItem({
     required this.icon,
     required this.title,
+    this.hasArrow = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        margin: const EdgeInsets.only(bottom: 4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(
+            SvgPicture.asset(
               icon,
-              size: 24,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            const SizedBox(width: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w500,
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                Theme.of(context).colorScheme.onBackground,
+                BlendMode.srcIn,
               ),
             ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+            ),
+            if (hasArrow)
+              SvgPicture.asset(
+                'assets/arrow_right_icon.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(
+                  Colors.grey,
+                  BlendMode.srcIn,
+                ),
+              ),
           ],
         ),
       ),
@@ -334,25 +475,183 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.home,
-            size: 100,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 20),
           Text(
-            'Bem-vindo ao NovaSignal',
-            style: Theme.of(context).textTheme.headlineSmall,
+            'O que você gostaria de criar hoje?',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 24),
+          
+          // Cards de ação
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
+                  icon: 'assets/search_icon.svg',
+                  title: 'Buscar conteúdo',
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _ActionCard(
+                  icon: 'assets/spaces_icon.svg',
+                  title: 'Spaces',
+                  badge: 'NOVO',
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Todas as ferramentas
+          Center(
+            child: TextButton.icon(
+              onPressed: () {},
+              icon: SvgPicture.asset(
+                'assets/tools_icon.svg',
+                width: 20,
+                height: 20,
+              ),
+              label: Text('Todas as ferramentas'),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Seção de criações recentes
+          Row(
+            children: [
+              Text(
+                'Criações recentes',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Personal',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              SvgPicture.asset(
+                'assets/arrow_down_icon.svg',
+                width: 16,
+                height: 16,
+                colorFilter: ColorFilter.mode(
+                  Colors.grey,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Empty state
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  SvgPicture.asset(
+                    'assets/empty_icon.svg',
+                    width: 80,
+                    height: 80,
+                    colorFilter: ColorFilter.mode(
+                      Colors.grey.withOpacity(0.3),
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Nenhuma criação encontrada',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Card de ação
+class _ActionCard extends StatelessWidget {
+  final String icon;
+  final String title;
+  final String? badge;
+
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    this.badge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SvgPicture.asset(
+            icon,
+            width: 32,
+            height: 32,
+            colorFilter: ColorFilter.mode(
+              Theme.of(context).primaryColor,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
-            'Página Principal',
-            style: Theme.of(context).textTheme.bodyLarge,
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          if (badge != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                badge!,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -366,26 +665,7 @@ class EditorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.edit_document,
-            size: 100,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Editor de Documentos',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Crie e edite seus documentos aqui',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ],
-      ),
+      child: Text('Editor de Documentos'),
     );
   }
 }
@@ -397,9 +677,7 @@ class CustomSearchDelegate extends SearchDelegate<String> {
     return [
       IconButton(
         icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
+        onPressed: () => query = '',
       ),
     ];
   }
@@ -408,39 +686,27 @@ class CustomSearchDelegate extends SearchDelegate<String> {
   Widget buildLeading(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, '');
-      },
+      onPressed: () => close(context, ''),
     );
   }
 
   @override
   Widget buildResults(BuildContext context) {
-    return Center(
-      child: Text('Resultados para: $query'),
-    );
+    return Center(child: Text('Resultados para: $query'));
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    final suggestions = query.isEmpty
-        ? ['Documentos', 'Contratos', 'Relatórios', 'Faturas']
-        : ['Documentos', 'Contratos', 'Relatórios', 'Faturas']
-            .where((item) => item.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-
-    return ListView.builder(
-      itemCount: suggestions.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          leading: const Icon(Icons.search),
-          title: Text(suggestions[index]),
-          onTap: () {
-            query = suggestions[index];
-            showResults(context);
-          },
-        );
-      },
+    return ListView(
+      children: ['Documentos', 'Contratos', 'Relatórios']
+          .map((item) => ListTile(
+                title: Text(item),
+                onTap: () {
+                  query = item;
+                  showResults(context);
+                },
+              ))
+          .toList(),
     );
   }
 }
