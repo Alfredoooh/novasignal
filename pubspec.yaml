@@ -61,6 +61,14 @@ flutter:
     - assets/settings_icon.svg
     - assets/logo.svg
     - assets/arrow_back_icon.svg
-    
+    - assets/calendar_icon.svg
+    - assets/edit_icon.svg
+    - assets/logout_icon.svg
+    - assets/theme_icon.svg
+    - assets/language_icon.svg
+    - assets/light_theme_icon.svg
+    - assets/dark_theme_icon.svg
+    - assets/auto_theme_icon.svg
+
     # Outras pastas
     - assets/translations/
