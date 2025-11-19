@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'menu_screen.dart';
 import 'home_page.dart';
 import 'editor_page.dart';
-import 'custom_search_delegate.dart';
+import 'package:novasignal/widgets/home/arquivo.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
