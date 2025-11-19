@@ -1,6 +1,6 @@
 // lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // ainda necessário para os ícones SVG
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'menu_screen.dart';
@@ -99,10 +99,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 16),
 
-                        // Logo PNG
+                        // Logo PNG - AUMENTADO
                         Image.asset(
                           'assets/logo.png',
-                          height: 25.2,
+                          height: 35, // Era 25.2, agora 35 (40% maior)
+                          fit: BoxFit.contain,
                         ),
 
                         const Spacer(),
@@ -129,7 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (isLoggedIn)
                           GestureDetector(
                             onTap: () {
-                              // ← ABRE EXATAMENTE A PROFILESCREEN QUE VOCÊ ENVIOU
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
