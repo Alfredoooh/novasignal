@@ -81,15 +81,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Row(
                       children: [
+                        // Menu
                         GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MenuScreen(),
-                              ),
-                            );
-                          },
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MenuScreen()),
+                          ),
                           child: SvgPicture.asset(
                             'assets/menu_icon.svg',
                             width: 21.6,
@@ -102,23 +99,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 16),
 
-                        // ← AQUI FOI A CORREÇÃO: logo.png ao invés de logo.svg
+                        // Logo PNG
                         Image.asset(
                           'assets/logo.png',
                           height: 25.2,
-                          // Se o PNG já tiver a cor correta, não precisa de colorFilter
-                          // Caso precise tintar (ex: modo dark), descomente a linha abaixo:
-                          // color: Theme.of(context).primaryColor,
                         ),
 
                         const Spacer(),
+
+                        // Busca
                         GestureDetector(
-                          onTap: () {
-                            showSearch(
-                              context: context,
-                              delegate: CustomSearchDelegate(),
-                            );
-                          },
+                          onTap: () => showSearch(
+                            context: context,
+                            delegate: CustomSearchDelegate(),
+                          ),
                           child: SvgPicture.asset(
                             'assets/search_icon.svg',
                             width: 21.6,
@@ -131,31 +125,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 16),
 
+                        // Avatar / Botão Começar
                         if (isLoggedIn)
                           GestureDetector(
                             onTap: () {
+                              // ← ABRE EXATAMENTE A PROFILESCREEN QUE VOCÊ ENVIOU
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ProfileScreen(),
+                                  builder: (_) => const ProfileScreen(),
                                 ),
                               );
                             },
                             child: Container(
-                              width: 28.8,
-                              height: 28.8,
+                              width: 32,
+                              height: 32,
                               decoration: BoxDecoration(
                                 color: Theme.of(context).primaryColor,
                                 shape: BoxShape.circle,
                               ),
-                              child: Center(
-                                child: Text(
-                                  user.email?.substring(0, 1).toUpperCase() ?? 'U',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14.4,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                user?.email?[0].toUpperCase() ?? 'U',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -188,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // Bottom navigation bar (sem alterações)
+          // Bottom Navigation Bar
           Positioned(
             left: 20,
             right: 20,
@@ -211,70 +206,56 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _currentIndex = 0),
-                      child: Container(
-                        color: Colors.transparent,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset(
-                              'assets/home_icon.svg',
-                              width: 21.6,
-                              height: 21.6,
-                              colorFilter: ColorFilter.mode(
-                                _currentIndex == 0
-                                    ? Theme.of(context).primaryColor
-                                    : Colors.grey,
-                                BlendMode.srcIn,
-                              ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/home_icon.svg',
+                            width: 21.6,
+                            height: 21.6,
+                            colorFilter: ColorFilter.mode(
+                              _currentIndex == 0 ? Theme.of(context).primaryColor : Colors.grey,
+                              BlendMode.srcIn,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Início',
-                              style: TextStyle(
-                                fontSize: 9.9,
-                                color: _currentIndex == 0
-                                    ? Theme.of(context).primaryColor
-                                    : Colors.grey,
-                                fontWeight: _currentIndex == 0 ? FontWeight.w600 : FontWeight.normal,
-                              ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Início',
+                            style: TextStyle(
+                              fontSize: 9.9,
+                              color: _currentIndex == 0 ? Theme.of(context).primaryColor : Colors.grey,
+                              fontWeight: _currentIndex == 0 ? FontWeight.w600 : FontWeight.normal,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _currentIndex = 1),
-                      child: Container(
-                        color: Colors.transparent,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset(
-                              'assets/editor_icon.svg',
-                              width: 21.6,
-                              height: 21.6,
-                              colorFilter: ColorFilter.mode(
-                                _currentIndex == 1
-                                    ? Theme.of(context).primaryColor
-                                    : Colors.grey,
-                                BlendMode.srcIn,
-                              ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/editor_icon.svg',
+                            width: 21.6,
+                            height: 21.6,
+                            colorFilter: ColorFilter.mode(
+                              _currentIndex == 1 ? Theme.of(context).primaryColor : Colors.grey,
+                              BlendMode.srcIn,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Editor',
-                              style: TextStyle(
-                                fontSize: 9.9,
-                                color: _currentIndex == 1
-                                    ? Theme.of(context).primaryColor
-                                    : Colors.grey,
-                                fontWeight: _currentIndex == 1 ? FontWeight.w600 : FontWeight.normal,
-                              ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Editor',
+                            style: TextStyle(
+                              fontSize: 9.9,
+                              color: _currentIndex == 1 ? Theme.of(context).primaryColor : Colors.grey,
+                              fontWeight: _currentIndex == 1 ? FontWeight.w600 : FontWeight.normal,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
