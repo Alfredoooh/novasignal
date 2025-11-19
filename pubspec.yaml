@@ -59,7 +59,7 @@ flutter:
     - assets/editor_icon.svg
     - assets/profile_icon.svg
     - assets/settings_icon.svg
-    - assets/logo.svg
+    - assets/logo.png
     - assets/arrow_back_icon.svg
     - assets/calendar_icon.svg
     - assets/edit_icon.svg
