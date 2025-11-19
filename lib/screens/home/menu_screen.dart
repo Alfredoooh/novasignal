@@ -1,8 +1,48 @@
+// lib/screens/menu/menu_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
   const MenuScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    // start animation after build
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ctrl.forward());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Animation<Offset> _itemAnimation(int index) {
+    final start = 0.0 + (index * 0.08);
+    final end = start + 0.5;
+    return Tween<Offset>(
+      begin: const Offset(-0.15, 0),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: Interval(start, end.clamp(0.0, 1.0), curve: Curves.easeOutCubic),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +51,7 @@ class MenuScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
+            // Header
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -39,6 +80,8 @@ class MenuScreen extends StatelessWidget {
                 ],
               ),
             ),
+
+            // Top card with circular gradient "P"
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
@@ -49,30 +92,47 @@ class MenuScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
+                    // Circular gradient avatar with 'P'
                     Container(
-                      width: 28.8,
-                      height: 28.8,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(6),
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          center: const Alignment(-0.2, -0.2),
+                          radius: 0.9,
+                          colors: [
+                            Theme.of(context).primaryColor,
+                            Theme.of(context).primaryColor.withOpacity(0.7),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Center(
                         child: Text(
                           'P',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 14.4,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
+
                     const SizedBox(width: 12),
                     Text(
                       'Personal',
                       style: TextStyle(
                         fontSize: 14.4,
                         fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onBackground,
                       ),
                     ),
                     const Spacer(),
@@ -89,75 +149,45 @@ class MenuScreen extends StatelessWidget {
                 ),
               ),
             ),
+
             const SizedBox(height: 8),
+
+            // Menu (só os 3 itens) com animação de deslize suave
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 children: [
-                  _MenuItem(
-                    icon: 'assets/home_icon.svg',
-                    title: 'Início',
-                    onTap: () => Navigator.pop(context),
+                  SlideTransition(
+                    position: _itemAnimation(0),
+                    child: _MenuItem(
+                      icon: 'assets/home_icon.svg',
+                      title: 'Início',
+                      onTap: () => Navigator.pop(context),
+                    ),
                   ),
-                  _MenuItem(
-                    icon: 'assets/suite_icon.svg',
-                    title: 'Suite IA',
-                    onTap: () {},
+                  const SizedBox(height: 6),
+                  SlideTransition(
+                    position: _itemAnimation(1),
+                    child: _MenuItem(
+                      icon: 'assets/profile_icon.svg',
+                      title: 'Perfil',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/profile');
+                      },
+                    ),
                   ),
-                  _MenuItem(
-                    icon: 'assets/stock_icon.svg',
-                    title: 'Stock',
-                    hasArrow: true,
-                    onTap: () {},
-                  ),
-                  _MenuItem(
-                    icon: 'assets/community_icon.svg',
-                    title: 'Comunidade',
-                    onTap: () {},
-                  ),
-                  const SizedBox(height: 24),
-                  _MenuItem(
-                    icon: 'assets/generate_image_icon.svg',
-                    title: 'Gerar imagens',
-                    onTap: () {},
-                  ),
-                  _MenuItem(
-                    icon: 'assets/generate_video_icon.svg',
-                    title: 'Gerar vídeos',
-                    onTap: () {},
-                  ),
-                  _MenuItem(
-                    icon: 'assets/assistant_icon.svg',
-                    title: 'Assistente',
-                    onTap: () {},
-                  ),
-                  _MenuItem(
-                    icon: 'assets/tools_icon.svg',
-                    title: 'Todas as ferramentas',
-                    hasArrow: true,
-                    onTap: () {},
-                  ),
-                  const SizedBox(height: 24),
-                  _MenuItem(
-                    icon: 'assets/history_icon.svg',
-                    title: 'Histórico',
-                    onTap: () {},
-                  ),
-                  _MenuItem(
-                    icon: 'assets/profile_icon.svg',
-                    title: 'Perfil',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/profile');
-                    },
-                  ),
-                  _MenuItem(
-                    icon: 'assets/settings_icon.svg',
-                    title: 'Configurações',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/settings');
-                    },
+                  const SizedBox(height: 6),
+                  SlideTransition(
+                    position: _itemAnimation(2),
+                    child: _MenuItem(
+                      icon: 'assets/settings_icon.svg',
+                      title: 'Configurações',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/settings');
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -211,6 +241,7 @@ class _MenuItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14.4,
                   fontWeight: FontWeight.normal,
+                  color: Theme.of(context).colorScheme.onBackground,
                 ),
               ),
             ),
