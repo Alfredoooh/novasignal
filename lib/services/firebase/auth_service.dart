@@ -1,4 +1,4 @@
-// services/firebase/auth_service.dart
+/* services/firebase/auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user_model.dart';
@@ -101,7 +101,7 @@ class AuthService {
           return 'Usuário não encontrado';
         case 'wrong-password':
           return 'Senha incorreta';
-        case 'email-already-in-use':
+        case 'email-alre?ady-in-use':
           return 'Email já está em uso';
         case 'weak-password':
           return 'Senha muito fraca';
@@ -112,5 +112,150 @@ class AuthService {
       }
     }
     return 'Erro desconhecido';
+  }
+}
+*/
+
+// services/firebase/auth_service.dart
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/user_model.dart';
+
+class AuthService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Stream de mudanças de autenticação
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // Usuário atual do Firebase Auth
+  User? get currentUser => _auth.currentUser;
+
+  // Login com email e senha
+  Future<UserModel?> signIn(String email, String password) async {
+    try {
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (userCredential.user != null) {
+        return await getUserData(userCredential.user!.uid);
+      }
+      return null;
+    } catch (e) {
+      print('Erro no login: $e');
+      rethrow;
+    }
+  }
+
+  // Registro de novo usuário
+  Future<UserModel?> signUp({
+    required String name,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    try {
+      // Criar usuário no Firebase Auth
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (userCredential.user != null) {
+        final uid = userCredential.user!.uid;
+
+        // Criar documento do usuário no Firestore
+        final userData = {
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': null,
+        };
+
+        await _firestore.collection('users').doc(uid).set(userData);
+
+        // Retornar UserModel com os dados criados
+        return UserModel(
+          id: uid,
+          name: name,
+          email: email,
+          phone: phone,
+          createdAt: DateTime.now(),
+        );
+      }
+      return null;
+    } catch (e) {
+      print('Erro no registro: $e');
+      rethrow;
+    }
+  }
+
+  // Buscar dados do usuário no Firestore
+  Future<UserModel?> getUserData(String uid) async {
+    try {
+      final doc = await _firestore.collection('users').doc(uid).get();
+
+      if (doc.exists && doc.data() != null) {
+        return UserModel.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      print('Erro ao buscar dados do usuário: $e');
+      return null;
+    }
+  }
+
+  // Atualizar dados do usuário
+  Future<void> updateUserData(UserModel user) async {
+    try {
+      await _firestore.collection('users').doc(user.id).update({
+        'name': user.name,
+        'phone': user.phone,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Erro ao atualizar usuário: $e');
+      rethrow;
+    }
+  }
+
+  // Recuperar senha
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      print('Erro ao enviar email de recuperação: $e');
+      rethrow;
+    }
+  }
+
+  // Logout
+  Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      print('Erro ao fazer logout: $e');
+      rethrow;
+    }
+  }
+
+  // Deletar conta
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Deletar documento do Firestore
+        await _firestore.collection('users').doc(user.uid).delete();
+        
+        // Deletar conta do Firebase Auth
+        await user.delete();
+      }
+    } catch (e) {
+      print('Erro ao deletar conta: $e');
+      rethrow;
+    }
   }
 }
