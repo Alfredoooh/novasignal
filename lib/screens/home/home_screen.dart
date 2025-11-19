@@ -5,7 +5,7 @@ import 'menu_screen.dart';
 import 'package:novasignal/screens/pages/home_page.dart';
 import 'package:novasignal/screens/pages/editor_page.dart';
 import 'package:novasignal/widgets/home/custom_search_delegate.dart';
-import 'package:novasignal/screen/auth/login_screen.dart';
+import 'package:novasignal/screens/auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
