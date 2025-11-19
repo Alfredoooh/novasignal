@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'menu_screen.dart';
 import 'package:novasignal/screens/pages/home_page.dart';
-import 'package:novasignal/screens/pages/editor_pages.dart';
+import 'package:novasignal/screens/pages/editor_page.dart';
 import 'package:novasignal/widgets/home/custom_search_delegate.dart';
 import 'package:novasignal/screen/auth/login_screen.dart';
 
