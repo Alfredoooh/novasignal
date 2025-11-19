@@ -1,6 +1,6 @@
 // lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart'; // ainda necessário para os ícones SVG
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'menu_screen.dart';
@@ -101,14 +101,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        SvgPicture.asset(
-                          'assets/logo.svg',
+
+                        // ← AQUI FOI A CORREÇÃO: logo.png ao invés de logo.svg
+                        Image.asset(
+                          'assets/logo.png',
                           height: 25.2,
-                          colorFilter: ColorFilter.mode(
-                            Theme.of(context).primaryColor,
-                            BlendMode.srcIn,
-                          ),
+                          // Se o PNG já tiver a cor correta, não precisa de colorFilter
+                          // Caso precise tintar (ex: modo dark), descomente a linha abaixo:
+                          // color: Theme.of(context).primaryColor,
                         ),
+
                         const Spacer(),
                         GestureDetector(
                           onTap: () {
@@ -132,7 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (isLoggedIn)
                           GestureDetector(
                             onTap: () {
-                              // abre a ProfileScreen que você enviou
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -187,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
+          // Bottom navigation bar (sem alterações)
           Positioned(
             left: 20,
             right: 20,
@@ -233,9 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: _currentIndex == 0
                                     ? Theme.of(context).primaryColor
                                     : Colors.grey,
-                                fontWeight: _currentIndex == 0
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
+                                fontWeight: _currentIndex == 0 ? FontWeight.w600 : FontWeight.normal,
                               ),
                             ),
                           ],
@@ -270,9 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: _currentIndex == 1
                                     ? Theme.of(context).primaryColor
                                     : Colors.grey,
-                                fontWeight: _currentIndex == 1
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
+                                fontWeight: _currentIndex == 1 ? FontWeight.w600 : FontWeight.normal,
                               ),
                             ),
                           ],
