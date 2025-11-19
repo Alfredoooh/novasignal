@@ -5,8 +5,22 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/auth_provider.dart' as custom_auth;
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Recarrega dados do usuário ao abrir a tela
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<custom_auth.AuthProvider>().refreshUser();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +32,7 @@ class ProfileScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header com arrow back
+            // Header
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -36,7 +50,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Text(
+                  const Text(
                     'Perfil',
                     style: TextStyle(
                       fontSize: 20,
@@ -49,192 +63,11 @@ class ProfileScreen extends StatelessWidget {
 
             // Conteúdo
             Expanded(
-              child: user == null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/profile_icon.svg',
-                            width: 80,
-                            height: 80,
-                            colorFilter: ColorFilter.mode(
-                              Colors.grey,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Usuário não encontrado',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          // Avatar
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                user.name.isNotEmpty
-                                    ? user.name[0].toUpperCase()
-                                    : 'U',
-                                style: TextStyle(
-                                  fontSize: 40,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            user.name,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            user.email,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-
-                          // Informações do usuário
-                          _InfoCard(
-                            icon: 'assets/person_icon.svg',
-                            title: 'Nome',
-                            value: user.name,
-                            onTap: () => _showEditDialog(
-                              context,
-                              'Editar Nome',
-                              user.name,
-                              (value) async {
-                                // TODO: Atualizar nome no Firestore
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          _InfoCard(
-                            icon: 'assets/email_icon.svg',
-                            title: 'Email',
-                            value: user.email,
-                          ),
-                          const SizedBox(height: 12),
-
-                          _InfoCard(
-                            icon: 'assets/phone_icon.svg',
-                            title: 'Telefone',
-                            value: user.phone ?? 'Não informado',
-                            onTap: () => _showEditDialog(
-                              context,
-                              'Editar Telefone',
-                              user.phone ?? '',
-                              (value) async {
-                                // TODO: Atualizar telefone no Firestore
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          _InfoCard(
-                            icon: 'assets/calendar_icon.svg',
-                            title: 'Membro desde',
-                            value: _formatDate(user.createdAt),
-                          ),
-                          const SizedBox(height: 32),
-
-                          // Botão alterar senha
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const ChangePasswordScreen(),
-                                  ),
-                                );
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/lock_icon.svg',
-                                width: 20,
-                                height: 20,
-                                colorFilter: ColorFilter.mode(
-                                  Theme.of(context).primaryColor,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                              label: Text('Alterar Senha'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Theme.of(context).primaryColor,
-                                side: BorderSide(
-                                  color: Theme.of(context).primaryColor,
-                                  width: 2,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Botão sair
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                await authProvider.signOut();
-                                if (context.mounted) {
-                                  Navigator.of(context).pushReplacementNamed('/login');
-                                }
-                              },
-                              icon: SvgPicture.asset(
-                                'assets/logout_icon.svg',
-                                width: 20,
-                                height: 20,
-                                colorFilter: ColorFilter.mode(
-                                  Colors.red,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                              label: Text('Sair da Conta'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                                side: BorderSide(
-                                  color: Colors.red,
-                                  width: 2,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              child: authProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : user == null
+                      ? _buildEmptyState(context)
+                      : _buildProfileContent(context, user, authProvider),
             ),
           ],
         ),
@@ -242,30 +75,236 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'assets/profile_icon.svg',
+            width: 80,
+            height: 80,
+            colorFilter: const ColorFilter.mode(
+              Colors.grey,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Usuário não encontrado',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              context.read<custom_auth.AuthProvider>().refreshUser();
+            },
+            child: const Text('Recarregar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileContent(
+    BuildContext context,
+    dynamic user,
+    custom_auth.AuthProvider authProvider,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          // Avatar
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            user.name,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            user.email,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Informações do usuário
+          _InfoCard(
+            icon: 'assets/person_icon.svg',
+            title: 'Nome',
+            value: user.name,
+            onTap: () => _showEditNameDialog(context, user.name, authProvider),
+          ),
+          const SizedBox(height: 12),
+
+          _InfoCard(
+            icon: 'assets/email_icon.svg',
+            title: 'Email',
+            value: user.email,
+          ),
+          const SizedBox(height: 12),
+
+          _InfoCard(
+            icon: 'assets/phone_icon.svg',
+            title: 'Telefone',
+            value: user.phone ?? 'Não informado',
+            onTap: () => _showEditPhoneDialog(
+              context,
+              user.phone ?? '',
+              authProvider,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          _InfoCard(
+            icon: 'assets/calendar_icon.svg',
+            title: 'Membro desde',
+            value: _formatDate(user.createdAt),
+          ),
+          const SizedBox(height: 32),
+
+          // Botão alterar senha
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChangePasswordScreen(),
+                  ),
+                );
+              },
+              icon: SvgPicture.asset(
+                'assets/lock_icon.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(
+                  Theme.of(context).primaryColor,
+                  BlendMode.srcIn,
+                ),
+              ),
+              label: const Text('Alterar Senha'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).primaryColor,
+                side: BorderSide(
+                  color: Theme.of(context).primaryColor,
+                  width: 2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Botão sair
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final confirm = await _showConfirmDialog(
+                  context,
+                  'Sair da Conta',
+                  'Tem certeza que deseja sair?',
+                );
+                if (confirm == true && context.mounted) {
+                  await authProvider.signOut();
+                  if (context.mounted) {
+                    Navigator.of(context).pushReplacementNamed('/login');
+                  }
+                }
+              },
+              icon: SvgPicture.asset(
+                'assets/logout_icon.svg',
+                width: 20,
+                height: 20,
+                colorFilter: const ColorFilter.mode(
+                  Colors.red,
+                  BlendMode.srcIn,
+                ),
+              ),
+              label: const Text('Sair da Conta'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(
+                  color: Colors.red,
+                  width: 2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     final months = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro'
     ];
     return '${date.day} de ${months[date.month - 1]} de ${date.year}';
   }
 
-  void _showEditDialog(
+  Future<void> _showEditNameDialog(
     BuildContext context,
-    String title,
-    String currentValue,
-    Future<void> Function(String) onSave,
-  ) {
-    final controller = TextEditingController(text: currentValue);
+    String currentName,
+    custom_auth.AuthProvider authProvider,
+  ) async {
+    final controller = TextEditingController(text: currentName);
 
-    showDialog(
+    final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        title: Text(title),
+        title: const Text('Editar Nome'),
         content: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
@@ -273,24 +312,20 @@ class ProfileScreen extends StatelessWidget {
           ),
           child: TextField(
             controller: controller,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.all(16),
+              hintText: 'Digite seu nome',
             ),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancelar'),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () async {
-              await onSave(controller.text.trim());
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            },
+            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).primaryColor,
               foregroundColor: Colors.white,
@@ -298,7 +333,135 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Text('Salvar'),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && controller.text.trim().isNotEmpty) {
+      final success = await authProvider.updateUser(
+        name: controller.text.trim(),
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Nome atualizado com sucesso!' : 'Erro ao atualizar nome',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showEditPhoneDialog(
+    BuildContext context,
+    String currentPhone,
+    custom_auth.AuthProvider authProvider,
+  ) async {
+    final controller = TextEditingController(text: currentPhone);
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Editar Telefone'),
+        content: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(16),
+              hintText: 'Digite seu telefone',
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      final success = await authProvider.updateUser(
+        phone: controller.text.trim().isNotEmpty ? controller.text.trim() : null,
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Telefone atualizado com sucesso!' : 'Erro ao atualizar telefone',
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<bool?> _showConfirmDialog(
+    BuildContext context,
+    String title,
+    String message,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Confirmar'),
           ),
         ],
       ),
@@ -348,7 +511,7 @@ class _InfoCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
                     ),
@@ -356,7 +519,7 @@ class _InfoCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     value,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -369,7 +532,7 @@ class _InfoCard extends StatelessWidget {
                 'assets/edit_icon.svg',
                 width: 20,
                 height: 20,
-                colorFilter: ColorFilter.mode(
+                colorFilter: const ColorFilter.mode(
                   Colors.grey,
                   BlendMode.srcIn,
                 ),
@@ -381,7 +544,7 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-// Tela de alterar senha
+// Tela de alterar senha (mantida igual ao código original)
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
 
@@ -415,20 +578,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) throw Exception('Usuário não encontrado');
 
-        // Reautenticar usuário
         final credential = EmailAuthProvider.credential(
           email: user.email!,
           password: _currentPasswordController.text,
         );
         await user.reauthenticateWithCredential(credential);
-
-        // Alterar senha
         await user.updatePassword(_newPasswordController.text);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Senha alterada com sucesso!'),
+              content: const Text('Senha alterada com sucesso!'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -466,7 +626,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -484,7 +643,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Text(
+                  const Text(
                     'Alterar Senha',
                     style: TextStyle(
                       fontSize: 20,
@@ -494,8 +653,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 ],
               ),
             ),
-
-            // Formulário
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
@@ -503,7 +660,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // Senha atual
+                      // Campos de senha (mantidos iguais)
                       Container(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
@@ -520,7 +677,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 'assets/lock_icon.svg',
                                 width: 24,
                                 height: 24,
-                                colorFilter: ColorFilter.mode(
+                                colorFilter: const ColorFilter.mode(
                                   Colors.grey,
                                   BlendMode.srcIn,
                                 ),
@@ -537,7 +694,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   () => _obscureCurrentPassword = !_obscureCurrentPassword),
                             ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 16,
                             ),
@@ -551,8 +708,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Nova senha
                       Container(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
@@ -569,7 +724,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 'assets/lock_icon.svg',
                                 width: 24,
                                 height: 24,
-                                colorFilter: ColorFilter.mode(
+                                colorFilter: const ColorFilter.mode(
                                   Colors.grey,
                                   BlendMode.srcIn,
                                 ),
@@ -586,7 +741,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   setState(() => _obscureNewPassword = !_obscureNewPassword),
                             ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 16,
                             ),
@@ -603,8 +758,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Confirmar senha
                       Container(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
@@ -621,7 +774,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 'assets/lock_icon.svg',
                                 width: 24,
                                 height: 24,
-                                colorFilter: ColorFilter.mode(
+                                colorFilter: const ColorFilter.mode(
                                   Colors.grey,
                                   BlendMode.srcIn,
                                 ),
@@ -638,7 +791,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   () => _obscureConfirmPassword = !_obscureConfirmPassword),
                             ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
+                            contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 16,
                             ),
@@ -655,8 +808,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 32),
-
-                      // Botão alterar
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -671,7 +822,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             ),
                           ),
                           child: _isLoading
-                              ? SizedBox(
+                              ? const SizedBox(
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
@@ -679,7 +830,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text(
+                              : const Text(
                                   'Alterar Senha',
                                   style: TextStyle(
                                     fontSize: 16,
