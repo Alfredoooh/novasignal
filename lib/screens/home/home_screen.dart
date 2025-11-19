@@ -1,11 +1,14 @@
+// lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'menu_screen.dart';
 import 'package:novasignal/screens/pages/home_page.dart';
 import 'package:novasignal/screens/pages/editor_page.dart';
 import 'package:novasignal/widgets/home/custom_search_delegate.dart';
 import 'package:novasignal/screens/auth/login_screen.dart';
+import 'package:novasignal/screens/profile/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -30,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
@@ -39,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              margin: EdgeInsets.only(top: 12),
+              margin: const EdgeInsets.only(top: 12),
               width: 40,
               height: 3,
               decoration: BoxDecoration(
@@ -51,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: LoginScreen(),
+              child: const LoginScreen(),
             ),
           ],
         ),
@@ -125,11 +128,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        
+
                         if (isLoggedIn)
                           GestureDetector(
                             onTap: () {
-                              Navigator.pushNamed(context, '/profile');
+                              // abre a ProfileScreen que você enviou
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ProfileScreen(),
+                                ),
+                              );
                             },
                             child: Container(
                               width: 28.8,
@@ -141,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Center(
                                 child: Text(
                                   user.email?.substring(0, 1).toUpperCase() ?? 'U',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 14.4,
                                     fontWeight: FontWeight.bold,
@@ -154,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           TextButton(
                             onPressed: _showLoginModal,
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 14.4, vertical: 7.2),
+                              padding: const EdgeInsets.symmetric(horizontal: 14.4, vertical: 7.2),
                               backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
