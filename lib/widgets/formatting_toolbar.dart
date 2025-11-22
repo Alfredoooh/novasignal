@@ -74,7 +74,7 @@ class FormattingToolbar extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   _buildToolbarButton(
-                    icon: Ionicons.bold,
+                    icon: Icons.format_bold,
                     isActive: isBold,
                     onTap: () {
                       HapticFeedback.lightImpact();
@@ -83,7 +83,7 @@ class FormattingToolbar extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   _buildToolbarButton(
-                    icon: Ionicons.italic,
+                    icon: Icons.format_italic,
                     isActive: isItalic,
                     onTap: () {
                       HapticFeedback.lightImpact();
@@ -92,7 +92,7 @@ class FormattingToolbar extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   _buildToolbarButton(
-                    icon: Ionicons.underline_outline,
+                    icon: Icons.format_underline,
                     isActive: isUnderline,
                     onTap: () {
                       HapticFeedback.lightImpact();
@@ -195,7 +195,7 @@ class FormattingToolbar extends StatelessWidget {
 
   void _showFontPicker(BuildContext context) {
     HapticFeedback.lightImpact();
-    
+
     final fonts = [
       'Roboto',
       'Arial',
@@ -252,7 +252,7 @@ class FormattingToolbar extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final font = fonts[index];
                       final isSelected = font == currentFont;
-                      
+
                       return GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
