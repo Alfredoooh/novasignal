@@ -25,8 +25,9 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   bool _hasStarted = false;
   bool _isUserActive = true;
   String? _selectedDocument;
+  bool _isModalOpen = false;
+
   late AnimationController _modalAnimationController;
-  late Animation<double> _modalAnimation;
 
   late ApiService _apiService;
 
@@ -37,62 +38,88 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
     _apiService.loadPreferences();
     
     _modalAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 350),
       vsync: this,
-    );
-    
-    _modalAnimation = CurvedAnimation(
-      parent: _modalAnimationController,
-      curve: Curves.easeInOut,
     );
   }
 
   void _showOptionsModal() {
+    setState(() {
+      _isModalOpen = true;
+    });
     _modalAnimationController.forward();
+    
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(_modalAnimation),
-        child: OptionsModal(
+      builder: (context) => _buildModalWithBackground(
+        OptionsModal(
           onClose: () {
-            _modalAnimationController.reverse().then((_) {
-              Navigator.pop(context);
+            _modalAnimationController.reverse();
+            setState(() {
+              _isModalOpen = false;
             });
+            Navigator.pop(context);
           },
         ),
+        height: 0.5,
       ),
     ).then((_) {
-      _modalAnimationController.reset();
+      setState(() {
+        _isModalOpen = false;
+      });
+      _modalAnimationController.reverse();
     });
   }
 
   void _startConversation() {
+    setState(() {
+      _isModalOpen = true;
+    });
     _modalAnimationController.forward();
+    
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(_modalAnimation),
-        child: DocumentSelectorModal(
+      builder: (context) => _buildModalWithBackground(
+        DocumentSelectorModal(
           onDocumentSelected: (doc) {
             setState(() {
               _selectedDocument = doc;
               _hasStarted = true;
+              _isModalOpen = false;
             });
-            _modalAnimationController.reverse().then((_) {
-              Navigator.pop(context);
-            });
+            _modalAnimationController.reverse();
+            Navigator.pop(context);
           },
         ),
+        height: 0.6,
       ),
     ).then((_) {
-      _modalAnimationController.reset();
+      setState(() {
+        _isModalOpen = false;
+      });
+      _modalAnimationController.reverse();
     });
+  }
+
+  Widget _buildModalWithBackground(Widget modal, {required double height}) {
+    return Stack(
+      children: [
+        // Background escuro
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withOpacity(0.4),
+          ),
+        ),
+        // Modal
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * height,
+            child: modal,
+          ),
+        ),
+      ],
+    );
   }
 
   void _sendMessage() async {
@@ -177,105 +204,90 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return CupertinoPageScaffold(
-      backgroundColor: themeProvider.backgroundColor,
-      navigationBar: CupertinoNavigationBar(
-        backgroundColor: themeProvider.navigationBarColor,
-        border: Border(
-          bottom: BorderSide(
-            color: themeProvider.borderColor,
-            width: 0.5,
-          ),
-        ),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: Icon(
-            CupertinoIcons.ellipsis_circle,
-            color: themeProvider.primaryColor,
-            size: 28,
-          ),
-          onPressed: _showOptionsModal,
-        ),
-        middle: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'NovaSignal',
-              style: TextStyle(
-                color: themeProvider.textColor,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
+    return AnimatedBuilder(
+      animation: _modalAnimationController,
+      builder: (context, child) {
+        final scale = 1.0 - (_modalAnimationController.value * 0.08);
+        final borderRadius = _modalAnimationController.value * 12.0;
+        
+        return Transform.scale(
+          scale: scale,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(borderRadius),
+            child: CupertinoPageScaffold(
+              backgroundColor: themeProvider.backgroundColor,
+              navigationBar: CupertinoNavigationBar(
+                backgroundColor: themeProvider.navigationBarColor,
+                border: Border(
+                  bottom: BorderSide(
+                    color: themeProvider.borderColor,
+                    width: 0.5,
+                  ),
+                ),
+                leading: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Icon(
+                    CupertinoIcons.ellipsis_circle,
+                    color: themeProvider.primaryColor,
+                    size: 28,
+                  ),
+                  onPressed: _showOptionsModal,
+                ),
+                middle: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'NovaSignal',
+                      style: TextStyle(
+                        color: themeProvider.textColor,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _isUserActive ? const Color(0xFF34C759) : CupertinoColors.systemGrey,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Icon(
+                    CupertinoIcons.settings,
+                    color: themeProvider.primaryColor,
+                  ),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        fullscreenDialog: true,
+                        builder: (context) => SettingsScreen(apiService: _apiService),
+                      ),
+                    );
+                    setState(() {});
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: _isUserActive ? const Color(0xFF34C759) : Colors.grey,
-                shape: BoxShape.circle,
-                boxShadow: _isUserActive
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF34C759).withOpacity(0.5),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-            ),
-          ],
-        ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: Icon(
-            CupertinoIcons.settings,
-            color: themeProvider.primaryColor,
-          ),
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              CupertinoPageRoute(
-                fullscreenDialog: true,
-                builder: (context) => SettingsScreen(apiService: _apiService),
-              ),
-            );
-            setState(() {});
-          },
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: !_hasStarted
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 600),
-                            builder: (context, value, child) {
-                              return Transform.scale(
-                                scale: value,
-                                child: Opacity(
-                                  opacity: value,
-                                  child: Container(
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: !_hasStarted
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
                                     width: 80,
                                     height: 80,
                                     decoration: BoxDecoration(
                                       color: themeProvider.primaryColor,
                                       shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: themeProvider.primaryColor.withOpacity(0.3),
-                                          blurRadius: 20,
-                                          spreadRadius: 5,
-                                        ),
-                                      ],
                                     ),
                                     child: Icon(
                                       CupertinoIcons.chat_bubble_2_fill,
@@ -283,169 +295,118 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                       size: 36,
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    themeProvider.translate('welcome'),
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w700,
+                                      color: themeProvider.textColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    themeProvider.translate('start_conversation'),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: CupertinoColors.systemGrey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 32),
+                                  CupertinoButton.filled(
+                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                    onPressed: _startConversation,
+                                    child: Text(themeProvider.translate('start')),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _messages.length + (_isLoading ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == _messages.length && _isLoading) {
+                                  return LoadingIndicator(
+                                    backgroundColor: themeProvider.secondaryBackground,
+                                  );
+                                }
+                                return MessageBubble(
+                                  message: _messages[index],
+                                  primaryColor: themeProvider.primaryColor,
+                                  secondaryBackground: themeProvider.secondaryBackground,
+                                );
+                              },
+                            ),
+                    ),
+                    if (_hasStarted)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: themeProvider.navigationBarColor,
+                          border: Border(
+                            top: BorderSide(
+                              color: themeProvider.borderColor,
+                              width: 0.5,
+                            ),
                           ),
-                          const SizedBox(height: 20),
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 600),
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Transform.translate(
-                                  offset: Offset(0, 20 * (1 - value)),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        themeProvider.translate('welcome'),
-                                        style: TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w700,
-                                          color: themeProvider.textColor,
-                                          letterSpacing: -0.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        themeProvider.translate('start_conversation'),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: CupertinoColors.systemGrey,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 32),
-                                      CupertinoButton(
-                                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                                        color: themeProvider.primaryColor,
-                                        borderRadius: BorderRadius.circular(14),
-                                        onPressed: _startConversation,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              themeProvider.translate('start'),
-                                              style: const TextStyle(
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            const Icon(
-                                              CupertinoIcons.arrow_right,
-                                              size: 18,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: themeProvider.secondaryBackground,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: CupertinoTextField(
+                                  controller: _controller,
+                                  placeholder: themeProvider.translate('message'),
+                                  placeholderStyle: const TextStyle(
+                                    color: CupertinoColors.systemGrey,
+                                  ),
+                                  style: TextStyle(
+                                    color: themeProvider.textColor,
+                                    fontSize: 16,
+                                  ),
+                                  decoration: const BoxDecoration(),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  onSubmitted: (_) => _sendMessage(),
+                                  enabled: !_isLoading,
+                                  maxLines: null,
+                                ),
+                              ),
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: _isLoading
+                                        ? CupertinoColors.systemGrey
+                                        : themeProvider.primaryColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    CupertinoIcons.paperplane_fill,
+                                    color: CupertinoColors.white,
+                                    size: 16,
                                   ),
                                 ),
-                              );
-                            },
+                                onPressed: _isLoading ? null : _sendMessage,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _messages.length + (_isLoading ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == _messages.length && _isLoading) {
-                          return LoadingIndicator(
-                            backgroundColor: themeProvider.secondaryBackground,
-                          );
-                        }
-                        return MessageBubble(
-                          message: _messages[index],
-                          primaryColor: themeProvider.primaryColor,
-                          secondaryBackground: themeProvider.secondaryBackground,
-                        );
-                      },
-                    ),
-            ),
-            if (_hasStarted)
-              Container(
-                decoration: BoxDecoration(
-                  color: themeProvider.navigationBarColor,
-                  border: Border(
-                    top: BorderSide(
-                      color: themeProvider.borderColor,
-                      width: 0.5,
-                    ),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
                   ],
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: themeProvider.secondaryBackground,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: themeProvider.borderColor.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CupertinoTextField(
-                          controller: _controller,
-                          placeholder: themeProvider.translate('message'),
-                          placeholderStyle: const TextStyle(
-                            color: CupertinoColors.systemGrey,
-                          ),
-                          style: TextStyle(
-                            color: themeProvider.textColor,
-                            fontSize: 16,
-                          ),
-                          decoration: const BoxDecoration(),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          onSubmitted: (_) => _sendMessage(),
-                          enabled: !_isLoading,
-                          maxLines: null,
-                        ),
-                      ),
-                      AnimatedScale(
-                        scale: _isLoading ? 0.8 : 1.0,
-                        duration: const Duration(milliseconds: 150),
-                        child: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: _isLoading
-                                  ? CupertinoColors.systemGrey
-                                  : themeProvider.primaryColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              CupertinoIcons.paperplane_fill,
-                              color: CupertinoColors.white,
-                              size: 18,
-                            ),
-                          ),
-                          onPressed: _isLoading ? null : _sendMessage,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
