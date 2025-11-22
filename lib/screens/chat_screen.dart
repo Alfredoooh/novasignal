@@ -7,7 +7,7 @@ import '../models/message.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/loading_indicator.dart';
 import 'settings_screen.dart';
-import 'document_selector_modal.dart';
+import '../widgets/document_selector_modal.dart';
 import 'options_modal.dart';
 
 class ChatScreen extends StatefulWidget {
