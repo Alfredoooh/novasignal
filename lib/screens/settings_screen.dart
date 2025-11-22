@@ -153,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 'Enter API Key',
                 true,
                 themeProvider,
-                CupertinoIcons.key,
+                CupertinoIcons.lock,
               ),
 
               const SizedBox(height: 16),
