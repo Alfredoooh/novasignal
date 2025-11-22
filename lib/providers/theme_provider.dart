@@ -52,7 +52,6 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Traduções básicas
   String translate(String key) {
     final translations = {
       'pt': {
