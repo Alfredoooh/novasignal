@@ -1,7 +1,6 @@
-// document_selector_modal.dart
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
-import '../theme_provider.dart';
+import '../providers/theme_provider.dart';
 
 class DocumentSelectorModal extends StatelessWidget {
   final Function(String) onDocumentSelected;
@@ -21,7 +20,7 @@ class DocumentSelectorModal extends StatelessWidget {
       child: Container(
         color: CupertinoColors.black.withOpacity(0.4),
         child: GestureDetector(
-          onTap: () {}, // Previne fechar ao clicar no modal
+          onTap: () {},
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -35,7 +34,6 @@ class DocumentSelectorModal extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Handle bar
                   Container(
                     margin: const EdgeInsets.only(top: 12),
                     width: 40,
@@ -152,163 +150,6 @@ class DocumentSelectorModal extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ),
-            Icon(
-              CupertinoIcons.chevron_right,
-              color: CupertinoColors.systemGrey,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// options_modal.dart
-class OptionsModal extends StatelessWidget {
-  final VoidCallback onClose;
-
-  const OptionsModal({
-    Key? key,
-    required this.onClose,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    return GestureDetector(
-      onTap: onClose,
-      child: Container(
-        color: CupertinoColors.black.withOpacity(0.4),
-        child: GestureDetector(
-          onTap: () {},
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: screenHeight * 0.5,
-              decoration: BoxDecoration(
-                color: themeProvider.navigationBarColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.systemGrey,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Opções',
-                    style: TextStyle(
-                      color: themeProvider.textColor,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        _buildOptionTile(
-                          'Nova Conversa',
-                          CupertinoIcons.chat_bubble_2,
-                          themeProvider,
-                          () {
-                            onClose();
-                            // Implementar nova conversa
-                          },
-                        ),
-                        _buildOptionTile(
-                          'Histórico',
-                          CupertinoIcons.clock,
-                          themeProvider,
-                          () {
-                            onClose();
-                            // Implementar histórico
-                          },
-                        ),
-                        _buildOptionTile(
-                          'Favoritos',
-                          CupertinoIcons.star,
-                          themeProvider,
-                          () {
-                            onClose();
-                            // Implementar favoritos
-                          },
-                        ),
-                        _buildOptionTile(
-                          'Compartilhar',
-                          CupertinoIcons.share,
-                          themeProvider,
-                          () {
-                            onClose();
-                            // Implementar compartilhar
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOptionTile(
-    String title,
-    IconData icon,
-    ThemeProvider theme,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: CupertinoButton(
-        padding: const EdgeInsets.all(16),
-        onPressed: onTap,
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                color: theme.primaryColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: theme.textColor,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
               ),
             ),
             Icon(
