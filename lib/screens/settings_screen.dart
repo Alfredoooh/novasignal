@@ -115,7 +115,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           child: ListView(
             children: [
               const SizedBox(height: 24),
-              
+
               // Seção de Aparência
               _buildSectionHeader('Aparência', themeProvider),
               _buildSettingsGroup(
@@ -153,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 'Enter API Key',
                 true,
                 themeProvider,
-                CupertinoIcons.key_fill,
+                CupertinoIcons.key,
               ),
 
               const SizedBox(height: 16),
