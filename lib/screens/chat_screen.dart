@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/api_service.dart';
 import '../models/message.dart';
 import '../widgets/message_bubble.dart';
@@ -17,7 +17,7 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin {
   final List<Message> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -25,6 +25,8 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _hasStarted = false;
   bool _isUserActive = true;
   String? _selectedDocument;
+  late AnimationController _modalAnimationController;
+  late Animation<double> _modalAnimation;
 
   late ApiService _apiService;
 
@@ -33,30 +35,64 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _apiService = ApiService();
     _apiService.loadPreferences();
+    
+    _modalAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _modalAnimation = CurvedAnimation(
+      parent: _modalAnimationController,
+      curve: Curves.easeInOut,
+    );
   }
 
   void _showOptionsModal() {
+    _modalAnimationController.forward();
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => OptionsModal(
-        onClose: () => Navigator.pop(context),
+      builder: (context) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(_modalAnimation),
+        child: OptionsModal(
+          onClose: () {
+            _modalAnimationController.reverse().then((_) {
+              Navigator.pop(context);
+            });
+          },
+        ),
       ),
-    );
+    ).then((_) {
+      _modalAnimationController.reset();
+    });
   }
 
   void _startConversation() {
+    _modalAnimationController.forward();
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => DocumentSelectorModal(
-        onDocumentSelected: (doc) {
-          setState(() {
-            _selectedDocument = doc;
-            _hasStarted = true;
-          });
-          Navigator.pop(context);
-        },
+      builder: (context) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(_modalAnimation),
+        child: DocumentSelectorModal(
+          onDocumentSelected: (doc) {
+            setState(() {
+              _selectedDocument = doc;
+              _hasStarted = true;
+            });
+            _modalAnimationController.reverse().then((_) {
+              Navigator.pop(context);
+            });
+          },
+        ),
       ),
-    );
+    ).then((_) {
+      _modalAnimationController.reset();
+    });
   }
 
   void _sendMessage() async {
@@ -151,36 +187,43 @@ class _ChatScreenState extends State<ChatScreen> {
             width: 0.5,
           ),
         ),
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Ícone de menu popup
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              child: Icon(
-                CupertinoIcons.ellipsis_circle,
-                color: themeProvider.primaryColor,
-                size: 28,
-              ),
-              onPressed: _showOptionsModal,
-            ),
-          ],
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          child: Icon(
+            CupertinoIcons.ellipsis_circle,
+            color: themeProvider.primaryColor,
+            size: 28,
+          ),
+          onPressed: _showOptionsModal,
         ),
         middle: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'NovaSignal',
-              style: TextStyle(color: themeProvider.textColor),
+              style: TextStyle(
+                color: themeProvider.textColor,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(width: 8),
-            // Indicador de status online
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               width: 8,
               height: 8,
               decoration: BoxDecoration(
                 color: _isUserActive ? const Color(0xFF34C759) : Colors.grey,
                 shape: BoxShape.circle,
+                boxShadow: _isUserActive
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF34C759).withOpacity(0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
               ),
             ),
           ],
@@ -195,6 +238,7 @@ class _ChatScreenState extends State<ChatScreen> {
             await Navigator.push(
               context,
               CupertinoPageRoute(
+                fullscreenDialog: true,
                 builder: (context) => SettingsScreen(apiService: _apiService),
               ),
             );
@@ -211,40 +255,96 @@ class _ChatScreenState extends State<ChatScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: themeProvider.primaryColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              CupertinoIcons.chat_bubble_2_fill,
-                              color: CupertinoColors.white,
-                              size: 36,
-                            ),
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 600),
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                scale: value,
+                                child: Opacity(
+                                  opacity: value,
+                                  child: Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      color: themeProvider.primaryColor,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: themeProvider.primaryColor.withOpacity(0.3),
+                                          blurRadius: 20,
+                                          spreadRadius: 5,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      CupertinoIcons.chat_bubble_2_fill,
+                                      color: CupertinoColors.white,
+                                      size: 36,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 20),
-                          Text(
-                            themeProvider.translate('welcome'),
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: themeProvider.textColor,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            themeProvider.translate('start_conversation'),
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: CupertinoColors.systemGrey,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          CupertinoButton.filled(
-                            onPressed: _startConversation,
-                            child: Text(themeProvider.translate('start')),
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 600),
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 20 * (1 - value)),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        themeProvider.translate('welcome'),
+                                        style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w700,
+                                          color: themeProvider.textColor,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        themeProvider.translate('start_conversation'),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: CupertinoColors.systemGrey,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 32),
+                                      CupertinoButton(
+                                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                                        color: themeProvider.primaryColor,
+                                        borderRadius: BorderRadius.circular(14),
+                                        onPressed: _startConversation,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              themeProvider.translate('start'),
+                                              style: const TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Icon(
+                                              CupertinoIcons.arrow_right,
+                                              size: 18,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -277,6 +377,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       width: 0.5,
                     ),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Container(
@@ -284,6 +391,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   decoration: BoxDecoration(
                     color: themeProvider.secondaryBackground,
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: themeProvider.borderColor.withOpacity(0.5),
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -302,17 +413,31 @@ class _ChatScreenState extends State<ChatScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           onSubmitted: (_) => _sendMessage(),
                           enabled: !_isLoading,
+                          maxLines: null,
                         ),
                       ),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        child: Icon(
-                          CupertinoIcons.paperplane_fill,
-                          color: _isLoading
-                              ? CupertinoColors.systemGrey
-                              : themeProvider.primaryColor,
+                      AnimatedScale(
+                        scale: _isLoading ? 0.8 : 1.0,
+                        duration: const Duration(milliseconds: 150),
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _isLoading
+                                  ? CupertinoColors.systemGrey
+                                  : themeProvider.primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              CupertinoIcons.paperplane_fill,
+                              color: CupertinoColors.white,
+                              size: 18,
+                            ),
+                          ),
+                          onPressed: _isLoading ? null : _sendMessage,
                         ),
-                        onPressed: _isLoading ? null : _sendMessage,
                       ),
                     ],
                   ),
@@ -328,6 +453,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _modalAnimationController.dispose();
     super.dispose();
   }
 }
