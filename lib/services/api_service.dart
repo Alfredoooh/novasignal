@@ -1,4 +1,3 @@
-// services/api_service.dart
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,7 +21,6 @@ class ApiService {
       baseUrl = prefs.getString('baseUrl') ?? 'https://api.deepseek.com';
       useProxyNoKey = prefs.getBool('useProxyNoKey') ?? false;
 
-      // Tentar carregar do GitHub como fallback
       await _loadApiKeyFromGitHub();
     } catch (e) {
       print('❌ Erro ao carregar preferências: $e');
@@ -101,7 +99,6 @@ class ApiService {
         }
         throw Exception('Resposta vazia da API');
       } else {
-        // Tentar fallback sem autenticação
         if (!useProxyNoKey) {
           final fallbackResponse = await _postToEndpoint(
             baseUrl: baseUrl,
@@ -182,7 +179,7 @@ class ApiService {
         return apiMessage;
       }
     } catch (e) {
-      // Ignora erro de parse
+      // Ignora
     }
 
     return commonErrors[statusCode] ?? '❌ Erro $statusCode';
