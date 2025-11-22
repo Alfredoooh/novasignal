@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'theme_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/chat_screen.dart';
 
 void main() {
