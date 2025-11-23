@@ -26,7 +26,7 @@ class ThemeProvider extends ChangeNotifier {
     cardColor: const Color(0xFFFFFFFF),
     dividerColor: const Color(0xFFEEEEEE),
     shadowColor: Colors.black.withOpacity(0.08),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: const Color(0xFFFFFFFF),
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -165,7 +165,7 @@ class ThemeProvider extends ChangeNotifier {
     cardColor: const Color(0xFF1C1C1C),
     dividerColor: const Color(0xFF2A2A2A),
     shadowColor: Colors.black.withOpacity(0.3),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: const Color(0xFF1C1C1C),
       elevation: 0,
       shape: RoundedRectangleBorder(
