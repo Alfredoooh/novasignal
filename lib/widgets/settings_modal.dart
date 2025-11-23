@@ -69,19 +69,30 @@ class _SettingsModalState extends State<SettingsModal> {
           ),
           Expanded(
             child: DraggableScrollableSheet(
-              initialChildSize: 1.0,
-              minChildSize: 1.0,
-              maxChildSize: 1.0,
+              initialChildSize: 0.8,
+              minChildSize: 0.5,
+              maxChildSize: 0.8,
               expand: false,
               builder: (context, scrollController) {
                 return SingleChildScrollView(
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: _currentPage == SettingsPage.main
-                      ? _buildMainPage(theme, colorScheme)
-                      : _currentPage == SettingsPage.language
-                          ? _buildLanguagePage(theme, colorScheme)
-                          : _buildThemePage(theme, colorScheme),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    switchInCurve: Curves.easeInOut,
+                    switchOutCurve: Curves.easeInOut,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    child: _currentPage == SettingsPage.main
+                        ? _buildMainPage(theme, colorScheme)
+                        : _currentPage == SettingsPage.language
+                            ? _buildLanguagePage(theme, colorScheme)
+                            : _buildThemePage(theme, colorScheme),
+                  ),
                 );
               },
             ),
@@ -93,6 +104,7 @@ class _SettingsModalState extends State<SettingsModal> {
 
   Widget _buildMainPage(ThemeData theme, ColorScheme colorScheme) {
     return Column(
+      key: const ValueKey('main'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -144,6 +156,7 @@ class _SettingsModalState extends State<SettingsModal> {
     ];
 
     return Column(
+      key: const ValueKey('language'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -182,12 +195,12 @@ class _SettingsModalState extends State<SettingsModal> {
                       'assets/icons/check.svg',
                       width: 20,
                       height: 20,
-                      colorFilter: ColorFilter.mode(
-                        colorScheme.primary,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFF4CAF50),
                         BlendMode.srcIn,
                       ),
                     )
-                  : null,
+                  : const SizedBox.shrink(),
               onTap: () {
                 // Implementar mudança de idioma
                 setState(() {
@@ -209,6 +222,7 @@ class _SettingsModalState extends State<SettingsModal> {
     ];
 
     return Column(
+      key: const ValueKey('theme'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -247,12 +261,12 @@ class _SettingsModalState extends State<SettingsModal> {
                       'assets/icons/check.svg',
                       width: 20,
                       height: 20,
-                      colorFilter: ColorFilter.mode(
-                        colorScheme.primary,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFF4CAF50),
                         BlendMode.srcIn,
                       ),
                     )
-                  : null,
+                  : const SizedBox.shrink(),
               onTap: () {
                 if (!isSelected) {
                   widget.themeProvider.toggleTheme();
@@ -321,8 +335,8 @@ class _OptionsList extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: theme.dividerColor.withOpacity(0.3),
-          width: 0.5,
+          color: theme.dividerColor.withOpacity(0.6),
+          width: 1,
         ),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -385,8 +399,8 @@ class _OptionTile extends StatelessWidget {
             border: showDivider
                 ? Border(
                     bottom: BorderSide(
-                      color: theme.dividerColor.withOpacity(0.3),
-                      width: 0.5,
+                      color: theme.dividerColor.withOpacity(0.6),
+                      width: 1,
                     ),
                   )
                 : null,
@@ -422,7 +436,7 @@ class _OptionTile extends StatelessWidget {
                         BlendMode.srcIn,
                       ),
                     ),
-                  if (trailing != null) trailing!,
+                  if (trailing != null && trailing is! SizedBox) trailing!,
                 ],
               ),
             ],
