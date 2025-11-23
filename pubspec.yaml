@@ -26,11 +26,11 @@ flutter:
   assets:
     - assets/icons/
     # Ícones SVG
-    - assets/plus.svg
-    - assets/sparkle.svg
-    - assets/home.svg
-    - assets/settings.svg
-    - assets/check.svg
-    - assets/close.svg
-    - assets/arrow_back.svg
-    - assets/chevron_right.svg
+    - assets/icons/plus.svg
+    - assets/icons/sparkle.svg
+    - assets/icons/home.svg
+    - assets/icons/settings.svg
+    - assets/icons/check.svg
+    - assets/icons/close.svg
+    - assets/icons/arrow_back.svg
+    - assets/icons/chevron_right.svg
