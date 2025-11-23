@@ -30,3 +30,7 @@ flutter:
     - assets/sparkle.svg
     - assets/home.svg
     - assets/settings.svg
+    - assets/check.svg
+    - assets/close.svg
+    - assets/arrow_back.svg
+    - assets/chevron_right.svg
