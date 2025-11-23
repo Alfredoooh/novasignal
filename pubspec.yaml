@@ -1,5 +1,5 @@
 name: novasignal
-description: Um aplicativo nativo para criação de documentos
+description: A modern Flutter application with theme and language support
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,17 +9,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  ionicons: ^0.2.2
-
-  http: ^1.1.0
   
-  # Estado e Persistência
-  provider: ^6.1.1
+  # State management and storage
   shared_preferences: ^2.2.2
   
-  # UI
-  cupertino_icons: ^1.0.6
+  # SVG support
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +24,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/icons/
     # Ícones SVG
     - assets/menu_icon.svg
     - assets/search_icon.svg
