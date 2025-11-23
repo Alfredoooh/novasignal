@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../providers/theme_provider.dart';
 import '../providers/language_provider.dart';
 
-class SettingsModal extends StatefulWidget {
+class SettingsModal extends StatelessWidget {
   final ThemeProvider themeProvider;
   final LanguageProvider languageProvider;
 
@@ -14,19 +14,10 @@ class SettingsModal extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<SettingsModal> createState() => _SettingsModalState();
-}
-
-enum SettingsPage { main, language, theme }
-
-class _SettingsModalState extends State<SettingsModal> {
-  SettingsPage _currentPage = SettingsPage.main;
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDarkMode = widget.themeProvider.isDarkMode;
+    final isDarkMode = themeProvider.isDarkMode;
 
     return Container(
       decoration: BoxDecoration(
@@ -37,6 +28,7 @@ class _SettingsModalState extends State<SettingsModal> {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Handle bar
           Container(
@@ -67,34 +59,10 @@ class _SettingsModalState extends State<SettingsModal> {
               ),
             ),
           ),
-          Expanded(
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.8,
-              minChildSize: 0.5,
-              maxChildSize: 0.8,
-              expand: false,
-              builder: (context, scrollController) {
-                return SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    switchInCurve: Curves.easeInOut,
-                    switchOutCurve: Curves.easeInOut,
-                    transitionBuilder: (Widget child, Animation<double> animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
-                    },
-                    child: _currentPage == SettingsPage.main
-                        ? _buildMainPage(theme, colorScheme)
-                        : _currentPage == SettingsPage.language
-                            ? _buildLanguagePage(theme, colorScheme)
-                            : _buildThemePage(theme, colorScheme),
-                  ),
-                );
-              },
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: _buildMainPage(context, theme, colorScheme),
             ),
           ),
         ],
@@ -102,41 +70,52 @@ class _SettingsModalState extends State<SettingsModal> {
     );
   }
 
-  Widget _buildMainPage(ThemeData theme, ColorScheme colorScheme) {
+  Widget _buildMainPage(BuildContext context, ThemeData theme, ColorScheme colorScheme) {
     return Column(
-      key: const ValueKey('main'),
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          widget.languageProvider.translate('settings'),
+          languageProvider.translate('settings'),
           style: theme.textTheme.displayMedium,
         ),
         const SizedBox(height: 24),
         _SectionTitle(
-          title: widget.languageProvider.translate('appearance'),
+          title: languageProvider.translate('appearance'),
           theme: theme,
         ),
         const SizedBox(height: 12),
         _OptionsList(
           options: [
             _OptionData(
-              label: widget.languageProvider.translate('theme'),
-              value: widget.languageProvider.translate(
-                widget.themeProvider.isDarkMode ? 'dark' : 'light',
+              label: languageProvider.translate('theme'),
+              value: languageProvider.translate(
+                themeProvider.isDarkMode ? 'dark' : 'light',
               ),
               onTap: () {
-                setState(() {
-                  _currentPage = SettingsPage.theme;
-                });
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => _ThemePage(
+                      themeProvider: themeProvider,
+                      languageProvider: languageProvider,
+                    ),
+                  ),
+                );
               },
             ),
             _OptionData(
-              label: widget.languageProvider.translate('language'),
-              value: widget.languageProvider.languageName,
+              label: languageProvider.translate('language'),
+              value: languageProvider.languageName,
               onTap: () {
-                setState(() {
-                  _currentPage = SettingsPage.language;
-                });
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => _LanguagePage(
+                      languageProvider: languageProvider,
+                    ),
+                  ),
+                );
               },
             ),
           ],
@@ -146,8 +125,21 @@ class _SettingsModalState extends State<SettingsModal> {
       ],
     );
   }
+}
 
-  Widget _buildLanguagePage(ThemeData theme, ColorScheme colorScheme) {
+class _LanguagePage extends StatelessWidget {
+  final LanguageProvider languageProvider;
+
+  const _LanguagePage({
+    required this.languageProvider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     final languages = [
       {'code': 'en', 'name': 'English'},
       {'code': 'pt', 'name': 'Português'},
@@ -155,39 +147,33 @@ class _SettingsModalState extends State<SettingsModal> {
       {'code': 'fr', 'name': 'Français'},
     ];
 
-    return Column(
-      key: const ValueKey('language'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _currentPage = SettingsPage.main;
-                });
-              },
-              child: SvgPicture.asset(
-                'assets/icons/arrow_back.svg',
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(
-                  colorScheme.secondary,
-                  BlendMode.srcIn,
-                ),
-              ),
+    return Scaffold(
+      backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+      appBar: AppBar(
+        backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: SvgPicture.asset(
+            'assets/icons/arrow_back.svg',
+            width: 24,
+            height: 24,
+            colorFilter: ColorFilter.mode(
+              colorScheme.secondary,
+              BlendMode.srcIn,
             ),
-            const SizedBox(width: 12),
-            Text(
-              widget.languageProvider.translate('language'),
-              style: theme.textTheme.displayMedium,
-            ),
-          ],
+          ),
+          onPressed: () => Navigator.pop(context),
         ),
-        const SizedBox(height: 24),
-        _OptionsList(
+        title: Text(
+          languageProvider.translate('language'),
+          style: theme.textTheme.displayMedium,
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: _OptionsList(
           options: languages.map((lang) {
-            final isSelected = widget.languageProvider.currentLanguage == lang['code'];
+            final isSelected = languageProvider.currentLanguage == lang['code'];
             return _OptionData(
               label: lang['name']!,
               trailing: isSelected
@@ -203,57 +189,64 @@ class _SettingsModalState extends State<SettingsModal> {
                   : const SizedBox.shrink(),
               onTap: () {
                 // Implementar mudança de idioma
-                setState(() {
-                  _currentPage = SettingsPage.main;
-                });
+                Navigator.pop(context);
               },
             );
           }).toList(),
           theme: theme,
         ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _buildThemePage(ThemeData theme, ColorScheme colorScheme) {
+class _ThemePage extends StatelessWidget {
+  final ThemeProvider themeProvider;
+  final LanguageProvider languageProvider;
+
+  const _ThemePage({
+    required this.themeProvider,
+    required this.languageProvider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     final themes = [
-      {'code': 'light', 'name': widget.languageProvider.translate('light')},
-      {'code': 'dark', 'name': widget.languageProvider.translate('dark')},
+      {'code': 'light', 'name': languageProvider.translate('light')},
+      {'code': 'dark', 'name': languageProvider.translate('dark')},
     ];
 
-    return Column(
-      key: const ValueKey('theme'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _currentPage = SettingsPage.main;
-                });
-              },
-              child: SvgPicture.asset(
-                'assets/icons/arrow_back.svg',
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(
-                  colorScheme.secondary,
-                  BlendMode.srcIn,
-                ),
-              ),
+    return Scaffold(
+      backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+      appBar: AppBar(
+        backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: SvgPicture.asset(
+            'assets/icons/arrow_back.svg',
+            width: 24,
+            height: 24,
+            colorFilter: ColorFilter.mode(
+              colorScheme.secondary,
+              BlendMode.srcIn,
             ),
-            const SizedBox(width: 12),
-            Text(
-              widget.languageProvider.translate('theme'),
-              style: theme.textTheme.displayMedium,
-            ),
-          ],
+          ),
+          onPressed: () => Navigator.pop(context),
         ),
-        const SizedBox(height: 24),
-        _OptionsList(
+        title: Text(
+          languageProvider.translate('theme'),
+          style: theme.textTheme.displayMedium,
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: _OptionsList(
           options: themes.map((themeOption) {
-            final isSelected = (themeOption['code'] == 'dark') == widget.themeProvider.isDarkMode;
+            final isSelected = (themeOption['code'] == 'dark') == themeProvider.isDarkMode;
             return _OptionData(
               label: themeOption['name']!,
               trailing: isSelected
@@ -269,17 +262,15 @@ class _SettingsModalState extends State<SettingsModal> {
                   : const SizedBox.shrink(),
               onTap: () {
                 if (!isSelected) {
-                  widget.themeProvider.toggleTheme();
+                  themeProvider.toggleTheme();
                 }
-                setState(() {
-                  _currentPage = SettingsPage.main;
-                });
+                Navigator.pop(context);
               },
             );
           }).toList(),
           theme: theme,
         ),
-      ],
+      ),
     );
   }
 }
@@ -341,6 +332,7 @@ class _OptionsList extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: List.generate(options.length, (index) {
           final option = options[index];
           final isFirst = index == 0;
