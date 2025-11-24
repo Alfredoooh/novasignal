@@ -38,3 +38,10 @@ flutter:
     - assets/icons/close.svg
     - assets/icons/arrow_back.svg
     - assets/icons/chevron_right.svg
+    - assets/icons/refresh.svg
+    - assets/icons/error.svg
+    - assets/icons/inbox.svg
+    - assets/icons/share.svg
+    - assets/icons/download.svg
+    - assets/icons/play.svg
+    - assets/icons/star.svg
