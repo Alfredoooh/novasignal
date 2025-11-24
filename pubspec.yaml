@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  webview_flutter: any
+  http: any
   
   # State management and storage
   shared_preferences: ^2.2.2
