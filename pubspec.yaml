@@ -12,6 +12,7 @@ dependencies:
 
   webview_flutter: any
   http: any
+  flutter_staggered_grid_view: any
   
   # State management and storage
   shared_preferences: ^2.2.2
