@@ -45,3 +45,12 @@ flutter:
     - assets/icons/download.svg
     - assets/icons/play.svg
     - assets/icons/star.svg
+    - assets/icons/business.svg
+    - assets/icons/academic.svg
+    - assets/icons/personal.svg
+    - assets/icons/legal.svg
+    - assets/icons/creative.svg
+    - assets/icons/document.svg
+    - assets/icons/edit.svg
+    - assets/icons/responsive.svg
+    - assets/icons/pallette.svg
