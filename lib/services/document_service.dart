@@ -3,47 +3,85 @@ import 'package:http/http.dart' as http;
 import '../models/document_model.dart';
 
 class DocumentService {
-  // URL do seu arquivo JSON no GitHub (raw)
-  // Exemplo: https://raw.githubusercontent.com/seu-usuario/seu-repo/main/documents.json
-  static const String apiUrl = 
-      'https://raw.githubusercontent.com/Alfredoooh/novasignal/main/API/documents.json';
+  // URL da pasta API no GitHub
+  static const String apiBaseUrl = 
+      'https://raw.githubusercontent.com/Alfredoooh/novasignal/main/API/';
 
   Future<List<DocumentModel>> fetchDocuments() async {
-    try {
-      final response = await http.get(
-        Uri.parse(apiUrl),
-        headers: {
-          'Accept': 'application/json',
-        },
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Connection timeout. Please check your internet connection.');
-        },
-      );
+    List<DocumentModel> allDocuments = [];
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        
-        if (jsonData.containsKey('documents')) {
-          final List<dynamic> documentsJson = jsonData['documents'];
-          return documentsJson
-              .map((json) => DocumentModel.fromJson(json))
-              .toList();
-        } else {
-          throw Exception('Invalid JSON structure: missing "documents" key');
+    try {
+      // Lista de possíveis arquivos JSON na pasta API
+      // Você pode adicionar mais nomes aqui conforme criar novos JSONs
+      final jsonFiles = [
+        'documents.json',
+        'templates.json',
+        'docs.json',
+        'files.json',
+        'data.json',
+      ];
+
+      for (String fileName in jsonFiles) {
+        try {
+          final url = '$apiBaseUrl$fileName';
+          final response = await http.get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+            },
+          ).timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Connection timeout');
+            },
+          );
+
+          if (response.statusCode == 200) {
+            try {
+              final Map<String, dynamic> jsonData = json.decode(response.body);
+              
+              // Procura pela chave "documents" no JSON
+              if (jsonData.containsKey('documents')) {
+                final List<dynamic> documentsJson = jsonData['documents'];
+                final documents = documentsJson
+                    .map((json) {
+                      try {
+                        return DocumentModel.fromJson(json);
+                      } catch (e) {
+                        print('Error parsing document: $e');
+                        return null;
+                      }
+                    })
+                    .whereType<DocumentModel>()
+                    .toList();
+                
+                allDocuments.addAll(documents);
+                print('Loaded ${documents.length} documents from $fileName');
+              }
+            } catch (parseError) {
+              print('Error parsing JSON from $fileName: $parseError');
+              continue;
+            }
+          } else if (response.statusCode == 404) {
+            // Arquivo não existe, continua para o próximo
+            print('File not found: $fileName');
+            continue;
+          }
+        } catch (fileError) {
+          // Erro ao buscar arquivo específico, continua para o próximo
+          print('Error fetching $fileName: $fileError');
+          continue;
         }
-      } else if (response.statusCode == 404) {
-        throw Exception('Documents not found. Please check the API URL.');
-      } else if (response.statusCode >= 500) {
-        throw Exception('Server error. Please try again later.');
-      } else {
-        throw Exception('Failed to load documents: ${response.statusCode}');
       }
+
+      if (allDocuments.isEmpty) {
+        throw Exception('No documents found in any JSON files. Please check your API folder.');
+      }
+
+      return allDocuments;
+      
     } on http.ClientException {
       throw Exception('Network error. Please check your internet connection.');
-    } on FormatException {
-      throw Exception('Invalid data format received from server.');
     } catch (e) {
       throw Exception('Error loading documents: ${e.toString()}');
     }
