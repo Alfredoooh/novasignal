@@ -6,7 +6,7 @@ class DocumentService {
   // URL do seu arquivo JSON no GitHub (raw)
   // Exemplo: https://raw.githubusercontent.com/seu-usuario/seu-repo/main/documents.json
   static const String apiUrl = 
-      'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/documents.json';
+      'https://raw.githubusercontent.com/Alfredoooh/novasignal/main/API/documents.json';
 
   Future<List<DocumentModel>> fetchDocuments() async {
     try {
