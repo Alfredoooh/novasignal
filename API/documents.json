@@ -5,7 +5,1025 @@
       "category": "Business",
       "pro": false,
       "coverImage": "https://raw.githubusercontent.com/Alfredoooh/novasignal/main/API/covers/business_proposal.png",
-      "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; padding: 40px; max-width: 800px; margin: 0 auto; }\n    h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }\n    h2 { color: #34495e; margin-top: 30px; }\n    .header { text-align: center; margin-bottom: 40px; }\n    .section { margin: 20px 0; }\n    .highlight { background-color: #ecf0f1; padding: 15px; border-left: 4px solid #3498db; }\n  </style>\n</head>\n<body>\n  <div class=\"header\">\n    <h1>Business Proposal</h1>\n    <p><strong>Date:</strong> [Insert Date]</p>\n  </div>\n  <div class=\"section\">\n    <h2>Executive Summary</h2>\n    <p>This section provides a brief overview of the proposal, highlighting key points and expected outcomes.</p>\n  </div>\n  <div class=\"section\">\n    <h2>Problem Statement</h2>\n    <p>Describe the problem or opportunity that this proposal addresses.</p>\n  </div>\n  <div class=\"section\">\n    <h2>Proposed Solution</h2>\n    <div class=\"highlight\">\n      <p>Outline your proposed solution and its benefits.</p>\n    </div>\n  </div>\n  <div class=\"section\">\n    <h2>Budget & Timeline</h2>\n    <p>Provide estimated costs and project timeline.</p>\n  </div>\n</body>\n</html>"
+      "html": "<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Resume Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <style>
+        :root {
+            --bg: #505050;
+            --bar-bg: #ffffff;
+            --accent: #111111;
+            --sidebar-bg: #3d4f5d;
+            --sidebar-accent: #5b9dd9;
+            --text-primary: #111111;
+            --shadow: 0 4px 12px rgba(16,16,16,0.08);
+            --scale: 0.4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px 20px 120px 20px;
+            display: flex;
+            justify-content: center;
+            -webkit-overflow-scrolling: touch;
+            align-items: flex-start;
+        }
+
+        .page {
+            width: calc(210mm * var(--scale));
+            height: calc(297mm * var(--scale));
+            max-width: 100%;
+            background-color: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            margin: 0 auto;
+            position: relative;
+            display: grid;
+            grid-template-columns: calc(270px * var(--scale)) 1fr;
+            overflow: hidden;
+            min-height: 0;
+            transition: width 150ms ease, height 150ms ease;
+            transform-origin: top center;
+        }
+
+        .sidebar,
+        .main-content {
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .sidebar {
+            background: var(--sidebar-bg);
+            color: white;
+            padding: calc(15px * var(--scale)) calc(12px * var(--scale));
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .profile-section {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .profile-image-wrapper {
+            position: relative;
+            width: calc(80px * var(--scale));
+            height: calc(80px * var(--scale));
+            margin: 0 auto 10px;
+            cursor: pointer;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .profile-image-wrapper:hover {
+            border-color: var(--sidebar-accent);
+            transform: scale(1.05);
+        }
+
+        .profile-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .profile-image-wrapper:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .image-overlay span {
+            color: white;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .name {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            line-height: 1.2;
+        }
+
+        .job-title {
+            font-size: 10px;
+            color: #b0b8c0;
+            margin-bottom: 12px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+
+        .social-link {
+            width: calc(26px * var(--scale));
+            height: calc(26px * var(--scale));
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 8px;
+            font-weight: 600;
+        }
+
+        .social-link:hover {
+            background: var(--sidebar-accent);
+            transform: translateY(-2px);
+        }
+
+        .section {
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .contact-item {
+            margin-bottom: 10px;
+            font-size: 7.5px;
+            line-height: 1.4;
+        }
+
+        .contact-label {
+            font-weight: 600;
+            color: var(--sidebar-accent);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .language-item {
+            margin-bottom: 10px;
+        }
+
+        .language-name {
+            font-size: 8.5px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            height: calc(4px * var(--scale));
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--sidebar-accent);
+            transition: width 0.3s;
+        }
+
+        .main-content {
+            padding: calc(15px * var(--scale)) calc(18px * var(--scale));
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .content-section {
+            margin-bottom: 12px;
+        }
+
+        .content-section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 2.5px solid #2d3748;
+            display: inline-block;
+        }
+
+        .section-description {
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 16px;
+            font-size: 7.5px;
+        }
+
+        .experience-item, .education-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .experience-item:last-child, .education-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 3px;
+        }
+
+        .item-title {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .item-date {
+            font-size: 7.5px;
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        .item-company {
+            color: var(--sidebar-accent);
+            font-size: 8.5px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .item-description {
+            color: #6b7280;
+            line-height: 1.4;
+            font-size: 7.5px;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .skill-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .skill-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 8.5px;
+        }
+
+        .skill-level {
+            font-size: 7px;
+            color: #9ca3af;
+        }
+
+        [contenteditable="true"]:focus {
+            outline: 2px solid var(--sidebar-accent);
+            background: rgba(91, 157, 217, 0.05);
+        }
+
+        .bottom-bar-wrapper {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 20px;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 999;
+            padding: 0 20px;
+        }
+
+        .bottom-bar {
+            pointer-events: auto;
+            width: 100%;
+            max-width: 500px;
+            background: var(--bar-bg);
+            border-radius: 999px;
+            padding: 8px 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            color: #5b5b5b;
+            text-decoration: none;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            flex-shrink: 0;
+            font-size: 24px;
+        }
+
+        .tab:hover {
+            background: rgba(128,128,128,0.1);
+        }
+
+        .tab:active {
+            transform: scale(0.9);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            background: rgba(128,128,128,0.15);
+        }
+
+        .center-btn {
+            background: var(--accent);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 999px;
+            box-shadow: 0 4px 12px rgba(17,17,17,0.2);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            justify-content: center;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            height: 48px;
+        }
+
+        .center-btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 6px 16px rgba(17,17,17,0.25);
+        }
+
+        .center-btn:active {
+            transform: scale(0.96);
+        }
+
+        .zoom-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .edit-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--sidebar-accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .edit-indicator.show {
+            display: flex;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+
+        .modal-section {
+            margin-bottom: 20px;
+        }
+
+        .modal-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--sidebar-accent);
+        }
+
+        .color-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .color-option {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: #111;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: #f1f3f5;
+            color: #2d3748;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        @media (max-width: 520px) {
+            .bottom-bar {
+                padding: 6px 12px;
+                max-width: 90%;
+                gap: 4px;
+            }
+            .center-btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+            .tab {
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+            .bottom-bar-wrapper,
+            .edit-indicator,
+            .zoom-indicator {
+                display: none !important;
+            }
+            .page {
+                width: 210mm !important;
+                height: 297mm !important;
+                box-shadow: none;
+                margin: 0;
+                page-break-after: always;
+            }
+            [contenteditable="true"] {
+                outline: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="zoom-indicator" id="zoomIndicator">
+        <ion-icon name="expand-outline"></ion-icon>
+        <span id="zoomPercentage">40%</span>
+    </div>
+
+    <div class="edit-indicator" id="editIndicator">
+        <ion-icon name="create-outline"></ion-icon>
+        Edit mode active
+    </div>
+
+    <div class="scroll-container">
+        <div class="page" id="document">
+            <div class="sidebar" id="sidebar">
+                <div class="profile-section">
+                    <div class="profile-image-wrapper" onclick="document.getElementById('fileInput').click()">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop" alt="Profile" class="profile-image" id="profileImage">
+                        <div class="image-overlay">
+                            <span>Change Photo</span>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(event)">
+                    
+                    <h1 class="name" contenteditable="true">Henry Madison</h1>
+                    <p class="job-title" contenteditable="true">Graphic Designer</p>
+                    
+                    <div class="social-links">
+                        <div class="social-link">in</div>
+                        <div class="social-link">tw</div>
+                        <div class="social-link">fb</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">Contact</h2>
+                    <div class="contact-item">
+                        <span class="contact-label">Email:</span>
+                        <span contenteditable="true">info@yourmail.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-label">Phone:</span>
+                        <span contenteditable="true">+0000 1234 5678</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-label">Address:</span>
+                        <span contenteditable="true">New York City - 000</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">Languages</h2>
+                    <div class="language-item">
+                        <div class="language-name" contenteditable="true">English</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 95%" data-width="95"></div>
+                        </div>
+                    </div>
+                    <div class="language-item">
+                        <div class="language-name" contenteditable="true">Urdu</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 85%" data-width="85"></div>
+                        </div>
+                    </div>
+                    <div class="language-item">
+                        <div class="language-name" contenteditable="true">Spanish</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%" data-width="60"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="content-section">
+                    <h2 class="content-section-title">Profile</h2>
+                    <p class="section-description" contenteditable="true">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Quis ipsum suspendisse ultrices gravida. Risus commodo viverra maecenas accumsan lacus vel facilisis.
+                    </p>
+                </div>
+
+                <div class="content-section">
+                    <h2 class="content-section-title">Experience</h2>
+                    
+                    <div class="experience-item">
+                        <div class="item-header">
+                            <div>
+                                <div class="item-title" contenteditable="true">Senior Designer</div>
+                                <div class="item-company" contenteditable="true">Company Name</div>
+                            </div>
+                            <div class="item-date" contenteditable="true">2000 - 2000</div>
+                        </div>
+                        <p class="item-description" contenteditable="true">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                        </p>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h2 class="content-section-title">Education</h2>
+                    
+                    <div class="education-item">
+                        <div class="item-header">
+                            <div>
+                                <div class="item-title" contenteditable="true">Asian University</div>
+                                <div class="item-company" contenteditable="true">Bachelors in Science</div>
+                            </div>
+                            <div class="item-date" contenteditable="true">2005 - 2009</div>
+                        </div>
+                        <p class="item-description" contenteditable="true">
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                        </p>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <h2 class="content-section-title">Expertise</h2>
+                    <div class="skills-grid">
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name" contenteditable="true">Premiere Pro</span>
+                                <span class="skill-level">Expert</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 90%" data-width="90"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name" contenteditable="true">After Effect</span>
+                                <span class="skill-level">Advanced</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 85%" data-width="85"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name" contenteditable="true">Photoshop</span>
+                                <span class="skill-level">Expert</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 95%" data-width="95"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="skill-item">
+                            <div class="skill-header">
+                                <span class="skill-name" contenteditable="true">Illustrator</span>
+                                <span class="skill-level">Intermediate</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 70%" data-width="70"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-bar-wrapper">
+        <nav class="bottom-bar" role="navigation">
+            <button class="tab" id="tab-zoom-out" aria-label="Zoom out">
+                <ion-icon name="remove-outline"></ion-icon>
+            </button>
+            <button class="tab" id="tab-edit" aria-label="Edit document">
+                <ion-icon name="create-outline"></ion-icon>
+            </button>
+            <button class="center-btn" id="btn-download" aria-label="Download PDF">
+                <ion-icon name="download-outline"></ion-icon>
+                <span>PDF</span>
+            </button>
+            <button class="tab" id="tab-settings" aria-label="Settings">
+                <ion-icon name="options-outline"></ion-icon>
+            </button>
+            <button class="tab" id="tab-zoom-in" aria-label="Zoom in">
+                <ion-icon name="add-outline"></ion-icon>
+            </button>
+        </nav>
+    </div>
+
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h3 class="modal-title">Customize Resume</h3>
+            
+            <div class="modal-section">
+                <label class="modal-label">File Name</label>
+                <input type="text" class="modal-input" id="fileName" value="henry-madison-resume">
+            </div>
+
+            <div class="modal-section">
+                <label class="modal-label">Accent Color</label>
+                <div class="color-picker-grid">
+                    <div class="color-option selected" style="background: #5b9dd9" data-color="#5b9dd9"></div>
+                    <div class="color-option" style="background: #10b981" data-color="#10b981"></div>
+                    <div class="color-option" style="background: #f59e0b" data-color="#f59e0b"></div>
+                    <div class="color-option" style="background: #ef4444" data-color="#ef4444"></div>
+                    <div class="color-option" style="background: #8b5cf6" data-color="#8b5cf6"></div>
+                    <div class="color-option" style="background: #ec4899" data-color="#ec4899"></div>
+                    <div class="color-option" style="background: #06b6d4" data-color="#06b6d4"></div>
+                    <div class="color-option" style="background: #84cc16" data-color="#84cc16"></div>
+                    <div class="color-option" style="background: #f97316" data-color="#f97316"></div>
+                    <div class="color-option" style="background: #6366f1" data-color="#6366f1"></div>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <label class="modal-label">Sidebar Background</label>
+                <div class="color-picker-grid">
+                    <div class="color-option selected" style="background: #3d4f5d" data-sidebar-color="#3d4f5d"></div>
+                    <div class="color-option" style="background: #1f2937" data-sidebar-color="#1f2937"></div>
+                    <div class="color-option" style="background: #374151" data-sidebar-color="#374151"></div>
+                    <div class="color-option" style="background: #064e3b" data-sidebar-color="#064e3b"></div>
+                    <div class="color-option" style="background: #7c2d12" data-sidebar-color="#7c2d12"></div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="applySettings()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentZoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale')) || 0.4;
+        let editMode = false;
+        let currentAccentColor = '#5b9dd9';
+        let currentSidebarColor = '#3d4f5d';
+        let currentFileName = 'henry-madison-resume';
+
+        function updateZoomIndicator() {
+            const percentage = Math.round(currentZoom * 100);
+            document.getElementById('zoomPercentage').textContent = percentage + '%';
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profileImage').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        const tabZoomOut = document.getElementById('tab-zoom-out');
+        const tabZoomIn = document.getElementById('tab-zoom-in');
+        const tabEdit = document.getElementById('tab-edit');
+        const tabSettings = document.getElementById('tab-settings');
+        const btnDownload = document.getElementById('btn-download');
+        const page = document.getElementById('document');
+        const editIndicator = document.getElementById('editIndicator');
+
+        function applyScale(scale) {
+            const clamped = Math.min(1.2, Math.max(0.3, scale));
+            currentZoom = Math.round(clamped * 100) / 100;
+            document.documentElement.style.setProperty('--scale', currentZoom);
+            updateZoomIndicator();
+        }
+
+        tabZoomOut.addEventListener('click', () => {
+            applyScale(currentZoom - 0.1);
+        });
+
+        tabZoomIn.addEventListener('click', () => {
+            applyScale(currentZoom + 0.1);
+        });
+
+        tabEdit.addEventListener('click', () => {
+            editMode = !editMode;
+            tabEdit.classList.toggle('active', editMode);
+            editIndicator.classList.toggle('show', editMode);
+
+            const editableElements = document.querySelectorAll('[contenteditable]');
+            editableElements.forEach(el => {
+                el.contentEditable = editMode;
+            });
+        });
+
+        tabSettings.addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.add('active');
+        });
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        function applySettings() {
+            currentFileName = document.getElementById('fileName').value;
+
+            const selectedAccent = document.querySelector('.color-option[data-color].selected');
+            if (selectedAccent) {
+                currentAccentColor = selectedAccent.getAttribute('data-color');
+                document.documentElement.style.setProperty('--sidebar-accent', currentAccentColor);
+            }
+
+            const selectedSidebar = document.querySelector('.color-option[data-sidebar-color].selected');
+            if (selectedSidebar) {
+                currentSidebarColor = selectedSidebar.getAttribute('data-sidebar-color');
+                document.documentElement.style.setProperty('--sidebar-bg', currentSidebarColor);
+            }
+
+            closeSettingsModal();
+        }
+
+        document.querySelectorAll('.color-option[data-color]').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.color-option[data-color]').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        document.querySelectorAll('.color-option[data-sidebar-color]').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.color-option[data-sidebar-color]').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettingsModal();
+            }
+        });
+
+        btnDownload.addEventListener('click', async () => {
+            try {
+                const wasEditMode = editMode;
+                if (editMode) {
+                    editMode = false;
+                    tabEdit.classList.remove('active');
+                    editIndicator.classList.remove('show');
+                    const editableElements = document.querySelectorAll('[contenteditable]');
+                    editableElements.forEach(el => { el.contentEditable = false; });
+                }
+
+                const originalScale = currentZoom;
+                document.documentElement.style.setProperty('--scale', 1);
+
+                await new Promise(resolve => setTimeout(resolve, 120));
+
+                const element = document.getElementById('document');
+                const opt = {
+                    margin: [0, 0, 0, 0],
+                    filename: currentFileName + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        letterRendering: true,
+                        logging: false,
+                        width: 794,
+                        height: 1123,
+                        scrollY: 0,
+                        scrollX: 0,
+                        windowWidth: 794,
+                        windowHeight: 1123
+                    },
+                    jsPDF: {
+                        unit: 'px',
+                        format: [794, 1123],
+                        orientation: 'portrait',
+                        hotfixes: ['px_scaling']
+                    },
+                    pagebreak: { mode: 'avoid-all' }
+                };
+
+                await html2pdf().set(opt).from(element).save();
+
+                document.documentElement.style.setProperty('--scale', originalScale);
+
+                if (wasEditMode) {
+                    editMode = true;
+                    tabEdit.classList.add('active');
+                    editIndicator.classList.add('show');
+                    const editableElements = document.querySelectorAll('[contenteditable]');
+                    editableElements.forEach(el => { el.contentEditable = true; });
+                }
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            }
+        });
+
+        const editableElements = document.querySelectorAll('[contenteditable]');
+        editableElements.forEach(el => { el.contentEditable = false; });
+
+        document.querySelectorAll('.progress-bar').forEach(bar => {
+            const fill = bar.querySelector('.progress-fill');
+            fill.addEventListener('click', function(e) {
+                if (editMode) {
+                    const rect = bar.getBoundingClientRect();
+                    const percent = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+                    fill.style.width = percent + '%';
+                    fill.setAttribute('data-width', percent);
+                }
+            });
+        });
+
+        document.documentElement.style.setProperty('--scale', currentZoom);
+        updateZoomIndicator();
+    </script>
+</body>
+</html>"
     },
     {
       "name": "Research Paper",
