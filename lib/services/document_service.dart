@@ -5,7 +5,7 @@ import '../models/document_model.dart';
 class DocumentService {
   // URL da pasta API no GitHub
   static const String apiBaseUrl = 
-      'https://raw.githubusercontent.com/Alfredoooh/novasignal/main/API/';
+      'https://alfredoooh.github.io/novasignal/API/';
 
   Future<List<DocumentModel>> fetchDocuments() async {
     List<DocumentModel> allDocuments = [];
