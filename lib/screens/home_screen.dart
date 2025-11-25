@@ -74,67 +74,49 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    widget.languageProvider.translate('home'),
-                    style: theme.textTheme.displayLarge,
-                  ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => _showSettingsModal(context),
+            // Conteúdo principal
+            _buildContent(theme),
+            
+            // Botão de settings flutuante no topo direito
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showSettingsModal(context),
+                  borderRadius: BorderRadius.circular(22),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      border: Border.all(color: theme.dividerColor),
                       borderRadius: BorderRadius.circular(22),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          border: Border.all(color: theme.dividerColor),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/icons/settings.svg',
-                            width: 22,
-                            height: 22,
-                            colorFilter: ColorFilter.mode(
-                              colorScheme.primary,
-                              BlendMode.srcIn,
-                            ),
-                          ),
+                      ],
+                    ),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/icons/settings.svg',
+                        width: 22,
+                        height: 22,
+                        colorFilter: ColorFilter.mode(
+                          colorScheme.primary,
+                          BlendMode.srcIn,
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Text(
-                'Document Templates',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _buildContent(theme),
             ),
           ],
         ),
@@ -251,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onRefresh: _loadDocuments,
       color: theme.colorScheme.primary,
       child: MasonryGridView.count(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 120),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         crossAxisCount: 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
@@ -340,7 +322,7 @@ class _DocumentCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Imagem de capa (PNG/JPG/WEBP)
+              // Imagem de capa
               Expanded(
                 flex: 3,
                 child: ClipRRect(
@@ -390,7 +372,7 @@ class _DocumentCard extends StatelessWidget {
                           },
                         ),
                       ),
-                      // Gradient overlay para melhor legibilidade
+                      // Gradient overlay
                       Positioned(
                         bottom: 0,
                         left: 0,
@@ -409,7 +391,7 @@ class _DocumentCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Badge PRO no canto superior direito
+                      // Badge PRO
                       if (document.isPro)
                         Positioned(
                           top: 8,
@@ -464,7 +446,7 @@ class _DocumentCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Informações do documento
+              // Informações
               Expanded(
                 flex: 2,
                 child: Padding(
