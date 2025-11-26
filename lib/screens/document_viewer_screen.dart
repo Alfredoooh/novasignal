@@ -46,7 +46,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.border = 'none'
-          ..style.transform = 'scale(0.2)'
+          ..style.transform = 'scale(0.8)'
           ..style.transformOrigin = 'top left'
           ..srcdoc = widget.document.html;
 
