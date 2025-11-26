@@ -2,34 +2,46 @@ class DocumentModel {
   final String name;
   final String category;
   final bool isPro;
+  final String coverImage;
   final String html;
-  final String coverImage; // URL da imagem PNG/JPG/WEBP no GitHub
 
   DocumentModel({
     required this.name,
     required this.category,
     required this.isPro,
-    required this.html,
     required this.coverImage,
+    required this.html,
   });
 
   factory DocumentModel.fromJson(Map<String, dynamic> json) {
-    return DocumentModel(
-      name: json['name'] as String,
-      category: json['category'] as String,
-      isPro: json['pro'] as bool,
-      html: json['html'] as String,
-      coverImage: json['coverImage'] as String,
-    );
+    try {
+      return DocumentModel(
+        name: json['name']?.toString() ?? 'Untitled',
+        category: json['category']?.toString() ?? 'General',
+        // AQUI ESTÁ A CORREÇÃO: aceita tanto "pro" quanto "isPro"
+        isPro: json['isPro'] as bool? ?? json['pro'] as bool? ?? false,
+        coverImage: json['coverImage']?.toString() ?? '',
+        html: json['html']?.toString() ?? '',
+      );
+    } catch (e) {
+      print('❌ Erro ao criar DocumentModel: $e');
+      print('📄 JSON problemático: $json');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'category': category,
-      'pro': isPro,
-      'html': html,
+      'isPro': isPro,
       'coverImage': coverImage,
+      'html': html,
     };
+  }
+
+  @override
+  String toString() {
+    return 'DocumentModel(name: $name, category: $category, isPro: $isPro)';
   }
 }
