@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/document_model.dart';
@@ -7,11 +8,15 @@ import '../screens/document_viewer_screen.dart';
 class DocumentDetailScreen extends StatefulWidget {
   final DocumentModel document;
   final ThemeProvider themeProvider;
+  final bool isSecondaryScreen;
+  final VoidCallback? onClose;
 
   const DocumentDetailScreen({
     Key? key,
     required this.document,
     required this.themeProvider,
+    this.isSecondaryScreen = false,
+    this.onClose,
   }) : super(key: key);
 
   @override
@@ -39,7 +44,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     );
 
     _scrollController.addListener(_onScroll);
-    
+
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _animationController.forward();
     });
@@ -48,7 +53,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   void _onScroll() {
     final offset = _scrollController.offset;
     final showTitle = offset > 200;
-    
+
     if (_showTitle != showTitle) {
       setState(() => _showTitle = showTitle);
     }
@@ -64,17 +69,17 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   Color _getCategoryColor(String category) {
     switch (category.toLowerCase()) {
       case 'business':
-        return Colors.blue;
+        return const Color(0xFF3B82F6);
       case 'academic':
-        return Colors.purple;
+        return const Color(0xFF8B5CF6);
       case 'personal':
-        return Colors.green;
+        return const Color(0xFF10B981);
       case 'legal':
-        return Colors.orange;
+        return const Color(0xFFF59E0B);
       case 'creative':
-        return Colors.pink;
+        return const Color(0xFFEC4899);
       default:
-        return Colors.grey;
+        return const Color(0xFF6B7280);
     }
   }
 
@@ -93,6 +98,18 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       default:
         return 'assets/icons/document.svg';
     }
+  }
+
+  void _showFullImage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => _FullScreenImage(
+          imageUrl: widget.document.coverImage,
+          heroTag: 'document_${widget.document.id}',
+        ),
+      ),
+    );
   }
 
   void _showShareOptions() {
@@ -146,9 +163,146 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     );
   }
 
+  bool _isWideScreen(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 600;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (widget.isSecondaryScreen) {
+      return _buildSecondaryScreenLayout(theme);
+    }
+
+    return _buildMobileLayout(theme);
+  }
+
+  Widget _buildSecondaryScreenLayout(ThemeData theme) {
+    final categoryColor = _getCategoryColor(widget.document.category);
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          // Header fixo
+          Container(
+            height: 64,
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.document.name,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: _isFavorite ? Colors.red : theme.colorScheme.secondary,
+                  ),
+                  onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                ),
+                IconButton(
+                  icon: Icon(Icons.share, color: theme.colorScheme.secondary),
+                  onPressed: _showShareOptions,
+                ),
+                IconButton(
+                  icon: Icon(Icons.close, color: theme.colorScheme.secondary),
+                  onPressed: widget.onClose,
+                ),
+              ],
+            ),
+          ),
+          
+          // Conteúdo scrollável
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Imagem com blur
+                  GestureDetector(
+                    onTap: () => _showFullImage(context),
+                    child: _buildImageWithBlur(categoryColor),
+                  ),
+                  _buildContent(theme, categoryColor),
+                ],
+              ),
+            ),
+          ),
+          
+          // Botão fixo no bottom
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              border: Border(
+                top: BorderSide(
+                  color: theme.dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DocumentViewerScreen(
+                        document: widget.document,
+                        themeProvider: widget.themeProvider,
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: categoryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.play_arrow, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Use Template',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(ThemeData theme) {
     final categoryColor = _getCategoryColor(widget.document.category);
 
     return Scaffold(
@@ -175,15 +329,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               ],
             ),
             child: IconButton(
-              icon: SvgPicture.asset(
-                'assets/icons/arrow_back.svg',
-                width: 20,
-                height: 20,
-                colorFilter: ColorFilter.mode(
-                  theme.colorScheme.primary,
-                  BlendMode.srcIn,
-                ),
-              ),
+              icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -216,16 +362,9 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 ],
               ),
               child: IconButton(
-                icon: SvgPicture.asset(
-                  _isFavorite 
-                      ? 'assets/icons/heart_filled.svg'
-                      : 'assets/icons/heart.svg',
-                  width: 20,
-                  height: 20,
-                  colorFilter: ColorFilter.mode(
-                    _isFavorite ? Colors.red : theme.colorScheme.primary,
-                    BlendMode.srcIn,
-                  ),
+                icon: Icon(
+                  _isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: _isFavorite ? Colors.red : theme.colorScheme.primary,
                 ),
                 onPressed: () => setState(() => _isFavorite = !_isFavorite),
               ),
@@ -247,15 +386,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 ],
               ),
               child: IconButton(
-                icon: SvgPicture.asset(
-                  'assets/icons/share.svg',
-                  width: 20,
-                  height: 20,
-                  colorFilter: ColorFilter.mode(
-                    theme.colorScheme.primary,
-                    BlendMode.srcIn,
-                  ),
-                ),
+                icon: const Icon(Icons.share),
                 onPressed: _showShareOptions,
               ),
             ),
@@ -270,118 +401,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-                // Hero Image com AspectRatio correto
+                // Hero Image com blur background
                 SliverToBoxAdapter(
-                  child: Hero(
-                    tag: 'document_${widget.document.id}',
-                    child: Stack(
-                      children: [
-                        AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: ShaderMask(
-                            shaderCallback: (rect) {
-                              return LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withOpacity(0.3),
-                                ],
-                                stops: const [0.7, 1.0],
-                              ).createShader(rect);
-                            },
-                            blendMode: BlendMode.darken,
-                            child: Image.network(
-                              widget.document.coverImage,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  color: categoryColor.withOpacity(0.1),
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded /
-                                              loadingProgress.expectedTotalBytes!
-                                          : null,
-                                      strokeWidth: 3,
-                                      color: categoryColor,
-                                    ),
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: categoryColor.withOpacity(0.1),
-                                  child: Center(
-                                    child: SvgPicture.asset(
-                                      'assets/icons/document.svg',
-                                      width: 64,
-                                      height: 64,
-                                      colorFilter: ColorFilter.mode(
-                                        categoryColor.withOpacity(0.5),
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        // PRO Badge
-                        if (widget.document.isPro)
-                          Positioned(
-                            bottom: 16,
-                            right: 16,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.amber.shade400,
-                                    Colors.orange.shade400,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SvgPicture.asset(
-                                    'assets/icons/star.svg',
-                                    width: 14,
-                                    height: 14,
-                                    colorFilter: const ColorFilter.mode(
-                                      Colors.white,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Text(
-                                    'PRO',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
+                  child: GestureDetector(
+                    onTap: () => _showFullImage(context),
+                    child: Hero(
+                      tag: 'document_${widget.document.id}',
+                      child: _buildImageWithBlur(categoryColor),
                     ),
                   ),
                 ),
@@ -396,151 +422,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                       ),
                     ),
                     transform: Matrix4.translationValues(0, -20, 0),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  widget.document.name,
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Category Badge
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeOutBack,
-                            builder: (context, value, child) {
-                              return Transform.scale(
-                                scale: value,
-                                child: child,
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: categoryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: categoryColor.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SvgPicture.asset(
-                                    _getCategoryIconPath(widget.document.category),
-                                    width: 13,
-                                    height: 13,
-                                    colorFilter: ColorFilter.mode(
-                                      categoryColor,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    widget.document.category,
-                                    style: TextStyle(
-                                      color: categoryColor,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          // Quick Stats - DA API
-                          if (widget.document.downloads != null || widget.document.rating != null)
-                            Row(
-                              children: [
-                                if (widget.document.downloads != null)
-                                  _StatChip(
-                                    iconPath: 'assets/icons/download.svg',
-                                    label: '${widget.document.downloads} Downloads',
-                                    theme: theme,
-                                  ),
-                                if (widget.document.downloads != null && widget.document.rating != null)
-                                  const SizedBox(width: 12),
-                                if (widget.document.rating != null)
-                                  _StatChip(
-                                    iconPath: 'assets/icons/star.svg',
-                                    label: '${widget.document.rating} Rating',
-                                    theme: theme,
-                                  ),
-                              ],
-                            ),
-
-                          if (widget.document.downloads != null || widget.document.rating != null)
-                            const SizedBox(height: 32),
-
-                          // Description - DA API
-                          if (widget.document.description != null && widget.document.description!.isNotEmpty) ...[
-                            _SectionHeader(title: 'Description', theme: theme),
-                            const SizedBox(height: 12),
-                            Text(
-                              widget.document.description!,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                height: 1.6,
-                                color: theme.textTheme.bodyMedium?.color,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ],
-
-                          // Features - DA API
-                          if (widget.document.features != null && widget.document.features!.isNotEmpty) ...[
-                            _SectionHeader(title: 'Features', theme: theme),
-                            const SizedBox(height: 16),
-                            ...widget.document.features!.asMap().entries.map((entry) {
-                              final feature = entry.value;
-                              return TweenAnimationBuilder<double>(
-                                tween: Tween(begin: 0.0, end: 1.0),
-                                duration: Duration(milliseconds: 300 + (entry.key * 100)),
-                                curve: Curves.easeOut,
-                                builder: (context, value, child) {
-                                  return Transform.translate(
-                                    offset: Offset(0, 20 * (1 - value)),
-                                    child: Opacity(
-                                      opacity: value,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: _FeatureItem(
-                                  iconPath: feature['icon'] ?? 'assets/icons/document.svg',
-                                  title: feature['title'] ?? '',
-                                  description: feature['description'] ?? '',
-                                  theme: theme,
-                                  categoryColor: categoryColor,
-                                ),
-                              );
-                            }).toList(),
-                          ],
-
-                          const SizedBox(height: 100),
-                        ],
-                      ),
-                    ),
+                    child: _buildContent(theme, categoryColor),
                   ),
                 ),
               ],
@@ -599,20 +481,12 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SvgPicture.asset(
-                          'assets/icons/play.svg',
-                          width: 20,
-                          height: 20,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
+                        Icon(Icons.play_arrow, size: 20),
+                        SizedBox(width: 12),
+                        Text(
                           'Use Template',
                           style: TextStyle(
                             fontSize: 16,
@@ -631,9 +505,339 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       ),
     );
   }
+
+  Widget _buildImageWithBlur(Color categoryColor) {
+    return Container(
+      height: 300,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background blurred
+          Image.network(
+            widget.document.coverImage,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: categoryColor.withOpacity(0.1));
+            },
+          ),
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              color: Colors.black.withOpacity(0.3),
+            ),
+          ),
+          
+          // Imagem original centralizada
+          Center(
+            child: Image.network(
+              widget.document.coverImage,
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                    strokeWidth: 3,
+                    color: categoryColor,
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.image,
+                  size: 64,
+                  color: categoryColor.withOpacity(0.5),
+                );
+              },
+            ),
+          ),
+          
+          // PRO Badge
+          if (widget.document.isPro)
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.amber.shade400,
+                      Colors.orange.shade400,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.star,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'PRO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          
+          // Indicador de zoom
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.zoom_in,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Tap to view',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(ThemeData theme, Color categoryColor) {
+    final isWide = _isWideScreen(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Title
+          Text(
+            widget.document.name,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Category Badge
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: categoryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: categoryColor.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.category,
+                  size: 13,
+                  color: categoryColor,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  widget.document.category,
+                  style: TextStyle(
+                    color: categoryColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Quick Stats
+          if (widget.document.downloads != null || widget.document.rating != null)
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                if (widget.document.downloads != null)
+                  _StatChip(
+                    icon: Icons.download,
+                    label: '${widget.document.downloads} Downloads',
+                    theme: theme,
+                  ),
+                if (widget.document.rating != null)
+                  _StatChip(
+                    icon: Icons.star,
+                    label: '${widget.document.rating} Rating',
+                    theme: theme,
+                  ),
+              ],
+            ),
+
+          if (widget.document.downloads != null || widget.document.rating != null)
+            const SizedBox(height: 32),
+
+          // Description
+          if (widget.document.description != null && widget.document.description!.isNotEmpty) ...[
+            _SectionHeader(title: 'Description', theme: theme),
+            const SizedBox(height: 12),
+            Text(
+              widget.document.description!,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                height: 1.6,
+                color: theme.textTheme.bodyMedium?.color,
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+
+          // Features - Grid em telas largas
+          if (widget.document.features != null && widget.document.features!.isNotEmpty) ...[
+            _SectionHeader(title: 'Features', theme: theme),
+            const SizedBox(height: 16),
+            
+            if (isWide)
+              // Grid 2x2
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.5,
+                ),
+                itemCount: widget.document.features!.length,
+                itemBuilder: (context, index) {
+                  final feature = widget.document.features![index];
+                  return _FeatureItemCompact(
+                    iconPath: feature['icon'] ?? 'assets/icons/document.svg',
+                    title: feature['title'] ?? '',
+                    description: feature['description'] ?? '',
+                    theme: theme,
+                    categoryColor: categoryColor,
+                  );
+                },
+              )
+            else
+              // Lista vertical
+              ...widget.document.features!.map((feature) {
+                return _FeatureItem(
+                  iconPath: feature['icon'] ?? 'assets/icons/document.svg',
+                  title: feature['title'] ?? '',
+                  description: feature['description'] ?? '',
+                  theme: theme,
+                  categoryColor: categoryColor,
+                );
+              }).toList(),
+          ],
+
+          const SizedBox(height: 100),
+        ],
+      ),
+    );
+  }
 }
 
-// Section Header Widget
+// Tela cheia da imagem
+class _FullScreenImage extends StatelessWidget {
+  final String imageUrl;
+  final String heroTag;
+
+  const _FullScreenImage({
+    required this.imageUrl,
+    required this.heroTag,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: Hero(
+              tag: heroTag,
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Section Header
 class _SectionHeader extends StatelessWidget {
   final String title;
   final ThemeData theme;
@@ -667,14 +871,14 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// Stat Chip Widget
+// Stat Chip
 class _StatChip extends StatelessWidget {
-  final String iconPath;
+  final IconData icon;
   final String label;
   final ThemeData theme;
 
   const _StatChip({
-    required this.iconPath,
+    required this.icon,
     required this.label,
     required this.theme,
   });
@@ -690,14 +894,10 @@ class _StatChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset(
-            iconPath,
-            width: 13,
-            height: 13,
-            colorFilter: ColorFilter.mode(
-              theme.colorScheme.primary,
-              BlendMode.srcIn,
-            ),
+          Icon(
+            icon,
+            size: 13,
+            color: theme.colorScheme.primary,
           ),
           const SizedBox(width: 6),
           Text(
@@ -714,7 +914,7 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// Share Option Widget
+// Share Option
 class _ShareOption extends StatelessWidget {
   final String iconPath;
   final String label;
@@ -729,15 +929,7 @@ class _ShareOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: SvgPicture.asset(
-        iconPath,
-        width: 20,
-        height: 20,
-        colorFilter: ColorFilter.mode(
-          theme.colorScheme.primary,
-          BlendMode.srcIn,
-        ),
-      ),
+      leading: Icon(Icons.share, color: theme.colorScheme.primary),
       title: Text(label),
       onTap: () {
         Navigator.pop(context);
@@ -755,7 +947,7 @@ class _ShareOption extends StatelessWidget {
   }
 }
 
-// Enhanced Feature Item Widget
+// Feature Item (lista vertical)
 class _FeatureItem extends StatelessWidget {
   final String iconPath;
   final String title;
@@ -784,13 +976,6 @@ class _FeatureItem extends StatelessWidget {
             color: theme.dividerColor,
             width: 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           children: [
@@ -802,14 +987,10 @@ class _FeatureItem extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
-                child: SvgPicture.asset(
-                  iconPath,
-                  width: 19,
-                  height: 19,
-                  colorFilter: ColorFilter.mode(
-                    categoryColor,
-                    BlendMode.srcIn,
-                  ),
+                child: Icon(
+                  Icons.check_circle,
+                  size: 24,
+                  color: categoryColor,
                 ),
               ),
             ),
@@ -836,6 +1017,77 @@ class _FeatureItem extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Feature Item Compact (grid)
+class _FeatureItemCompact extends StatelessWidget {
+  final String iconPath;
+  final String title;
+  final String description;
+  final ThemeData theme;
+  final Color categoryColor;
+
+  const _FeatureItemCompact({
+    required this.iconPath,
+    required this.title,
+    required this.description,
+    required this.theme,
+    required this.categoryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.dividerColor,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: categoryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.check_circle,
+                size: 20,
+                color: categoryColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
