@@ -17,11 +17,10 @@ class SettingsModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDarkMode = themeProvider.isDarkMode;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        color: theme.cardColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
@@ -138,7 +137,6 @@ class _LanguagePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDarkMode = theme.brightness == Brightness.dark;
 
     final languages = [
       {'code': 'en', 'name': 'English'},
@@ -148,9 +146,9 @@ class _LanguagePage extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: SvgPicture.asset(
@@ -182,7 +180,7 @@ class _LanguagePage extends StatelessWidget {
                       width: 20,
                       height: 20,
                       colorFilter: const ColorFilter.mode(
-                        Color(0xFF4CAF50),
+                        Color(0xFF10B981),
                         BlendMode.srcIn,
                       ),
                     )
@@ -213,7 +211,6 @@ class _ThemePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isDarkMode = theme.brightness == Brightness.dark;
 
     final themes = [
       {'code': 'light', 'name': languageProvider.translate('light')},
@@ -221,9 +218,9 @@ class _ThemePage extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: SvgPicture.asset(
@@ -255,7 +252,7 @@ class _ThemePage extends StatelessWidget {
                       width: 20,
                       height: 20,
                       colorFilter: const ColorFilter.mode(
-                        Color(0xFF4CAF50),
+                        Color(0xFF10B981),
                         BlendMode.srcIn,
                       ),
                     )
@@ -289,7 +286,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       title.toUpperCase(),
       style: TextStyle(
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: FontWeight.w600,
         color: theme.colorScheme.secondary,
         letterSpacing: 0.5,
@@ -326,7 +323,7 @@ class _OptionsList extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: theme.dividerColor.withOpacity(0.6),
+          color: theme.dividerColor,
           width: 1,
         ),
         borderRadius: BorderRadius.circular(12),
@@ -391,7 +388,7 @@ class _OptionTile extends StatelessWidget {
             border: showDivider
                 ? Border(
                     bottom: BorderSide(
-                      color: theme.dividerColor.withOpacity(0.6),
+                      color: theme.dividerColor,
                       width: 1,
                     ),
                   )
