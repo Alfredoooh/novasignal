@@ -46,8 +46,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         final htmlWithZoom = '''
           <style>
             body {
-              zoom: 0.75 !important;
-              -moz-transform: scale(0.75);
+              zoom: 2 !important;
+              -moz-transform: scale(2);
               -moz-transform-origin: 0 0;
             }
           </style>
