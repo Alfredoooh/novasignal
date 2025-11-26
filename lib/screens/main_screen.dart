@@ -39,7 +39,9 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   bool _isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= 1024;
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+    return width >= 900 || (width > height && width >= 768);
   }
 
   @override
