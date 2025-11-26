@@ -1,4 +1,5 @@
 class DocumentModel {
+  final String id;
   final String name;
   final String category;
   final bool isPro;
@@ -6,6 +7,7 @@ class DocumentModel {
   final String html;
 
   DocumentModel({
+    required this id,
     required this.name,
     required this.category,
     required this.isPro,
@@ -16,6 +18,7 @@ class DocumentModel {
   factory DocumentModel.fromJson(Map<String, dynamic> json) {
     try {
       return DocumentModel(
+        id: json['id']?.toString() ?? 'Untitled',
         name: json['name']?.toString() ?? 'Untitled',
         category: json['category']?.toString() ?? 'General',
         // AQUI ESTÁ A CORREÇÃO: aceita tanto "pro" quanto "isPro"
@@ -32,6 +35,7 @@ class DocumentModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'category': category,
       'isPro': isPro,
@@ -42,6 +46,6 @@ class DocumentModel {
 
   @override
   String toString() {
-    return 'DocumentModel(name: $name, category: $category, isPro: $isPro)';
+    return 'DocumentModel(id: $id, name: $name, category: $category, isPro: $isPro)';
   }
 }
