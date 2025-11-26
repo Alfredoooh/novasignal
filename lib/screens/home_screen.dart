@@ -30,7 +30,16 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DocumentModel> _documents = [];
   bool _isLoading = true;
   String? _errorMessage;
-  DocumentModel? _selectedDocument;
+  String _selectedCategory = 'All';
+
+  final List<String> _categories = [
+    'All',
+    'Business',
+    'Academic',
+    'Personal',
+    'Legal',
+    'Creative',
+  ];
 
   @override
   void initState() {
@@ -60,11 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showSettingsModal(BuildContext context) {
     if (_isDesktop(context)) {
-      // No desktop, mostra settings na tela secundária
+      // No desktop, abre settings na tela secundária (direita)
       widget.onSecondaryScreenChanged?.call(
         SettingsScreen(
           themeProvider: widget.themeProvider,
           languageProvider: widget.languageProvider,
+          onClose: () {
+            widget.onSecondaryScreenChanged?.call(const _EmptySecondaryScreen());
+          },
         ),
       );
     } else {
@@ -82,10 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   bool _isDesktop(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final height = MediaQuery.of(context).size.height;
-    // Considera desktop se a largura for >= 900 OU se a proporção indicar landscape em tela grande
-    return width >= 900 || (width > height && width >= 768);
+    return MediaQuery.of(context).size.width >= 1024;
+  }
+
+  List<DocumentModel> get _filteredDocuments {
+    if (_selectedCategory == 'All') {
+      return _documents;
+    }
+    return _documents
+        .where((doc) => doc.category.toLowerCase() == _selectedCategory.toLowerCase())
+        .toList();
   }
 
   @override
@@ -99,107 +117,94 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildMobileLayout(theme);
   }
 
+  // Layout Desktop: AppBar + Grid de Templates (Tela Esquerda)
   Widget _buildDesktopLayout(ThemeData theme) {
-    return Row(
+    return Column(
       children: [
-        // Painel lateral esquerdo (Templates)
+        // AppBar com Categorias
         Container(
-          width: 320,
+          height: 64,
           decoration: BoxDecoration(
             color: theme.cardColor,
             border: Border(
-              right: BorderSide(
+              bottom: BorderSide(
                 color: theme.dividerColor,
                 width: 1,
               ),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Templates',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _showSettingsModal(context),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'R',
-                              style: TextStyle(
-                                color: theme.colorScheme.onPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                // Título
+                Text(
+                  'Templates',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _isLoading
-                    ? Center(
-                        child: CircularProgressIndicator(
-                          color: theme.colorScheme.primary,
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _documents.length,
-                        itemBuilder: (context, index) {
-                          final doc = _documents[index];
-                          final isSelected = _selectedDocument?.id == doc.id;
-                          return _TemplateListItem(
-                            document: doc,
-                            theme: theme,
+                const SizedBox(width: 40),
+                
+                // Categorias
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _categories.map((category) {
+                        final isSelected = _selectedCategory == category;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _CategoryChip(
+                            label: category,
                             isSelected: isSelected,
                             onTap: () {
                               setState(() {
-                                _selectedDocument = doc;
+                                _selectedCategory = category;
                               });
-                              // Mostra detalhes na tela secundária
-                              widget.onSecondaryScreenChanged?.call(
-                                _DocumentDetailsPanel(
-                                  document: doc,
-                                  theme: theme,
-                                  themeProvider: widget.themeProvider,
-                                  onClose: () {
-                                    widget.onSecondaryScreenChanged?.call(
-                                      const SizedBox.shrink(),
-                                    );
-                                  },
-                                ),
-                              );
                             },
-                          );
-                        },
+                            theme: theme,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Botão Settings
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showSettingsModal(context),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-              ),
-            ],
+                      child: Center(
+                        child: Text(
+                          'R',
+                          style: TextStyle(
+                            color: theme.colorScheme.onPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-
-        // Conteúdo central (Grid de imagens)
+        
+        // Grid de Templates
         Expanded(
           child: Container(
             color: theme.scaffoldBackgroundColor,
@@ -258,6 +263,33 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // Categorias horizontais
+            Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  final isSelected = _selectedCategory == category;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _CategoryChip(
+                      label: category,
+                      isSelected: isSelected,
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = category;
+                        });
+                      },
+                      theme: theme,
+                    ),
+                  );
+                },
+              ),
+            ),
+
             // Conteúdo
             Expanded(
               child: _buildContent(theme),
@@ -284,14 +316,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                'assets/icons/error.svg',
-                width: 64,
-                height: 64,
-                colorFilter: ColorFilter.mode(
-                  theme.colorScheme.error,
-                  BlendMode.srcIn,
-                ),
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: theme.colorScheme.error,
               ),
               const SizedBox(height: 16),
               Text(
@@ -310,15 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _loadDocuments,
-                icon: SvgPicture.asset(
-                  'assets/icons/refresh.svg',
-                  width: 20,
-                  height: 20,
-                  colorFilter: ColorFilter.mode(
-                    theme.colorScheme.onPrimary,
-                    BlendMode.srcIn,
-                  ),
-                ),
+                icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
               ),
             ],
@@ -327,21 +347,19 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    if (_documents.isEmpty) {
+    final filteredDocs = _filteredDocuments;
+
+    if (filteredDocs.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                'assets/icons/inbox.svg',
-                width: 64,
-                height: 64,
-                colorFilter: ColorFilter.mode(
-                  theme.dividerColor,
-                  BlendMode.srcIn,
-                ),
+              Icon(
+                Icons.inbox_outlined,
+                size: 64,
+                color: theme.dividerColor,
               ),
               const SizedBox(height: 16),
               Text(
@@ -366,38 +384,35 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDesktop = _isDesktop(context);
     return MasonryGridView.count(
       padding: EdgeInsets.all(isDesktop ? 24 : 16),
-      crossAxisCount: isDesktop ? 4 : 2,
+      crossAxisCount: isDesktop ? 3 : 2,
       mainAxisSpacing: isDesktop ? 16 : 12,
       crossAxisSpacing: isDesktop ? 16 : 12,
-      itemCount: _documents.length,
+      itemCount: filteredDocs.length,
       itemBuilder: (context, index) {
         return _ImageCard(
-          document: _documents[index],
+          document: filteredDocs[index],
           theme: theme,
           index: index,
           onTap: () {
             if (isDesktop) {
-              setState(() {
-                _selectedDocument = _documents[index];
-              });
+              // Desktop: Abre DocumentDetailScreen na tela secundária (direita)
               widget.onSecondaryScreenChanged?.call(
-                _DocumentDetailsPanel(
-                  document: _documents[index],
-                  theme: theme,
+                DocumentDetailScreen(
+                  document: filteredDocs[index],
                   themeProvider: widget.themeProvider,
+                  isSecondaryScreen: true,
                   onClose: () {
-                    widget.onSecondaryScreenChanged?.call(
-                      const SizedBox.shrink(),
-                    );
+                    widget.onSecondaryScreenChanged?.call(const _EmptySecondaryScreen());
                   },
                 ),
               );
             } else {
+              // Mobile: Navegação normal em tela cheia
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => DocumentDetailScreen(
-                    document: _documents[index],
+                    document: filteredDocs[index],
                     themeProvider: widget.themeProvider,
                   ),
                 ),
@@ -406,6 +421,58 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+}
+
+// Chip de Categoria
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final ThemeData theme;
+
+  const _CategoryChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.dividerColor,
+              width: 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.secondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -474,14 +541,10 @@ class _ImageCard extends StatelessWidget {
                       return Container(
                         color: theme.cardColor,
                         child: Center(
-                          child: SvgPicture.asset(
-                            'assets/icons/document.svg',
-                            width: 40,
-                            height: 40,
-                            colorFilter: ColorFilter.mode(
-                              theme.colorScheme.primary.withOpacity(0.3),
-                              BlendMode.srcIn,
-                            ),
+                          child: Icon(
+                            Icons.image,
+                            size: 40,
+                            color: theme.colorScheme.primary.withOpacity(0.3),
                           ),
                         ),
                       );
@@ -534,14 +597,10 @@ class _ImageCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SvgPicture.asset(
-                              'assets/icons/star.svg',
-                              width: 12,
-                              height: 12,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white,
-                                BlendMode.srcIn,
-                              ),
+                            Icon(
+                              Icons.star,
+                              size: 12,
+                              color: Colors.white,
                             ),
                             const SizedBox(width: 4),
                             const Text(
@@ -566,157 +625,79 @@ class _ImageCard extends StatelessWidget {
   }
 }
 
-class _TemplateListItem extends StatelessWidget {
-  final DocumentModel document;
-  final ThemeData theme;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _TemplateListItem({
-    required this.document,
-    required this.theme,
-    required this.isSelected,
-    required this.onTap,
-  });
+// Tela secundária vazia (placeholder)
+class _EmptySecondaryScreen extends StatelessWidget {
+  const _EmptySecondaryScreen();
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? theme.colorScheme.primary.withOpacity(0.08)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : Colors.transparent,
-              width: 2,
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.touch_app_outlined,
+              size: 64,
+              color: theme.colorScheme.secondary.withOpacity(0.3),
             ),
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  document.coverImage,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 50,
-                      height: 50,
-                      color: theme.scaffoldBackgroundColor,
-                      child: Icon(
-                        Icons.image,
-                        color: theme.colorScheme.primary.withOpacity(0.3),
-                      ),
-                    );
-                  },
-                ),
+            const SizedBox(height: 16),
+            Text(
+              'Select a template',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.secondary,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      document.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (document.isPro)
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/star.svg',
-                            width: 10,
-                            height: 10,
-                            colorFilter: ColorFilter.mode(
-                              Colors.amber.shade600,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'PRO',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.amber.shade600,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _DocumentDetailsPanel extends StatelessWidget {
-  final DocumentModel document;
-  final ThemeData theme;
+// Tela de Settings para desktop (tela secundária)
+class SettingsScreen extends StatelessWidget {
   final ThemeProvider themeProvider;
+  final LanguageProvider languageProvider;
   final VoidCallback onClose;
 
-  const _DocumentDetailsPanel({
-    required this.document,
-    required this.theme,
+  const SettingsScreen({
+    Key? key,
     required this.themeProvider,
+    required this.languageProvider,
     required this.onClose,
-  });
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'business':
-        return const Color(0xFF3B82F6);
-      case 'academic':
-        return const Color(0xFF8B5CF6);
-      case 'personal':
-        return const Color(0xFF10B981);
-      case 'legal':
-        return const Color(0xFFF59E0B);
-      case 'creative':
-        return const Color(0xFFEC4899);
-      default:
-        return const Color(0xFF6B7280);
-    }
-  }
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = _getCategoryColor(document.category);
+    final theme = Theme.of(context);
 
     return Container(
-      color: theme.cardColor,
+      color: theme.scaffoldBackgroundColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
+          // Header
+          Container(
+            height: 64,
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Details',
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  'Settings',
+                  style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -727,137 +708,11 @@ class _DocumentDetailsPanel extends StatelessWidget {
               ],
             ),
           ),
+          
+          // Conteúdo
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Image.network(
-                        document.coverImage,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: theme.scaffoldBackgroundColor,
-                            child: Icon(
-                              Icons.image,
-                              size: 48,
-                              color: theme.colorScheme.primary.withOpacity(0.3),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    document.name,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: categoryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: categoryColor.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      document.category,
-                      style: TextStyle(
-                        color: categoryColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DocumentDetailScreen(
-                              document: document,
-                              themeProvider: themeProvider,
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: categoryColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Use Template',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Tela de Settings para desktop
-class SettingsScreen extends StatelessWidget {
-  final ThemeProvider themeProvider;
-  final LanguageProvider languageProvider;
-
-  const SettingsScreen({
-    Key? key,
-    required this.themeProvider,
-    required this.languageProvider,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      color: theme.cardColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'Settings',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -912,6 +767,7 @@ class SettingsScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
+            color: theme.cardColor,
             border: Border.all(
               color: theme.dividerColor,
               width: 1,
