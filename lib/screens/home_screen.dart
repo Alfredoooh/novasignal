@@ -82,7 +82,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   bool _isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= 1024;
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+    // Considera desktop se a largura for >= 900 OU se a proporção indicar landscape em tela grande
+    return width >= 900 || (width > height && width >= 768);
   }
 
   @override
