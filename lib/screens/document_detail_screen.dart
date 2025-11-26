@@ -71,318 +71,328 @@ class DocumentDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoryColor = _getCategoryColor(document.category);
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          // App Bar com imagem de fundo
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            backgroundColor: theme.scaffoldBackgroundColor,
-            leading: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.cardColor.withOpacity(0.9),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
+      body: Stack(
+        children: [
+          // Conteúdo scrollável
+          CustomScrollView(
+            slivers: [
+              // Imagem hero 100% visível
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    // Imagem com altura fixa para ser 100% visível
+                    SizedBox(
+                      height: screenHeight * 0.5,
+                      width: double.infinity,
+                      child: Image.network(
+                        document.coverImage,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: categoryColor.withOpacity(0.1),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 3,
+                                color: categoryColor,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: categoryColor.withOpacity(0.1),
+                            child: Center(
+                              child: SvgPicture.asset(
+                                'assets/icons/document.svg',
+                                width: 80,
+                                height: 80,
+                                colorFilter: ColorFilter.mode(
+                                  categoryColor.withOpacity(0.5),
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: SvgPicture.asset(
-                    'assets/icons/arrow_back.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: ColorFilter.mode(
-                      theme.colorScheme.primary,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    document.coverImage,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: categoryColor.withOpacity(0.1),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                            strokeWidth: 3,
-                            color: categoryColor,
-                          ),
+
+                    // Botão voltar
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 16,
+                      left: 16,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: theme.cardColor.withOpacity(0.95),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: categoryColor.withOpacity(0.1),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/icons/document.svg',
-                            width: 80,
-                            height: 80,
+                        child: IconButton(
+                          icon: SvgPicture.asset(
+                            'assets/icons/arrow_back.svg',
+                            width: 24,
+                            height: 24,
                             colorFilter: ColorFilter.mode(
-                              categoryColor.withOpacity(0.5),
+                              theme.colorScheme.primary,
                               BlendMode.srcIn,
                             ),
                           ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                    ),
+
+                    // Badge PRO
+                    if (document.isPro)
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.amber.shade400,
+                                Colors.orange.shade400,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SvgPicture.asset(
+                                'assets/icons/star.svg',
+                                width: 18,
+                                height: 18,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'PRO',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // Conteúdo
+              SliverToBoxAdapter(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Título
+                        Text(
+                          document.name,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Categoria
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: categoryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SvgPicture.asset(
+                                _getCategoryIconPath(document.category),
+                                width: 16,
+                                height: 16,
+                                colorFilter: ColorFilter.mode(
+                                  categoryColor,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                document.category,
+                                style: TextStyle(
+                                  color: categoryColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Descrição
+                        Text(
+                          'Description',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _getDocumentDescription(document.name),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            height: 1.6,
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Features
+                        Text(
+                          'Features',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _FeatureItem(
+                          iconPath: 'assets/icons/edit.svg',
+                          title: 'Ready to Use',
+                          description: 'Pre-formatted and ready to customize',
+                          theme: theme,
+                        ),
+                        _FeatureItem(
+                          iconPath: 'assets/icons/palette.svg',
+                          title: 'Professional Design',
+                          description: 'Clean and modern layout',
+                          theme: theme,
+                        ),
+                        _FeatureItem(
+                          iconPath: 'assets/icons/responsive.svg',
+                          title: 'Responsive',
+                          description: 'Works on all devices',
+                          theme: theme,
+                        ),
+                        const SizedBox(height: 100),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Botão fixo na parte inferior
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                border: Border(
+                  top: BorderSide(color: theme.dividerColor),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DocumentViewerScreen(
+                            document: document,
+                            themeProvider: themeProvider,
+                          ),
                         ),
                       );
                     },
-                  ),
-                  // Gradient overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          theme.scaffoldBackgroundColor,
-                        ],
-                        stops: const [0.5, 1.0],
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: categoryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                  ),
-                  // Badge PRO
-                  if (document.isPro)
-                    Positioned(
-                      top: 60,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.amber.shade400,
-                              Colors.orange.shade400,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SvgPicture.asset(
-                              'assets/icons/star.svg',
-                              width: 18,
-                              height: 18,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'PRO',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          // Conteúdo
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título
-                  Text(
-                    document.name,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  // Categoria
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: categoryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SvgPicture.asset(
-                          _getCategoryIconPath(document.category),
-                          width: 16,
-                          height: 16,
-                          colorFilter: ColorFilter.mode(
-                            categoryColor,
+                          'assets/icons/play.svg',
+                          width: 24,
+                          height: 24,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
                             BlendMode.srcIn,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          document.category,
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Use Template',
                           style: TextStyle(
-                            color: categoryColor,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  
-                  // Descrição
-                  Text(
-                    'Description',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _getDocumentDescription(document.name),
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      height: 1.6,
-                      color: theme.textTheme.bodyMedium?.color,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  // Features
-                  Text(
-                    'Features',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _FeatureItem(
-                    iconPath: 'assets/icons/edit.svg',
-                    title: 'Ready to Use',
-                    description: 'Pre-formatted and ready to customize',
-                    theme: theme,
-                  ),
-                  _FeatureItem(
-                    iconPath: 'assets/icons/palette.svg',
-                    title: 'Professional Design',
-                    description: 'Clean and modern layout',
-                    theme: theme,
-                  ),
-                  _FeatureItem(
-                    iconPath: 'assets/icons/responsive.svg',
-                    title: 'Responsive',
-                    description: 'Works on all devices',
-                    theme: theme,
-                  ),
-                  const SizedBox(height: 100),
-                ],
+                ),
               ),
             ),
           ),
         ],
-      ),
-      // Botão fixo
-      bottomSheet: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          border: Border(
-            top: BorderSide(color: theme.dividerColor),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DocumentViewerScreen(
-                      document: document,
-                      themeProvider: themeProvider,
-                    ),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: categoryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SvgPicture.asset(
-                    'assets/icons/play.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Use Template',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
