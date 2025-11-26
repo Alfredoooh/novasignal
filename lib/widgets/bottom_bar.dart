@@ -16,8 +16,63 @@ class BottomBar extends StatelessWidget {
     required this.isDarkMode,
   }) : super(key: key);
 
+  bool _isDesktop(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 1024;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isDesktop(context)) {
+      return _buildSideBar(context);
+    }
+    return _buildBottomBar(context);
+  }
+
+  // Barra lateral para desktop
+  Widget _buildSideBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: 80,
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        border: Border(
+          right: BorderSide(
+            color: theme.dividerColor.withOpacity(0.3),
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _SideBarButton(
+            iconPath: 'assets/icons/home.svg',
+            isActive: currentIndex == 0,
+            onTap: () => onTabChanged(0),
+            colorScheme: colorScheme,
+          ),
+          const SizedBox(height: 24),
+          _SideBarCenterButton(
+            label: languageProvider.translate('new'),
+            onTap: () => onTabChanged(2),
+            colorScheme: colorScheme,
+            isDarkMode: isDarkMode,
+          ),
+          const SizedBox(height: 24),
+          _SideBarButton(
+            iconPath: 'assets/icons/sparkle.svg',
+            isActive: currentIndex == 1,
+            onTap: () => onTabChanged(1),
+            colorScheme: colorScheme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Barra inferior para mobile
+  Widget _buildBottomBar(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -64,6 +119,106 @@ class BottomBar extends StatelessWidget {
   }
 }
 
+// Botões para barra lateral (desktop)
+class _SideBarButton extends StatelessWidget {
+  final String iconPath;
+  final bool isActive;
+  final VoidCallback onTap;
+  final ColorScheme colorScheme;
+
+  const _SideBarButton({
+    required this.iconPath,
+    required this.isActive,
+    required this.onTap,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: isActive
+                ? colorScheme.secondary.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: SvgPicture.asset(
+              iconPath,
+              width: 28,
+              height: 28,
+              colorFilter: ColorFilter.mode(
+                isActive ? colorScheme.primary : colorScheme.secondary,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SideBarCenterButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  final ColorScheme colorScheme;
+  final bool isDarkMode;
+
+  const _SideBarCenterButton({
+    required this.label,
+    required this.onTap,
+    required this.colorScheme,
+    required this.isDarkMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: colorScheme.primary,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/icons/plus.svg',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                isDarkMode ? Colors.black : Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Botões para barra inferior (mobile)
 class _TabButton extends StatelessWidget {
   final String iconPath;
   final bool isActive;
