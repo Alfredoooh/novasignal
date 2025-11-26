@@ -22,13 +22,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-  Widget _secondaryScreen = const SizedBox.shrink();
+  Widget? _secondaryScreen;
 
   void _onTabChanged(int index) {
     setState(() {
       _currentIndex = index;
       // Limpa a tela secundária ao trocar de aba
-      _secondaryScreen = const SizedBox.shrink();
+      _secondaryScreen = null;
     });
   }
 
@@ -39,73 +39,76 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   bool _isDesktop(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final height = MediaQuery.of(context).size.height;
-    return width >= 900 || (width > height && width >= 768);
+    return MediaQuery.of(context).size.width >= 1024;
+  }
+
+  Widget _getCurrentScreen() {
+    switch (_currentIndex) {
+      case 0:
+        return HomeScreen(
+          themeProvider: widget.themeProvider,
+          languageProvider: widget.languageProvider,
+          onSecondaryScreenChanged: _isDesktop(context) ? _onSecondaryScreenChanged : null,
+        );
+      case 1:
+        return AIScreen(languageProvider: widget.languageProvider);
+      case 2:
+        return NewScreen(languageProvider: widget.languageProvider);
+      default:
+        return HomeScreen(
+          themeProvider: widget.themeProvider,
+          languageProvider: widget.languageProvider,
+          onSecondaryScreenChanged: _isDesktop(context) ? _onSecondaryScreenChanged : null,
+        );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = _isDesktop(context);
 
-    Widget currentScreen;
-    switch (_currentIndex) {
-      case 0:
-        currentScreen = HomeScreen(
-          themeProvider: widget.themeProvider,
-          languageProvider: widget.languageProvider,
-          onSecondaryScreenChanged: isDesktop ? _onSecondaryScreenChanged : null,
-        );
-        break;
-      case 1:
-        currentScreen = AIScreen(languageProvider: widget.languageProvider);
-        break;
-      case 2:
-        currentScreen = NewScreen(languageProvider: widget.languageProvider);
-        break;
-      default:
-        currentScreen = HomeScreen(
-          themeProvider: widget.themeProvider,
-          languageProvider: widget.languageProvider,
-          onSecondaryScreenChanged: isDesktop ? _onSecondaryScreenChanged : null,
-        );
-    }
-
     if (isDesktop) {
       return Scaffold(
         body: Row(
           children: [
-            // Sidebar
+            // Sidebar (80px)
             BottomBar(
               currentIndex: _currentIndex,
               onTabChanged: _onTabChanged,
               languageProvider: widget.languageProvider,
               isDarkMode: widget.themeProvider.isDarkMode,
             ),
-            // Tela principal
+            
+            // Divisão 50/50 no centro
             Expanded(
-              child: currentScreen,
-            ),
-            // Tela secundária (se houver)
-            if (_secondaryScreen is! SizedBox)
-              Container(
-                width: 400,
-                decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color: Theme.of(context).dividerColor,
-                      width: 1,
-                    ),
+              child: Row(
+                children: [
+                  // Tela Esquerda (50%) - Sempre visível
+                  Expanded(
+                    flex: 1,
+                    child: _getCurrentScreen(),
                   ),
-                ),
-                child: _secondaryScreen,
+                  
+                  // Divisor vertical
+                  Container(
+                    width: 1,
+                    color: Theme.of(context).dividerColor,
+                  ),
+                  
+                  // Tela Direita (50%) - Tela Secundária
+                  Expanded(
+                    flex: 1,
+                    child: _secondaryScreen ?? _EmptySecondaryScreen(),
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       );
     }
 
-    // Layout mobile
+    // Layout mobile - comportamento normal
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -124,6 +127,46 @@ class _MainScreenState extends State<MainScreen> {
         onTabChanged: _onTabChanged,
         languageProvider: widget.languageProvider,
         isDarkMode: widget.themeProvider.isDarkMode,
+      ),
+    );
+  }
+}
+
+// Tela secundária vazia (placeholder quando nada está aberto)
+class _EmptySecondaryScreen extends StatelessWidget {
+  const _EmptySecondaryScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.touch_app_outlined,
+              size: 80,
+              color: theme.colorScheme.secondary.withOpacity(0.2),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Select an item to view details',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: theme.colorScheme.secondary.withOpacity(0.6),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Click on any template to see more information',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.secondary.withOpacity(0.5),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
