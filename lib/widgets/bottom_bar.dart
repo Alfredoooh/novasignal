@@ -28,7 +28,6 @@ class BottomBar extends StatelessWidget {
     return _buildBottomBar(context);
   }
 
-  // Barra lateral para desktop
   Widget _buildSideBar(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -36,10 +35,11 @@ class BottomBar extends StatelessWidget {
     return Container(
       width: 80,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+        color: theme.cardColor,
         border: Border(
           right: BorderSide(
-            color: theme.dividerColor.withOpacity(0.3),
+            color: theme.dividerColor,
+            width: 1,
           ),
         ),
       ),
@@ -71,7 +71,6 @@ class BottomBar extends StatelessWidget {
     );
   }
 
-  // Barra inferior para mobile
   Widget _buildBottomBar(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -81,12 +80,12 @@ class BottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(999),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDarkMode ? 0.4 : 0.08),
-              blurRadius: 12,
+              color: theme.shadowColor,
+              blurRadius: 16,
               offset: const Offset(0, 4),
             ),
           ],
@@ -119,7 +118,6 @@ class BottomBar extends StatelessWidget {
   }
 }
 
-// Botões para barra lateral (desktop)
 class _SideBarButton extends StatelessWidget {
   final String iconPath;
   final bool isActive;
@@ -146,7 +144,7 @@ class _SideBarButton extends StatelessWidget {
           height: 56,
           decoration: BoxDecoration(
             color: isActive
-                ? colorScheme.secondary.withOpacity(0.15)
+                ? colorScheme.primary.withOpacity(0.08)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
@@ -195,7 +193,7 @@ class _SideBarCenterButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withOpacity(0.15),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -207,7 +205,7 @@ class _SideBarCenterButton extends StatelessWidget {
               width: 24,
               height: 24,
               colorFilter: ColorFilter.mode(
-                isDarkMode ? Colors.black : Colors.white,
+                colorScheme.onPrimary,
                 BlendMode.srcIn,
               ),
             ),
@@ -218,7 +216,6 @@ class _SideBarCenterButton extends StatelessWidget {
   }
 }
 
-// Botões para barra inferior (mobile)
 class _TabButton extends StatelessWidget {
   final String iconPath;
   final bool isActive;
@@ -245,7 +242,7 @@ class _TabButton extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             color: isActive
-                ? colorScheme.secondary.withOpacity(0.15)
+                ? colorScheme.primary.withOpacity(0.08)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(24),
           ),
@@ -294,7 +291,7 @@ class _CenterButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withOpacity(0.15),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -308,7 +305,7 @@ class _CenterButton extends StatelessWidget {
                 width: 18,
                 height: 18,
                 colorFilter: ColorFilter.mode(
-                  isDarkMode ? Colors.black : Colors.white,
+                  colorScheme.onPrimary,
                   BlendMode.srcIn,
                 ),
               ),
@@ -316,7 +313,7 @@ class _CenterButton extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  color: isDarkMode ? Colors.black : Colors.white,
+                  color: colorScheme.onPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
