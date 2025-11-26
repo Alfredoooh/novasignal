@@ -4,9 +4,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../models/document_model.dart';
 import '../providers/theme_provider.dart';
 
-// Imports condicionais
-import 'dart:html' as html show IFrameElement;
-import 'dart:ui' as ui;
+// Import condicional
+import '../utils/web_utils.dart'
+    if (dart.library.html) '../utils/web_utils_web.dart';
+
+// Imports para web
+import 'dart:html' as html;
 
 class DocumentViewerScreen extends StatefulWidget {
   final DocumentModel document;
@@ -37,22 +40,15 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   }
 
   void _registerWebView() {
-    // Registra o iframe para web
-    // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory(
+    registerWebViewFactory(
       _viewType,
       (int viewId) {
-        // Cria iframe
         final iframe = html.IFrameElement()
           ..style.width = '100%'
           ..style.height = '100%'
-          ..style.border = 'none';
+          ..style.border = 'none'
+          ..srcdoc = widget.document.html;
 
-        // Carrega o HTML que vem da API
-        // O document.html já é uma string HTML completa
-        iframe.srcdoc = widget.document.html;
-
-        // Listener para detectar quando carregou
         iframe.onLoad.listen((event) {
           if (mounted) {
             setState(() {
@@ -61,18 +57,11 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           }
         });
 
-        // Tratamento de erro
         iframe.onError.listen((event) {
           if (mounted) {
             setState(() {
               _isLoading = false;
             });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Error loading document'),
-                backgroundColor: Colors.red,
-              ),
-            );
           }
         });
 
@@ -80,7 +69,6 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       },
     );
 
-    // Fallback: remove loading após 3 segundos
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted && _isLoading) {
         setState(() {
@@ -147,9 +135,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
                 BlendMode.srcIn,
               ),
             ),
-            onPressed: () {
-              _downloadDocument();
-            },
+            onPressed: _downloadDocument,
           ),
         ],
       ),
@@ -212,28 +198,34 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
 
   void _downloadDocument() {
     if (kIsWeb) {
-      // Cria um blob com o HTML
-      final blob = html.Blob([widget.document.html], 'text/html');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      
-      // Cria link de download
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', '${widget.document.name}.html')
-        ..click();
-      
-      // Limpa o URL
-      html.Url.revokeObjectUrl(url);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Document downloaded successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      try {
+        downloadHtmlFile(widget.document.html, widget.document.name);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Document downloaded successfully'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error downloading: $e'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Download only available on web'),
+          duration: Duration(seconds: 2),
         ),
       );
     }
