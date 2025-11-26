@@ -95,68 +95,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     }
   }
 
-  String _getDocumentDescription(String name) {
-    switch (name) {
-      case 'Business Proposal':
-        return 'Professional template for creating compelling business proposals with executive summaries, problem statements, and budget planning sections.';
-      case 'Research Paper':
-        return 'Academic template following standard research paper format with abstract, methodology, results, and references sections.';
-      case 'Resume/CV':
-        return 'Clean and professional resume template to showcase your experience, education, and skills effectively.';
-      case 'Contract Agreement':
-        return 'Legal template for formal agreements with clear clauses, terms and conditions, and signature sections.';
-      case 'Blog Post':
-        return 'Modern blog post template with engaging layout, perfect for creative writing and content creation.';
-      case 'Meeting Minutes':
-        return 'Structured template for recording meeting discussions, decisions, and action items in an organized format.';
-      default:
-        return 'Professional document template ready to use.';
-    }
-  }
-
-  List<Map<String, String>> _getDocumentFeatures(String name) {
-    final commonFeatures = [
-      {
-        'icon': 'assets/icons/edit.svg',
-        'title': 'Ready to Use',
-        'description': 'Pre-formatted and ready to customize',
-      },
-      {
-        'icon': 'assets/icons/palette.svg',
-        'title': 'Professional Design',
-        'description': 'Clean and modern layout',
-      },
-      {
-        'icon': 'assets/icons/responsive.svg',
-        'title': 'Responsive',
-        'description': 'Works on all devices',
-      },
-    ];
-
-    switch (name) {
-      case 'Business Proposal':
-        return [
-          ...commonFeatures,
-          {
-            'icon': 'assets/icons/business.svg',
-            'title': 'Executive Summary',
-            'description': 'Includes professional summary section',
-          },
-        ];
-      case 'Research Paper':
-        return [
-          ...commonFeatures,
-          {
-            'icon': 'assets/icons/academic.svg',
-            'title': 'Citation Ready',
-            'description': 'Pre-formatted citation sections',
-          },
-        ];
-      default:
-        return commonFeatures;
-    }
-  }
-
   void _showShareOptions() {
     showModalBottomSheet(
       context: context,
@@ -212,8 +150,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoryColor = _getCategoryColor(widget.document.category);
-    final screenHeight = MediaQuery.of(context).size.height;
-    final features = _getDocumentFeatures(widget.document.name);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -241,8 +177,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             child: IconButton(
               icon: SvgPicture.asset(
                 'assets/icons/arrow_back.svg',
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 colorFilter: ColorFilter.mode(
                   theme.colorScheme.primary,
                   BlendMode.srcIn,
@@ -284,8 +220,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   _isFavorite 
                       ? 'assets/icons/heart_filled.svg'
                       : 'assets/icons/heart.svg',
-                  width: 24,
-                  height: 24,
+                  width: 20,
+                  height: 20,
                   colorFilter: ColorFilter.mode(
                     _isFavorite ? Colors.red : theme.colorScheme.primary,
                     BlendMode.srcIn,
@@ -313,8 +249,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               child: IconButton(
                 icon: SvgPicture.asset(
                   'assets/icons/share.svg',
-                  width: 24,
-                  height: 24,
+                  width: 20,
+                  height: 20,
                   colorFilter: ColorFilter.mode(
                     theme.colorScheme.primary,
                     BlendMode.srcIn,
@@ -334,15 +270,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-                // Hero Image
+                // Hero Image com AspectRatio correto
                 SliverToBoxAdapter(
                   child: Hero(
                     tag: 'document_${widget.document.id}',
                     child: Stack(
                       children: [
-                        SizedBox(
-                          height: screenHeight * 0.5,
-                          width: double.infinity,
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
                           child: ShaderMask(
                             shaderCallback: (rect) {
                               return LinearGradient(
@@ -359,6 +294,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                             child: Image.network(
                               widget.document.coverImage,
                               fit: BoxFit.cover,
+                              width: double.infinity,
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Container(
@@ -381,8 +317,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                                   child: Center(
                                     child: SvgPicture.asset(
                                       'assets/icons/document.svg',
-                                      width: 80,
-                                      height: 80,
+                                      width: 64,
+                                      height: 64,
                                       colorFilter: ColorFilter.mode(
                                         categoryColor.withOpacity(0.5),
                                         BlendMode.srcIn,
@@ -425,8 +361,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                                 children: [
                                   SvgPicture.asset(
                                     'assets/icons/star.svg',
-                                    width: 18,
-                                    height: 18,
+                                    width: 14,
+                                    height: 14,
                                     colorFilter: const ColorFilter.mode(
                                       Colors.white,
                                       BlendMode.srcIn,
@@ -465,7 +401,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title & Category
+                          // Title
                           Row(
                             children: [
                               Expanded(
@@ -481,7 +417,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                           ),
                           const SizedBox(height: 16),
 
-                          // Category Badge with Animation
+                          // Category Badge
                           TweenAnimationBuilder<double>(
                             tween: Tween(begin: 0.0, end: 1.0),
                             duration: const Duration(milliseconds: 500),
@@ -499,7 +435,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                               ),
                               decoration: BoxDecoration(
                                 color: categoryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: categoryColor.withOpacity(0.3),
                                   width: 1,
@@ -510,8 +446,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                                 children: [
                                   SvgPicture.asset(
                                     _getCategoryIconPath(widget.document.category),
-                                    width: 16,
-                                    height: 16,
+                                    width: 13,
+                                    height: 13,
                                     colorFilter: ColorFilter.mode(
                                       categoryColor,
                                       BlendMode.srcIn,
@@ -533,66 +469,75 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
 
                           const SizedBox(height: 32),
 
-                          // Quick Stats
-                          Row(
-                            children: [
-                              _StatChip(
-                                iconPath: 'assets/icons/download.svg',
-                                label: '1.2k Downloads',
-                                theme: theme,
-                              ),
-                              const SizedBox(width: 12),
-                              _StatChip(
-                                iconPath: 'assets/icons/star.svg',
-                                label: '4.8 Rating',
-                                theme: theme,
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          // Description Section
-                          _SectionHeader(title: 'Description', theme: theme),
-                          const SizedBox(height: 12),
-                          Text(
-                            _getDocumentDescription(widget.document.name),
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              height: 1.6,
-                              color: theme.textTheme.bodyMedium?.color,
-                            ),
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          // Features Section
-                          _SectionHeader(title: 'Features', theme: theme),
-                          const SizedBox(height: 16),
-                          ...features.asMap().entries.map((entry) {
-                            return TweenAnimationBuilder<double>(
-                              tween: Tween(begin: 0.0, end: 1.0),
-                              duration: Duration(milliseconds: 300 + (entry.key * 100)),
-                              curve: Curves.easeOut,
-                              builder: (context, value, child) {
-                                return Transform.translate(
-                                  offset: Offset(0, 20 * (1 - value)),
-                                  child: Opacity(
-                                    opacity: value,
-                                    child: child,
+                          // Quick Stats - DA API
+                          if (widget.document.downloads != null || widget.document.rating != null)
+                            Row(
+                              children: [
+                                if (widget.document.downloads != null)
+                                  _StatChip(
+                                    iconPath: 'assets/icons/download.svg',
+                                    label: '${widget.document.downloads} Downloads',
+                                    theme: theme,
                                   ),
-                                );
-                              },
-                              child: _FeatureItem(
-                                iconPath: entry.value['icon']!,
-                                title: entry.value['title']!,
-                                description: entry.value['description']!,
-                                theme: theme,
-                                categoryColor: categoryColor,
-                              ),
-                            );
-                          }).toList(),
+                                if (widget.document.downloads != null && widget.document.rating != null)
+                                  const SizedBox(width: 12),
+                                if (widget.document.rating != null)
+                                  _StatChip(
+                                    iconPath: 'assets/icons/star.svg',
+                                    label: '${widget.document.rating} Rating',
+                                    theme: theme,
+                                  ),
+                              ],
+                            ),
 
-                          const SizedBox(height: 120),
+                          if (widget.document.downloads != null || widget.document.rating != null)
+                            const SizedBox(height: 32),
+
+                          // Description - DA API
+                          if (widget.document.description != null && widget.document.description!.isNotEmpty) ...[
+                            _SectionHeader(title: 'Description', theme: theme),
+                            const SizedBox(height: 12),
+                            Text(
+                              widget.document.description!,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                height: 1.6,
+                                color: theme.textTheme.bodyMedium?.color,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+
+                          // Features - DA API
+                          if (widget.document.features != null && widget.document.features!.isNotEmpty) ...[
+                            _SectionHeader(title: 'Features', theme: theme),
+                            const SizedBox(height: 16),
+                            ...widget.document.features!.asMap().entries.map((entry) {
+                              final feature = entry.value;
+                              return TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 0.0, end: 1.0),
+                                duration: Duration(milliseconds: 300 + (entry.key * 100)),
+                                curve: Curves.easeOut,
+                                builder: (context, value, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, 20 * (1 - value)),
+                                    child: Opacity(
+                                      opacity: value,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: _FeatureItem(
+                                  iconPath: feature['icon'] ?? 'assets/icons/document.svg',
+                                  title: feature['title'] ?? '',
+                                  description: feature['description'] ?? '',
+                                  theme: theme,
+                                  categoryColor: categoryColor,
+                                ),
+                              );
+                            }).toList(),
+                          ],
+
+                          const SizedBox(height: 100),
                         ],
                       ),
                     ),
@@ -602,28 +547,28 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             ),
           ),
 
-          // Floating Action Button
+          // Bottom Button
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     theme.scaffoldBackgroundColor.withOpacity(0.0),
-                    theme.scaffoldBackgroundColor,
+                    theme.scaffoldBackgroundColor.withOpacity(0.8),
                     theme.scaffoldBackgroundColor,
                   ],
-                  stops: const [0.0, 0.3, 1.0],
+                  stops: const [0.0, 0.4, 1.0],
                 ),
               ),
               child: SafeArea(
                 child: Container(
-                  height: 56,
+                  height: 50,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
@@ -659,8 +604,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                       children: [
                         SvgPicture.asset(
                           'assets/icons/play.svg',
-                          width: 24,
-                          height: 24,
+                          width: 20,
+                          height: 20,
                           colorFilter: const ColorFilter.mode(
                             Colors.white,
                             BlendMode.srcIn,
@@ -740,15 +685,15 @@ class _StatChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           SvgPicture.asset(
             iconPath,
-            width: 16,
-            height: 16,
+            width: 13,
+            height: 13,
             colorFilter: ColorFilter.mode(
               theme.colorScheme.primary,
               BlendMode.srcIn,
@@ -786,8 +731,8 @@ class _ShareOption extends StatelessWidget {
     return ListTile(
       leading: SvgPicture.asset(
         iconPath,
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
         colorFilter: ColorFilter.mode(
           theme.colorScheme.primary,
           BlendMode.srcIn,
@@ -834,7 +779,7 @@ class _FeatureItem extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: theme.dividerColor,
             width: 1,
@@ -854,13 +799,13 @@ class _FeatureItem extends StatelessWidget {
               height: 48,
               decoration: BoxDecoration(
                 color: categoryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
                 child: SvgPicture.asset(
                   iconPath,
-                  width: 24,
-                  height: 24,
+                  width: 19,
+                  height: 19,
                   colorFilter: ColorFilter.mode(
                     categoryColor,
                     BlendMode.srcIn,
