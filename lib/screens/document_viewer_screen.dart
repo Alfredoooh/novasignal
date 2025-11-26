@@ -46,11 +46,27 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.border = 'none'
-          ..style.transform = 'scale(0.8)'
-          ..style.transformOrigin = 'top left'
           ..srcdoc = widget.document.html;
 
         iframe.onLoad.listen((event) {
+          try {
+            // Injeta CSS no conteúdo do iframe para fazer zoom out
+            final iframeDoc = iframe.contentDocument;
+            if (iframeDoc != null) {
+              final style = iframeDoc.createElement('style');
+              style.text = '''
+                body {
+                  zoom: 0.2;
+                  -moz-transform: scale(0.2);
+                  -moz-transform-origin: 0 0;
+                }
+              ''';
+              iframeDoc.head?.append(style);
+            }
+          } catch (e) {
+            print('Erro ao aplicar zoom: $e');
+          }
+
           if (mounted) {
             setState(() {
               _isLoading = false;
