@@ -74,49 +74,65 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            // Conteúdo principal
-            _buildContent(theme),
-            
-            // Botão de settings flutuante no topo direito
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _showSettingsModal(context),
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      border: Border.all(color: theme.dividerColor),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI Suite',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: SvgPicture.asset(
-                        'assets/icons/settings.svg',
-                        width: 22,
-                        height: 22,
-                        colorFilter: ColorFilter.mode(
-                          colorScheme.primary,
-                          BlendMode.srcIn,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Personal',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.textTheme.bodySmall?.color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showSettingsModal(context),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'R',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
+            ),
+
+            // Conteúdo
+            Expanded(
+              child: _buildContent(theme),
             ),
           ],
         ),
@@ -229,39 +245,30 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadDocuments,
-      color: theme.colorScheme.primary,
-      child: MasonryGridView.count(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        itemCount: _documents.length,
-        itemBuilder: (context, index) {
-          // Calcula altura variada para efeito staggered
-          final baseHeight = 280.0;
-          final variation = (index % 3) * 30.0;
-          final cardHeight = baseHeight + variation;
-
-          return _DocumentCard(
-            document: _documents[index],
-            theme: theme,
-            height: cardHeight,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DocumentDetailScreen(
-                    document: _documents[index],
-                    themeProvider: widget.themeProvider,
-                  ),
+    // Staggered Grid sem pull-to-refresh
+    return MasonryGridView.count(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      itemCount: _documents.length,
+      itemBuilder: (context, index) {
+        return _DocumentCard(
+          document: _documents[index],
+          theme: theme,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DocumentDetailScreen(
+                  document: _documents[index],
+                  themeProvider: widget.themeProvider,
                 ),
-              );
-            },
-          );
-        },
-      ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -269,13 +276,11 @@ class _HomeScreenState extends State<HomeScreen> {
 class _DocumentCard extends StatelessWidget {
   final DocumentModel document;
   final ThemeData theme;
-  final double height;
   final VoidCallback onTap;
 
   const _DocumentCard({
     required this.document,
     required this.theme,
-    required this.height,
     required this.onTap,
   });
 
@@ -304,92 +309,71 @@ class _DocumentCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          height: height,
           decoration: BoxDecoration(
             color: theme.cardColor,
-            border: Border.all(color: theme.dividerColor),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.dividerColor.withOpacity(0.3),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Imagem de capa
-              Expanded(
-                flex: 3,
+              // Imagem com aspect ratio
+              AspectRatio(
+                aspectRatio: 1.0,
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
                   ),
                   child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Container(
-                        width: double.infinity,
-                        color: categoryColor.withOpacity(0.05),
-                        child: Image.network(
-                          document.coverImage,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: categoryColor.withOpacity(0.1),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  strokeWidth: 2,
-                                  color: categoryColor,
-                                ),
+                      Image.network(
+                        document.coverImage,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: categoryColor.withOpacity(0.1),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2,
+                                color: categoryColor,
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: categoryColor.withOpacity(0.1),
-                              child: Center(
-                                child: SvgPicture.asset(
-                                  'assets/icons/document.svg',
-                                  width: 48,
-                                  height: 48,
-                                  colorFilter: ColorFilter.mode(
-                                    categoryColor.withOpacity(0.5),
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      // Gradient overlay
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 60,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.3),
-                              ],
                             ),
-                          ),
-                        ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: categoryColor.withOpacity(0.1),
+                            child: Center(
+                              child: SvgPicture.asset(
+                                'assets/icons/document.svg',
+                                width: 40,
+                                height: 40,
+                                colorFilter: ColorFilter.mode(
+                                  categoryColor.withOpacity(0.5),
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       // Badge PRO
                       if (document.isPro)
@@ -422,8 +406,8 @@ class _DocumentCard extends StatelessWidget {
                               children: [
                                 SvgPicture.asset(
                                   'assets/icons/star.svg',
-                                  width: 12,
-                                  height: 12,
+                                  width: 10,
+                                  height: 10,
                                   colorFilter: const ColorFilter.mode(
                                     Colors.white,
                                     BlendMode.srcIn,
@@ -446,50 +430,31 @@ class _DocumentCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Informações
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            document.name,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              height: 1.2,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: categoryColor.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              document.category,
-                              style: TextStyle(
-                                color: categoryColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
+
+              // Informações do documento
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      document.name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      document.category,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: categoryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
