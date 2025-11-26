@@ -46,8 +46,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         final htmlWithZoom = '''
           <style>
             body {
-              zoom: 0.35 !important;
-              -moz-transform: scale(0.35);
+              zoom: 0.45 !important;
+              -moz-transform: scale(0.45);
               -moz-transform-origin: 0 0;
             }
           </style>
@@ -60,6 +60,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           ..style.border = 'none'
           ..srcdoc = htmlWithZoom;
 
+        // Listener de load
         iframe.onLoad.listen((event) {
           if (mounted) {
             setState(() {
@@ -68,6 +69,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           }
         });
 
+        // Listener de erro
         iframe.onError.listen((event) {
           if (mounted) {
             setState(() {
@@ -80,7 +82,8 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       },
     );
 
-    Future.delayed(const Duration(seconds: 3), () {
+    // Força o loading a desaparecer após 2 segundos mesmo que não tenha carregado
+    Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _isLoading) {
         setState(() {
           _isLoading = false;
