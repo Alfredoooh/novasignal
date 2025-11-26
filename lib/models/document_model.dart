@@ -7,7 +7,7 @@ class DocumentModel {
   final String html;
 
   DocumentModel({
-    required this id,
+    required this.id,
     required this.name,
     required this.category,
     required this.isPro,
