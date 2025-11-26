@@ -42,31 +42,25 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     registerWebViewFactory(
       _viewType,
       (int viewId) {
+        // Injeta o CSS de zoom diretamente no HTML
+        final htmlWithZoom = '''
+          <style>
+            body {
+              zoom: 0.2 !important;
+              -moz-transform: scale(0.2);
+              -moz-transform-origin: 0 0;
+            }
+          </style>
+          ${widget.document.html}
+        ''';
+
         final iframe = html.IFrameElement()
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.border = 'none'
-          ..srcdoc = widget.document.html;
+          ..srcdoc = htmlWithZoom;
 
         iframe.onLoad.listen((event) {
-          try {
-            // Injeta CSS no conteúdo do iframe para fazer zoom out
-            final iframeDoc = iframe.contentDocument;
-            if (iframeDoc != null) {
-              final style = iframeDoc.createElement('style');
-              style.text = '''
-                body {
-                  zoom: 0.2;
-                  -moz-transform: scale(0.2);
-                  -moz-transform-origin: 0 0;
-                }
-              ''';
-              iframeDoc.head?.append(style);
-            }
-          } catch (e) {
-            print('Erro ao aplicar zoom: $e');
-          }
-
           if (mounted) {
             setState(() {
               _isLoading = false;
