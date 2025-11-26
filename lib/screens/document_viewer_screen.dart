@@ -100,69 +100,52 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     });
   }
 
-  bool _isDesktop() {
-    final shortestSide = MediaQuery.of(context).size.shortestSide;
-    return shortestSide >= 600;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // Verificar se é desktop
-    if (!_isDesktop()) {
-      return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.desktop_windows,
-                  size: 64,
-                  color: theme.colorScheme.primary.withOpacity(0.5),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Visualização disponível apenas em Desktop',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Por favor, acesse este documento em um dispositivo desktop para visualizá-lo.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.textTheme.bodySmall?.color,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Largura fixa do documento em modo desktop (simulando tela de computador)
+    final desktopWidth = screenWidth > 1200 ? 1200.0 : screenWidth * 0.9;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Conteúdo HTML em tela cheia
-          kIsWeb
-              ? Transform.scale(
-                  scale: _zoomLevel,
-                  child: HtmlElementView(viewType: _viewType),
-                )
-              : Center(
-                  child: Text(
-                    'Visualização web disponível apenas na plataforma web',
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                ),
+          // Container centralizado simulando visualização desktop
+          Center(
+            child: Container(
+              width: desktopWidth,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: screenWidth > 1200
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: kIsWeb
+                  ? Transform.scale(
+                      scale: _zoomLevel,
+                      child: HtmlElementView(viewType: _viewType),
+                    )
+                  : Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'Visualização web disponível apenas na plataforma web',
+                          style: theme.textTheme.bodyLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
           
           // Loading indicator
           if (_isLoading)
@@ -186,38 +169,6 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
                 ),
               ),
             ),
-          
-          // Botão de voltar no canto superior esquerdo
-          Positioned(
-            top: 16,
-            left: 16,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: SvgPicture.asset(
-                  'assets/icons/arrow_back.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    theme.colorScheme.primary,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                onPressed: () => Navigator.pop(context),
-                tooltip: 'Voltar',
-              ),
-            ),
-          ),
           
           // Controles de zoom no canto superior direito
           Positioned(
