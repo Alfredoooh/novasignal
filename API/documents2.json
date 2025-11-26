@@ -5,6 +5,31 @@
       "name": "Link na Bio Pro",
       "category": "Social",
       "isPro": false,
+      "description": None.",
+      "downloads": "none",
+      "rating": "none",
+      "features": [
+        {
+          "icon": "assets/icons/responsive.svg",
+          "title": "Design Responsivo",
+          "description": "Funciona perfeitamente em todos os dispositivos"
+        },
+        {
+          "icon": "assets/icons/palette.svg",
+          "title": "Visual Moderno",
+          "description": "none"
+        },
+        {
+          "icon": "assets/icons/edit.svg",
+          "title": "Fácil Personalização",
+          "description": "Altere avatar, nome e links facilmente"
+        },
+        {
+          "icon": "assets/icons/star.svg",
+          "title": "Redes Sociais",
+          "description": "none"
+        }
+      ],
       "coverImage": "https://raw.githubusercontent.com/Alfredoooh/novasignal/main/covers/linkbio.jpg",
       "description": "Crie sua página de links profissional e moderna para Instagram, TikTok e outras redes sociais. Centralize todos os seus links em um só lugar com design responsivo e animações suaves.",
       "downloads": "15.8k",
