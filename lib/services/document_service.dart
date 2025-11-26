@@ -4,7 +4,7 @@ import '../models/document_model.dart';
 
 class DocumentService {
   static const String apiBaseUrl = 
-      'https://alfredoooh.github.io/novasignal/API/';
+      'https://alfredoooh.github.io/database/API/';
 
   Future<List<DocumentModel>> fetchDocuments() async {
     List<DocumentModel> allDocuments = [];
