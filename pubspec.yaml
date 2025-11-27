@@ -15,7 +15,7 @@ dependencies:
   flutter_staggered_grid_view: any
 
   # Nova dependência obrigatória para extração de cor
-  palette_generator: ^0.3.3+3
+  palette_generator: any
 
   dio: any
   path_provider: any
