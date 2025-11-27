@@ -256,8 +256,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
             Container(
-              height: 56,
+              height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 20),
+              margin: const EdgeInsets.only(bottom: 8),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _categories.length,
@@ -443,24 +444,24 @@ class _CategoryChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(isDesktop ? 12 : 20),
+        borderRadius: BorderRadius.circular(isDesktop ? 10 : 18),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 20 : 16,
-            vertical: isDesktop ? 10 : 12,
+            horizontal: isDesktop ? 18 : 14,
+            vertical: isDesktop ? 8 : 8,
           ),
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primary
                 : theme.scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(isDesktop ? 12 : 20),
+            borderRadius: BorderRadius.circular(isDesktop ? 10 : 18),
             border: Border.all(
               color: isSelected
                   ? theme.colorScheme.primary
                   : theme.dividerColor,
-              width: 1.5,
+              width: 1,
             ),
           ),
           child: Text(
@@ -469,7 +470,7 @@ class _CategoryChip extends StatelessWidget {
               color: isSelected
                   ? theme.colorScheme.onPrimary
                   : theme.colorScheme.secondary,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -500,127 +501,130 @@ class _ImageCard extends StatelessWidget {
     final heightFactor = 0.7 + (random.nextDouble() * 0.6);
     final borderRadius = isDesktop ? 8.0 : 16.0;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor,
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(borderRadius),
-            child: AspectRatio(
-              aspectRatio: 1 / heightFactor,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    document.coverImage,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: theme.cardColor,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                            strokeWidth: 2,
-                            color: theme.colorScheme.primary,
+    return Hero(
+      tag: 'document_${document.id}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.shadowColor.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(borderRadius),
+              child: AspectRatio(
+                aspectRatio: 1 / heightFactor,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      document.coverImage,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: theme.cardColor,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                              strokeWidth: 2,
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: theme.cardColor,
-                        child: Center(
-                          child: Icon(
-                            Icons.image,
-                            size: 40,
-                            color: theme.colorScheme.primary.withOpacity(0.3),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: theme.cardColor,
+                          child: Center(
+                            child: Icon(
+                              Icons.image,
+                              size: 40,
+                              color: theme.colorScheme.primary.withOpacity(0.3),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                  if (document.isPro)
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.3),
-                              Colors.transparent,
-                            ],
+                        );
+                      },
+                    ),
+                    if (document.isPro)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 80,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withOpacity(0.3),
+                                Colors.transparent,
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  if (document.isPro)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.amber.shade400,
-                              Colors.orange.shade400,
-                            ],
+                    if (document.isPro)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.amber.shade400,
+                                Colors.orange.shade400,
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.star,
-                              size: 12,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              'PRO',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.star,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              const Text(
+                                'PRO',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
