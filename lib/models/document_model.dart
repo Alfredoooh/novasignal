@@ -5,10 +5,12 @@ class DocumentModel {
   final bool isPro;
   final String coverImage;
   final String html;
+  final String? pdfUrl;
   final String? description;
   final List<Map<String, String>>? features;
   final String? downloads;
   final String? rating;
+  bool isFavorite;
 
   DocumentModel({
     required this.id,
@@ -17,10 +19,12 @@ class DocumentModel {
     required this.isPro,
     required this.coverImage,
     required this.html,
+    this.pdfUrl,
     this.description,
     this.features,
     this.downloads,
     this.rating,
+    this.isFavorite = false,
   });
 
   factory DocumentModel.fromJson(Map<String, dynamic> json) {
@@ -39,10 +43,12 @@ class DocumentModel {
         isPro: json['isPro'] as bool? ?? json['pro'] as bool? ?? false,
         coverImage: json['coverImage']?.toString() ?? '',
         html: json['html']?.toString() ?? '',
+        pdfUrl: json['pdfUrl']?.toString(),
         description: json['description']?.toString(),
         features: featuresList,
         downloads: json['downloads']?.toString(),
         rating: json['rating']?.toString(),
+        isFavorite: json['isFavorite'] as bool? ?? false,
       );
     } catch (e) {
       print('❌ Erro ao criar DocumentModel: $e');
@@ -59,15 +65,17 @@ class DocumentModel {
       'isPro': isPro,
       'coverImage': coverImage,
       'html': html,
+      'pdfUrl': pdfUrl,
       'description': description,
       'features': features,
       'downloads': downloads,
       'rating': rating,
+      'isFavorite': isFavorite,
     };
   }
 
   @override
   String toString() {
-    return 'DocumentModel(id: $id, name: $name, category: $category, isPro: $isPro)';
+    return 'DocumentModel(id: $id, name: $name, category: $category, isPro: $isPro, isFavorite: $isFavorite)';
   }
 }
