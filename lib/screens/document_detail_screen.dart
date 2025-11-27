@@ -513,21 +513,28 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
         fit: StackFit.expand,
         children: [
           // Background blurred
-          Image.network(
-            widget.document.coverImage,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(color: categoryColor.withOpacity(0.1));
-            },
-          ),
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              color: Colors.black.withOpacity(0.3),
+          ClipRect(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  widget.document.coverImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(color: categoryColor.withOpacity(0.1));
+                  },
+                ),
+                BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.3),
+                  ),
+                ),
+              ],
             ),
           ),
           
-          // Imagem original centralizada
+          // Imagem original centralizada (SEM BLUR)
           Center(
             child: Image.network(
               widget.document.coverImage,
@@ -546,10 +553,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 );
               },
               errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.image,
-                  size: 64,
-                  color: categoryColor.withOpacity(0.5),
+                return SvgPicture.asset(
+                  'assets/icons/document.svg',
+                  width: 64,
+                  height: 64,
+                  colorFilter: ColorFilter.mode(
+                    categoryColor.withOpacity(0.5),
+                    BlendMode.srcIn,
+                  ),
                 );
               },
             ),
@@ -584,10 +595,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.star,
-                      size: 14,
-                      color: Colors.white,
+                    SvgPicture.asset(
+                      'assets/icons/star.svg',
+                      width: 14,
+                      height: 14,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
                     const SizedBox(width: 6),
                     const Text(
@@ -616,10 +631,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.zoom_in,
-                    color: Colors.white,
-                    size: 16,
+                  SvgPicture.asset(
+                    'assets/icons/zoom_in.svg',
+                    width: 16,
+                    height: 16,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
                   ),
                   const SizedBox(width: 4),
                   const Text(
@@ -674,10 +693,14 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.category,
-                  size: 13,
-                  color: categoryColor,
+                SvgPicture.asset(
+                  _getCategoryIconPath(widget.document.category),
+                  width: 13,
+                  height: 13,
+                  colorFilter: ColorFilter.mode(
+                    categoryColor,
+                    BlendMode.srcIn,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -702,13 +725,13 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               children: [
                 if (widget.document.downloads != null)
                   _StatChip(
-                    icon: Icons.download,
+                    iconPath: 'assets/icons/download.svg',
                     label: '${widget.document.downloads} Downloads',
                     theme: theme,
                   ),
                 if (widget.document.rating != null)
                   _StatChip(
-                    icon: Icons.star,
+                    iconPath: 'assets/icons/star.svg',
                     label: '${widget.document.rating} Rating',
                     theme: theme,
                   ),
@@ -780,7 +803,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 }
 
-// Tela cheia da imagem
+// Tela cheia da imagem com gesto de deslizar
 class _FullScreenImage extends StatelessWidget {
   final String imageUrl;
   final String heroTag;
@@ -794,44 +817,89 @@ class _FullScreenImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Center(
-            child: Hero(
-              tag: heroTag,
-              child: InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                    ),
+      body: GestureDetector(
+        onVerticalDragEnd: (details) {
+          // Deslizar para baixo ou para cima fecha a tela
+          if (details.primaryVelocity! > 300 || details.primaryVelocity! < -300) {
+            Navigator.pop(context);
+          }
+        },
+        child: Stack(
+          children: [
+            Center(
+              child: Hero(
+                tag: heroTag,
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
                   ),
-                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),
-          ),
-        ],
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ),
+            ),
+            // Indicador de gesto
+            Positioned(
+              bottom: 32,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/swipe.svg',
+                        width: 16,
+                        height: 16,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Swipe to close',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -873,12 +941,12 @@ class _SectionHeader extends StatelessWidget {
 
 // Stat Chip
 class _StatChip extends StatelessWidget {
-  final IconData icon;
+  final String iconPath;
   final String label;
   final ThemeData theme;
 
   const _StatChip({
-    required this.icon,
+    required this.iconPath,
     required this.label,
     required this.theme,
   });
@@ -894,10 +962,14 @@ class _StatChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 13,
-            color: theme.colorScheme.primary,
+          SvgPicture.asset(
+            iconPath,
+            width: 13,
+            height: 13,
+            colorFilter: ColorFilter.mode(
+              theme.colorScheme.primary,
+              BlendMode.srcIn,
+            ),
           ),
           const SizedBox(width: 6),
           Text(
@@ -929,7 +1001,15 @@ class _ShareOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(Icons.share, color: theme.colorScheme.primary),
+      leading: SvgPicture.asset(
+        iconPath,
+        width: 20,
+        height: 20,
+        colorFilter: ColorFilter.mode(
+          theme.colorScheme.primary,
+          BlendMode.srcIn,
+        ),
+      ),
       title: Text(label),
       onTap: () {
         Navigator.pop(context);
@@ -947,7 +1027,7 @@ class _ShareOption extends StatelessWidget {
   }
 }
 
-// Feature Item (lista vertical)
+// Feature Item (lista vertical) - MELHORADO
 class _FeatureItem extends StatelessWidget {
   final String iconPath;
   final String title;
@@ -968,29 +1048,41 @@ class _FeatureItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: theme.cardColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: theme.dividerColor,
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
                 color: categoryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
-                child: Icon(
-                  Icons.check_circle,
-                  size: 24,
-                  color: categoryColor,
+                child: SvgPicture.asset(
+                  iconPath,
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    categoryColor,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
             ),
@@ -1005,11 +1097,12 @@ class _FeatureItem extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     description,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.textTheme.bodySmall?.color,
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                      height: 1.5,
                     ),
                   ),
                 ],
@@ -1022,7 +1115,7 @@ class _FeatureItem extends StatelessWidget {
   }
 }
 
-// Feature Item Compact (grid)
+// Feature Item Compact (grid) - MELHORADO
 class _FeatureItemCompact extends StatelessWidget {
   final String iconPath;
   final String title;
@@ -1041,7 +1134,7 @@ class _FeatureItemCompact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -1049,27 +1142,37 @@ class _FeatureItemCompact extends StatelessWidget {
           color: theme.dividerColor,
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: categoryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Icon(
-                Icons.check_circle,
-                size: 20,
-                color: categoryColor,
+              child: SvgPicture.asset(
+                iconPath,
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  categoryColor,
+                  BlendMode.srcIn,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             title,
             style: theme.textTheme.titleSmall?.copyWith(
@@ -1078,13 +1181,14 @@ class _FeatureItemCompact extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             description,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+              height: 1.5,
             ),
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
         ],
