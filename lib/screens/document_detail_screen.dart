@@ -8,6 +8,7 @@ import 'dart:io';
 import '../models/document_model.dart';
 import '../providers/theme_provider.dart';
 import '../screens/document_viewer_screen.dart';
+import 'package:palette_generator/palette_generator.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
   final DocumentModel document;
