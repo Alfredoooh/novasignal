@@ -1,6 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'dart:io';
 import '../models/document_model.dart';
 import '../providers/theme_provider.dart';
 import '../screens/document_viewer_screen.dart';
@@ -10,6 +14,7 @@ class DocumentDetailScreen extends StatefulWidget {
   final ThemeProvider themeProvider;
   final bool isSecondaryScreen;
   final VoidCallback? onClose;
+  final Function(DocumentModel)? onFavoriteToggle;
 
   const DocumentDetailScreen({
     Key? key,
@@ -17,6 +22,7 @@ class DocumentDetailScreen extends StatefulWidget {
     required this.themeProvider,
     this.isSecondaryScreen = false,
     this.onClose,
+    this.onFavoriteToggle,
   }) : super(key: key);
 
   @override
@@ -29,7 +35,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   bool _showTitle = false;
-  bool _isFavorite = false;
+  bool _isDownloading = false;
+  double _downloadProgress = 0.0;
 
   @override
   void initState() {
@@ -112,53 +119,157 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     );
   }
 
-  void _showShareOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+  Future<void> _downloadPDF() async {
+    if (widget.document.pdfUrl == null || widget.document.pdfUrl!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SvgPicture.asset(
+                'assets/icons/alert.svg',
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('PDF não disponível'),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      );
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0.0;
+    });
+
+    try {
+      final dio = Dio();
+      final dir = await getApplicationDocumentsDirectory();
+      final filePath = '${dir.path}/${widget.document.name}.pdf';
+
+      await dio.download(
+        widget.document.pdfUrl!,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            setState(() {
+              _downloadProgress = received / total;
+            });
+          }
+        },
+      );
+
+      setState(() => _isDownloading = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/check.svg',
+                  width: 16,
+                  height: 16,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Download concluído!')),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            action: SnackBarAction(
+              label: 'Abrir',
+              textColor: Colors.white,
+              onPressed: () => OpenFile.open(filePath),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isDownloading = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/alert.svg',
+                  width: 16,
+                  height: 16,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Erro ao baixar: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _toggleFavorite() {
+    setState(() {
+      widget.document.isFavorite = !widget.document.isFavorite;
+    });
+    
+    widget.onFavoriteToggle?.call(widget.document);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+            SvgPicture.asset(
+              widget.document.isFavorite 
+                  ? 'assets/icons/heart_filled.svg' 
+                  : 'assets/icons/heart.svg',
+              width: 16,
+              height: 16,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(width: 12),
             Text(
-              'Share Template',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              widget.document.isFavorite 
+                  ? 'Adicionado aos favoritos' 
+                  : 'Removido dos favoritos',
             ),
-            const SizedBox(height: 24),
-            _ShareOption(
-              iconPath: 'assets/icons/link.svg',
-              label: 'Copy Link',
-              theme: Theme.of(context),
-            ),
-            _ShareOption(
-              iconPath: 'assets/icons/email.svg',
-              label: 'Email',
-              theme: Theme.of(context),
-            ),
-            _ShareOption(
-              iconPath: 'assets/icons/share.svg',
-              label: 'More Options',
-              theme: Theme.of(context),
-            ),
-            const SizedBox(height: 16),
           ],
         ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -185,7 +296,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       color: theme.scaffoldBackgroundColor,
       child: Column(
         children: [
-          // Header fixo
           Container(
             height: 64,
             decoration: BoxDecoration(
@@ -211,30 +321,65 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   ),
                 ),
                 IconButton(
-                  icon: Icon(
-                    _isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: _isFavorite ? Colors.red : theme.colorScheme.secondary,
+                  icon: SvgPicture.asset(
+                    widget.document.isFavorite 
+                        ? 'assets/icons/heart_filled.svg' 
+                        : 'assets/icons/heart.svg',
+                    width: 19.2,
+                    height: 19.2,
+                    colorFilter: ColorFilter.mode(
+                      widget.document.isFavorite ? Colors.red : theme.colorScheme.secondary,
+                      BlendMode.srcIn,
+                    ),
                   ),
-                  onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                  onPressed: _toggleFavorite,
                 ),
+                if (_isDownloading)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        value: _downloadProgress,
+                        strokeWidth: 2.5,
+                        color: categoryColor,
+                      ),
+                    ),
+                  )
+                else
+                  IconButton(
+                    icon: SvgPicture.asset(
+                      'assets/icons/download.svg',
+                      width: 19.2,
+                      height: 19.2,
+                      colorFilter: ColorFilter.mode(
+                        theme.colorScheme.secondary,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    onPressed: _downloadPDF,
+                  ),
                 IconButton(
-                  icon: Icon(Icons.share, color: theme.colorScheme.secondary),
-                  onPressed: _showShareOptions,
-                ),
-                IconButton(
-                  icon: Icon(Icons.close, color: theme.colorScheme.secondary),
+                  icon: SvgPicture.asset(
+                    'assets/icons/close.svg',
+                    width: 19.2,
+                    height: 19.2,
+                    colorFilter: ColorFilter.mode(
+                      theme.colorScheme.secondary,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                   onPressed: widget.onClose,
                 ),
               ],
             ),
           ),
-          
-          // Conteúdo scrollável
+
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // Imagem com blur
                   GestureDetector(
                     onTap: () => _showFullImage(context),
                     child: _buildImageWithBlur(categoryColor),
@@ -244,8 +389,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               ),
             ),
           ),
-          
-          // Botão fixo no bottom
+
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -283,7 +427,15 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.play_arrow, size: 20),
+                    SvgPicture.asset(
+                      'assets/icons/play.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       'Use Template',
@@ -329,7 +481,15 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               ],
             ),
             child: IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: SvgPicture.asset(
+                'assets/icons/arrow_back.svg',
+                width: 19.2,
+                height: 19.2,
+                colorFilter: ColorFilter.mode(
+                  theme.colorScheme.primary,
+                  BlendMode.srcIn,
+                ),
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -362,11 +522,18 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 ],
               ),
               child: IconButton(
-                icon: Icon(
-                  _isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: _isFavorite ? Colors.red : theme.colorScheme.primary,
+                icon: SvgPicture.asset(
+                  widget.document.isFavorite 
+                      ? 'assets/icons/heart_filled.svg' 
+                      : 'assets/icons/heart.svg',
+                  width: 19.2,
+                  height: 19.2,
+                  colorFilter: ColorFilter.mode(
+                    widget.document.isFavorite ? Colors.red : theme.colorScheme.primary,
+                    BlendMode.srcIn,
+                  ),
                 ),
-                onPressed: () => setState(() => _isFavorite = !_isFavorite),
+                onPressed: _toggleFavorite,
               ),
             ),
           ),
@@ -385,10 +552,31 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   ),
                 ],
               ),
-              child: IconButton(
-                icon: const Icon(Icons.share),
-                onPressed: _showShareOptions,
-              ),
+              child: _isDownloading
+                  ? Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          value: _downloadProgress,
+                          strokeWidth: 2.5,
+                          color: categoryColor,
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      icon: SvgPicture.asset(
+                        'assets/icons/download.svg',
+                        width: 19.2,
+                        height: 19.2,
+                        colorFilter: ColorFilter.mode(
+                          theme.colorScheme.primary,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      onPressed: _downloadPDF,
+                    ),
             ),
           ),
           const SizedBox(width: 8),
@@ -401,7 +589,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             child: CustomScrollView(
               controller: _scrollController,
               slivers: [
-                // Hero Image com blur background
                 SliverToBoxAdapter(
                   child: GestureDetector(
                     onTap: () => _showFullImage(context),
@@ -412,7 +599,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   ),
                 ),
 
-                // Content
                 SliverToBoxAdapter(
                   child: Container(
                     decoration: BoxDecoration(
@@ -429,7 +615,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             ),
           ),
 
-          // Bottom Button
           Positioned(
             left: 0,
             right: 0,
@@ -481,12 +666,20 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.play_arrow, size: 20),
-                        SizedBox(width: 12),
-                        Text(
+                        SvgPicture.asset(
+                          'assets/icons/play.svg',
+                          width: 16,
+                          height: 16,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
                           'Use Template',
                           style: TextStyle(
                             fontSize: 16,
@@ -512,7 +705,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background blurred
           ClipRect(
             child: Stack(
               fit: StackFit.expand,
@@ -533,8 +725,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               ],
             ),
           ),
-          
-          // Imagem original centralizada (SEM BLUR)
+
           Center(
             child: Image.network(
               widget.document.coverImage,
@@ -555,8 +746,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               errorBuilder: (context, error, stackTrace) {
                 return SvgPicture.asset(
                   'assets/icons/document.svg',
-                  width: 64,
-                  height: 64,
+                  width: 51.2,
+                  height: 51.2,
                   colorFilter: ColorFilter.mode(
                     categoryColor.withOpacity(0.5),
                     BlendMode.srcIn,
@@ -565,8 +756,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               },
             ),
           ),
-          
-          // PRO Badge
+
           if (widget.document.isPro)
             Positioned(
               bottom: 16,
@@ -597,8 +787,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   children: [
                     SvgPicture.asset(
                       'assets/icons/star.svg',
-                      width: 14,
-                      height: 14,
+                      width: 11.2,
+                      height: 11.2,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
@@ -617,8 +807,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 ),
               ),
             ),
-          
-          // Indicador de zoom
+
           Positioned(
             bottom: 16,
             left: 16,
@@ -633,8 +822,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 children: [
                   SvgPicture.asset(
                     'assets/icons/zoom_in.svg',
-                    width: 16,
-                    height: 16,
+                    width: 12.8,
+                    height: 12.8,
                     colorFilter: const ColorFilter.mode(
                       Colors.white,
                       BlendMode.srcIn,
@@ -666,7 +855,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
           Text(
             widget.document.name,
             style: theme.textTheme.headlineMedium?.copyWith(
@@ -676,7 +864,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
           ),
           const SizedBox(height: 16),
 
-          // Category Badge
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 12,
@@ -695,8 +882,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               children: [
                 SvgPicture.asset(
                   _getCategoryIconPath(widget.document.category),
-                  width: 13,
-                  height: 13,
+                  width: 10.4,
+                  height: 10.4,
                   colorFilter: ColorFilter.mode(
                     categoryColor,
                     BlendMode.srcIn,
@@ -717,7 +904,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
 
           const SizedBox(height: 32),
 
-          // Quick Stats
           if (widget.document.downloads != null || widget.document.rating != null)
             Wrap(
               spacing: 12,
@@ -741,7 +927,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
           if (widget.document.downloads != null || widget.document.rating != null)
             const SizedBox(height: 32),
 
-          // Description
           if (widget.document.description != null && widget.document.description!.isNotEmpty) ...[
             _SectionHeader(title: 'Description', theme: theme),
             const SizedBox(height: 12),
@@ -755,13 +940,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             const SizedBox(height: 32),
           ],
 
-          // Features - Grid em telas largas
           if (widget.document.features != null && widget.document.features!.isNotEmpty) ...[
             _SectionHeader(title: 'Features', theme: theme),
             const SizedBox(height: 16),
-            
+
             if (isWide)
-              // Grid 2x2
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -784,7 +967,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 },
               )
             else
-              // Lista vertical
               ...widget.document.features!.map((feature) {
                 return _FeatureItem(
                   iconPath: feature['icon'] ?? 'assets/icons/document.svg',
@@ -803,7 +985,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 }
 
-// Tela cheia da imagem com gesto de deslizar
 class _FullScreenImage extends StatelessWidget {
   final String imageUrl;
   final String heroTag;
@@ -819,7 +1000,6 @@ class _FullScreenImage extends StatelessWidget {
       backgroundColor: Colors.black,
       body: GestureDetector(
         onVerticalDragEnd: (details) {
-          // Deslizar para baixo ou para cima fecha a tela
           if (details.primaryVelocity! > 300 || details.primaryVelocity! < -300) {
             Navigator.pop(context);
           }
@@ -851,9 +1031,14 @@ class _FullScreenImage extends StatelessWidget {
                         color: Colors.black54,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
+                      child: SvgPicture.asset(
+                        'assets/icons/close.svg',
+                        width: 19.2,
+                        height: 19.2,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                     onPressed: () => Navigator.pop(context),
@@ -861,7 +1046,6 @@ class _FullScreenImage extends StatelessWidget {
                 ),
               ),
             ),
-            // Indicador de gesto
             Positioned(
               bottom: 32,
               left: 0,
@@ -878,8 +1062,8 @@ class _FullScreenImage extends StatelessWidget {
                     children: [
                       SvgPicture.asset(
                         'assets/icons/swipe.svg',
-                        width: 16,
-                        height: 16,
+                        width: 12.8,
+                        height: 12.8,
                         colorFilter: const ColorFilter.mode(
                           Colors.white,
                           BlendMode.srcIn,
@@ -905,7 +1089,6 @@ class _FullScreenImage extends StatelessWidget {
   }
 }
 
-// Section Header
 class _SectionHeader extends StatelessWidget {
   final String title;
   final ThemeData theme;
@@ -939,7 +1122,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// Stat Chip
 class _StatChip extends StatelessWidget {
   final String iconPath;
   final String label;
@@ -964,8 +1146,8 @@ class _StatChip extends StatelessWidget {
         children: [
           SvgPicture.asset(
             iconPath,
-            width: 13,
-            height: 13,
+            width: 10.4,
+            height: 10.4,
             colorFilter: ColorFilter.mode(
               theme.colorScheme.primary,
               BlendMode.srcIn,
@@ -986,48 +1168,6 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// Share Option
-class _ShareOption extends StatelessWidget {
-  final String iconPath;
-  final String label;
-  final ThemeData theme;
-
-  const _ShareOption({
-    required this.iconPath,
-    required this.label,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: SvgPicture.asset(
-        iconPath,
-        width: 20,
-        height: 20,
-        colorFilter: ColorFilter.mode(
-          theme.colorScheme.primary,
-          BlendMode.srcIn,
-        ),
-      ),
-      title: Text(label),
-      onTap: () {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$label selected'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// Feature Item (lista vertical) - MELHORADO
 class _FeatureItem extends StatelessWidget {
   final String iconPath;
   final String title;
@@ -1077,8 +1217,8 @@ class _FeatureItem extends StatelessWidget {
               child: Center(
                 child: SvgPicture.asset(
                   iconPath,
-                  width: 24,
-                  height: 24,
+                  width: 19.2,
+                  height: 19.2,
                   colorFilter: ColorFilter.mode(
                     categoryColor,
                     BlendMode.srcIn,
@@ -1115,7 +1255,6 @@ class _FeatureItem extends StatelessWidget {
   }
 }
 
-// Feature Item Compact (grid) - MELHORADO
 class _FeatureItemCompact extends StatelessWidget {
   final String iconPath;
   final String title;
@@ -1163,8 +1302,8 @@ class _FeatureItemCompact extends StatelessWidget {
             child: Center(
               child: SvgPicture.asset(
                 iconPath,
-                width: 24,
-                height: 24,
+                width: 19.2,
+                height: 19.2,
                 colorFilter: ColorFilter.mode(
                   categoryColor,
                   BlendMode.srcIn,
