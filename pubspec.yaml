@@ -13,14 +13,17 @@ dependencies:
   webview_flutter: any
   http: any
   flutter_staggered_grid_view: any
-  palette_generator: any
+
+  # Nova dependência obrigatória para extração de cor
+  palette_generator: ^0.3.3+3
+
   dio: any
   path_provider: any
   open_file: any
-  
+
   # State management and storage
   shared_preferences: ^2.2.2
-  
+
   # SVG support
   flutter_svg: ^2.0.9
 
@@ -31,9 +34,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
   assets:
     - assets/icons/
-    # Ícones SVG
+
+    # Ícones existentes
     - assets/icons/plus.svg
     - assets/icons/sparkle.svg
     - assets/icons/home.svg
@@ -58,3 +63,34 @@ flutter:
     - assets/icons/edit.svg
     - assets/icons/responsive.svg
     - assets/icons/pallette.svg
+
+    # ---------------------------
+    #   NOVOS ÍCONES ADICIONADOS
+    # ---------------------------
+
+    # Navegação
+    - assets/icons/menu.svg
+
+    # Ações
+    - assets/icons/heart.svg
+    - assets/icons/heart_filled.svg
+    - assets/icons/alert.svg
+    - assets/icons/filter.svg
+
+    # Categorias extras
+    - assets/icons/finance.svg
+    - assets/icons/health.svg
+    - assets/icons/education.svg
+    - assets/icons/technology.svg
+    - assets/icons/marketing.svg
+    - assets/icons/sports.svg
+    - assets/icons/travel.svg
+    - assets/icons/food.svg
+    - assets/icons/real_estate.svg
+    - assets/icons/automotive.svg
+
+    # Ícones gerais
+    - assets/icons/zoom_in.svg
+    - assets/icons/swipe.svg
+    - assets/icons/link.svg
+    - assets/icons/email.svg
