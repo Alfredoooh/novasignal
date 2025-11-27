@@ -56,20 +56,21 @@ class BottomBar extends StatelessWidget {
           const SizedBox(height: 20),
           
           // Botão Settings (circular, no topo)
-          _SideBarCircularButton(
-            child: SvgPicture.asset(
-              'assets/icons/settings.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                colorScheme.onPrimary,
-                BlendMode.srcIn,
+          if (onSettingsTap != null)
+            _SideBarCircularButton(
+              child: SvgPicture.asset(
+                'assets/icons/settings.svg',
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  colorScheme.onPrimary,
+                  BlendMode.srcIn,
+                ),
               ),
+              onTap: onSettingsTap!,
+              colorScheme: colorScheme,
+              backgroundColor: colorScheme.primary,
             ),
-            onTap: onSettingsTap ?? () {},
-            colorScheme: colorScheme,
-            backgroundColor: colorScheme.primary,
-          ),
           
           const SizedBox(height: 32),
           
@@ -137,20 +138,23 @@ class BottomBar extends StatelessWidget {
           const SizedBox(height: 24),
           
           // Botão Scroll Up
-          _ScrollButton(
-            icon: Icons.keyboard_arrow_up,
-            onTap: onScrollUp ?? () {},
-            colorScheme: colorScheme,
-          ),
+          if (onScrollUp != null)
+            _ScrollButton(
+              icon: Icons.keyboard_arrow_up,
+              onTap: onScrollUp!,
+              colorScheme: colorScheme,
+            ),
           
-          const SizedBox(height: 12),
+          if (onScrollUp != null && onScrollDown != null)
+            const SizedBox(height: 12),
           
           // Botão Scroll Down
-          _ScrollButton(
-            icon: Icons.keyboard_arrow_down,
-            onTap: onScrollDown ?? () {},
-            colorScheme: colorScheme,
-          ),
+          if (onScrollDown != null)
+            _ScrollButton(
+              icon: Icons.keyboard_arrow_down,
+              onTap: onScrollDown!,
+              colorScheme: colorScheme,
+            ),
           
           const Spacer(),
         ],
