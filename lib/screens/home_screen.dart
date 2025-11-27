@@ -25,12 +25,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final DocumentService _documentService = DocumentService();
+  final ScrollController _scrollController = ScrollController();
   List<DocumentModel> _documents = [];
   bool _isLoading = true;
   String? _errorMessage;
   String _selectedCategory = 'All';
+  late AnimationController _animationController;
 
   final List<String> _categories = [
     'All',
@@ -45,6 +47,33 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadDocuments();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _scrollUp() {
+    _scrollController.animateTo(
+      math.max(0, _scrollController.offset - 400),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollDown() {
+    _scrollController.animateTo(
+      _scrollController.offset + 400,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _loadDocuments() async {
@@ -69,7 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showSettingsModal(BuildContext context) {
     if (_isDesktop(context)) {
-      // No desktop, abre settings na tela secundária (direita)
       widget.onSecondaryScreenChanged?.call(
         SettingsScreen(
           themeProvider: widget.themeProvider,
@@ -80,7 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     } else {
-      // No mobile, mostra modal
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -117,11 +144,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildMobileLayout(theme);
   }
 
-  // Layout Desktop: AppBar + Grid de Templates (Tela Esquerda)
   Widget _buildDesktopLayout(ThemeData theme) {
     return Column(
       children: [
-        // AppBar com Categorias
         Container(
           height: 64,
           decoration: BoxDecoration(
@@ -137,7 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                // Título
                 Text(
                   'Templates',
                   style: theme.textTheme.headlineMedium?.copyWith(
@@ -145,8 +169,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 40),
-                
-                // Categorias
                 Expanded(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -162,40 +184,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               setState(() {
                                 _selectedCategory = category;
                               });
+                              _animationController.forward(from: 0);
                             },
                             theme: theme,
+                            isDesktop: true,
                           ),
                         );
                       }).toList(),
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(width: 16),
-                
-                // Botão Settings
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _showSettingsModal(context),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'R',
-                          style: TextStyle(
-                            color: theme.colorScheme.onPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ),
@@ -203,8 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        
-        // Grid de Templates
         Expanded(
           child: Container(
             color: theme.scaffoldBackgroundColor,
@@ -221,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               child: Row(
@@ -247,12 +239,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Center(
-                          child: Text(
-                            'R',
-                            style: TextStyle(
-                              color: theme.colorScheme.onPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          child: SvgPicture.asset(
+                            'assets/icons/settings.svg',
+                            width: 20,
+                            height: 20,
+                            colorFilter: ColorFilter.mode(
+                              theme.colorScheme.onPrimary,
+                              BlendMode.srcIn,
                             ),
                           ),
                         ),
@@ -262,10 +255,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
-            // Categorias horizontais
             Container(
-              height: 50,
+              height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
@@ -282,15 +273,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         setState(() {
                           _selectedCategory = category;
                         });
+                        _animationController.forward(from: 0);
                       },
                       theme: theme,
+                      isDesktop: false,
                     ),
                   );
                 },
               ),
             ),
-
-            // Conteúdo
             Expanded(
               child: _buildContent(theme),
             ),
@@ -380,63 +371,70 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    // Grid responsivo
     final isDesktop = _isDesktop(context);
-    return MasonryGridView.count(
-      padding: EdgeInsets.all(isDesktop ? 24 : 16),
-      crossAxisCount: isDesktop ? 3 : 2,
-      mainAxisSpacing: isDesktop ? 16 : 12,
-      crossAxisSpacing: isDesktop ? 16 : 12,
-      itemCount: filteredDocs.length,
-      itemBuilder: (context, index) {
-        return _ImageCard(
-          document: filteredDocs[index],
-          theme: theme,
-          index: index,
-          onTap: () {
-            if (isDesktop) {
-              // Desktop: Abre DocumentDetailScreen na tela secundária (direita)
-              widget.onSecondaryScreenChanged?.call(
-                DocumentDetailScreen(
-                  document: filteredDocs[index],
-                  themeProvider: widget.themeProvider,
-                  isSecondaryScreen: true,
-                  onClose: () {
-                    widget.onSecondaryScreenChanged?.call(const _EmptySecondaryScreen());
-                  },
-                ),
-              );
-            } else {
-              // Mobile: Navegação normal em tela cheia
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DocumentDetailScreen(
+    return FadeTransition(
+      opacity: _animationController.drive(
+        Tween<double>(begin: 0.0, end: 1.0).chain(
+          CurveTween(curve: Curves.easeIn),
+        ),
+      ),
+      child: MasonryGridView.count(
+        controller: _scrollController,
+        padding: EdgeInsets.all(isDesktop ? 24 : 16),
+        crossAxisCount: isDesktop ? 3 : 2,
+        mainAxisSpacing: isDesktop ? 16 : 12,
+        crossAxisSpacing: isDesktop ? 16 : 12,
+        itemCount: filteredDocs.length,
+        itemBuilder: (context, index) {
+          return _ImageCard(
+            document: filteredDocs[index],
+            theme: theme,
+            index: index,
+            isDesktop: isDesktop,
+            onTap: () {
+              if (isDesktop) {
+                widget.onSecondaryScreenChanged?.call(
+                  DocumentDetailScreen(
                     document: filteredDocs[index],
                     themeProvider: widget.themeProvider,
+                    isSecondaryScreen: true,
+                    onClose: () {
+                      widget.onSecondaryScreenChanged?.call(const _EmptySecondaryScreen());
+                    },
                   ),
-                ),
-              );
-            }
-          },
-        );
-      },
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DocumentDetailScreen(
+                      document: filteredDocs[index],
+                      themeProvider: widget.themeProvider,
+                    ),
+                  ),
+                );
+              }
+            },
+          );
+        },
+      ),
     );
   }
 }
 
-// Chip de Categoria
 class _CategoryChip extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
   final ThemeData theme;
+  final bool isDesktop;
 
   const _CategoryChip({
     required this.label,
     required this.isSelected,
     required this.onTap,
     required this.theme,
+    required this.isDesktop,
   });
 
   @override
@@ -445,20 +443,24 @@ class _CategoryChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(isDesktop ? 12 : 20),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 20 : 16,
+            vertical: isDesktop ? 10 : 12,
+          ),
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primary
                 : theme.scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(isDesktop ? 12 : 20),
             border: Border.all(
               color: isSelected
                   ? theme.colorScheme.primary
                   : theme.dividerColor,
-              width: 1,
+              width: 1.5,
             ),
           ),
           child: Text(
@@ -481,12 +483,14 @@ class _ImageCard extends StatelessWidget {
   final DocumentModel document;
   final ThemeData theme;
   final int index;
+  final bool isDesktop;
   final VoidCallback onTap;
 
   const _ImageCard({
     required this.document,
     required this.theme,
     required this.index,
+    required this.isDesktop,
     required this.onTap,
   });
 
@@ -494,15 +498,16 @@ class _ImageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final random = math.Random(index);
     final heightFactor = 0.7 + (random.nextDouble() * 0.6);
+    final borderRadius = isDesktop ? 8.0 : 16.0;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(borderRadius),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(borderRadius),
             boxShadow: [
               BoxShadow(
                 color: theme.shadowColor,
@@ -512,7 +517,7 @@ class _ImageCard extends StatelessWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(borderRadius),
             child: AspectRatio(
               aspectRatio: 1 / heightFactor,
               child: Stack(
@@ -625,7 +630,6 @@ class _ImageCard extends StatelessWidget {
   }
 }
 
-// Tela secundária vazia (placeholder)
 class _EmptySecondaryScreen extends StatelessWidget {
   const _EmptySecondaryScreen();
 
@@ -657,7 +661,6 @@ class _EmptySecondaryScreen extends StatelessWidget {
   }
 }
 
-// Tela de Settings para desktop (tela secundária)
 class SettingsScreen extends StatelessWidget {
   final ThemeProvider themeProvider;
   final LanguageProvider languageProvider;
@@ -679,7 +682,6 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Container(
             height: 64,
             decoration: BoxDecoration(
@@ -708,8 +710,6 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
           ),
-          
-          // Conteúdo
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
