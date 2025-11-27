@@ -37,6 +37,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   bool _showTitle = false;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
+  Color? _dominantColor;
 
   @override
   void initState() {
@@ -51,10 +52,35 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     );
 
     _scrollController.addListener(_onScroll);
+    _extractDominantColor();
 
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _animationController.forward();
     });
+  }
+
+  Future<void> _extractDominantColor() async {
+    try {
+      final PaletteGenerator paletteGenerator =
+          await PaletteGenerator.fromImageProvider(
+        NetworkImage(widget.document.coverImage),
+        size: const Size(200, 200),
+        maximumColorCount: 20,
+      );
+
+      if (mounted) {
+        setState(() {
+          _dominantColor = paletteGenerator.dominantColor?.color
+              ?.withOpacity(0.7) ?? _getCategoryColor(widget.document.category);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _dominantColor = _getCategoryColor(widget.document.category);
+        });
+      }
+    }
   }
 
   void _onScroll() {
@@ -85,6 +111,26 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
         return const Color(0xFFF59E0B);
       case 'creative':
         return const Color(0xFFEC4899);
+      case 'finance':
+        return const Color(0xFF14B8A6);
+      case 'health':
+        return const Color(0xFFEF4444);
+      case 'education':
+        return const Color(0xFF06B6D4);
+      case 'technology':
+        return const Color(0xFF8B5CF6);
+      case 'marketing':
+        return const Color(0xFFF97316);
+      case 'sports':
+        return const Color(0xFF22C55E);
+      case 'travel':
+        return const Color(0xFF3B82F6);
+      case 'food':
+        return const Color(0xFFF59E0B);
+      case 'real estate':
+        return const Color(0xFF06B6D4);
+      case 'automotive':
+        return const Color(0xFF6366F1);
       default:
         return const Color(0xFF6B7280);
     }
@@ -102,6 +148,26 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
         return 'assets/icons/legal.svg';
       case 'creative':
         return 'assets/icons/creative.svg';
+      case 'finance':
+        return 'assets/icons/finance.svg';
+      case 'health':
+        return 'assets/icons/health.svg';
+      case 'education':
+        return 'assets/icons/education.svg';
+      case 'technology':
+        return 'assets/icons/technology.svg';
+      case 'marketing':
+        return 'assets/icons/marketing.svg';
+      case 'sports':
+        return 'assets/icons/sports.svg';
+      case 'travel':
+        return 'assets/icons/travel.svg';
+      case 'food':
+        return 'assets/icons/food.svg';
+      case 'real estate':
+        return 'assets/icons/real_estate.svg';
+      case 'automotive':
+        return 'assets/icons/automotive.svg';
       default:
         return 'assets/icons/document.svg';
     }
@@ -290,7 +356,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 
   Widget _buildSecondaryScreenLayout(ThemeData theme) {
-    final categoryColor = _getCategoryColor(widget.document.category);
+    final categoryColor = _dominantColor ?? _getCategoryColor(widget.document.category);
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -455,7 +521,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 
   Widget _buildMobileLayout(ThemeData theme) {
-    final categoryColor = _getCategoryColor(widget.document.category);
+    final categoryColor = _dominantColor ?? _getCategoryColor(widget.document.category);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
