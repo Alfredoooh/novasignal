@@ -4,6 +4,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../providers/theme_provider.dart';
 import '../providers/language_provider.dart';
 import '../widgets/settings_modal.dart';
+import '../widgets/home_drawer.dart';
 import '../models/document_model.dart';
 import '../services/document_service.dart';
 import '../screens/document_detail_screen.dart';
@@ -59,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 600),
     );
     _fadeController.forward();
+    _categoryController.forward();
   }
 
   @override
@@ -123,7 +125,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           themeProvider: widget.themeProvider,
           onFavoriteToggle: (document) {
             setState(() {
-              // Atualiza o estado no home quando um favorito é alterado
               final index = _documents.indexWhere((doc) => doc.id == document.id);
               if (index != -1) {
                 _documents[index].isFavorite = document.isFavorite;
@@ -177,11 +178,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Row(
               children: [
+                const SizedBox(width: 8),
                 Text(
                   'Templates',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 24,
+                    fontSize: 22,
                   ),
                 ),
                 const SizedBox(width: 48),
@@ -241,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: theme.scaffoldBackgroundColor,
-      drawer: _HomeDrawer(
+      drawer: HomeDrawer(
         theme: theme,
         themeProvider: widget.themeProvider,
         onNavigateToFavorites: _navigateToFavorites,
@@ -275,10 +277,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             _scaffoldKey.currentState?.openDrawer();
                           },
                         ),
+                        const SizedBox(width: 4),
                         Text(
                           'Templates',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 22,
                             fontWeight: FontWeight.w700,
                             color: theme.textTheme.displayLarge?.color,
                           ),
@@ -295,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
             Container(
-              height: 48,
+              height: 42,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               margin: const EdgeInsets.only(bottom: 12, top: 8),
               child: ListView.builder(
@@ -328,18 +331,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDrawer(ThemeData theme) {
-    return _HomeDrawer(
-      theme: theme,
-      themeProvider: widget.themeProvider,
-      onNavigateToFavorites: _navigateToFavorites,
-      onShowSettings: () {
-        Navigator.pop(context);
-        _showSettingsModal(context);
-      },
     );
   }
 
@@ -499,136 +490,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-class _DrawerItem extends StatelessWidget {
-  final String icon;
-  final String label;
-  final ThemeData theme;
-  final VoidCallback onTap;
-
-  const _DrawerItem({
-    required this.icon,
-    required this.label,
-    required this.theme,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Row(
-            children: [
-              SvgPicture.asset(
-                icon,
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(
-                  theme.colorScheme.primary,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                label,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeDrawer extends StatelessWidget {
-  final ThemeData theme;
-  final ThemeProvider themeProvider;
-  final VoidCallback onNavigateToFavorites;
-  final VoidCallback onShowSettings;
-
-  const _HomeDrawer({
-    required this.theme,
-    required this.themeProvider,
-    required this.onNavigateToFavorites,
-    required this.onShowSettings,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Menu',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: theme.textTheme.displayLarge?.color,
-                    ),
-                  ),
-                  IconButton(
-                    icon: SvgPicture.asset(
-                      'assets/icons/close.svg',
-                      width: 24,
-                      height: 24,
-                      colorFilter: ColorFilter.mode(
-                        theme.colorScheme.secondary,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              color: theme.dividerColor,
-              height: 0.5,
-            ),
-            const SizedBox(height: 8),
-            _DrawerItem(
-              icon: 'assets/icons/heart.svg',
-              label: 'Favorites',
-              theme: theme,
-              onTap: onNavigateToFavorites,
-            ),
-            _DrawerItem(
-              icon: 'assets/icons/settings.svg',
-              label: 'Settings',
-              theme: theme,
-              onTap: onShowSettings,
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'Version 1.0.0',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _CategoryChip extends StatelessWidget {
   final String label;
   final bool isSelected;
@@ -656,7 +517,7 @@ class _CategoryChip extends StatelessWidget {
           curve: Curves.easeInOut,
           padding: EdgeInsets.symmetric(
             horizontal: isDesktop ? 24 : 20,
-            vertical: isDesktop ? 12 : 12,
+            vertical: isDesktop ? 10 : 10,
           ),
           decoration: BoxDecoration(
             color: isSelected
