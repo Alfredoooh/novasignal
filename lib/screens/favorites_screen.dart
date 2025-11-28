@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'dart:convert';
 import '../models/document_model.dart';
 import '../providers/theme_provider.dart';
 import 'document_detail_screen.dart';
@@ -102,6 +108,195 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         _searchFocusNode.unfocus();
       }
     });
+  }
+
+  // EXPORTAÇÃO REAL - PDF
+  Future<void> _exportToPdf() async {
+    try {
+      final pdf = pw.Document();
+      
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return [
+              pw.Header(
+                level: 0,
+                child: pw.Text(
+                  'My Favorite Documents',
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Total: ${widget.favoriteDocuments.length} documents',
+                style: const pw.TextStyle(fontSize: 12),
+              ),
+              pw.SizedBox(height: 20),
+              pw.TableHelper.fromTextArray(
+                headers: ['Name', 'Category', 'Type'],
+                data: widget.favoriteDocuments.map((doc) => [
+                  doc.name,
+                  doc.category,
+                  doc.isPro ? 'PRO' : 'Free',
+                ]).toList(),
+                headerStyle: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 12,
+                ),
+                cellStyle: const pw.TextStyle(fontSize: 10),
+                cellAlignment: pw.Alignment.centerLeft,
+              ),
+            ];
+          },
+        ),
+      );
+
+      final output = await getTemporaryDirectory();
+      final file = File('${output.path}/favorites_${DateTime.now().millisecondsSinceEpoch}.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('PDF saved: ${file.path}'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Share',
+              textColor: Colors.white,
+              onPressed: () => Share.shareXFiles([XFile(file.path)]),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error exporting PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // EXPORTAÇÃO REAL - CSV
+  Future<void> _exportToCsv() async {
+    try {
+      final csv = StringBuffer();
+      csv.writeln('Name,Category,Type,Is Favorite');
+      
+      for (var doc in widget.favoriteDocuments) {
+        csv.writeln('"${doc.name}","${doc.category}","${doc.isPro ? 'PRO' : 'Free'}","Yes"');
+      }
+
+      final output = await getTemporaryDirectory();
+      final file = File('${output.path}/favorites_${DateTime.now().millisecondsSinceEpoch}.csv');
+      await file.writeAsString(csv.toString());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('CSV saved: ${file.path}'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Share',
+              textColor: Colors.white,
+              onPressed: () => Share.shareXFiles([XFile(file.path)]),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error exporting CSV: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // EXPORTAÇÃO REAL - JSON
+  Future<void> _exportToJson() async {
+    try {
+      final jsonData = {
+        'exported_at': DateTime.now().toIso8601String(),
+        'total': widget.favoriteDocuments.length,
+        'favorites': widget.favoriteDocuments.map((doc) => {
+          'name': doc.name,
+          'category': doc.category,
+          'isPro': doc.isPro,
+          'isFavorite': doc.isFavorite,
+          'coverImage': doc.coverImage,
+        }).toList(),
+      };
+
+      final output = await getTemporaryDirectory();
+      final file = File('${output.path}/favorites_${DateTime.now().millisecondsSinceEpoch}.json');
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(jsonData),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('JSON saved: ${file.path}'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Share',
+              textColor: Colors.white,
+              onPressed: () => Share.shareXFiles([XFile(file.path)]),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error exporting JSON: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // PARTILHA REAL
+  Future<void> _shareFavorites() async {
+    try {
+      final text = StringBuffer();
+      text.writeln('📚 My Favorite Documents (${widget.favoriteDocuments.length})');
+      text.writeln('');
+      
+      for (var doc in widget.favoriteDocuments) {
+        text.writeln('• ${doc.name}');
+        text.writeln('  Category: ${doc.category}');
+        if (doc.isPro) text.writeln('  Type: PRO ⭐');
+        text.writeln('');
+      }
+
+      await Share.share(
+        text.toString(),
+        subject: 'My Favorite Documents',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sharing: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showSortOptions() {
@@ -240,12 +435,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               theme,
               () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Sharing favorites...'),
-                    backgroundColor: theme.colorScheme.primary,
-                  ),
-                );
+                _shareFavorites();
               },
             ),
           ],
@@ -368,28 +558,22 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildExportOption('PDF Document', 'pdf', theme),
+            _buildExportOption('PDF Document', 'pdf', theme, _exportToPdf),
             const SizedBox(height: 12),
-            _buildExportOption('CSV Spreadsheet', 'csv', theme),
+            _buildExportOption('CSV Spreadsheet', 'csv', theme, _exportToCsv),
             const SizedBox(height: 12),
-            _buildExportOption('JSON File', 'json', theme),
+            _buildExportOption('JSON File', 'json', theme, _exportToJson),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildExportOption(String label, String format, ThemeData theme) {
+  Widget _buildExportOption(String label, String format, ThemeData theme, VoidCallback onTap) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Exporting as $format...'),
-            backgroundColor: theme.colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        onTap();
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -795,128 +979,146 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       },
       child: InkWell(
         onTap: () => _navigateToDetail(document),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withOpacity(0.08),
-                blurRadius: 12,
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Stack(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  document.coverImage,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 200,
-                      color: theme.cardColor,
-                      child: Center(
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    child: Image.asset(
+                      document.coverImage,
+                      width: double.infinity,
+                      height: 160,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  if (document.isPro)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/star.svg',
+                              width: 12,
+                              height: 12,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'PRO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          document.isFavorite = !document.isFavorite;
+                          widget.onFavoriteToggle?.call(document);
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
                         child: SvgPicture.asset(
-                          'assets/icons/document.svg',
-                          width: 48,
-                          height: 48,
+                          document.isFavorite
+                              ? 'assets/icons/heart_filled.svg'
+                              : 'assets/icons/heart.svg',
+                          width: 18,
+                          height: 18,
                           colorFilter: ColorFilter.mode(
-                            theme.colorScheme.primary.withOpacity(0.3),
+                            document.isFavorite ? Colors.red : Colors.grey,
                             BlendMode.srcIn,
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      document.isFavorite = false;
-                      widget.onFavoriteToggle?.call(document);
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icons/heart_filled.svg',
-                      width: 16,
-                      height: 16,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.red,
-                        BlendMode.srcIn,
-                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-              if (document.isPro)
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.amber.shade400,
-                          Colors.orange.shade400,
-                        ],
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      document.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 8,
-                        ),
-                      ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(height: 6),
+                    Row(
                       children: [
                         SvgPicture.asset(
-                          'assets/icons/star.svg',
-                          width: 12,
-                          height: 12,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
+                          'assets/icons/category.svg',
+                          width: 14,
+                          height: 14,
+                          colorFilter: ColorFilter.mode(
+                            theme.colorScheme.secondary,
                             BlendMode.srcIn,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Text(
-                          'PRO',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            document.category,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.secondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
+              ),
             ],
           ),
         ),
@@ -925,9 +1127,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   }
 
   Widget _buildListView(List<DocumentModel> docs, ThemeData theme) {
-    return ListView.builder(
+    return ListView.separated(
       padding: const EdgeInsets.all(20),
       itemCount: docs.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         return _buildListCard(docs[index], theme, index);
       },
@@ -948,169 +1151,152 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           ),
         );
       },
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: InkWell(
-          onTap: () => _navigateToDetail(document),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.dividerColor,
-                width: 1,
+      child: InkWell(
+        onTap: () => _navigateToDetail(document),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.shadowColor.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
+            ],
+          ),
+          child: Row(
+            children: [
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(16),
+                    ),
+                    child: Image.asset(
+                      document.coverImage,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  child: Image.network(
-                    document.coverImage,
-                    width: 100,
-                    height: 120,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 100,
-                        height: 120,
-                        color: theme.cardColor,
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/icons/document.svg',
-                            width: 32,
-                            height: 32,
-                            colorFilter: ColorFilter.mode(
-                              theme.colorScheme.primary.withOpacity(0.3),
-                              BlendMode.srcIn,
-                            ),
-                          ),
+                  if (document.isPro)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
                         ),
-                      );
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                document.name,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  document.isFavorite = false;
-                                  widget.onFavoriteToggle?.call(document);
-                                });
-                              },
-                              child: SvgPicture.asset(
-                                'assets/icons/heart_filled.svg',
-                                width: 20,
-                                height: 20,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.red,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                            ),
-                          ],
+                        decoration: BoxDecoration(
+                          color: Colors.amber,
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             SvgPicture.asset(
-                              'assets/icons/category.svg',
-                              width: 14,
-                              height: 14,
-                              colorFilter: ColorFilter.mode(
-                                theme.colorScheme.secondary,
+                              'assets/icons/star.svg',
+                              width: 10,
+                              height: 10,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white,
                                 BlendMode.srcIn,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                document.category,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.secondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            const SizedBox(width: 3),
+                            const Text(
+                              'PRO',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
-                        if (document.isPro) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                      ),
+                    ),
+                ],
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        document.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/category.svg',
+                            width: 14,
+                            height: 14,
+                            colorFilter: ColorFilter.mode(
+                              theme.colorScheme.secondary,
+                              BlendMode.srcIn,
                             ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.amber.shade400,
-                                  Colors.orange.shade400,
-                                ],
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              document.category,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.secondary,
                               ),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SvgPicture.asset(
-                                  'assets/icons/star.svg',
-                                  width: 10,
-                                  height: 10,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.white,
-                                    BlendMode.srcIn,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'PRO',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      document.isFavorite = !document.isFavorite;
+                      widget.onFavoriteToggle?.call(document);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: document.isFavorite
+                          ? Colors.red.withOpacity(0.1)
+                          : theme.dividerColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: SvgPicture.asset(
+                      document.isFavorite
+                          ? 'assets/icons/heart_filled.svg'
+                          : 'assets/icons/heart.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: ColorFilter.mode(
+                        document.isFavorite ? Colors.red : theme.colorScheme.secondary,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1125,15 +1311,15 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: SvgPicture.asset(
                 'assets/icons/heart.svg',
-                width: 80,
-                height: 80,
+                width: 64,
+                height: 64,
                 colorFilter: ColorFilter.mode(
                   theme.colorScheme.primary.withOpacity(0.5),
                   BlendMode.srcIn,
@@ -1146,10 +1332,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
-              'Start adding documents to your favorites to see them here',
+              'Start adding documents to your favorites by tapping the heart icon on any document.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.secondary,
               ),
@@ -1173,7 +1360,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
-                  vertical: 16,
+                  vertical: 14,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1193,13 +1380,20 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset(
-              'assets/icons/filter.svg',
-              width: 80,
-              height: 80,
-              colorFilter: ColorFilter.mode(
-                theme.colorScheme.secondary.withOpacity(0.5),
-                BlendMode.srcIn,
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: SvgPicture.asset(
+                'assets/icons/search.svg',
+                width: 64,
+                height: 64,
+                colorFilter: ColorFilter.mode(
+                  theme.colorScheme.primary.withOpacity(0.5),
+                  BlendMode.srcIn,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -1208,19 +1402,20 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               _searchQuery.isNotEmpty
-                  ? 'No favorites match "$_searchQuery"'
-                  : 'No favorites in this category',
+                  ? 'No documents match "$_searchQuery" in ${_selectedCategory == 'All' ? 'any category' : _selectedCategory}'
+                  : 'No favorites found in $_selectedCategory',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.secondary,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
-            TextButton.icon(
+            const SizedBox(height: 32),
+            OutlinedButton.icon(
               onPressed: () {
                 setState(() {
                   _selectedCategory = 'All';
@@ -1238,6 +1433,17 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 ),
               ),
               label: const Text('Clear Filters'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.colorScheme.primary,
+                side: BorderSide(color: theme.colorScheme.primary),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ],
         ),
@@ -1270,7 +1476,7 @@ class _CategoryChip extends StatelessWidget {
           color: isSelected
               ? theme.colorScheme.primary
               : theme.cardColor,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
@@ -1289,11 +1495,10 @@ class _CategoryChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: isSelected
-                ? Colors.white
-                : theme.textTheme.bodyMedium?.color,
+          style: TextStyle(
+            color: isSelected ? Colors.white : theme.colorScheme.secondary,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 13,
           ),
         ),
       ),
