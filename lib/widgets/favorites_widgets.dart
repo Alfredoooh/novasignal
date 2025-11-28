@@ -123,6 +123,125 @@ class CategoryChip extends StatelessWidget {
   }
 }
 
+// ==================== HELPER: COVER IMAGE WIDGET ====================
+class CoverImageWidget extends StatelessWidget {
+  final String coverImage;
+  final double width;
+  final double height;
+  final BoxFit fit;
+  final ThemeData theme;
+  final BorderRadius? borderRadius;
+
+  const CoverImageWidget({
+    Key? key,
+    required this.coverImage,
+    required this.width,
+    required this.height,
+    this.fit = BoxFit.cover,
+    required this.theme,
+    this.borderRadius,
+  }) : super(key: key);
+
+  bool _isNetworkUrl(String url) {
+    return url.startsWith('http://') || url.startsWith('https://');
+  }
+
+  Widget _buildErrorWidget() {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.1),
+        borderRadius: borderRadius,
+      ),
+      child: Icon(
+        Icons.description,
+        size: height * 0.3,
+        color: theme.colorScheme.primary.withOpacity(0.3),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (coverImage.isEmpty) {
+      return _buildErrorWidget();
+    }
+
+    final isNetwork = _isNetworkUrl(coverImage);
+    final isSvg = coverImage.toLowerCase().endsWith('.svg');
+
+    if (isSvg) {
+      if (isNetwork) {
+        return SvgPicture.network(
+          coverImage,
+          width: width,
+          height: height,
+          fit: fit,
+          placeholderBuilder: (context) => Container(
+            width: width,
+            height: height,
+            color: theme.colorScheme.primary.withOpacity(0.05),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.primary.withOpacity(0.5),
+                ),
+              ),
+            ),
+          ),
+        );
+      } else {
+        return SvgPicture.asset(
+          coverImage,
+          width: width,
+          height: height,
+          fit: fit,
+        );
+      }
+    } else {
+      if (isNetwork) {
+        return Image.network(
+          coverImage,
+          width: width,
+          height: height,
+          fit: fit,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: width,
+              height: height,
+              color: theme.colorScheme.primary.withOpacity(0.05),
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.primary.withOpacity(0.5),
+                  ),
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) => _buildErrorWidget(),
+        );
+      } else {
+        return Image.asset(
+          coverImage,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => _buildErrorWidget(),
+        );
+      }
+    }
+  }
+}
+
 // ==================== GRID VIEW ====================
 class FavoritesGridView extends StatelessWidget {
   final List<DocumentModel> documents;
@@ -215,31 +334,16 @@ class FavoritesGridCard extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(16),
                     ),
-                    child: document.coverImage.endsWith('.svg')
-                        ? SvgPicture.asset(
-                            document.coverImage,
-                            width: double.infinity,
-                            height: 160,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.asset(
-                            document.coverImage,
-                            width: double.infinity,
-                            height: 160,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: double.infinity,
-                                height: 160,
-                                color: theme.colorScheme.primary.withOpacity(0.1),
-                                child: Icon(
-                                  Icons.description,
-                                  size: 48,
-                                  color: theme.colorScheme.primary.withOpacity(0.3),
-                                ),
-                              );
-                            },
-                          ),
+                    child: CoverImageWidget(
+                      coverImage: document.coverImage,
+                      width: double.infinity,
+                      height: 160,
+                      fit: BoxFit.cover,
+                      theme: theme,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                    ),
                   ),
                   if (document.isPro)
                     Positioned(
@@ -432,31 +536,16 @@ class FavoritesListCard extends StatelessWidget {
                     borderRadius: const BorderRadius.horizontal(
                       left: Radius.circular(16),
                     ),
-                    child: document.coverImage.endsWith('.svg')
-                        ? SvgPicture.asset(
-                            document.coverImage,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.asset(
-                            document.coverImage,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 100,
-                                height: 100,
-                                color: theme.colorScheme.primary.withOpacity(0.1),
-                                child: Icon(
-                                  Icons.description,
-                                  size: 32,
-                                  color: theme.colorScheme.primary.withOpacity(0.3),
-                                ),
-                              );
-                            },
-                          ),
+                    child: CoverImageWidget(
+                      coverImage: document.coverImage,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      theme: theme,
+                      borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(16),
+                      ),
+                    ),
                   ),
                   if (document.isPro)
                     Positioned(
