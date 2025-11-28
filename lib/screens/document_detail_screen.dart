@@ -8,7 +8,6 @@ import 'dart:io';
 import '../models/document_model.dart';
 import '../providers/theme_provider.dart';
 import '../screens/document_viewer_screen.dart';
-import 'package:palette_generator/palette_generator.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
   final DocumentModel document;
@@ -38,7 +37,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   bool _showTitle = false;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
-  Color? _dominantColor;
 
   @override
   void initState() {
@@ -53,35 +51,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     );
 
     _scrollController.addListener(_onScroll);
-    _extractDominantColor();
 
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _animationController.forward();
     });
-  }
-
-  Future<void> _extractDominantColor() async {
-    try {
-      final PaletteGenerator paletteGenerator =
-          await PaletteGenerator.fromImageProvider(
-        NetworkImage(widget.document.coverImage),
-        size: const Size(200, 200),
-        maximumColorCount: 20,
-      );
-
-      if (mounted) {
-        setState(() {
-          _dominantColor = paletteGenerator.dominantColor?.color
-              ?.withOpacity(0.7) ?? _getCategoryColor(widget.document.category);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _dominantColor = _getCategoryColor(widget.document.category);
-        });
-      }
-    }
   }
 
   void _onScroll() {
@@ -194,8 +167,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             children: [
               SvgPicture.asset(
                 'assets/icons/alert.svg',
-                width: 16,
-                height: 16,
+                width: 24,
+                height: 24,
                 colorFilter: const ColorFilter.mode(
                   Colors.white,
                   BlendMode.srcIn,
@@ -246,8 +219,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               children: [
                 SvgPicture.asset(
                   'assets/icons/check.svg',
-                  width: 16,
-                  height: 16,
+                  width: 24,
+                  height: 24,
                   colorFilter: const ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
@@ -272,7 +245,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
       }
     } catch (e) {
       setState(() => _isDownloading = false);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -280,8 +253,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               children: [
                 SvgPicture.asset(
                   'assets/icons/alert.svg',
-                  width: 16,
-                  height: 16,
+                  width: 24,
+                  height: 24,
                   colorFilter: const ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
@@ -306,7 +279,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     setState(() {
       widget.document.isFavorite = !widget.document.isFavorite;
     });
-    
+
     widget.onFavoriteToggle?.call(widget.document);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -317,8 +290,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               widget.document.isFavorite 
                   ? 'assets/icons/heart_filled.svg' 
                   : 'assets/icons/heart.svg',
-              width: 16,
-              height: 16,
+              width: 24,
+              height: 24,
               colorFilter: const ColorFilter.mode(
                 Colors.white,
                 BlendMode.srcIn,
@@ -347,7 +320,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = widget.themeProvider.currentTheme;
 
     if (widget.isSecondaryScreen) {
       return _buildSecondaryScreenLayout(theme);
@@ -357,7 +330,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 
   Widget _buildSecondaryScreenLayout(ThemeData theme) {
-    final categoryColor = _dominantColor ?? _getCategoryColor(widget.document.category);
+    final categoryColor = _getCategoryColor(widget.document.category);
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -392,8 +365,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                     widget.document.isFavorite 
                         ? 'assets/icons/heart_filled.svg' 
                         : 'assets/icons/heart.svg',
-                    width: 19.2,
-                    height: 19.2,
+                    width: 24,
+                    height: 24,
                     colorFilter: ColorFilter.mode(
                       widget.document.isFavorite ? Colors.red : theme.colorScheme.secondary,
                       BlendMode.srcIn,
@@ -405,8 +378,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 24,
+                      height: 24,
                       child: CircularProgressIndicator(
                         value: _downloadProgress,
                         strokeWidth: 2.5,
@@ -418,8 +391,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   IconButton(
                     icon: SvgPicture.asset(
                       'assets/icons/download.svg',
-                      width: 19.2,
-                      height: 19.2,
+                      width: 24,
+                      height: 24,
                       colorFilter: ColorFilter.mode(
                         theme.colorScheme.secondary,
                         BlendMode.srcIn,
@@ -430,8 +403,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 IconButton(
                   icon: SvgPicture.asset(
                     'assets/icons/close.svg',
-                    width: 19.2,
-                    height: 19.2,
+                    width: 24,
+                    height: 24,
                     colorFilter: ColorFilter.mode(
                       theme.colorScheme.secondary,
                       BlendMode.srcIn,
@@ -449,7 +422,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 children: [
                   GestureDetector(
                     onTap: () => _showFullImage(context),
-                    child: _buildImageWithBlur(categoryColor),
+                    child: _buildImageWithBlur(categoryColor, theme),
                   ),
                   _buildContent(theme, categoryColor),
                 ],
@@ -496,8 +469,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   children: [
                     SvgPicture.asset(
                       'assets/icons/play.svg',
-                      width: 16,
-                      height: 16,
+                      width: 24,
+                      height: 24,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
@@ -522,7 +495,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
   }
 
   Widget _buildMobileLayout(ThemeData theme) {
-    final categoryColor = _dominantColor ?? _getCategoryColor(widget.document.category);
+    final categoryColor = _getCategoryColor(widget.document.category);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -550,8 +523,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
             child: IconButton(
               icon: SvgPicture.asset(
                 'assets/icons/arrow_back.svg',
-                width: 19.2,
-                height: 19.2,
+                width: 24,
+                height: 24,
                 colorFilter: ColorFilter.mode(
                   theme.colorScheme.primary,
                   BlendMode.srcIn,
@@ -593,8 +566,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   widget.document.isFavorite 
                       ? 'assets/icons/heart_filled.svg' 
                       : 'assets/icons/heart.svg',
-                  width: 19.2,
-                  height: 19.2,
+                  width: 24,
+                  height: 24,
                   colorFilter: ColorFilter.mode(
                     widget.document.isFavorite ? Colors.red : theme.colorScheme.primary,
                     BlendMode.srcIn,
@@ -623,8 +596,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   ? Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 24,
+                        height: 24,
                         child: CircularProgressIndicator(
                           value: _downloadProgress,
                           strokeWidth: 2.5,
@@ -635,8 +608,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   : IconButton(
                       icon: SvgPicture.asset(
                         'assets/icons/download.svg',
-                        width: 19.2,
-                        height: 19.2,
+                        width: 24,
+                        height: 24,
                         colorFilter: ColorFilter.mode(
                           theme.colorScheme.primary,
                           BlendMode.srcIn,
@@ -661,7 +634,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                     onTap: () => _showFullImage(context),
                     child: Hero(
                       tag: 'document_${widget.document.id}',
-                      child: _buildImageWithBlur(categoryColor),
+                      child: _buildImageWithBlur(categoryColor, theme),
                     ),
                   ),
                 ),
@@ -738,8 +711,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                       children: [
                         SvgPicture.asset(
                           'assets/icons/play.svg',
-                          width: 16,
-                          height: 16,
+                          width: 24,
+                          height: 24,
                           colorFilter: const ColorFilter.mode(
                             Colors.white,
                             BlendMode.srcIn,
@@ -766,7 +739,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
     );
   }
 
-  Widget _buildImageWithBlur(Color categoryColor) {
+  Widget _buildImageWithBlur(Color categoryColor, ThemeData theme) {
     return Container(
       height: 300,
       child: Stack(
@@ -813,8 +786,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               errorBuilder: (context, error, stackTrace) {
                 return SvgPicture.asset(
                   'assets/icons/document.svg',
-                  width: 51.2,
-                  height: 51.2,
+                  width: 64,
+                  height: 64,
                   colorFilter: ColorFilter.mode(
                     categoryColor.withOpacity(0.5),
                     BlendMode.srcIn,
@@ -854,8 +827,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                   children: [
                     SvgPicture.asset(
                       'assets/icons/star.svg',
-                      width: 11.2,
-                      height: 11.2,
+                      width: 16,
+                      height: 16,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
@@ -889,8 +862,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
                 children: [
                   SvgPicture.asset(
                     'assets/icons/zoom_in.svg',
-                    width: 12.8,
-                    height: 12.8,
+                    width: 16,
+                    height: 16,
                     colorFilter: const ColorFilter.mode(
                       Colors.white,
                       BlendMode.srcIn,
@@ -949,8 +922,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen>
               children: [
                 SvgPicture.asset(
                   _getCategoryIconPath(widget.document.category),
-                  width: 10.4,
-                  height: 10.4,
+                  width: 16,
+                  height: 16,
                   colorFilter: ColorFilter.mode(
                     categoryColor,
                     BlendMode.srcIn,
@@ -1100,8 +1073,8 @@ class _FullScreenImage extends StatelessWidget {
                       ),
                       child: SvgPicture.asset(
                         'assets/icons/close.svg',
-                        width: 19.2,
-                        height: 19.2,
+                        width: 24,
+                        height: 24,
                         colorFilter: const ColorFilter.mode(
                           Colors.white,
                           BlendMode.srcIn,
@@ -1129,8 +1102,8 @@ class _FullScreenImage extends StatelessWidget {
                     children: [
                       SvgPicture.asset(
                         'assets/icons/swipe.svg',
-                        width: 12.8,
-                        height: 12.8,
+                        width: 16,
+                        height: 16,
                         colorFilter: const ColorFilter.mode(
                           Colors.white,
                           BlendMode.srcIn,
@@ -1213,8 +1186,8 @@ class _StatChip extends StatelessWidget {
         children: [
           SvgPicture.asset(
             iconPath,
-            width: 10.4,
-            height: 10.4,
+            width: 16,
+            height: 16,
             colorFilter: ColorFilter.mode(
               theme.colorScheme.primary,
               BlendMode.srcIn,
@@ -1284,8 +1257,8 @@ class _FeatureItem extends StatelessWidget {
               child: Center(
                 child: SvgPicture.asset(
                   iconPath,
-                  width: 19.2,
-                  height: 19.2,
+                  width: 24,
+                  height: 24,
                   colorFilter: ColorFilter.mode(
                     categoryColor,
                     BlendMode.srcIn,
@@ -1369,8 +1342,8 @@ class _FeatureItemCompact extends StatelessWidget {
             child: Center(
               child: SvgPicture.asset(
                 iconPath,
-                width: 19.2,
-                height: 19.2,
+                width: 24,
+                height: 24,
                 colorFilter: ColorFilter.mode(
                   categoryColor,
                   BlendMode.srcIn,
