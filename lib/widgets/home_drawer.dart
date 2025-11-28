@@ -104,8 +104,12 @@ class HomeDrawer extends StatelessWidget {
                   'assets/icons/heart.svg',
                   'Favoritos',
                   () {
-                    Navigator.pop(context);
-                    onNavigateToFavorites();
+                    // Fecha o drawer imediatamente
+                    Navigator.of(context).pop();
+                    // Pequeno delay para garantir que o drawer fechou
+                    Future.delayed(const Duration(milliseconds: 250), () {
+                      onNavigateToFavorites();
+                    });
                   },
                   isDark,
                 ),
@@ -114,8 +118,12 @@ class HomeDrawer extends StatelessWidget {
                   'assets/icons/settings.svg',
                   'Configurações',
                   () {
-                    Navigator.pop(context);
-                    onShowSettings();
+                    // Fecha o drawer imediatamente
+                    Navigator.of(context).pop();
+                    // Pequeno delay para garantir que o drawer fechou
+                    Future.delayed(const Duration(milliseconds: 250), () {
+                      onShowSettings();
+                    });
                   },
                   isDark,
                 ),
