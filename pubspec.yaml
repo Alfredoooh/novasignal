@@ -27,9 +27,7 @@ dependencies:
   flutter_svg: ^2.0.9
 
   # UI & Animations
-  flutter_svg: any
-  flutter_staggered_grid_view: any
-  
+
   # Sharing & Export
   share_plus: any
   pdf: any
