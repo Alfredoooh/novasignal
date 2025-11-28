@@ -18,7 +18,6 @@ dependencies:
   palette_generator: any
 
   dio: any
-  path_provider: any
   open_file: any
 
   # State management and storage
@@ -26,6 +25,18 @@ dependencies:
 
   # SVG support
   flutter_svg: ^2.0.9
+
+  # UI & Animations
+  flutter_svg: any
+  flutter_staggered_grid_view: any
+  
+  # Sharing & Export
+  share_plus: any
+  pdf: any
+  path_provider: any
+  
+  # State Management (se necessário)
+  provider: any
 
 dev_dependencies:
   flutter_test:
