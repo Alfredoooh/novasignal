@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../models/document_model.dart';
 import '../providers/theme_provider.dart';
 import 'document_detail_screen.dart';
@@ -21,15 +22,26 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> 
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
+  late AnimationController _searchController;
   String _selectedCategory = 'All';
-  
+  String _searchQuery = '';
+  bool _isSearching = false;
+  bool _isGridView = false;
+  String _sortBy = 'name';
+  final TextEditingController _searchTextController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _searchController = AnimationController(
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     _animationController.forward();
@@ -38,61 +50,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _searchController.dispose();
+    _searchTextController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'business':
-        return const Color(0xFF3B82F6);
-      case 'academic':
-        return const Color(0xFF8B5CF6);
-      case 'personal':
-        return const Color(0xFF10B981);
-      case 'legal':
-        return const Color(0xFFF59E0B);
-      case 'creative':
-        return const Color(0xFFEC4899);
-      case 'finance':
-        return const Color(0xFF14B8A6);
-      case 'health':
-        return const Color(0xFFEF4444);
-      case 'education':
-        return const Color(0xFF06B6D4);
-      case 'technology':
-        return const Color(0xFF8B5CF6);
-      case 'marketing':
-        return const Color(0xFFF97316);
-      default:
-        return const Color(0xFF6B7280);
-    }
-  }
-
-  String _getCategoryIconPath(String category) {
-    switch (category.toLowerCase()) {
-      case 'business':
-        return 'assets/icons/business.svg';
-      case 'academic':
-        return 'assets/icons/academic.svg';
-      case 'personal':
-        return 'assets/icons/personal.svg';
-      case 'legal':
-        return 'assets/icons/legal.svg';
-      case 'creative':
-        return 'assets/icons/creative.svg';
-      case 'finance':
-        return 'assets/icons/finance.svg';
-      case 'health':
-        return 'assets/icons/health.svg';
-      case 'education':
-        return 'assets/icons/education.svg';
-      case 'technology':
-        return 'assets/icons/technology.svg';
-      case 'marketing':
-        return 'assets/icons/marketing.svg';
-      default:
-        return 'assets/icons/document.svg';
-    }
   }
 
   List<String> _getCategories() {
@@ -100,165 +61,880 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         .map((doc) => doc.category)
         .toSet()
         .toList();
+    categories.sort();
     categories.insert(0, 'All');
     return categories;
   }
 
   List<DocumentModel> _getFilteredDocuments() {
-    if (_selectedCategory == 'All') {
-      return widget.favoriteDocuments;
+    var docs = widget.favoriteDocuments.where((doc) {
+      final matchesCategory = _selectedCategory == 'All' || 
+                              doc.category == _selectedCategory;
+      final matchesSearch = _searchQuery.isEmpty ||
+                           doc.name.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }).toList();
+
+    switch (_sortBy) {
+      case 'name':
+        docs.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case 'category':
+        docs.sort((a, b) => a.category.compareTo(b.category));
+        break;
+      case 'date':
+        break;
     }
-    return widget.favoriteDocuments
-        .where((doc) => doc.category == _selectedCategory)
-        .toList();
+
+    return docs;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final filteredDocs = _getFilteredDocuments();
-    final categories = _getCategories();
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (_isSearching) {
+        _searchController.forward();
+        _searchFocusNode.requestFocus();
+      } else {
+        _searchController.reverse();
+        _searchQuery = '';
+        _searchTextController.clear();
+        _searchFocusNode.unfocus();
+      }
+    });
+  }
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: SvgPicture.asset(
-            'assets/icons/arrow_back.svg',
-            width: 19.2,
-            height: 19.2,
-            colorFilter: ColorFilter.mode(
-              theme.colorScheme.primary,
-              BlendMode.srcIn,
-            ),
-          ),
-          onPressed: () => Navigator.pop(context),
+  void _showSortOptions() {
+    final theme = widget.themeProvider.currentTheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        title: Row(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.dividerColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Sort by',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildSortOption('Name', 'name', 'sort_alpha', theme),
+            _buildSortOption('Category', 'category', 'category', theme),
+            _buildSortOption('Date Added', 'date', 'calendar', theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortOption(String label, String value, String icon, ThemeData theme) {
+    final isSelected = _sortBy == value;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _sortBy = value;
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        color: isSelected ? theme.colorScheme.primary.withOpacity(0.1) : null,
+        child: Row(
           children: [
             SvgPicture.asset(
-              'assets/icons/heart_filled.svg',
-              width: 19.2,
-              height: 19.2,
+              'assets/icons/$icon.svg',
+              width: 24,
+              height: 24,
               colorFilter: ColorFilter.mode(
-                Colors.red,
+                isSelected ? theme.colorScheme.primary : theme.colorScheme.secondary,
                 BlendMode.srcIn,
               ),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Favoritos',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: isSelected ? theme.colorScheme.primary : null,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBulkActions() {
+    final theme = widget.themeProvider.currentTheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.dividerColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildBulkActionOption(
+              'Remove All from Favorites',
+              'heart',
+              Colors.red,
+              theme,
+              () {
+                _showRemoveAllDialog();
+              },
+            ),
+            _buildBulkActionOption(
+              'Export Favorites List',
+              'export',
+              theme.colorScheme.primary,
+              theme,
+              () {
+                Navigator.pop(context);
+                _showExportDialog();
+              },
+            ),
+            _buildBulkActionOption(
+              'Share Favorites',
+              'share',
+              theme.colorScheme.primary,
+              theme,
+              () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Sharing favorites...'),
+                    backgroundColor: theme.colorScheme.primary,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBulkActionOption(
+    String label,
+    String icon,
+    Color color,
+    ThemeData theme,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            SvgPicture.asset(
+              'assets/icons/$icon.svg',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
       ),
-      body: widget.favoriteDocuments.isEmpty
-          ? _buildEmptyState(theme)
-          : Column(
-              children: [
-                if (categories.length > 1) _buildCategoryFilter(theme, categories),
-                Expanded(
-                  child: FadeTransition(
-                    opacity: _animationController,
-                    child: filteredDocs.isEmpty
-                        ? _buildEmptyCategoryState(theme)
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filteredDocs.length,
-                            itemBuilder: (context, index) {
-                              return _buildFavoriteCard(
-                                context,
-                                filteredDocs[index],
-                                theme,
-                                index,
-                              );
-                            },
-                          ),
-                  ),
-                ),
-              ],
-            ),
     );
   }
 
-  Widget _buildCategoryFilter(ThemeData theme, List<String> categories) {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final isSelected = _selectedCategory == category;
-          final color = category == 'All' 
-              ? theme.colorScheme.primary 
-              : _getCategoryColor(category);
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              selected: isSelected,
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (category != 'All')
-                    SvgPicture.asset(
-                      _getCategoryIconPath(category),
-                      width: 12.8,
-                      height: 12.8,
-                      colorFilter: ColorFilter.mode(
-                        isSelected ? Colors.white : color,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  if (category != 'All') const SizedBox(width: 6),
-                  Text(
-                    category,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : color,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: color.withOpacity(0.1),
-              selectedColor: color,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedCategory = category;
-                });
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: isSelected ? color : color.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
+  void _showRemoveAllDialog() {
+    final theme = widget.themeProvider.currentTheme;
+    Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Remove All Favorites?',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'This will remove all ${widget.favoriteDocuments.length} documents from your favorites. This action cannot be undone.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: theme.colorScheme.secondary),
             ),
-          );
-        },
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                for (var doc in widget.favoriteDocuments) {
+                  doc.isFavorite = false;
+                  widget.onFavoriteToggle?.call(doc);
+                }
+              });
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'Remove All',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFavoriteCard(
-    BuildContext context,
-    DocumentModel document,
+  void _showExportDialog() {
+    final theme = widget.themeProvider.currentTheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            SvgPicture.asset(
+              'assets/icons/export.svg',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                theme.colorScheme.primary,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Export Format',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildExportOption('PDF Document', 'pdf', theme),
+            const SizedBox(height: 12),
+            _buildExportOption('CSV Spreadsheet', 'csv', theme),
+            const SizedBox(height: 12),
+            _buildExportOption('JSON File', 'json', theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExportOption(String label, String format, ThemeData theme) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exporting as $format...'),
+            backgroundColor: theme.colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.dividerColor),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            SvgPicture.asset(
+              'assets/icons/document.svg',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                theme.colorScheme.primary,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: theme.textTheme.bodyLarge,
+            ),
+            const Spacer(),
+            SvgPicture.asset(
+              'assets/icons/arrow_forward.svg',
+              width: 16,
+              height: 16,
+              colorFilter: ColorFilter.mode(
+                theme.colorScheme.secondary,
+                BlendMode.srcIn,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDetail(DocumentModel document) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DocumentDetailScreen(
+          document: document,
+          themeProvider: widget.themeProvider,
+          onFavoriteToggle: (doc) {
+            setState(() {
+              widget.onFavoriteToggle?.call(doc);
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = widget.themeProvider.currentTheme;
+    final filteredDocs = _getFilteredDocuments();
+    final categories = _getCategories();
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              color: theme.cardColor,
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 56,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: SvgPicture.asset(
+                            'assets/icons/arrow_back.svg',
+                            width: 24,
+                            height: 24,
+                            colorFilter: ColorFilter.mode(
+                              theme.colorScheme.primary,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        if (!_isSearching) ...[
+                          const SizedBox(width: 4),
+                          SvgPicture.asset(
+                            'assets/icons/heart_filled.svg',
+                            width: 22,
+                            height: 22,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.red,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Favorites',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: theme.textTheme.displayLarge?.color,
+                            ),
+                          ),
+                        ],
+                        if (_isSearching)
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8, right: 16),
+                              child: TextField(
+                                controller: _searchTextController,
+                                focusNode: _searchFocusNode,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _searchQuery = value;
+                                  });
+                                },
+                                decoration: InputDecoration(
+                                  hintText: 'Search favorites...',
+                                  border: InputBorder.none,
+                                  hintStyle: TextStyle(
+                                    color: theme.colorScheme.secondary,
+                                  ),
+                                ),
+                                style: theme.textTheme.bodyLarge,
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        if (widget.favoriteDocuments.isNotEmpty) ...[
+                          IconButton(
+                            icon: SvgPicture.asset(
+                              _isSearching ? 'assets/icons/close.svg' : 'assets/icons/search.svg',
+                              width: 24,
+                              height: 24,
+                              colorFilter: ColorFilter.mode(
+                                theme.colorScheme.secondary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            onPressed: _toggleSearch,
+                          ),
+                          IconButton(
+                            icon: SvgPicture.asset(
+                              _isGridView ? 'assets/icons/list.svg' : 'assets/icons/grid.svg',
+                              width: 24,
+                              height: 24,
+                              colorFilter: ColorFilter.mode(
+                                theme.colorScheme.secondary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isGridView = !_isGridView;
+                              });
+                            },
+                          ),
+                          PopupMenuButton(
+                            icon: SvgPicture.asset(
+                              'assets/icons/more_vert.svg',
+                              width: 24,
+                              height: 24,
+                              colorFilter: ColorFilter.mode(
+                                theme.colorScheme.secondary,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            color: theme.cardColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                child: Row(
+                                  children: [
+                                    SvgPicture.asset(
+                                      'assets/icons/sort.svg',
+                                      width: 20,
+                                      height: 20,
+                                      colorFilter: ColorFilter.mode(
+                                        theme.colorScheme.secondary,
+                                        BlendMode.srcIn,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text('Sort'),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Future.delayed(
+                                    Duration.zero,
+                                    () => _showSortOptions(),
+                                  );
+                                },
+                              ),
+                              PopupMenuItem(
+                                child: Row(
+                                  children: [
+                                    SvgPicture.asset(
+                                      'assets/icons/settings.svg',
+                                      width: 20,
+                                      height: 20,
+                                      colorFilter: ColorFilter.mode(
+                                        theme.colorScheme.secondary,
+                                        BlendMode.srcIn,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text('Bulk Actions'),
+                                  ],
+                                ),
+                                onTap: () {
+                                  Future.delayed(
+                                    Duration.zero,
+                                    () => _showBulkActions(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Container(
+                    color: theme.dividerColor,
+                    height: 0.5,
+                  ),
+                ],
+              ),
+            ),
+
+            if (widget.favoriteDocuments.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Total',
+                        widget.favoriteDocuments.length.toString(),
+                        'heart_filled',
+                        Colors.red,
+                        theme,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Categories',
+                        (categories.length - 1).toString(),
+                        'category',
+                        theme.colorScheme.primary,
+                        theme,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        'PRO',
+                        widget.favoriteDocuments.where((d) => d.isPro).length.toString(),
+                        'star',
+                        Colors.amber,
+                        theme,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            if (categories.length > 1 && widget.favoriteDocuments.isNotEmpty)
+              Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    final isSelected = _selectedCategory == category;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: _CategoryChip(
+                        label: category,
+                        isSelected: isSelected,
+                        onTap: () {
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+                        theme: theme,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+            Expanded(
+              child: widget.favoriteDocuments.isEmpty
+                  ? _buildEmptyState(theme)
+                  : filteredDocs.isEmpty
+                      ? _buildEmptyCategoryState(theme)
+                      : FadeTransition(
+                          opacity: _animationController,
+                          child: _isGridView
+                              ? _buildGridView(filteredDocs, theme)
+                              : _buildListView(filteredDocs, theme),
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    String label,
+    String value,
+    String icon,
+    Color color,
     ThemeData theme,
-    int index,
   ) {
-    final categoryColor = _getCategoryColor(document.category);
-    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/$icon.svg',
+            width: 16,
+            height: 16,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          ),
+          const SizedBox(width: 6),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  height: 1,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: color.withOpacity(0.8),
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridView(List<DocumentModel> docs, ThemeData theme) {
+    return MasonryGridView.count(
+      padding: const EdgeInsets.all(20),
+      crossAxisCount: 2,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      itemCount: docs.length,
+      itemBuilder: (context, index) {
+        return _buildGridCard(docs[index], theme, index);
+      },
+    );
+  }
+
+  Widget _buildGridCard(DocumentModel document, ThemeData theme, int index) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 300 + (index * 50)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: InkWell(
+        onTap: () => _navigateToDetail(document),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: theme.shadowColor.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  document.coverImage,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 200,
+                      color: theme.cardColor,
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/icons/document.svg',
+                          width: 48,
+                          height: 48,
+                          colorFilter: ColorFilter.mode(
+                            theme.colorScheme.primary.withOpacity(0.3),
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      document.isFavorite = false;
+                      widget.onFavoriteToggle?.call(document);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icons/heart_filled.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.red,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (document.isPro)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.amber.shade400,
+                          Colors.orange.shade400,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icons/star.svg',
+                          width: 12,
+                          height: 12,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListView(List<DocumentModel> docs, ThemeData theme) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: docs.length,
+      itemBuilder: (context, index) {
+        return _buildListCard(docs[index], theme, index);
+      },
+    );
+  }
+
+  Widget _buildListCard(DocumentModel document, ThemeData theme, int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 300 + (index * 50)),
@@ -275,22 +951,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       child: Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DocumentDetailScreen(
-                  document: document,
-                  themeProvider: widget.themeProvider,
-                  onFavoriteToggle: (doc) {
-                    setState(() {
-                      widget.onFavoriteToggle?.call(doc);
-                    });
-                  },
-                ),
-              ),
-            );
-          },
+          onTap: () => _navigateToDetail(document),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
@@ -302,7 +963,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: theme.shadowColor.withOpacity(0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -310,42 +971,36 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             ),
             child: Row(
               children: [
-                // Imagem
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     bottomLeft: Radius.circular(16),
                   ),
-                  child: Hero(
-                    tag: 'favorite_${document.id}',
-                    child: Image.network(
-                      document.coverImage,
-                      width: 100,
-                      height: 120,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 100,
-                          height: 120,
-                          color: categoryColor.withOpacity(0.1),
-                          child: Center(
-                            child: SvgPicture.asset(
-                              'assets/icons/document.svg',
-                              width: 32,
-                              height: 32,
-                              colorFilter: ColorFilter.mode(
-                                categoryColor.withOpacity(0.5),
-                                BlendMode.srcIn,
-                              ),
+                  child: Image.network(
+                    document.coverImage,
+                    width: 100,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 100,
+                        height: 120,
+                        color: theme.cardColor,
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icons/document.svg',
+                            width: 32,
+                            height: 32,
+                            colorFilter: ColorFilter.mode(
+                              theme.colorScheme.primary.withOpacity(0.3),
+                              BlendMode.srcIn,
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-
-                // Conteúdo
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -358,112 +1013,96 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                               child: Text(
                                 document.name,
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            IconButton(
-                              icon: SvgPicture.asset(
-                                'assets/icons/heart_filled.svg',
-                                width: 16,
-                                height: 16,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.red,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                              onPressed: () {
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
                                 setState(() {
                                   document.isFavorite = false;
                                   widget.onFavoriteToggle?.call(document);
                                 });
                               },
+                              child: SvgPicture.asset(
+                                'assets/icons/heart_filled.svg',
+                                width: 20,
+                                height: 20,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.red,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: categoryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: categoryColor.withOpacity(0.3),
-                              width: 1,
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/category.svg',
+                              width: 14,
+                              height: 14,
+                              colorFilter: ColorFilter.mode(
+                                theme.colorScheme.secondary,
+                                BlendMode.srcIn,
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SvgPicture.asset(
-                                _getCategoryIconPath(document.category),
-                                width: 9.6,
-                                height: 9.6,
-                                colorFilter: ColorFilter.mode(
-                                  categoryColor,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
                                 document.category,
-                                style: TextStyle(
-                                  color: categoryColor,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.secondary,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                         if (document.isPro) ...[
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.amber.shade400,
-                                      Colors.orange.shade400,
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SvgPicture.asset(
-                                      'assets/icons/star.svg',
-                                      width: 9.6,
-                                      height: 9.6,
-                                      colorFilter: const ColorFilter.mode(
-                                        Colors.white,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    const Text(
-                                      'PRO',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.amber.shade400,
+                                  Colors.orange.shade400,
+                                ],
                               ),
-                            ],
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/icons/star.svg',
+                                  width: 10,
+                                  height: 10,
+                                  colorFilter: const ColorFilter.mode(
+                                    Colors.white,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'PRO',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ],
@@ -480,70 +1119,183 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
   Widget _buildEmptyState(ThemeData theme) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
               child: SvgPicture.asset(
                 'assets/icons/heart.svg',
-                width: 48,
-                height: 48,
+                width: 80,
+                height: 80,
                 colorFilter: ColorFilter.mode(
                   theme.colorScheme.primary.withOpacity(0.5),
                   BlendMode.srcIn,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Nenhum favorito ainda',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 24),
+            Text(
+              'No Favorites Yet',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Adicione documentos aos favoritos\npara vê-los aqui',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+            const SizedBox(height: 12),
+            Text(
+              'Start adding documents to your favorites to see them here',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.secondary,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: SvgPicture.asset(
+                'assets/icons/search.svg',
+                width: 20,
+                height: 20,
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
+              label: const Text('Browse Documents'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyCategoryState(ThemeData theme) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            'assets/icons/filter.svg',
-            width: 48,
-            height: 48,
-            colorFilter: ColorFilter.mode(
-              theme.colorScheme.primary.withOpacity(0.5),
-              BlendMode.srcIn,
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              'assets/icons/filter.svg',
+              width: 80,
+              height: 80,
+              colorFilter: ColorFilter.mode(
+                theme.colorScheme.secondary.withOpacity(0.5),
+                BlendMode.srcIn,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhum documento nesta categoria',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 24),
+            Text(
+              'No Results Found',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            const SizedBox(height: 12),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'No favorites match "$_searchQuery"'
+                  : 'No favorites in this category',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.secondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectedCategory = 'All';
+                  _searchQuery = '';
+                  _searchTextController.clear();
+                });
+              },
+              icon: SvgPicture.asset(
+                'assets/icons/refresh.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(
+                  theme.colorScheme.primary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              label: const Text('Clear Filters'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final ThemeData theme;
+
+  const _CategoryChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.cardColor,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.dividerColor,
+            width: 1,
           ),
-        ],
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: isSelected
+                ? Colors.white
+                : theme.textTheme.bodyMedium?.color,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }
