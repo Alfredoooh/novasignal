@@ -241,34 +241,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: theme.scaffoldBackgroundColor,
-      drawer: _buildDrawer(theme),
+      drawer: _HomeDrawer(
+        theme: theme,
+        themeProvider: widget.themeProvider,
+        onNavigateToFavorites: _navigateToFavorites,
+        onShowSettings: () {
+          Navigator.pop(context);
+          _showSettingsModal(context);
+        },
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              child: Row(
+            Container(
+              color: theme.cardColor,
+              child: Column(
                 children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        _scaffoldKey.currentState?.openDrawer();
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: theme.cardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: theme.dividerColor,
-                            width: 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: SvgPicture.asset(
+                  SizedBox(
+                    height: 56,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: SvgPicture.asset(
                             'assets/icons/menu_two.svg',
                             width: 24,
                             height: 24,
@@ -277,19 +271,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               BlendMode.srcIn,
                             ),
                           ),
+                          onPressed: () {
+                            _scaffoldKey.currentState?.openDrawer();
+                          },
                         ),
-                      ),
+                        Text(
+                          'Templates',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: theme.textTheme.displayLarge?.color,
+                          ),
+                        ),
+                        const Spacer(),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'Templates',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
+                  Container(
+                    color: theme.dividerColor,
+                    height: 0.5,
                   ),
                 ],
               ),
@@ -297,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Container(
               height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: 12, top: 8),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _categories.length,
@@ -332,68 +332,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildDrawer(ThemeData theme) {
-    return Drawer(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Menu',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: SvgPicture.asset(
-                      'assets/icons/close.svg',
-                      width: 24,
-                      height: 24,
-                      colorFilter: ColorFilter.mode(
-                        theme.colorScheme.secondary,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            Divider(color: theme.dividerColor, height: 1),
-            const SizedBox(height: 8),
-            _DrawerItem(
-              icon: 'assets/icons/heart.svg',
-              label: 'Favorites',
-              theme: theme,
-              onTap: _navigateToFavorites,
-            ),
-            _DrawerItem(
-              icon: 'assets/icons/settings.svg',
-              label: 'Settings',
-              theme: theme,
-              onTap: () {
-                Navigator.pop(context);
-                _showSettingsModal(context);
-              },
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'Version 1.0.0',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return _HomeDrawer(
+      theme: theme,
+      themeProvider: widget.themeProvider,
+      onNavigateToFavorites: _navigateToFavorites,
+      onShowSettings: () {
+        Navigator.pop(context);
+        _showSettingsModal(context);
+      },
     );
   }
 
@@ -594,6 +540,89 @@ class _DrawerItem extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeDrawer extends StatelessWidget {
+  final ThemeData theme;
+  final ThemeProvider themeProvider;
+  final VoidCallback onNavigateToFavorites;
+  final VoidCallback onShowSettings;
+
+  const _HomeDrawer({
+    required this.theme,
+    required this.themeProvider,
+    required this.onNavigateToFavorites,
+    required this.onShowSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Menu',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: theme.textTheme.displayLarge?.color,
+                    ),
+                  ),
+                  IconButton(
+                    icon: SvgPicture.asset(
+                      'assets/icons/close.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(
+                        theme.colorScheme.secondary,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              color: theme.dividerColor,
+              height: 0.5,
+            ),
+            const SizedBox(height: 8),
+            _DrawerItem(
+              icon: 'assets/icons/heart.svg',
+              label: 'Favorites',
+              theme: theme,
+              onTap: onNavigateToFavorites,
+            ),
+            _DrawerItem(
+              icon: 'assets/icons/settings.svg',
+              label: 'Settings',
+              theme: theme,
+              onTap: onShowSettings,
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Version 1.0.0',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
