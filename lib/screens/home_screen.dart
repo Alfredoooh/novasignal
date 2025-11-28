@@ -119,17 +119,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context,
       MaterialPageRoute(
         builder: (context) => FavoritesScreen(
-          favoriteDocuments: _documents.where((doc) => doc.isFavorite).toList(),
           themeProvider: widget.themeProvider,
-          onFavoriteToggle: (document) {
-            setState(() {
-              // Atualiza o estado no home quando um favorito é alterado
-              final index = _documents.indexWhere((doc) => doc.id == document.id);
-              if (index != -1) {
-                _documents[index].isFavorite = document.isFavorite;
-              }
-            });
-          },
+          documents: _documents.where((doc) => doc.isFavorite).toList(),
         ),
       ),
     );
