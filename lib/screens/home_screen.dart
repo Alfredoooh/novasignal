@@ -7,6 +7,7 @@ import '../widgets/settings_modal.dart';
 import '../models/document_model.dart';
 import '../services/document_service.dart';
 import '../screens/document_detail_screen.dart';
+import '../screens/favorites_screen.dart';
 import 'dart:math' as math;
 
 class HomeScreen extends StatefulWidget {
@@ -25,14 +26,16 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final DocumentService _documentService = DocumentService();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   List<DocumentModel> _documents = [];
   bool _isLoading = true;
   String? _errorMessage;
   String _selectedCategory = 'All';
-  late AnimationController _animationController;
+  late AnimationController _fadeController;
+  late AnimationController _categoryController;
 
   final List<String> _categories = [
     'All',
@@ -47,33 +50,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _loadDocuments();
-    _animationController = AnimationController(
+    _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 400),
     );
+    _categoryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeController.forward();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _animationController.dispose();
+    _fadeController.dispose();
+    _categoryController.dispose();
     super.dispose();
-  }
-
-  void _scrollUp() {
-    _scrollController.animateTo(
-      math.max(0, _scrollController.offset - 400),
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _scrollDown() {
-    _scrollController.animateTo(
-      _scrollController.offset + 400,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-    );
   }
 
   Future<void> _loadDocuments() async {
@@ -120,6 +113,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  void _navigateToFavorites() {
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FavoritesScreen(
+          themeProvider: widget.themeProvider,
+          documents: _documents.where((doc) => doc.isFavorite).toList(),
+        ),
+      ),
+    );
+  }
+
   bool _isDesktop(BuildContext context) {
     return MediaQuery.of(context).size.width >= 1024;
   }
@@ -135,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = widget.themeProvider.currentTheme;
     final isDesktop = _isDesktop(context);
 
     if (isDesktop) {
@@ -148,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Column(
       children: [
         Container(
-          height: 64,
+          height: 80,
           decoration: BoxDecoration(
             color: theme.cardColor,
             border: Border(
@@ -159,16 +165,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Row(
               children: [
                 Text(
                   'Templates',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    fontSize: 24,
                   ),
                 ),
-                const SizedBox(width: 40),
+                const SizedBox(width: 48),
                 Expanded(
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -176,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       children: _categories.map((category) {
                         final isSelected = _selectedCategory == category;
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.only(right: 12),
                           child: _CategoryChip(
                             label: category,
                             isSelected: isSelected,
@@ -184,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               setState(() {
                                 _selectedCategory = category;
                               });
-                              _animationController.forward(from: 0);
+                              _categoryController.forward(from: 0);
                             },
                             theme: theme,
                             isDesktop: true,
@@ -193,6 +200,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       }).toList(),
                     ),
                   ),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: SvgPicture.asset(
+                    'assets/icons/settings.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(
+                      theme.colorScheme.secondary,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  onPressed: () => _showSettingsModal(context),
                 ),
               ],
             ),
@@ -210,41 +230,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildMobileLayout(ThemeData theme) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: theme.scaffoldBackgroundColor,
+      drawer: _buildDrawer(theme),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Templates',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => _showSettingsModal(context),
-                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        _scaffoldKey.currentState?.openDrawer();
+                      },
+                      borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        width: 40,
-                        height: 40,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          borderRadius: BorderRadius.circular(20),
+                          color: theme.cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: theme.dividerColor,
+                            width: 1,
+                          ),
                         ),
                         child: Center(
                           child: SvgPicture.asset(
-                            'assets/icons/settings.svg',
-                            width: 20,
-                            height: 20,
+                            'assets/icons/menu_two.svg',
+                            width: 24,
+                            height: 24,
                             colorFilter: ColorFilter.mode(
-                              theme.colorScheme.onPrimary,
+                              theme.colorScheme.primary,
                               BlendMode.srcIn,
                             ),
                           ),
@@ -252,13 +272,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      'Templates',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
             Container(
-              height: 44,
+              height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.only(bottom: 12),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _categories.length,
@@ -266,7 +296,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   final category = _categories[index];
                   final isSelected = _selectedCategory == category;
                   return Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: 10),
                     child: _CategoryChip(
                       label: category,
                       isSelected: isSelected,
@@ -274,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         setState(() {
                           _selectedCategory = category;
                         });
-                        _animationController.forward(from: 0);
+                        _categoryController.forward(from: 0);
                       },
                       theme: theme,
                       isDesktop: false,
@@ -285,6 +315,72 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
             Expanded(
               child: _buildContent(theme),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer(ThemeData theme) {
+    return Drawer(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Menu',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: SvgPicture.asset(
+                      'assets/icons/close.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(
+                        theme.colorScheme.secondary,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: theme.dividerColor, height: 1),
+            const SizedBox(height: 8),
+            _DrawerItem(
+              icon: 'assets/icons/heart.svg',
+              label: 'Favorites',
+              theme: theme,
+              onTap: _navigateToFavorites,
+            ),
+            _DrawerItem(
+              icon: 'assets/icons/settings.svg',
+              label: 'Settings',
+              theme: theme,
+              onTap: () {
+                Navigator.pop(context);
+                _showSettingsModal(context);
+              },
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Version 1.0.0',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
             ),
           ],
         ),
@@ -308,10 +404,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: theme.colorScheme.error,
+              SvgPicture.asset(
+                'assets/icons/alert.svg',
+                width: 64,
+                height: 64,
+                colorFilter: ColorFilter.mode(
+                  theme.colorScheme.error,
+                  BlendMode.srcIn,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -330,7 +430,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _loadDocuments,
-                icon: const Icon(Icons.refresh),
+                icon: SvgPicture.asset(
+                  'assets/icons/refresh.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
                 label: const Text('Retry'),
               ),
             ],
@@ -348,10 +456,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.inbox_outlined,
-                size: 64,
-                color: theme.dividerColor,
+              SvgPicture.asset(
+                'assets/icons/document.svg',
+                width: 64,
+                height: 64,
+                colorFilter: ColorFilter.mode(
+                  theme.dividerColor,
+                  BlendMode.srcIn,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
@@ -373,51 +485,107 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
 
     final isDesktop = _isDesktop(context);
-    return FadeTransition(
-      opacity: _animationController.drive(
-        Tween<double>(begin: 0.0, end: 1.0).chain(
-          CurveTween(curve: Curves.easeIn),
-        ),
+    final isWideDesktop = MediaQuery.of(context).size.width >= 1400;
+    
+    return SlideTransition(
+      position: _categoryController.drive(
+        Tween<Offset>(
+          begin: const Offset(0, 0.1),
+          end: Offset.zero,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
       ),
-      child: MasonryGridView.count(
-        controller: _scrollController,
-        padding: EdgeInsets.all(isDesktop ? 24 : 16),
-        crossAxisCount: isDesktop ? 3 : 2,
-        mainAxisSpacing: isDesktop ? 16 : 12,
-        crossAxisSpacing: isDesktop ? 16 : 12,
-        itemCount: filteredDocs.length,
-        itemBuilder: (context, index) {
-          return _ImageCard(
-            document: filteredDocs[index],
-            theme: theme,
-            index: index,
-            isDesktop: isDesktop,
-            onTap: () {
-              if (isDesktop) {
-                widget.onSecondaryScreenChanged?.call(
-                  DocumentDetailScreen(
-                    document: filteredDocs[index],
-                    themeProvider: widget.themeProvider,
-                    isSecondaryScreen: true,
-                    onClose: () {
-                      widget.onSecondaryScreenChanged?.call(const _EmptySecondaryScreen());
-                    },
-                  ),
-                );
-              } else {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DocumentDetailScreen(
+      child: FadeTransition(
+        opacity: _categoryController.drive(
+          Tween<double>(begin: 0.0, end: 1.0),
+        ),
+        child: MasonryGridView.count(
+          controller: _scrollController,
+          padding: EdgeInsets.all(isDesktop ? 32 : 20),
+          crossAxisCount: isWideDesktop ? 4 : (isDesktop ? 3 : 2),
+          mainAxisSpacing: isDesktop ? 20 : 16,
+          crossAxisSpacing: isDesktop ? 20 : 16,
+          itemCount: filteredDocs.length,
+          itemBuilder: (context, index) {
+            return _ImageCard(
+              document: filteredDocs[index],
+              theme: theme,
+              index: index,
+              isDesktop: isDesktop,
+              animationController: _categoryController,
+              onTap: () {
+                if (isDesktop) {
+                  widget.onSecondaryScreenChanged?.call(
+                    DocumentDetailScreen(
                       document: filteredDocs[index],
                       themeProvider: widget.themeProvider,
+                      isSecondaryScreen: true,
+                      onClose: () {
+                        widget.onSecondaryScreenChanged?.call(const _EmptySecondaryScreen());
+                      },
                     ),
-                  ),
-                );
-              }
-            },
-          );
-        },
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DocumentDetailScreen(
+                        document: filteredDocs[index],
+                        themeProvider: widget.themeProvider,
+                      ),
+                    ),
+                  );
+                }
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final String icon;
+  final String label;
+  final ThemeData theme;
+  final VoidCallback onTap;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.theme,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            children: [
+              SvgPicture.asset(
+                icon,
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  theme.colorScheme.primary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -444,34 +612,44 @@ class _CategoryChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(isDesktop ? 10 : 18),
+        borderRadius: BorderRadius.circular(isDesktop ? 12 : 24),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 18 : 14,
-            vertical: isDesktop ? 8 : 8,
+            horizontal: isDesktop ? 24 : 20,
+            vertical: isDesktop ? 12 : 12,
           ),
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primary
-                : theme.scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(isDesktop ? 10 : 18),
+                : theme.cardColor,
+            borderRadius: BorderRadius.circular(isDesktop ? 12 : 24),
             border: Border.all(
               color: isSelected
                   ? theme.colorScheme.primary
                   : theme.dividerColor,
-              width: 1,
+              width: 1.5,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
           ),
           child: Text(
             label,
             style: TextStyle(
               color: isSelected
                   ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.secondary,
-              fontSize: 13,
+                  : theme.textTheme.bodyLarge?.color,
+              fontSize: isDesktop ? 15 : 14,
               fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
             ),
           ),
         ),
@@ -485,6 +663,7 @@ class _ImageCard extends StatelessWidget {
   final ThemeData theme;
   final int index;
   final bool isDesktop;
+  final AnimationController animationController;
   final VoidCallback onTap;
 
   const _ImageCard({
@@ -492,67 +671,90 @@ class _ImageCard extends StatelessWidget {
     required this.theme,
     required this.index,
     required this.isDesktop,
+    required this.animationController,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final random = math.Random(index);
-    final heightFactor = 0.7 + (random.nextDouble() * 0.6);
-    final borderRadius = isDesktop ? 8.0 : 16.0;
+    final borderRadius = isDesktop ? 12.0 : 20.0;
+    final delay = (index * 50).clamp(0, 300);
 
-    return Hero(
-      tag: 'document_${document.id}',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.shadowColor.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius),
-              child: AspectRatio(
-                aspectRatio: 1 / heightFactor,
+    return AnimatedBuilder(
+      animation: animationController,
+      builder: (context, child) {
+        final animationValue = Curves.elasticOut.transform(
+          math.max(0, (animationController.value * 1000 - delay) / 1000),
+        );
+        
+        return Transform.translate(
+          offset: Offset(0, 50 * (1 - animationValue)),
+          child: Opacity(
+            opacity: animationValue,
+            child: child,
+          ),
+        );
+      },
+      child: Hero(
+        tag: 'document_${document.id}',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(borderRadius),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(borderRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.shadowColor.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(borderRadius),
                 child: Stack(
-                  fit: StackFit.expand,
                   children: [
                     Image.network(
                       document.coverImage,
                       fit: BoxFit.cover,
+                      width: double.infinity,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return Container(
-                          color: theme.cardColor,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                              strokeWidth: 2,
-                              color: theme.colorScheme.primary,
+                        return AspectRatio(
+                          aspectRatio: 0.75,
+                          child: Container(
+                            color: theme.cardColor,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2.5,
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
                           ),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: theme.cardColor,
-                          child: Center(
-                            child: Icon(
-                              Icons.image,
-                              size: 40,
-                              color: theme.colorScheme.primary.withOpacity(0.3),
+                        return AspectRatio(
+                          aspectRatio: 0.75,
+                          child: Container(
+                            color: theme.cardColor,
+                            child: Center(
+                              child: SvgPicture.asset(
+                                'assets/icons/document.svg',
+                                width: 48,
+                                height: 48,
+                                colorFilter: ColorFilter.mode(
+                                  theme.colorScheme.primary.withOpacity(0.3),
+                                  BlendMode.srcIn,
+                                ),
+                              ),
                             ),
                           ),
                         );
@@ -564,13 +766,13 @@ class _ImageCard extends StatelessWidget {
                         left: 0,
                         right: 0,
                         child: Container(
-                          height: 80,
+                          height: 100,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                Colors.black.withOpacity(0.3),
+                                Colors.black.withOpacity(0.4),
                                 Colors.transparent,
                               ],
                             ),
@@ -583,7 +785,7 @@ class _ImageCard extends StatelessWidget {
                         right: 12,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
+                            horizontal: 12,
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
@@ -593,11 +795,11 @@ class _ImageCard extends StatelessWidget {
                                 Colors.orange.shade400,
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 4,
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
                             ],
@@ -605,18 +807,23 @@ class _ImageCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.star,
-                                size: 12,
-                                color: Colors.white,
+                              SvgPicture.asset(
+                                'assets/icons/star.svg',
+                                width: 14,
+                                height: 14,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               const Text(
                                 'PRO',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ],
@@ -646,10 +853,14 @@ class _EmptySecondaryScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.touch_app_outlined,
-              size: 64,
-              color: theme.colorScheme.secondary.withOpacity(0.3),
+            SvgPicture.asset(
+              'assets/icons/document.svg',
+              width: 64,
+              height: 64,
+              colorFilter: ColorFilter.mode(
+                theme.colorScheme.secondary.withOpacity(0.3),
+                BlendMode.srcIn,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -679,7 +890,7 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = themeProvider.currentTheme;
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -708,7 +919,15 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.close, color: theme.colorScheme.secondary),
+                  icon: SvgPicture.asset(
+                    'assets/icons/close.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(
+                      theme.colorScheme.secondary,
+                      BlendMode.srcIn,
+                    ),
+                  ),
                   onPressed: onClose,
                 ),
               ],
@@ -802,10 +1021,14 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 20,
-                    color: theme.colorScheme.secondary,
+                  SvgPicture.asset(
+                    'assets/icons/arrow_forward.svg',
+                    width: 20,
+                    height: 20,
+                    colorFilter: ColorFilter.mode(
+                      theme.colorScheme.secondary,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ],
               ),
