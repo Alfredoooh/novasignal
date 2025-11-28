@@ -179,11 +179,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Row(
               children: [
                 const SizedBox(width: 8),
-                Text(
-                  'Templates',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
+                SvgPicture.asset(
+                  'assets/icons/templates_text.svg',
+                  height: 28,
+                  colorFilter: ColorFilter.mode(
+                    theme.textTheme.displayLarge?.color ?? Colors.black,
+                    BlendMode.srcIn,
                   ),
                 ),
                 const SizedBox(width: 48),
@@ -278,12 +279,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           },
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          'Templates',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: theme.textTheme.displayLarge?.color,
+                        SvgPicture.asset(
+                          'assets/icons/templates_text.svg',
+                          height: 24,
+                          colorFilter: ColorFilter.mode(
+                            theme.textTheme.displayLarge?.color ?? Colors.black,
+                            BlendMode.srcIn,
                           ),
                         ),
                         const Spacer(),
@@ -298,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
             Container(
-              height: 42,
+              height: 36,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               margin: const EdgeInsets.only(bottom: 12, top: 8),
               child: ListView.builder(
@@ -515,10 +516,11 @@ class _CategoryChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
+          height: isDesktop ? 36 : 36,
           padding: EdgeInsets.symmetric(
-            horizontal: isDesktop ? 24 : 20,
-            vertical: isDesktop ? 10 : 10,
+            horizontal: isDesktop ? 20 : 18,
           ),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primary
@@ -549,6 +551,7 @@ class _CategoryChip extends StatelessWidget {
               fontSize: isDesktop ? 15 : 14,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.2,
+              height: 1.0,
             ),
           ),
         ),
