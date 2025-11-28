@@ -27,15 +27,25 @@ class DocumentViewerScreen extends StatefulWidget {
 class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   bool _isLoading = true;
   late final String _viewType;
+  html.IFrameElement? _iframe;
 
   @override
   void initState() {
     super.initState();
-    _viewType = 'document-iframe-${DateTime.now().millisecondsSinceEpoch}';
+    // Gera um viewType único baseado no ID do documento e timestamp
+    _viewType = 'document-iframe-${widget.document.id}-${DateTime.now().millisecondsSinceEpoch}';
 
     if (kIsWeb) {
       _registerWebView();
     }
+  }
+
+  @override
+  void dispose() {
+    // Remove o iframe ao sair da tela
+    _iframe?.remove();
+    _iframe = null;
+    super.dispose();
   }
 
   void _registerWebView() {
@@ -54,14 +64,14 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           ${widget.document.html}
         ''';
 
-        final iframe = html.IFrameElement()
+        _iframe = html.IFrameElement()
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.border = 'none'
           ..srcdoc = htmlWithZoom;
 
         // Listener de load
-        iframe.onLoad.listen((event) {
+        _iframe!.onLoad.listen((event) {
           if (mounted) {
             setState(() {
               _isLoading = false;
@@ -70,7 +80,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         });
 
         // Listener de erro
-        iframe.onError.listen((event) {
+        _iframe!.onError.listen((event) {
           if (mounted) {
             setState(() {
               _isLoading = false;
@@ -78,7 +88,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           }
         });
 
-        return iframe;
+        return _iframe!;
       },
     );
 
@@ -94,7 +104,7 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = widget.themeProvider.currentTheme;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -102,7 +112,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
         children: [
           // Iframe com visualização desktop
           if (kIsWeb)
-            HtmlElementView(viewType: _viewType)
+            HtmlElementView(
+              key: ValueKey(_viewType),
+              viewType: _viewType,
+            )
           else
             Center(
               child: Padding(
