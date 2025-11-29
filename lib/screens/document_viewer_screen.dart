@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/document_model.dart';
 import '../providers/theme_provider.dart';
+import '../utils/web_utils.dart';
 
-// Import condicional
-import '../utils/web_utils.dart'
-    if (dart.library.html) '../utils/web_utils_web.dart';
-
-// Imports para web
-import 'dart:html' as html;
+// REMOVIDO: import 'dart:html' as html;
+// Agora usa tipos dinâmicos para evitar erro no Android
 
 class DocumentViewerScreen extends StatefulWidget {
   final DocumentModel document;
@@ -27,12 +24,11 @@ class DocumentViewerScreen extends StatefulWidget {
 class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
   bool _isLoading = true;
   late final String _viewType;
-  html.IFrameElement? _iframe;
+  dynamic _iframe; // MUDADO: html.IFrameElement? -> dynamic
 
   @override
   void initState() {
     super.initState();
-    // Gera um viewType único baseado no ID do documento e timestamp
     _viewType = 'document-iframe-${widget.document.id}-${DateTime.now().millisecondsSinceEpoch}';
 
     if (kIsWeb) {
@@ -42,9 +38,10 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
 
   @override
   void dispose() {
-    // Remove o iframe ao sair da tela
-    _iframe?.remove();
-    _iframe = null;
+    if (kIsWeb && _iframe != null) {
+      _iframe.remove();
+      _iframe = null;
+    }
     super.dispose();
   }
 
@@ -52,7 +49,6 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
     registerWebViewFactory(
       _viewType,
       (int viewId) {
-        // Injeta o CSS de zoom diretamente no HTML
         final htmlWithZoom = '''
           <style>
             body {
@@ -64,35 +60,35 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
           ${widget.document.html}
         ''';
 
-        _iframe = html.IFrameElement()
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.border = 'none'
-          ..srcdoc = htmlWithZoom;
+        // MUDADO: Usa import condicional via web_utils
+        if (kIsWeb) {
+          // O dart:html será importado apenas no web_utils_web.dart
+          final iframe = createIFrameElement(htmlWithZoom);
+          _iframe = iframe;
 
-        // Listener de load
-        _iframe!.onLoad.listen((event) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
-        });
+          // Listeners
+          addIFrameLoadListener(iframe, () {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
+          });
 
-        // Listener de erro
-        _iframe!.onError.listen((event) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
-        });
+          addIFrameErrorListener(iframe, () {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
+          });
 
-        return _iframe!;
+          return iframe;
+        }
+        throw UnsupportedError('Web only');
       },
     );
 
-    // Força o loading a desaparecer após 2 segundos mesmo que não tenha carregado
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && _isLoading) {
         setState(() {
@@ -110,7 +106,6 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Iframe com visualização desktop
           if (kIsWeb)
             HtmlElementView(
               key: ValueKey(_viewType),
@@ -128,7 +123,6 @@ class _DocumentViewerScreenState extends State<DocumentViewerScreen> {
               ),
             ),
 
-          // Loading indicator
           if (_isLoading)
             Container(
               color: Colors.white.withOpacity(0.9),
