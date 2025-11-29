@@ -2,7 +2,7 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
+    // REMOVIDO: id("com.google.gms.google-services")
 }
 
 android {
@@ -40,10 +40,12 @@ flutter {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-storage")
+    // REMOVIDAS todas as dependências do Firebase:
+    // implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    // implementation("com.google.firebase:firebase-analytics")
+    // implementation("com.google.firebase:firebase-auth")
+    // implementation("com.google.firebase:firebase-firestore")
+    // implementation("com.google.firebase:firebase-storage")
+    
     implementation("androidx.multidex:multidex:2.0.1")
 }
