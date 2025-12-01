@@ -7,6 +7,8 @@ import '../providers/theme_provider.dart';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ChatTab extends StatefulWidget {
   const ChatTab({Key? key}) : super(key: key);
@@ -23,10 +25,21 @@ class _ChatTabState extends State<ChatTab> {
   static const String _viewType = 'chat-input-only';
   static bool _viewRegistered = false;
   html.InputElement? _htmlInput;
+  bool _isLoading = false;
+  String? _conversationTitle;
+
+  static const String _groqApiKey = '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';
+  static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
   static const String _sendIconSvg = '''
 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+''';
+
+  static const String _stopIconSvg = '''
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6" y="6" width="12" height="12" rx="2" fill="#FFFFFF"/>
 </svg>
 ''';
 
@@ -76,7 +89,6 @@ class _ChatTabState extends State<ChatTab> {
             ..style.userSelect = 'text'
             ..style.setProperty('-webkit-tap-highlight-color', 'transparent');
 
-          // CSS para placeholder
           final style = html.StyleElement()
             ..text = '''
               #chatInput-$viewId::placeholder {
@@ -91,18 +103,10 @@ class _ChatTabState extends State<ChatTab> {
           element.append(style);
           element.append(_htmlInput!);
 
-          // Listener para Enter
           _htmlInput!.onKeyPress.listen((e) {
             if (e.key == 'Enter') {
               e.preventDefault();
               _sendMessageFromHtml();
-            }
-          });
-
-          // Remover foco ao clicar fora
-          element.onClick.listen((e) {
-            if (e.target != _htmlInput) {
-              _htmlInput?.blur();
             }
           });
 
@@ -117,10 +121,18 @@ class _ChatTabState extends State<ChatTab> {
   void _sendMessageFromHtml() {
     if (_htmlInput != null) {
       final text = _htmlInput!.value?.trim() ?? '';
-      if (text.isNotEmpty) {
+      if (text.isNotEmpty && !_isLoading) {
         _sendMessage(text);
         _htmlInput!.value = '';
       }
+    }
+  }
+
+  // Fechar teclado ao clicar fora
+  void _unfocusKeyboard() {
+    _focusNode.unfocus();
+    if (kIsWeb && _htmlInput != null) {
+      _htmlInput!.blur();
     }
   }
 
@@ -128,78 +140,90 @@ class _ChatTabState extends State<ChatTab> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return Stack(
-      children: [
-        Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  Text(
-                    'DocuGen',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Messages Area
-            Expanded(
-              child: _messages.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Ionicons.chatbubble_ellipses_outline,
-                            size: 64,
-                            color: themeProvider.isDarkMode 
-                                ? Colors.grey.shade700 
-                                : Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Comece uma conversa',
-                            style: TextStyle(
+    return GestureDetector(
+      onTap: _unfocusKeyboard,
+      behavior: HitTestBehavior.translucent,
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              // Header (removido o título estático)
+              const SizedBox(height: 16),
+              // Messages Area
+              Expanded(
+                child: _messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Ionicons.chatbubble_ellipses_outline,
+                              size: 64,
                               color: themeProvider.isDarkMode 
-                                  ? Colors.grey.shade600 
-                                  : Colors.grey.shade400,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.5,
+                                  ? Colors.grey.shade700 
+                                  : Colors.grey.shade300,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Envie uma mensagem para iniciar',
-                            style: TextStyle(
-                              color: themeProvider.isDarkMode 
-                                  ? Colors.grey.shade600 
-                                  : Colors.grey.shade400,
-                              fontSize: 14,
+                            const SizedBox(height: 16),
+                            Text(
+                              'Comece uma conversa',
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode 
+                                    ? Colors.grey.shade600 
+                                    : Colors.grey.shade400,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Envie uma mensagem para iniciar',
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode 
+                                    ? Colors.grey.shade600 
+                                    : Colors.grey.shade400,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          // Título gerado por IA
+                          if (_conversationTitle != null)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                              child: Text(
+                                _conversationTitle!,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: themeProvider.isDarkMode 
+                                      ? Colors.white 
+                                      : const Color(0xFF212529),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          Expanded(
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
+                              itemCount: _messages.length,
+                              itemBuilder: (context, index) {
+                                return _buildMessageBubble(_messages[index], themeProvider);
+                              },
                             ),
                           ),
                         ],
                       ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        return _buildMessageBubble(_messages[index], themeProvider);
-                      },
-                    ),
-            ),
-          ],
-        ),
-        _buildInputArea(themeProvider),
-      ],
+              ),
+            ],
+          ),
+          _buildInputArea(themeProvider),
+        ],
+      ),
     );
   }
 
@@ -218,15 +242,24 @@ class _ChatTabState extends State<ChatTab> {
               : (themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF1F3F5)),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: message.isUser 
-                ? Colors.white 
-                : (themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529)),
-            fontSize: 16,
-          ),
-        ),
+        child: message.isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
+                ),
+              )
+            : Text(
+                message.text,
+                style: TextStyle(
+                  color: message.isUser 
+                      ? Colors.white 
+                      : (themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529)),
+                  fontSize: 16,
+                ),
+              ),
       ),
     );
   }
@@ -258,7 +291,6 @@ class _ChatTabState extends State<ChatTab> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Input (HTML no web, nativo no app)
                 Expanded(
                   child: SizedBox(
                     height: 50,
@@ -269,25 +301,34 @@ class _ChatTabState extends State<ChatTab> {
                           )
                         : Container(
                             decoration: BoxDecoration(
-                              color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFFFFFFF),
+                              color: themeProvider.isDarkMode 
+                                  ? const Color(0xFF495057) 
+                                  : const Color(0xFFFFFFFF),
                               borderRadius: BorderRadius.circular(24),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             child: TextField(
                               controller: _messageController,
                               focusNode: _focusNode,
+                              enabled: !_isLoading,
                               style: TextStyle(
                                 fontSize: 16,
-                                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                                color: themeProvider.isDarkMode 
+                                    ? Colors.white 
+                                    : const Color(0xFF212529),
                               ),
                               decoration: InputDecoration.collapsed(
                                 hintText: 'Ask DocuGen',
                                 hintStyle: TextStyle(
-                                  color: themeProvider.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
+                                  color: themeProvider.isDarkMode 
+                                      ? Colors.white54 
+                                      : const Color(0xFFADB5BD),
                                   fontSize: 16,
                                 ),
                               ),
-                              cursorColor: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                              cursorColor: themeProvider.isDarkMode 
+                                  ? Colors.white 
+                                  : const Color(0xFF212529),
                               enableSuggestions: false,
                               autocorrect: false,
                               onSubmitted: (_) => _sendMessageNative(),
@@ -296,14 +337,16 @@ class _ChatTabState extends State<ChatTab> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Botão de enviar (sempre Flutter nativo)
+                // Botão de enviar/parar
                 GestureDetector(
-                  onTap: kIsWeb ? _sendMessageFromHtml : _sendMessageNative,
+                  onTap: _isLoading ? null : (kIsWeb ? _sendMessageFromHtml : _sendMessageNative),
                   child: Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529),
+                      color: themeProvider.isDarkMode 
+                          ? const Color(0xFF6C757D) 
+                          : const Color(0xFF212529),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -314,11 +357,17 @@ class _ChatTabState extends State<ChatTab> {
                       ],
                     ),
                     child: Center(
-                      child: SvgPicture.string(
-                        _sendIconSvg,
-                        width: 24,
-                        height: 24,
-                      ),
+                      child: _isLoading
+                          ? SvgPicture.string(
+                              _stopIconSvg,
+                              width: 20,
+                              height: 20,
+                            )
+                          : SvgPicture.string(
+                              _sendIconSvg,
+                              width: 24,
+                              height: 24,
+                            ),
                     ),
                   ),
                 ),
@@ -332,27 +381,134 @@ class _ChatTabState extends State<ChatTab> {
 
   void _sendMessageNative() {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isLoading) return;
     _sendMessage(text);
     _messageController.clear();
     _focusNode.unfocus();
   }
 
-  void _sendMessage(String text) {
-    if (text.trim().isEmpty) return;
+  Future<void> _sendMessage(String text) async {
+    if (text.trim().isEmpty || _isLoading) return;
     if (!mounted) return;
-    
-    debugPrint('📨 Mensagem enviada: $text');
-    
+
     setState(() {
       _messages.add(ChatMessage(text: text.trim(), isUser: true));
+      _messages.add(ChatMessage(text: '', isUser: false, isLoading: true));
+      _isLoading = true;
     });
-    
+
+    _scrollToBottom();
+
+    try {
+      final response = await http.post(
+        Uri.parse(_groqApiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_groqApiKey',
+        },
+        body: jsonEncode({
+          'model': 'llama-3.3-70b-versatile',
+          'messages': _buildMessageHistory(),
+          'temperature': 0.7,
+          'max_tokens': 1024,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final aiResponse = data['choices'][0]['message']['content'];
+
+        if (mounted) {
+          setState(() {
+            _messages.removeLast();
+            _messages.add(ChatMessage(text: aiResponse, isUser: false));
+            _isLoading = false;
+          });
+
+          // Gerar título após a primeira troca de mensagens
+          if (_conversationTitle == null && _messages.length == 2) {
+            _generateConversationTitle();
+          }
+        }
+      } else {
+        throw Exception('Erro na API: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Erro ao enviar mensagem: $e');
+      if (mounted) {
+        setState(() {
+          _messages.removeLast();
+          _messages.add(ChatMessage(
+            text: 'Desculpe, ocorreu um erro. Tente novamente.',
+            isUser: false,
+          ));
+          _isLoading = false;
+        });
+      }
+    }
+
+    _scrollToBottom();
+  }
+
+  List<Map<String, String>> _buildMessageHistory() {
+    return _messages
+        .where((msg) => !msg.isLoading)
+        .map((msg) => {
+              'role': msg.isUser ? 'user' : 'assistant',
+              'content': msg.text,
+            })
+        .toList();
+  }
+
+  Future<void> _generateConversationTitle() async {
+    if (_messages.isEmpty) return;
+
+    try {
+      final firstMessage = _messages.first.text;
+      final response = await http.post(
+        Uri.parse(_groqApiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_groqApiKey',
+        },
+        body: jsonEncode({
+          'model': 'llama-3.3-70b-versatile',
+          'messages': [
+            {
+              'role': 'system',
+              'content': 'Gere um título curto e descritivo (máximo 6 palavras) para esta conversa. Responda apenas com o título, sem pontuação no final.',
+            },
+            {
+              'role': 'user',
+              'content': firstMessage,
+            },
+          ],
+          'temperature': 0.5,
+          'max_tokens': 20,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final title = data['choices'][0]['message']['content'].trim();
+
+        if (mounted) {
+          setState(() {
+            _conversationTitle = title;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro ao gerar título: $e');
+    }
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
@@ -371,5 +527,11 @@ class _ChatTabState extends State<ChatTab> {
 class ChatMessage {
   final String text;
   final bool isUser;
-  ChatMessage({required this.text, required this.isUser});
+  final bool isLoading;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    this.isLoading = false,
+  });
 }
