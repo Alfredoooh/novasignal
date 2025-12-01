@@ -2,151 +2,78 @@
 <html>
 <head>
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="NovaSignal - Sua plataforma de trading inteligente">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="description" content="DocuGen - AI Document Generator">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="NovaSignal">
+  <meta name="apple-mobile-web-app-title" content="DocuGen">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>NovaSignal - Trading Inteligente</title>
+  <title>DocuGen</title>
   <link rel="manifest" href="manifest.json">
-
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+  
+  <!-- Bibliotecas para conversão PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  
+  <script>
+    // Configurar worker do PDF.js
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
-
+  </script>
+  
+  <style>
     body {
       margin: 0;
       padding: 0;
-      background-color: #FAFAFA;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: #0F0F0F;
-      }
-    }
-
-    /* Loading animation */
+    
     .loading {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      z-index: 9999;
+      align-items: center;
+      height: 100vh;
+      background: #1a1a1a;
     }
-
+    
     .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid rgba(17, 17, 17, 0.1);
-      border-top-color: #111111;
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #007AFF;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 1s linear infinite;
     }
-
-    @media (prefers-color-scheme: dark) {
-      .loading-spinner {
-        border-color: rgba(255, 255, 255, 0.1);
-        border-top-color: #FFFFFF;
-      }
-    }
-
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
-    }
-
-    .fade-out {
-      opacity: 0;
-      transition: opacity 0.3s ease;
     }
   </style>
 </head>
 <body>
-  <!-- Loading screen -->
   <div class="loading" id="loading">
     <div class="loading-spinner"></div>
   </div>
-
-  <!-- Flutter bootstrap -->
+  
   <script>
-    var serviceWorkerVersion = null;
-    var scriptLoaded = false;
-
-    function loadMainDartJs() {
-      if (scriptLoaded) {
-        return;
-      }
-      scriptLoaded = true;
-      var scriptTag = document.createElement('script');
-      scriptTag.src = 'main.dart.js';
-      scriptTag.type = 'application/javascript';
-      document.body.append(scriptTag);
-    }
-
-    if ('serviceWorker' in navigator) {
-      // Service workers are supported. Use them.
-      window.addEventListener('load', function () {
-        var serviceWorkerUrl = 'flutter_service_worker.js?v=' + serviceWorkerVersion;
-        navigator.serviceWorker.register(serviceWorkerUrl)
-          .then((reg) => {
-            function waitForActivation(serviceWorker) {
-              serviceWorker.addEventListener('statechange', () => {
-                if (serviceWorker.state == 'activated') {
-                  console.log('Installed new service worker.');
-                  loadMainDartJs();
-                }
-              });
-            }
-            if (!reg.active && (reg.installing || reg.waiting)) {
-              waitForActivation(reg.installing || reg.waiting);
-            } else if (!reg.active.scriptURL.endsWith(serviceWorkerVersion)) {
-              console.log('New service worker available.');
-              reg.update();
-              waitForActivation(reg.installing);
-            } else {
-              console.log('Loading app from service worker.');
-              loadMainDartJs();
-            }
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            // Remove loading
+            document.getElementById('loading').style.display = 'none';
+            appRunner.runApp();
           });
-
-        setTimeout(() => {
-          if (!scriptLoaded) {
-            console.warn('Failed to load app from service worker. Falling back to plain <script> tag.');
-            loadMainDartJs();
-          }
-        }, 4000);
+        }
       });
-    } else {
-      loadMainDartJs();
-    }
-
-    // Remover loading screen quando o app carregar
-    window.addEventListener('flutter-first-frame', function() {
-      var loading = document.getElementById('loading');
-      if (loading) {
-        loading.classList.add('fade-out');
-        setTimeout(() => {
-          loading.style.display = 'none';
-        }, 300);
-      }
     });
   </script>
 </body>
