@@ -528,7 +528,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           'Authorization': 'Bearer $_groqApiKey',
         },
         body: jsonEncode({
-          'model': 'llama-3.3-70b-specdec',
+          'model': 'groq/compound',
           'messages': [
             {
               'role': 'system',
@@ -564,8 +564,8 @@ Trabalho concluído! Carregando o preview...''',
             },
             ..._buildMessageHistory(),
           ],
-          'temperature': 0.7,
-          'max_tokens': 2048,
+          'temperature': 0.3,
+          'max_tokens': 1024,
         }),
       );
 
@@ -670,7 +670,7 @@ Trabalho concluído! Carregando o preview...''',
           'Authorization': 'Bearer $_groqApiKey',
         },
         body: jsonEncode({
-          'model': 'llama-3.3-70b-specdec',
+          'model': 'groq/compound',
           'messages': [
             {
               'role': 'system',
@@ -681,7 +681,7 @@ Trabalho concluído! Carregando o preview...''',
               'content': firstMessage,
             },
           ],
-          'temperature': 0.5,
+          'temperature': 0.3,
           'max_tokens': 20,
         }),
       );
