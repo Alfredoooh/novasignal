@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:js_util' as js_util;
 
 class ChatTab extends StatefulWidget {
   const ChatTab({Key? key}) : super(key: key);
@@ -20,8 +21,8 @@ class _ChatTabState extends State<ChatTab> {
   final FocusNode _focusNode = FocusNode();
   final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
-  static const String _viewType = 'chat-input-view';
-  static bool _viewRegistered = false;
+  static int _viewIdCounter = 0;
+  late String _viewType;
 
   static const String _sendIconSvg = '''
 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -32,123 +33,26 @@ class _ChatTabState extends State<ChatTab> {
   @override
   void initState() {
     super.initState();
-    if (kIsWeb && !_viewRegistered) {
-      _registerWebView();
-      _viewRegistered = true;
-    }
+    _viewType = 'chat-input-view-${_viewIdCounter++}';
     if (kIsWeb) {
-      _setupMessageListener();
-      _registerGlobalJsFunctionFallbacks();
-      _registerDocumentCustomEventListener();
-    }
-  }
-
-  void _registerGlobalJsFunctionFallbacks() {
-    try {
-      js_util.setProperty(html.window, 'flutterReceiveMessage', (dynamic msg) {
-        if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
-          _sendMessage(msg.toString().trim());
-        }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _registerWebView();
+        _setupMessageListener();
       });
-    } catch (e) {
-      debugPrint('Erro setProperty(window): $e');
-    }
-
-    try {
-      final parent = html.window.parent;
-      if (parent != null) {
-        js_util.setProperty(parent, 'flutterReceiveMessage', (dynamic msg) {
-          if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
-            _sendMessage(msg.toString().trim());
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Erro setProperty(parent): $e');
-    }
-
-    try {
-      final top = html.window.top;
-      if (top != null) {
-        js_util.setProperty(top, 'flutterReceiveMessage', (dynamic msg) {
-          if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
-            _sendMessage(msg.toString().trim());
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('Erro setProperty(top): $e');
     }
   }
 
   void _setupMessageListener() {
     html.window.onMessage.listen((event) {
-      _processIncomingData(event.data);
-    });
-  }
-
-  void _registerDocumentCustomEventListener() {
-    try {
-      html.document.addEventListener('fromHtmlInput', (event) {
-        try {
-          final ce = event as html.CustomEvent;
-          final detail = ce.detail;
-          if (detail != null && detail.toString().trim().isNotEmpty && mounted) {
-            _sendMessage(detail.toString().trim());
-          }
-        } catch (e) {
-          debugPrint('Erro processando CustomEvent: $e');
-        }
-      });
-    } catch (e) {
-      debugPrint('Erro a registar CustomEvent listener: $e');
-    }
-  }
-
-  void _processIncomingData(dynamic data) {
-    String? message;
-    try {
-      if (data == null) {
-        message = null;
-      } else if (data is Map) {
-        if (data['type'] == 'chat-message') {
-          message = data['message']?.toString();
-        } else {
-          message = data['message']?.toString() ?? data.toString();
-        }
-      } else if (data is String) {
-        try {
-          final parsed = jsonDecode(data);
-          if (parsed is Map && parsed['type'] == 'chat-message') {
-            message = parsed['message']?.toString();
-          } else {
-            message = data;
-          }
-        } catch (_) {
-          message = data;
-        }
-      } else {
-        try {
-          final dyn = data as dynamic;
-          final t = dyn['type'];
-          final m = dyn['message'];
-          if (t == 'chat-message') {
-            message = m?.toString();
-          } else {
-            message = data.toString();
-          }
-        } catch (_) {
-          message = data.toString();
+      final data = event.data;
+      
+      if (data is Map && data['source'] == 'docugen-chat') {
+        final message = data['message']?.toString().trim();
+        if (message != null && message.isNotEmpty && mounted) {
+          _sendMessage(message);
         }
       }
-    } catch (e) {
-      debugPrint('Erro a processar incoming data: $e');
-      message = data?.toString();
-    }
-
-    if (message != null && message.trim().isNotEmpty && mounted) {
-      _sendMessage(message.trim());
-    }
+    });
   }
 
   void _registerWebView() {
@@ -157,6 +61,7 @@ class _ChatTabState extends State<ChatTab> {
         _viewType,
         (int viewId) {
           final element = html.DivElement()
+            ..id = 'chat-container-$viewId'
             ..style.width = '100%'
             ..style.height = '100%';
 
@@ -165,7 +70,7 @@ class _ChatTabState extends State<ChatTab> {
             <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
               <input 
                 type="text" 
-                id="chatInput" 
+                id="chatInput-$viewId" 
                 placeholder="Ask DocuGen"
                 autocomplete="off"
                 spellcheck="false"
@@ -186,7 +91,7 @@ class _ChatTabState extends State<ChatTab> {
                 "
               >
               <button 
-                id="sendBtn"
+                id="sendBtn-$viewId"
                 type="button"
                 style="
                   width: 48px;
@@ -212,49 +117,42 @@ class _ChatTabState extends State<ChatTab> {
             </div>
             <style>
               * { -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-              #chatInput { -webkit-user-select: text !important; user-select: text !important; }
-              #chatInput:focus { background-color: #FFFFFF; box-shadow: none !important; outline: none !important; }
-              #chatInput::placeholder { color: #ADB5BD; }
-              #sendBtn:hover { background-color: #343A40; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-              #sendBtn:active { transform: scale(0.95); background-color: #495057; }
+              #chatInput-$viewId { -webkit-user-select: text !important; user-select: text !important; }
+              #chatInput-$viewId:focus { background-color: #FFFFFF; box-shadow: none !important; outline: none !important; }
+              #chatInput-$viewId::placeholder { color: #ADB5BD; }
+              #sendBtn-$viewId:hover { background-color: #343A40; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+              #sendBtn-$viewId:active { transform: scale(0.95); background-color: #495057; }
             </style>
             <script>
-              const input = document.getElementById('chatInput');
-              const btn = document.getElementById('sendBtn');
+              (function() {
+                const input = document.getElementById('chatInput-$viewId');
+                const btn = document.getElementById('sendBtn-$viewId');
 
-              function send() {
-                const msg = input.value.trim();
-                if (!msg) return;
+                function send() {
+                  const msg = input.value.trim();
+                  if (!msg) return;
 
-                const payload = { type: 'chat-message', message: msg };
+                  // Envia mensagem para Flutter
+                  window.parent.postMessage({
+                    source: 'docugen-chat',
+                    message: msg
+                  }, '*');
 
-                try { window.parent.postMessage(payload, '*'); } catch(e) {}
-                try { window.postMessage(payload, '*'); } catch(e) {}
-                try { window.dispatchEvent(new MessageEvent('message', { data: payload })); } catch(e) {}
+                  input.value = '';
+                }
 
-                try {
-                  const ce = new CustomEvent('fromHtmlInput', { detail: msg });
-                  document.dispatchEvent(ce);
-                } catch (e) {}
-
-                try {
-                  if (typeof window.flutterReceiveMessage === 'function') {
-                    window.flutterReceiveMessage(msg);
-                  } else if (window.parent && typeof window.parent.flutterReceiveMessage === 'function') {
-                    window.parent.flutterReceiveMessage(msg);
-                  } else if (window.top && typeof window.top.flutterReceiveMessage === 'function') {
-                    window.top.flutterReceiveMessage(msg);
-                  }
-                } catch (e) {}
-
-                input.value = '';
-              }
-
-              btn.addEventListener('click', (e) => { e.preventDefault(); send(); });
-              input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
-              input.addEventListener('touchstart', (e) => { e.stopPropagation(); });
-              btn.addEventListener('touchstart', (e) => { e.stopPropagation(); });
-              input.addEventListener('focus', (e) => { input.style.outline = 'none'; input.style.boxShadow = 'none'; });
+                btn.addEventListener('click', (e) => { 
+                  e.preventDefault(); 
+                  send(); 
+                });
+                
+                input.addEventListener('keypress', (e) => { 
+                  if (e.key === 'Enter') { 
+                    e.preventDefault(); 
+                    send(); 
+                  } 
+                });
+              })();
             </script>
             ''',
             treeSanitizer: html.NodeTreeSanitizer.trusted,
@@ -270,6 +168,8 @@ class _ChatTabState extends State<ChatTab> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return Stack(
       children: [
         Column(
@@ -283,13 +183,17 @@ class _ChatTabState extends State<ChatTab> {
                           Icon(
                             Ionicons.chatbubble_ellipses_outline,
                             size: 64,
-                            color: Colors.grey.shade300,
+                            color: themeProvider.isDarkMode 
+                                ? Colors.grey.shade700 
+                                : Colors.grey.shade300,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Comece uma conversa',
                             style: TextStyle(
-                              color: Colors.grey.shade400,
+                              color: themeProvider.isDarkMode 
+                                  ? Colors.grey.shade600 
+                                  : Colors.grey.shade400,
                               fontSize: 20,
                               fontWeight: FontWeight.w500,
                               letterSpacing: 0.5,
@@ -299,7 +203,9 @@ class _ChatTabState extends State<ChatTab> {
                           Text(
                             'Envie uma mensagem para iniciar',
                             style: TextStyle(
-                              color: Colors.grey.shade400,
+                              color: themeProvider.isDarkMode 
+                                  ? Colors.grey.shade600 
+                                  : Colors.grey.shade400,
                               fontSize: 14,
                             ),
                           ),
@@ -311,18 +217,18 @@ class _ChatTabState extends State<ChatTab> {
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
                       itemCount: _messages.length,
                       itemBuilder: (context, index) {
-                        return _buildMessageBubble(_messages[index]);
+                        return _buildMessageBubble(_messages[index], themeProvider);
                       },
                     ),
             ),
           ],
         ),
-        _buildInputArea(),
+        _buildInputArea(themeProvider),
       ],
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message, ThemeProvider themeProvider) {
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -332,13 +238,17 @@ class _ChatTabState extends State<ChatTab> {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: message.isUser ? const Color(0xFF212529) : const Color(0xFFF1F3F5),
+          color: message.isUser 
+              ? (themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529))
+              : (themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF1F3F5)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           message.text,
           style: TextStyle(
-            color: message.isUser ? Colors.white : const Color(0xFF212529),
+            color: message.isUser 
+                ? Colors.white 
+                : (themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529)),
             fontSize: 16,
           ),
         ),
@@ -346,14 +256,14 @@ class _ChatTabState extends State<ChatTab> {
     );
   }
 
-  Widget _buildInputArea() {
+  Widget _buildInputArea(ThemeProvider themeProvider) {
     return Positioned(
       left: 0,
       right: 0,
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
@@ -374,7 +284,7 @@ class _ChatTabState extends State<ChatTab> {
               height: 50,
               child: kIsWeb
                   ? HtmlElementView(viewType: _viewType)
-                  : _buildNativeInput(),
+                  : _buildNativeInput(themeProvider),
             ),
           ),
         ),
@@ -382,32 +292,32 @@ class _ChatTabState extends State<ChatTab> {
     );
   }
 
-  Widget _buildNativeInput() {
+  Widget _buildNativeInput(ThemeProvider themeProvider) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFFFF),
+              color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFFFFFFF),
               borderRadius: BorderRadius.circular(24),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
               controller: _messageController,
               focusNode: _focusNode,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
-                color: Color(0xFF212529),
+                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
               ),
-              decoration: const InputDecoration.collapsed(
+              decoration: InputDecoration.collapsed(
                 hintText: 'Ask DocuGen',
                 hintStyle: TextStyle(
-                  color: Color(0xFFADB5BD),
+                  color: themeProvider.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
                   fontSize: 16,
                 ),
               ),
-              cursorColor: const Color(0xFF212529),
+              cursorColor: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
               enableSuggestions: false,
               autocorrect: false,
               onSubmitted: (_) => _sendMessageNative(),
@@ -421,7 +331,7 @@ class _ChatTabState extends State<ChatTab> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF212529),
+              color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
