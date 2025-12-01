@@ -1,64 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'providers/theme_provider.dart';
-import 'providers/language_provider.dart';
-import 'screens/main_screen.dart';
+import 'home_page.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-    statusBarBrightness: Brightness.light,
-  ));
-  
-  runApp(const MyApp());
+void main() {
+  runApp(const DocuGenApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  final ThemeProvider _themeProvider = ThemeProvider();
-  final LanguageProvider _languageProvider = LanguageProvider();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPreferences();
-  }
-
-  Future<void> _loadPreferences() async {
-    await _themeProvider.loadTheme();
-    await _languageProvider.loadLanguage();
-    setState(() {});
-  }
+class DocuGenApp extends StatelessWidget {
+  const DocuGenApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_themeProvider, _languageProvider]),
-      builder: (context, child) {
-        return MaterialApp(
-          title: 'App',
-          debugShowCheckedModeBanner: false,
-          theme: _themeProvider.currentTheme,
-          home: MainScreen(
-            themeProvider: _themeProvider,
-            languageProvider: _languageProvider,
-          ),
-        );
-      },
+    return MaterialApp(
+      title: 'DocuGen AI',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+      ),
+      home: const DocuGenHomePage(),
     );
   }
 }
