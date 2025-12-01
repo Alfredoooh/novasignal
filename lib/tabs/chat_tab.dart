@@ -1,4 +1,4 @@
-// chat_tab.dart
+// lib/tabs/chat_tab.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
@@ -23,10 +23,9 @@ class _ChatTabState extends State<ChatTab> {
   static const String _viewType = 'chat-input-view';
   static bool _viewRegistered = false;
 
-  static const String _userArrowSvg = '''
-<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="20" y="16" width="8" height="24" rx="4" fill="#000000"/>
-  <path d="M24 4L12 16H20V20H28V16H36L24 4Z" fill="#000000"/>
+  static const String _sendIconSvg = '''
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 ''';
 
@@ -44,88 +43,68 @@ class _ChatTabState extends State<ChatTab> {
     }
   }
 
-  // Tentativas de expor a função em diferentes objectos JS (window, parent, top) como fallback.
   void _registerGlobalJsFunctionFallbacks() {
     try {
       js_util.setProperty(html.window, 'flutterReceiveMessage', (dynamic msg) {
-        // ignore: avoid_print
-        print('flutterReceiveMessage called from JS (window) with: $msg');
         if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
           _sendMessage(msg.toString().trim());
         }
       });
     } catch (e) {
-      // ignore: avoid_print
-      print('Erro setProperty(window): $e');
+      debugPrint('Erro setProperty(window): $e');
     }
 
-    // Tentativa para window.parent e window.top (se acessível)
     try {
       final parent = html.window.parent;
       if (parent != null) {
         js_util.setProperty(parent, 'flutterReceiveMessage', (dynamic msg) {
-          // ignore: avoid_print
-          print('flutterReceiveMessage called from JS (parent) with: $msg');
           if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
             _sendMessage(msg.toString().trim());
           }
         });
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('Erro setProperty(parent): $e');
+      debugPrint('Erro setProperty(parent): $e');
     }
 
     try {
       final top = html.window.top;
       if (top != null) {
         js_util.setProperty(top, 'flutterReceiveMessage', (dynamic msg) {
-          // ignore: avoid_print
-          print('flutterReceiveMessage called from JS (top) with: $msg');
           if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
             _sendMessage(msg.toString().trim());
           }
         });
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('Erro setProperty(top): $e');
+      debugPrint('Erro setProperty(top): $e');
     }
   }
 
-  // Listener que escuta message events (postMessage etc)
   void _setupMessageListener() {
     html.window.onMessage.listen((event) {
-      // ignore: avoid_print
-      print('JS -> Dart (window.onMessage) raw data: ${event.data}');
       _processIncomingData(event.data);
     });
   }
 
-  // Escuta CustomEvent('fromHtmlInput') disparado no document pelo HTML embutido
   void _registerDocumentCustomEventListener() {
     try {
       html.document.addEventListener('fromHtmlInput', (event) {
         try {
           final ce = event as html.CustomEvent;
           final detail = ce.detail;
-          // ignore: avoid_print
-          print('JS -> Dart (CustomEvent fromHtmlInput) detail: $detail');
           if (detail != null && detail.toString().trim().isNotEmpty && mounted) {
             _sendMessage(detail.toString().trim());
           }
         } catch (e) {
-          // ignore: avoid_print
-          print('Erro processando CustomEvent: $e');
+          debugPrint('Erro processando CustomEvent: $e');
         }
       });
     } catch (e) {
-      // ignore: avoid_print
-      print('Erro a registar CustomEvent listener: $e');
+      debugPrint('Erro a registar CustomEvent listener: $e');
     }
   }
 
-  // Processamento robusto do event.data vindo por postMessage/dispatchEvent
   void _processIncomingData(dynamic data) {
     String? message;
     try {
@@ -135,7 +114,6 @@ class _ChatTabState extends State<ChatTab> {
         if (data['type'] == 'chat-message') {
           message = data['message']?.toString();
         } else {
-          // fallback: checar 'message' chave se existir
           message = data['message']?.toString() ?? data.toString();
         }
       } else if (data is String) {
@@ -150,7 +128,6 @@ class _ChatTabState extends State<ChatTab> {
           message = data;
         }
       } else {
-        // generic fallback
         try {
           final dyn = data as dynamic;
           final t = dyn['type'];
@@ -165,16 +142,12 @@ class _ChatTabState extends State<ChatTab> {
         }
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('Erro a processar incoming data: $e');
+      debugPrint('Erro a processar incoming data: $e');
       message = data?.toString();
     }
 
     if (message != null && message.trim().isNotEmpty && mounted) {
       _sendMessage(message.trim());
-    } else {
-      // ignore: avoid_print
-      print('No message extracted from incoming data.');
     }
   }
 
@@ -232,9 +205,8 @@ class _ChatTabState extends State<ChatTab> {
                   -webkit-tap-highlight-color: transparent;
                 "
               >
-                <svg width="20" height="20" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <rect x="20" y="16" width="8" height="24" rx="4"/>
-                  <path d="M24 4L12 16H20V20H28V16H36L24 4Z"/>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
             </div>
@@ -252,38 +224,28 @@ class _ChatTabState extends State<ChatTab> {
 
               function send() {
                 const msg = input.value.trim();
-                console.log('HTML: sending payload ->', msg);
                 if (!msg) return;
 
                 const payload = { type: 'chat-message', message: msg };
 
-                // postMessage para window.parent / window / dispatchEvent
-                try { window.parent.postMessage(payload, '*'); console.log('HTML: postMessage to parent'); } catch(e) { console.warn('postMessage parent failed', e); }
-                try { window.postMessage(payload, '*'); console.log('HTML: postMessage to window'); } catch(e) { console.warn('postMessage window failed', e); }
-                try { window.dispatchEvent(new MessageEvent('message', { data: payload })); console.log('HTML: dispatchEvent message'); } catch(e) { console.warn('dispatchEvent failed', e); }
+                try { window.parent.postMessage(payload, '*'); } catch(e) {}
+                try { window.postMessage(payload, '*'); } catch(e) {}
+                try { window.dispatchEvent(new MessageEvent('message', { data: payload })); } catch(e) {}
 
-                // Dispatch CustomEvent on document (Dart listens to document.addEventListener('fromHtmlInput', ...))
                 try {
                   const ce = new CustomEvent('fromHtmlInput', { detail: msg });
                   document.dispatchEvent(ce);
-                  console.log('HTML: dispatch CustomEvent fromHtmlInput');
-                } catch (e) { console.warn('CustomEvent dispatch failed', e); }
+                } catch (e) {}
 
-                // Chamada direta se a função flutterReceiveMessage estiver disponível
                 try {
                   if (typeof window.flutterReceiveMessage === 'function') {
                     window.flutterReceiveMessage(msg);
-                    console.log('HTML: called window.flutterReceiveMessage');
                   } else if (window.parent && typeof window.parent.flutterReceiveMessage === 'function') {
                     window.parent.flutterReceiveMessage(msg);
-                    console.log('HTML: called parent.flutterReceiveMessage');
                   } else if (window.top && typeof window.top.flutterReceiveMessage === 'function') {
                     window.top.flutterReceiveMessage(msg);
-                    console.log('HTML: called top.flutterReceiveMessage');
-                  } else {
-                    console.log('HTML: flutterReceiveMessage not found on window/parent/top');
                   }
-                } catch (e) { console.warn('call flutterReceiveMessage failed', e); }
+                } catch (e) {}
 
                 input.value = '';
               }
@@ -302,8 +264,7 @@ class _ChatTabState extends State<ChatTab> {
         },
       );
     } catch (e) {
-      // ignore: avoid_print
-      print('Error registering view: $e');
+      debugPrint('Error registering view: $e');
     }
   }
 
@@ -357,20 +318,6 @@ class _ChatTabState extends State<ChatTab> {
           ],
         ),
         _buildInputArea(),
-
-        // botao debug já existente: confirma que UI está OK
-        Positioned(
-          right: 16,
-          bottom: 80,
-          child: FloatingActionButton(
-            mini: true,
-            onPressed: () {
-              _sendMessage('Mensagem de teste (debug)');
-            },
-            child: const Icon(Icons.bug_report),
-            backgroundColor: const Color(0xFF212529),
-          ),
-        ),
       ],
     );
   }
@@ -407,8 +354,17 @@ class _ChatTabState extends State<ChatTab> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -4))],
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            )
+          ],
         ),
         child: SafeArea(
           top: false,
@@ -416,7 +372,9 @@ class _ChatTabState extends State<ChatTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: SizedBox(
               height: 50,
-              child: kIsWeb ? HtmlElementView(viewType: _viewType) : _buildNativeInput(),
+              child: kIsWeb
+                  ? HtmlElementView(viewType: _viewType)
+                  : _buildNativeInput(),
             ),
           ),
         ),
@@ -430,12 +388,25 @@ class _ChatTabState extends State<ChatTab> {
       children: [
         Expanded(
           child: Container(
-            decoration: BoxDecoration(color: const Color(0xFFFFFFFF), borderRadius: BorderRadius.circular(24)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
               controller: _messageController,
               focusNode: _focusNode,
-              style: const TextStyle(fontSize: 16, color: Color(0xFF212529)),
-              decoration: const InputDecoration.collapsed(hintText: 'Ask DocuGen', hintStyle: TextStyle(color: Color(0xFFADB5BD), fontSize: 16)),
+              style: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFF212529),
+              ),
+              decoration: const InputDecoration.collapsed(
+                hintText: 'Ask DocuGen',
+                hintStyle: TextStyle(
+                  color: Color(0xFFADB5BD),
+                  fontSize: 16,
+                ),
+              ),
               cursorColor: const Color(0xFF212529),
               enableSuggestions: false,
               autocorrect: false,
@@ -452,15 +423,19 @@ class _ChatTabState extends State<ChatTab> {
             decoration: BoxDecoration(
               color: const Color(0xFF212529),
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                )
+              ],
             ),
-            padding: const EdgeInsets.all(12),
             child: Center(
               child: SvgPicture.string(
-                _userArrowSvg,
+                _sendIconSvg,
                 width: 24,
                 height: 24,
-                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
               ),
             ),
           ),
@@ -471,8 +446,6 @@ class _ChatTabState extends State<ChatTab> {
 
   void _sendMessageNative() {
     final text = _messageController.text.trim();
-    // ignore: avoid_print
-    print('Native send: $text');
     if (text.isEmpty) return;
     _sendMessage(text);
     _messageController.clear();
@@ -480,18 +453,18 @@ class _ChatTabState extends State<ChatTab> {
   }
 
   void _sendMessage(String text) {
-    // ignore: avoid_print
-    print('Adding message: $text');
     if (text.trim().isEmpty) return;
     if (!mounted) return;
     setState(() {
       _messages.add(ChatMessage(text: text.trim(), isUser: true));
-      // ignore: avoid_print
-      print('Messages count: ${_messages.length}');
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
