@@ -22,6 +22,9 @@ class _PreviewTabState extends State<PreviewTab> {
   bool _isConverting = false;
   bool _hasDocument = false;
   String? _pdfViewId;
+  bool _showMenu = false;
+  String _documentName = 'Documento sem título';
+  final TextEditingController _nameController = TextEditingController();
 
   @override
   void initState() {
@@ -43,7 +46,6 @@ class _PreviewTabState extends State<PreviewTab> {
   }
 
   void _initializePDFLibraries() {
-    // Verificar se as bibliotecas estão carregadas
     final script1 = html.document.querySelector('script[src*="jspdf"]');
     final script2 = html.document.querySelector('script[src*="html2canvas"]');
     final script3 = html.document.querySelector('script[src*="pdf.js"]');
@@ -68,7 +70,6 @@ class _PreviewTabState extends State<PreviewTab> {
         ..async = true;
       html.document.head?.append(pdfjsScript);
 
-      // Worker do PDF.js
       js.context['pdfjsLib']?['GlobalWorkerOptions']?['workerSrc'] = 
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
@@ -82,7 +83,6 @@ class _PreviewTabState extends State<PreviewTab> {
     });
 
     try {
-      // Aguardar carregamento das bibliotecas
       await Future.delayed(const Duration(milliseconds: 500));
 
       final viewId = 'pdf-preview-${DateTime.now().millisecondsSinceEpoch}';
@@ -92,7 +92,6 @@ class _PreviewTabState extends State<PreviewTab> {
         _viewRegistered = true;
       }
 
-      // Executar conversão HTML → PDF
       await _executeHTMLtoPDF(htmlContent, viewId);
 
       if (mounted) {
@@ -121,8 +120,8 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.overflow = 'auto'
-          ..style.background = '#2a2a2a'
-          ..style.padding = '20px'
+          ..style.background = '#525252'
+          ..style.padding = '40px 20px'
           ..style.boxSizing = 'border-box'
           ..style.display = 'flex'
           ..style.flexDirection = 'column'
@@ -147,38 +146,37 @@ class _PreviewTabState extends State<PreviewTab> {
           return;
         }
         
-        // Criar container temporário
+        // Criar container temporário com margens adequadas (A4: 210mm x 297mm)
         const container = document.createElement('div');
         container.style.cssText = `
           position: absolute;
           left: -9999px;
           top: 0;
-          width: 794px;
-          min-height: 1123px;
+          width: 170mm;
+          min-height: 257mm;
           background: white;
-          padding: 75px;
-          box-sizing: border-box;
+          padding: 20mm;
+          box-sizing: content-box;
         `;
         
         container.innerHTML = `$htmlContent`;
         document.body.appendChild(container);
         
-        // Aguardar renderização
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Converter para canvas
+        // Converter para canvas com qualidade alta
         const canvas = await html2canvas(container, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          width: container.scrollWidth,
-          height: container.scrollHeight
+          width: container.offsetWidth,
+          height: container.offsetHeight
         });
         
         document.body.removeChild(container);
         
-        // Criar PDF
+        // Criar PDF com margens (A4 = 210mm x 297mm)
         const pdf = new jsPDF({
           orientation: 'portrait',
           unit: 'mm',
@@ -186,24 +184,33 @@ class _PreviewTabState extends State<PreviewTab> {
         });
         
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const pageHeight = 297;
+        const pdfWidth = 210;
+        const pdfHeight = 297;
         
-        let position = 0;
+        // Área útil com margens (20mm cada lado)
+        const contentWidth = 170;
+        const contentHeight = 257;
+        const marginX = 20;
+        const marginY = 20;
+        
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        
+        let position = marginY;
         let heightLeft = imgHeight;
         
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        // Primeira página
+        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, Math.min(imgHeight, contentHeight));
+        heightLeft -= contentHeight;
         
+        // Páginas adicionais
         while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
+          position = marginY - (imgHeight - heightLeft);
+          pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+          heightLeft -= contentHeight;
         }
         
-        // Obter array buffer do PDF
         const pdfData = pdf.output('arraybuffer');
         
         // Renderizar preview com PDF.js
@@ -217,7 +224,7 @@ class _PreviewTabState extends State<PreviewTab> {
         
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
           const page = await pdfDoc.getPage(pageNum);
-          const scale = 1.2;
+          const scale = 1.5;
           const viewport = page.getViewport({ scale });
           
           const canvas = document.createElement('canvas');
@@ -225,9 +232,8 @@ class _PreviewTabState extends State<PreviewTab> {
           canvas.style.cssText = `
             background: white;
             display: block;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            margin: 10px auto;
-            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            margin: 0 auto 20px auto;
             max-width: 100%;
             height: auto;
           `;
@@ -244,7 +250,6 @@ class _PreviewTabState extends State<PreviewTab> {
           }).promise;
         }
         
-        // Salvar PDF para download
         window.currentPdfBlob = new Blob([pdfData], { type: 'application/pdf' });
         
       } catch (error) {
@@ -263,7 +268,7 @@ class _PreviewTabState extends State<PreviewTab> {
         const url = URL.createObjectURL(window.currentPdfBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'documento_${DateTime.now().millisecondsSinceEpoch}.pdf';
+        a.download = '${_documentName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -273,6 +278,7 @@ class _PreviewTabState extends State<PreviewTab> {
     ''';
     
     js.context.callMethod('eval', [script]);
+    setState(() => _showMenu = false);
   }
 
   void _printPDF() {
@@ -296,54 +302,214 @@ class _PreviewTabState extends State<PreviewTab> {
     ''';
     
     js.context.callMethod('eval', [script]);
+    setState(() => _showMenu = false);
+  }
+
+  void _showRenameDialog() {
+    _nameController.text = _documentName;
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+        title: Text(
+          'Renomear documento',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: TextField(
+          controller: _nameController,
+          autofocus: true,
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+          ),
+          decoration: InputDecoration(
+            hintText: 'Nome do documento',
+            hintStyle: TextStyle(
+              color: themeProvider.isDarkMode ? Colors.white54 : Colors.grey,
+            ),
+            filled: true,
+            fillColor: themeProvider.isDarkMode 
+                ? const Color(0xFF495057) 
+                : const Color(0xFFF8F9FA),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _documentName = _nameController.text.trim().isEmpty 
+                    ? 'Documento sem título' 
+                    : _nameController.text.trim();
+              });
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF007AFF),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return Column(
+    return Stack(
       children: [
-        // Header com controles
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        // Conteúdo principal
+        _buildContent(themeProvider),
+        
+        // Botão flutuante de menu
+        if (_hasDocument && !_isConverting)
+          Positioned(
+            top: 16,
+            right: 16,
+            child: _buildFloatingMenu(themeProvider),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFloatingMenu(ThemeProvider themeProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Menu expandido
+        if (_showMenu)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _buildMenuItem(
+                  icon: Ionicons.create_outline,
+                  label: 'Renomear',
+                  onTap: () {
+                    setState(() => _showMenu = false);
+                    _showRenameDialog();
+                  },
+                  themeProvider: themeProvider,
+                ),
+                const SizedBox(height: 4),
+                _buildMenuItem(
+                  icon: Ionicons.download_outline,
+                  label: 'Download PDF',
+                  onTap: _downloadPDF,
+                  themeProvider: themeProvider,
+                ),
+                const SizedBox(height: 4),
+                _buildMenuItem(
+                  icon: Ionicons.print_outline,
+                  label: 'Imprimir',
+                  onTap: _printPDF,
+                  themeProvider: themeProvider,
+                ),
+              ],
+            ),
+          ),
+        
+        // Botão principal
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => setState(() => _showMenu = !_showMenu),
+            borderRadius: BorderRadius.circular(28),
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF007AFF),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _showMenu ? Ionicons.close : Ionicons.add,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required ThemeProvider themeProvider,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              Icon(
+                icon,
+                size: 20,
+                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+              ),
+              const SizedBox(width: 12),
               Text(
-                'Preview',
+                label,
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
                   color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
                 ),
               ),
-              if (_hasDocument && !_isConverting)
-                Row(
-                  children: [
-                    _buildActionButton(
-                      icon: Ionicons.download_outline,
-                      label: 'Download',
-                      onPressed: _downloadPDF,
-                      themeProvider: themeProvider,
-                    ),
-                    const SizedBox(width: 8),
-                    _buildActionButton(
-                      icon: Ionicons.print_outline,
-                      label: 'Imprimir',
-                      onPressed: _printPDF,
-                      themeProvider: themeProvider,
-                    ),
-                  ],
-                ),
             ],
           ),
         ),
-        // Content Area
-        Expanded(
-          child: _buildContent(themeProvider),
-        ),
-      ],
+      ),
     );
   }
 
@@ -408,7 +574,7 @@ class _PreviewTabState extends State<PreviewTab> {
     }
 
     return Container(
-      color: const Color(0xFF2a2a2a),
+      color: const Color(0xFF525252),
       child: Center(
         child: SingleChildScrollView(
           child: SizedBox(
@@ -422,57 +588,9 @@ class _PreviewTabState extends State<PreviewTab> {
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    required ThemeProvider themeProvider,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: themeProvider.isDarkMode 
-                ? Colors.white.withOpacity(0.1) 
-                : const Color(0xFF007AFF),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: themeProvider.isDarkMode 
-                  ? Colors.white.withOpacity(0.2) 
-                  : Colors.transparent,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: themeProvider.isDarkMode ? Colors.white : Colors.white,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: themeProvider.isDarkMode ? Colors.white : Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
-    // Limpar blob do PDF
+    _nameController.dispose();
     js.context.callMethod('eval', ['delete window.currentPdfBlob;']);
     super.dispose();
   }
