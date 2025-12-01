@@ -44,7 +44,7 @@ class _ChatTabState extends State<ChatTab> {
     html.window.onMessage.listen((event) {
       try {
         final data = event.data;
-        
+
         if (data is Map && data['source'] == 'docugen-chat') {
           final message = data['message']?.toString().trim();
           if (message != null && message.isNotEmpty && mounted) {
@@ -165,65 +165,79 @@ class _ChatTabState extends State<ChatTab> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    
-    return Scaffold(
-      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF212529) : const Color(0xFFF8F9FA),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: _messages.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Ionicons.chatbubble_ellipses_outline,
-                              size: 64,
-                              color: themeProvider.isDarkMode 
-                                  ? Colors.grey.shade700 
-                                  : Colors.grey.shade300,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Comece uma conversa',
-                              style: TextStyle(
-                                color: themeProvider.isDarkMode 
-                                    ? Colors.grey.shade600 
-                                    : Colors.grey.shade400,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Envie uma mensagem para iniciar',
-                              style: TextStyle(
-                                color: themeProvider.isDarkMode 
-                                    ? Colors.grey.shade600 
-                                    : Colors.grey.shade400,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          return _buildMessageBubble(_messages[index], themeProvider);
-                        },
-                      ),
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                children: [
+                  Text(
+                    'DocuGen',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          _buildInputArea(themeProvider),
-        ],
-      ),
+            ),
+            // Messages Area
+            Expanded(
+              child: _messages.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Ionicons.chatbubble_ellipses_outline,
+                            size: 64,
+                            color: themeProvider.isDarkMode 
+                                ? Colors.grey.shade700 
+                                : Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Comece uma conversa',
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode 
+                                  ? Colors.grey.shade600 
+                                  : Colors.grey.shade400,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Envie uma mensagem para iniciar',
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode 
+                                  ? Colors.grey.shade600 
+                                  : Colors.grey.shade400,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        return _buildMessageBubble(_messages[index], themeProvider);
+                      },
+                    ),
+            ),
+          ],
+        ),
+        _buildInputArea(themeProvider),
+      ],
     );
   }
 
