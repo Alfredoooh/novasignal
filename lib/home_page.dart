@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'chat_tab.dart';
-import 'preview_tab.dart';
+import 'tabs/chat_tab.dart';
+import 'tabs/preview_tab.dart';
 
 class DocuGenHomePage extends StatefulWidget {
   const DocuGenHomePage({Key? key}) : super(key: key);
