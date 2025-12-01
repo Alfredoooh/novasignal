@@ -41,7 +41,7 @@ class _ChatTabState extends State<ChatTab> {
             <input 
               type="text" 
               id="chatInput" 
-              placeholder="Type a message..."
+              placeholder="Envie uma mensagem..."
               autocomplete="off"
               spellcheck="false"
               style="
@@ -51,13 +51,14 @@ class _ChatTabState extends State<ChatTab> {
                 border-radius: 24px;
                 font-size: 16px;
                 outline: none;
-                background-color: #F8F9FA;
+                background-color: #FFFFFF;
                 color: #212529;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 transition: all 0.3s;
                 -webkit-user-select: text;
                 user-select: text;
                 -webkit-tap-highlight-color: transparent;
+                box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
               "
             >
             <button 
@@ -80,7 +81,7 @@ class _ChatTabState extends State<ChatTab> {
                 -webkit-tap-highlight-color: transparent;
               "
             >
-              <svg fill="currentColor" width="20" height="20" viewBox="0 0 512 512" style="transform: rotate(-90deg);">
+              <svg fill="currentColor" width="20" height="20" viewBox="0 0 512 512" style="transform: rotate(180deg);">
                 <path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/>
               </svg>
             </button>
@@ -101,7 +102,7 @@ class _ChatTabState extends State<ChatTab> {
             
             #chatInput:focus {
               background-color: #FFFFFF;
-              box-shadow: 0 0 0 2px rgba(33, 37, 41, 0.1);
+              box-shadow: 0 0 0 2px rgba(33, 37, 41, 0.15);
             }
             
             #chatInput::placeholder {
@@ -142,7 +143,6 @@ class _ChatTabState extends State<ChatTab> {
               }
             });
             
-            // Prevenir comportamentos indesejados
             input.addEventListener('touchstart', (e) => {
               e.stopPropagation();
             });
@@ -177,14 +177,33 @@ class _ChatTabState extends State<ChatTab> {
             Expanded(
               child: _messages.isEmpty
                   ? Center(
-                      child: Text(
-                        'Crie algo Novo',
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Ionicons.chatbubble_ellipses_outline,
+                            size: 64,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Comece uma conversa',
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Envie uma mensagem para iniciar',
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : ListView.builder(
@@ -272,8 +291,12 @@ class _ChatTabState extends State<ChatTab> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FA),
+              color: Colors.white,
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.black.withOpacity(0.08),
+                width: 1,
+              ),
             ),
             child: TextField(
               controller: _messageController,
@@ -283,7 +306,7 @@ class _ChatTabState extends State<ChatTab> {
                 color: Color(0xFF212529),
               ),
               decoration: InputDecoration(
-                hintText: 'Type a message...',
+                hintText: 'Envie uma mensagem...',
                 hintStyle: const TextStyle(
                   color: Color(0xFFADB5BD),
                   fontSize: 16,
@@ -313,10 +336,7 @@ class _ChatTabState extends State<ChatTab> {
           ),
           child: IconButton(
             onPressed: _sendMessageNative,
-            icon: Transform.rotate(
-              angle: -1.5708, // -90 graus em radianos
-              child: const Icon(Ionicons.chevron_down),
-            ),
+            icon: const Icon(Ionicons.arrow_up),
             color: Colors.white,
             iconSize: 20,
             padding: const EdgeInsets.all(14),
