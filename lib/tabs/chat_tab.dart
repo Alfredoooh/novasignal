@@ -21,8 +21,8 @@ class _ChatTabState extends State<ChatTab> {
   final FocusNode _focusNode = FocusNode();
   final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
-  static int _viewIdCounter = 0;
-  late String _viewType;
+  static const String _viewType = 'chat-input-view';
+  static bool _viewRegistered = false;
 
   static const String _sendIconSvg = '''
 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -33,24 +33,26 @@ class _ChatTabState extends State<ChatTab> {
   @override
   void initState() {
     super.initState();
-    _viewType = 'chat-input-view-${_viewIdCounter++}';
-    if (kIsWeb) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _registerWebView();
-        _setupMessageListener();
-      });
+    if (kIsWeb && !_viewRegistered) {
+      _registerWebView();
+      _viewRegistered = true;
+      _setupMessageListener();
     }
   }
 
   void _setupMessageListener() {
     html.window.onMessage.listen((event) {
-      final data = event.data;
-      
-      if (data is Map && data['source'] == 'docugen-chat') {
-        final message = data['message']?.toString().trim();
-        if (message != null && message.isNotEmpty && mounted) {
-          _sendMessage(message);
+      try {
+        final data = event.data;
+        
+        if (data is Map && data['source'] == 'docugen-chat') {
+          final message = data['message']?.toString().trim();
+          if (message != null && message.isNotEmpty && mounted) {
+            _sendMessage(message);
+          }
         }
+      } catch (e) {
+        debugPrint('Error processing message: $e');
       }
     });
   }
@@ -61,7 +63,6 @@ class _ChatTabState extends State<ChatTab> {
         _viewType,
         (int viewId) {
           final element = html.DivElement()
-            ..id = 'chat-container-$viewId'
             ..style.width = '100%'
             ..style.height = '100%';
 
@@ -70,7 +71,7 @@ class _ChatTabState extends State<ChatTab> {
             <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
               <input 
                 type="text" 
-                id="chatInput-$viewId" 
+                id="chatInput" 
                 placeholder="Ask DocuGen"
                 autocomplete="off"
                 spellcheck="false"
@@ -91,7 +92,7 @@ class _ChatTabState extends State<ChatTab> {
                 "
               >
               <button 
-                id="sendBtn-$viewId"
+                id="sendBtn"
                 type="button"
                 style="
                   width: 48px;
@@ -117,22 +118,21 @@ class _ChatTabState extends State<ChatTab> {
             </div>
             <style>
               * { -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-              #chatInput-$viewId { -webkit-user-select: text !important; user-select: text !important; }
-              #chatInput-$viewId:focus { background-color: #FFFFFF; box-shadow: none !important; outline: none !important; }
-              #chatInput-$viewId::placeholder { color: #ADB5BD; }
-              #sendBtn-$viewId:hover { background-color: #343A40; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-              #sendBtn-$viewId:active { transform: scale(0.95); background-color: #495057; }
+              #chatInput { -webkit-user-select: text !important; user-select: text !important; }
+              #chatInput:focus { background-color: #FFFFFF; box-shadow: none !important; outline: none !important; }
+              #chatInput::placeholder { color: #ADB5BD; }
+              #sendBtn:hover { background-color: #343A40; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+              #sendBtn:active { transform: scale(0.95); background-color: #495057; }
             </style>
             <script>
               (function() {
-                const input = document.getElementById('chatInput-$viewId');
-                const btn = document.getElementById('sendBtn-$viewId');
+                const input = document.getElementById('chatInput');
+                const btn = document.getElementById('sendBtn');
 
                 function send() {
                   const msg = input.value.trim();
                   if (!msg) return;
 
-                  // Envia mensagem para Flutter
                   window.parent.postMessage({
                     source: 'docugen-chat',
                     message: msg
@@ -141,11 +141,7 @@ class _ChatTabState extends State<ChatTab> {
                   input.value = '';
                 }
 
-                btn.addEventListener('click', (e) => { 
-                  e.preventDefault(); 
-                  send(); 
-                });
-                
+                btn.addEventListener('click', send);
                 input.addEventListener('keypress', (e) => { 
                   if (e.key === 'Enter') { 
                     e.preventDefault(); 
@@ -170,61 +166,64 @@ class _ChatTabState extends State<ChatTab> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     
-    return Stack(
-      children: [
-        Column(
-          children: [
-            Expanded(
-              child: _messages.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Ionicons.chatbubble_ellipses_outline,
-                            size: 64,
-                            color: themeProvider.isDarkMode 
-                                ? Colors.grey.shade700 
-                                : Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Comece uma conversa',
-                            style: TextStyle(
+    return Scaffold(
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF212529) : const Color(0xFFF8F9FA),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: _messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Ionicons.chatbubble_ellipses_outline,
+                              size: 64,
                               color: themeProvider.isDarkMode 
-                                  ? Colors.grey.shade600 
-                                  : Colors.grey.shade400,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.5,
+                                  ? Colors.grey.shade700 
+                                  : Colors.grey.shade300,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Envie uma mensagem para iniciar',
-                            style: TextStyle(
-                              color: themeProvider.isDarkMode 
-                                  ? Colors.grey.shade600 
-                                  : Colors.grey.shade400,
-                              fontSize: 14,
+                            const SizedBox(height: 16),
+                            Text(
+                              'Comece uma conversa',
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode 
+                                    ? Colors.grey.shade600 
+                                    : Colors.grey.shade400,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              'Envie uma mensagem para iniciar',
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode 
+                                    ? Colors.grey.shade600 
+                                    : Colors.grey.shade400,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          return _buildMessageBubble(_messages[index], themeProvider);
+                        },
                       ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        return _buildMessageBubble(_messages[index], themeProvider);
-                      },
-                    ),
-            ),
-          ],
-        ),
-        _buildInputArea(themeProvider),
-      ],
+              ),
+            ],
+          ),
+          _buildInputArea(themeProvider),
+        ],
+      ),
     );
   }
 
@@ -283,7 +282,7 @@ class _ChatTabState extends State<ChatTab> {
             child: SizedBox(
               height: 50,
               child: kIsWeb
-                  ? HtmlElementView(viewType: _viewType)
+                  ? const HtmlElementView(viewType: _viewType)
                   : _buildNativeInput(themeProvider),
             ),
           ),
