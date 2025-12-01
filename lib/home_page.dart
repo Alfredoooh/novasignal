@@ -32,7 +32,14 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
       backgroundColor: Colors.transparent,
       isDismissible: true,
       enableDrag: true,
-      builder: (context) => const _SettingsModal(),
+      builder: (context) => _SettingsModal(
+        selectedLanguage: _selectedLanguage,
+        onLanguageChanged: (language) {
+          setState(() {
+            _selectedLanguage = language;
+          });
+        },
+      ),
     ).then((_) {
       setState(() {});
     });
@@ -41,8 +48,8 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
   void _showLanguageScreen(String currentLanguage) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => LanguageScreen(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => LanguageScreen(
           selectedLanguage: currentLanguage,
           onLanguageSelected: (language) {
             setState(() {
@@ -50,6 +57,9 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
             });
           },
         ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return child;
+        },
       ),
     );
   }
@@ -221,7 +231,13 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
 }
 
 class _SettingsModal extends StatefulWidget {
-  const _SettingsModal();
+  final String selectedLanguage;
+  final Function(String) onLanguageChanged;
+  
+  const _SettingsModal({
+    required this.selectedLanguage,
+    required this.onLanguageChanged,
+  });
 
   @override
   State<_SettingsModal> createState() => _SettingsModalState();
@@ -229,20 +245,30 @@ class _SettingsModal extends StatefulWidget {
 
 class _SettingsModalState extends State<_SettingsModal> {
   bool _isThemeExpanded = false;
-  String _selectedLanguage = 'Português';
+  late String _selectedLanguage;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLanguage = widget.selectedLanguage;
+  }
 
   void _showLanguageScreen() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => LanguageScreen(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => LanguageScreen(
           selectedLanguage: _selectedLanguage,
           onLanguageSelected: (language) {
             setState(() {
               _selectedLanguage = language;
             });
+            widget.onLanguageChanged(language);
           },
         ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return child;
+        },
       ),
     );
   }
@@ -250,7 +276,12 @@ class _SettingsModalState extends State<_SettingsModal> {
   void _showPersonalizationScreen() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const PersonalizationScreen()),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const PersonalizationScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return child;
+        },
+      ),
     );
   }
 
@@ -259,9 +290,9 @@ class _SettingsModalState extends State<_SettingsModal> {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.8,
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
@@ -274,7 +305,7 @@ class _SettingsModalState extends State<_SettingsModal> {
           child: Column(
             children: [
               Container(
-                margin: const EdgeInsets.only(top: 12),
+                margin: const EdgeInsets.only(top: 12, bottom: 20),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
@@ -282,35 +313,6 @@ class _SettingsModalState extends State<_SettingsModal> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    Text(
-                      'Definições',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFFFFFFF),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Ionicons.close),
-                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF495057),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -374,13 +376,13 @@ class _SettingsModalState extends State<_SettingsModal> {
       decoration: BoxDecoration(
         color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
         borderRadius: BorderRadius.vertical(
-          top: isFirst ? const Radius.circular(16) : const Radius.circular(2),
-          bottom: isLast && !_isThemeExpanded ? const Radius.circular(16) : const Radius.circular(2),
+          top: isFirst ? const Radius.circular(12) : const Radius.circular(2),
+          bottom: isLast && !_isThemeExpanded ? const Radius.circular(12) : const Radius.circular(2),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -388,29 +390,27 @@ class _SettingsModalState extends State<_SettingsModal> {
       child: Column(
         children: [
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Icon(
               icon,
               color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-              size: 26,
+              size: 22,
             ),
             title: Text(
               title,
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                letterSpacing: -0.3,
               ),
             ),
             subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 2),
               child: Text(
                 subtitle,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 13,
                   color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFF868E96),
-                  letterSpacing: -0.2,
                 ),
               ),
             ),
@@ -420,7 +420,7 @@ class _SettingsModalState extends State<_SettingsModal> {
               child: Icon(
                 Ionicons.chevron_down,
                 color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFFADB5BD),
-                size: 20,
+                size: 18,
               ),
             ),
             onTap: () {
@@ -456,26 +456,22 @@ class _SettingsModalState extends State<_SettingsModal> {
 
   Widget _buildThemeOption(String title, bool isSelected, ThemeProvider themeProvider) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       title: Text(
         title,
         style: TextStyle(
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: FontWeight.w500,
           color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
         ),
       ),
-      trailing: Switch(
-        value: isSelected,
-        onChanged: (value) {
-          themeProvider.toggleTheme(title == 'Escuro');
-          setState(() {});
-        },
-        activeColor: const Color(0xFF4CAF50),
-        activeTrackColor: const Color(0xFF81C784),
-        inactiveThumbColor: Colors.grey.shade400,
-        inactiveTrackColor: Colors.grey.shade300,
-      ),
+      trailing: isSelected
+          ? Icon(
+              Ionicons.checkmark_circle,
+              color: const Color(0xFF4CAF50),
+              size: 22,
+            )
+          : null,
       onTap: () {
         themeProvider.toggleTheme(title == 'Escuro');
         setState(() {});
@@ -496,48 +492,46 @@ class _SettingsModalState extends State<_SettingsModal> {
       decoration: BoxDecoration(
         color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
         borderRadius: BorderRadius.vertical(
-          top: isFirst ? const Radius.circular(16) : const Radius.circular(2),
-          bottom: isLast ? const Radius.circular(16) : const Radius.circular(2),
+          top: isFirst ? const Radius.circular(12) : const Radius.circular(2),
+          bottom: isLast ? const Radius.circular(12) : const Radius.circular(2),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Icon(
           icon,
           color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-          size: 26,
+          size: 22,
         ),
         title: Text(
           title,
           style: TextStyle(
-            fontSize: 17,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-            letterSpacing: -0.3,
           ),
         ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.only(top: 2),
           child: Text(
             subtitle,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 13,
               color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFF868E96),
-              letterSpacing: -0.2,
             ),
           ),
         ),
         trailing: Icon(
           Ionicons.chevron_forward,
           color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFFADB5BD),
-          size: 20,
+          size: 18,
         ),
         onTap: onTap,
       ),
