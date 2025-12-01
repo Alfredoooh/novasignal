@@ -1,7 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'tabs/chat_tab.dart';
-import 'tabs/preview_tab.dart';
+import 'chat_tab.dart';
+import 'preview_tab.dart';
 
 class DocuGenHomePage extends StatefulWidget {
   const DocuGenHomePage({Key? key}) : super(key: key);
@@ -16,6 +17,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -30,13 +32,13 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
         actions: [
           IconButton(
             icon: const Icon(Ionicons.cube_outline),
-            color: const Color(0xFF2196F3),
+            color: const Color(0xFF007AFF),
             iconSize: 28,
             onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Ionicons.settings_outline),
-            color: const Color(0xFF2196F3),
+            color: const Color(0xFF007AFF),
             iconSize: 28,
             onPressed: () {},
           ),
@@ -45,67 +47,39 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
       ),
       body: Column(
         children: [
-          Container(
-            color: Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedIndex = 0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: _selectedIndex == 0
-                            ? Colors.white
-                            : const Color(0xFFF5F5F5),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'Chat',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: _selectedIndex == 0
-                              ? const Color(0xFF2196F3)
-                              : Colors.grey.shade600,
-                        ),
-                      ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: CupertinoSlidingSegmentedControl<int>(
+              backgroundColor: const Color(0xFFE5E5EA),
+              thumbColor: Colors.white,
+              groupValue: _selectedIndex,
+              children: const {
+                0: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Chat',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedIndex = 1),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: _selectedIndex == 1
-                            ? Colors.white
-                            : const Color(0xFFF5F5F5),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          topRight: Radius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        'Preview',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: _selectedIndex == 1
-                              ? const Color(0xFF2196F3)
-                              : Colors.grey.shade600,
-                        ),
-                      ),
+                1: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Preview',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-              ],
+              },
+              onValueChanged: (value) {
+                setState(() {
+                  _selectedIndex = value!;
+                });
+              },
             ),
           ),
           Expanded(
