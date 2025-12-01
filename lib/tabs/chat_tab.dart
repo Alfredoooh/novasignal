@@ -1,5 +1,4 @@
 // lib/tabs/chat_tab.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -34,25 +33,28 @@ class _ChatTabState extends State<ChatTab> {
   void initState() {
     super.initState();
     if (kIsWeb && !_viewRegistered) {
+      _setupMessageListener();
       _registerWebView();
       _viewRegistered = true;
-      _setupMessageListener();
     }
   }
 
   void _setupMessageListener() {
-    html.window.onMessage.listen((event) {
-      try {
-        final data = event.data;
-
-        if (data is Map && data['source'] == 'docugen-chat') {
-          final message = data['message']?.toString().trim();
-          if (message != null && message.isNotEmpty && mounted) {
-            _sendMessage(message);
+    html.window.addEventListener('message', (event) {
+      final messageEvent = event as html.MessageEvent;
+      final data = messageEvent.data;
+      
+      if (data is Map) {
+        try {
+          if (data['source'] == 'docugen-chat') {
+            final message = data['message']?.toString().trim();
+            if (message != null && message.isNotEmpty && mounted) {
+              _sendMessage(message);
+            }
           }
+        } catch (e) {
+          debugPrint('Error processing message: $e');
         }
-      } catch (e) {
-        debugPrint('Error processing message: $e');
       }
     });
   }
@@ -63,15 +65,23 @@ class _ChatTabState extends State<ChatTab> {
         _viewType,
         (int viewId) {
           final element = html.DivElement()
+            ..id = 'chat-input-container-$viewId'
             ..style.width = '100%'
             ..style.height = '100%';
 
-          element.setInnerHtml(
-            '''
+          // Usar Consumer para obter o tema atual
+          final isDarkMode = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
+          
+          final inputBgColor = isDarkMode ? '#495057' : '#FFFFFF';
+          final inputTextColor = isDarkMode ? '#FFFFFF' : '#212529';
+          final inputPlaceholderColor = isDarkMode ? '#ADB5BD' : '#6C757D';
+          final buttonBgColor = isDarkMode ? '#495057' : '#212529';
+
+          element.innerHtml = '''
             <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
               <input 
                 type="text" 
-                id="chatInput" 
+                id="chatInput-$viewId" 
                 placeholder="Ask DocuGen"
                 autocomplete="off"
                 spellcheck="false"
@@ -82,24 +92,24 @@ class _ChatTabState extends State<ChatTab> {
                   border-radius: 24px;
                   font-size: 16px;
                   outline: none;
-                  background-color: #FFFFFF;
-                  color: #212529;
+                  background-color: $inputBgColor;
+                  color: $inputTextColor;
                   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                  transition: all 0.3s;
+                  transition: background-color 0.3s;
                   -webkit-user-select: text;
                   user-select: text;
                   -webkit-tap-highlight-color: transparent;
                 "
               >
               <button 
-                id="sendBtn"
+                id="sendBtn-$viewId"
                 type="button"
                 style="
                   width: 48px;
                   height: 48px;
                   border: none;
                   border-radius: 50%;
-                  background-color: #212529;
+                  background-color: $buttonBgColor;
                   color: white;
                   cursor: pointer;
                   display: flex;
@@ -117,42 +127,57 @@ class _ChatTabState extends State<ChatTab> {
               </button>
             </div>
             <style>
-              * { -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-              #chatInput { -webkit-user-select: text !important; user-select: text !important; }
-              #chatInput:focus { background-color: #FFFFFF; box-shadow: none !important; outline: none !important; }
-              #chatInput::placeholder { color: #ADB5BD; }
-              #sendBtn:hover { background-color: #343A40; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-              #sendBtn:active { transform: scale(0.95); background-color: #495057; }
+              #chat-input-container-$viewId * { 
+                -webkit-touch-callout: none; 
+                -webkit-user-select: none; 
+                -moz-user-select: none; 
+                -ms-user-select: none; 
+                user-select: none; 
+              }
+              #chatInput-$viewId { 
+                -webkit-user-select: text !important; 
+                user-select: text !important; 
+              }
+              #chatInput-$viewId:focus { 
+                box-shadow: none !important; 
+                outline: none !important; 
+              }
+              #chatInput-$viewId::placeholder { 
+                color: $inputPlaceholderColor; 
+              }
+              #sendBtn-$viewId:hover { 
+                background-color: #343A40; 
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+              }
+              #sendBtn-$viewId:active { 
+                transform: scale(0.95); 
+              }
             </style>
-            <script>
-              (function() {
-                const input = document.getElementById('chatInput');
-                const btn = document.getElementById('sendBtn');
+          ''';
 
-                function send() {
-                  const msg = input.value.trim();
-                  if (!msg) return;
+          final input = element.querySelector('#chatInput-$viewId') as html.InputElement?;
+          final btn = element.querySelector('#sendBtn-$viewId') as html.ButtonElement?;
 
-                  window.parent.postMessage({
-                    source: 'docugen-chat',
-                    message: msg
-                  }, '*');
+          void sendMessage() {
+            if (input != null) {
+              final msg = input.value?.trim() ?? '';
+              if (msg.isNotEmpty) {
+                html.window.postMessage({
+                  'source': 'docugen-chat',
+                  'message': msg,
+                }, '*');
+                input.value = '';
+              }
+            }
+          }
 
-                  input.value = '';
-                }
-
-                btn.addEventListener('click', send);
-                input.addEventListener('keypress', (e) => { 
-                  if (e.key === 'Enter') { 
-                    e.preventDefault(); 
-                    send(); 
-                  } 
-                });
-              })();
-            </script>
-            ''',
-            treeSanitizer: html.NodeTreeSanitizer.trusted,
-          );
+          btn?.onClick.listen((_) => sendMessage());
+          input?.onKeyPress.listen((e) {
+            if (e.key == 'Enter') {
+              e.preventDefault();
+              sendMessage();
+            }
+          });
 
           return element;
         },
@@ -296,7 +321,10 @@ class _ChatTabState extends State<ChatTab> {
             child: SizedBox(
               height: 50,
               child: kIsWeb
-                  ? const HtmlElementView(viewType: _viewType)
+                  ? HtmlElementView(
+                      viewType: _viewType,
+                      key: ValueKey(themeProvider.isDarkMode),
+                    )
                   : _buildNativeInput(themeProvider),
             ),
           ),
@@ -378,9 +406,13 @@ class _ChatTabState extends State<ChatTab> {
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
     if (!mounted) return;
+    
+    debugPrint('📨 Mensagem recebida: $text');
+    
     setState(() {
       _messages.add(ChatMessage(text: text.trim(), isUser: true));
     });
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
