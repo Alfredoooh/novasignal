@@ -4,6 +4,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ChatTab extends StatefulWidget {
   const ChatTab({Key? key}) : super(key: key);
@@ -19,6 +20,14 @@ class _ChatTabState extends State<ChatTab> {
   final ScrollController _scrollController = ScrollController();
   static const String _viewType = 'chat-input-view';
   static bool _viewRegistered = false;
+
+  // SVG fornecido pelo utilizador (usado na versão nativa via flutter_svg)
+  static const String _userArrowSvg = '''
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="16" width="8" height="24" rx="4" fill="#000000"/>
+  <path d="M24 4L12 16H20V20H28V16H36L24 4Z" fill="#000000"/>
+</svg>
+''';
 
   @override
   void initState() {
@@ -42,7 +51,7 @@ class _ChatTabState extends State<ChatTab> {
             ..style.height = '100%';
 
           element.setInnerHtml(
-            // substituí placeholder para "Ask DocuGen" e alterei o SVG para ícone de send/arrow
+            // placeholder "Ask DocuGen" e SVG de envio simples usando dispatchEvent + postMessage
             '''
             <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
               <input 
@@ -87,9 +96,10 @@ class _ChatTabState extends State<ChatTab> {
                   -webkit-tap-highlight-color: transparent;
                 "
               >
-                <!-- papel/arrow send icon SVG (direita) -->
-                <svg fill="currentColor" width="20" height="20" viewBox="0 0 512 512" aria-hidden="true">
-                  <path d="M476 3L36 213c-30 14-25 54 7 62l93 26 26 93c8 32 48 37 62 7L509 36c19-33-6-69-33-33zM124 265l-12-42 272-160-260 202z"/>
+                <!-- SVG 'arrow' (mantive aparência preta; o botão tem color branco) -->
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect x="20" y="16" width="8" height="24" rx="4"/>
+                  <path d="M24 4L12 16H20V20H28V16H36L24 4Z"/>
                 </svg>
               </button>
             </div>
@@ -108,7 +118,7 @@ class _ChatTabState extends State<ChatTab> {
                 user-select: text !important;
               }
 
-              /* REMOVE efeitos de foco: sem box-shadow, sem outline */
+              /* remover efeitos visuais de foco */
               #chatInput:focus {
                 background-color: #FFFFFF;
                 box-shadow: none !important;
@@ -132,42 +142,43 @@ class _ChatTabState extends State<ChatTab> {
             <script>
               const input = document.getElementById('chatInput');
               const btn = document.getElementById('sendBtn');
-              
+
               function send() {
                 const msg = input.value.trim();
-                console.log('Sending message:', msg);
-                if (msg) {
-                  // usamos window.postMessage (funciona melhor em diferentes contextos)
-                  try {
-                    window.postMessage({type: 'chat-message', message: msg}, '*');
-                  } catch (e) {
-                    window.parent.postMessage({type: 'chat-message', message: msg}, '*');
-                  }
-                  input.value = '';
-                }
+                if (!msg) return;
+
+                const payload = { type: 'chat-message', message: msg };
+
+                // tentamos várias formas para garantir que o Dart/Flutter a receberá:
+                try { window.parent.postMessage(payload, '*'); } catch(e) {}
+                try { window.postMessage(payload, '*'); } catch(e) {}
+                try { window.dispatchEvent(new MessageEvent('message', { data: payload })); } catch(e) {}
+
+                input.value = '';
               }
-              
+
               btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 send();
               });
-              
+
               input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   send();
                 }
               });
-              
+
+              // evitar propagação de touch
               input.addEventListener('touchstart', (e) => {
                 e.stopPropagation();
               });
-              
+
               btn.addEventListener('touchstart', (e) => {
                 e.stopPropagation();
               });
 
-              // garantir que ao focar não surja nenhum outline nativo em alguns browsers
+              // remove focus outline em alguns browsers
               input.addEventListener('focus', (e) => {
                 input.style.outline = 'none';
                 input.style.boxShadow = 'none';
@@ -181,7 +192,6 @@ class _ChatTabState extends State<ChatTab> {
         },
       );
     } catch (e) {
-      // log de erro mas sem quebrar app
       // ignore: avoid_print
       print('Error registering view: $e');
     }
@@ -189,34 +199,55 @@ class _ChatTabState extends State<ChatTab> {
 
   void _setupMessageListener() {
     html.window.onMessage.listen((event) {
-      // Debug
       // ignore: avoid_print
       print('Message received (raw): ${event.data}');
 
       String? message;
-
       final data = event.data;
-      if (data is Map) {
-        if (data['type'] == 'chat-message') {
-          message = data['message']?.toString();
-        }
-      } else if (data is String) {
-        // às vezes chega string JSON — tentamos desserializar
-        try {
-          final parsed = jsonDecode(data);
-          if (parsed is Map && parsed['type'] == 'chat-message') {
-            message = parsed['message']?.toString();
+
+      try {
+        if (data == null) {
+          // nada
+        } else if (data is Map) {
+          if (data['type'] == 'chat-message') {
+            message = data['message']?.toString();
           }
-        } catch (e) {
-          // não era JSON — ignorar
+        } else if (data is String) {
+          // tenta desserializar JSON stringificado
+          try {
+            final parsed = jsonDecode(data);
+            if (parsed is Map && parsed['type'] == 'chat-message') {
+              message = parsed['message']?.toString();
+            }
+          } catch (_) {
+            // se não for JSON, consideramos string como conteúdo direto
+            message = data;
+          }
+        } else {
+          // acesso dinâmico (caso venha como JsObject/dynamic)
+          try {
+            final dyn = data as dynamic;
+            final t = dyn['type'];
+            final m = dyn['message'];
+            if (t == 'chat-message') {
+              message = m?.toString();
+            }
+          } catch (_) {
+            // fallback: usar toString()
+            message = data.toString();
+          }
+        }
+      } catch (e) {
+        // ignore parsing errors e tentamos fallback
+        try {
+          message = data.toString();
+        } catch (_) {
+          message = null;
         }
       }
 
-      if (message != null) {
-        // garantimos que chamamos setState no zone do Flutter
-        if (mounted) {
-          _sendMessage(message);
-        }
+      if (message != null && message.trim().isNotEmpty && mounted) {
+        _sendMessage(message.trim());
       }
     });
   }
@@ -354,7 +385,6 @@ class _ChatTabState extends State<ChatTab> {
                 fontSize: 16,
                 color: Color(0xFF212529),
               ),
-              // usamos collapsed para remover qualquer borda/outline nativo ao focar
               decoration: const InputDecoration.collapsed(
                 hintText: 'Ask DocuGen',
                 hintStyle: TextStyle(
@@ -370,28 +400,32 @@ class _ChatTabState extends State<ChatTab> {
           ),
         ),
         const SizedBox(width: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF212529),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+        // Botão com SVG fornecido
+        GestureDetector(
+          onTap: _sendMessageNative,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF212529),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Center(
+              child: SvgPicture.string(
+                _userArrowSvg,
+                width: 24,
+                height: 24,
+                // recolore para branco (botão escuro)
+                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
               ),
-            ],
-          ),
-          child: IconButton(
-            onPressed: _sendMessageNative,
-            // ícone arrow (em vez de chevron)
-            icon: const Icon(Ionicons.arrow_forward),
-            color: Colors.white,
-            iconSize: 20,
-            padding: const EdgeInsets.all(14),
-            constraints: const BoxConstraints(
-              minWidth: 48,
-              minHeight: 48,
             ),
           ),
         ),
@@ -414,7 +448,6 @@ class _ChatTabState extends State<ChatTab> {
     // ignore: avoid_print
     print('Adding message: $text');
     if (text.trim().isEmpty) return;
-
     if (!mounted) return;
 
     setState(() {
@@ -422,12 +455,11 @@ class _ChatTabState extends State<ChatTab> {
         text: text.trim(),
         isUser: true,
       ));
-      // debug
       // ignore: avoid_print
       print('Messages count: ${_messages.length}');
     });
 
-    // garantir que o ListView role até o fim
+    // scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
