@@ -99,6 +99,13 @@ class _ChatTabState extends State<ChatTab> {
             }
           });
 
+          // Remover foco ao clicar fora
+          element.onClick.listen((e) {
+            if (e.target != _htmlInput) {
+              _htmlInput?.blur();
+            }
+          });
+
           return element;
         },
       );
