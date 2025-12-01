@@ -1,3 +1,4 @@
+// chat_tab.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
@@ -5,7 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:js_util' as js_util; // para registar função global JS
+import 'dart:js_util' as js_util;
 
 class ChatTab extends StatefulWidget {
   const ChatTab({Key? key}) : super(key: key);
@@ -22,9 +23,11 @@ class _ChatTabState extends State<ChatTab> {
   static const String _viewType = 'chat-input-view';
   static bool _viewRegistered = false;
 
-  // SVG fornecido pelo utilizador (usado na versão nativa via flutter_svg)
   static const String _userArrowSvg = '''
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="16" width="8" height="24" rx="4" fill="#000000"/>
+  <path d="M24 4L12 16H20V20H28V16H36L24 4Z" fill="#000000"/>
+</svg>
 ''';
 
   @override
@@ -36,21 +39,142 @@ class _ChatTabState extends State<ChatTab> {
     }
     if (kIsWeb) {
       _setupMessageListener();
-      // Registar função global JS para chamada direta (fallback robusto)
-      try {
-        js_util.setProperty(html.window, 'flutterReceiveMessage',
-            (dynamic msg) {
-          // debug
+      _registerGlobalJsFunctionFallbacks();
+      _registerDocumentCustomEventListener();
+    }
+  }
+
+  // Tentativas de expor a função em diferentes objectos JS (window, parent, top) como fallback.
+  void _registerGlobalJsFunctionFallbacks() {
+    try {
+      js_util.setProperty(html.window, 'flutterReceiveMessage', (dynamic msg) {
+        // ignore: avoid_print
+        print('flutterReceiveMessage called from JS (window) with: $msg');
+        if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
+          _sendMessage(msg.toString().trim());
+        }
+      });
+    } catch (e) {
+      // ignore: avoid_print
+      print('Erro setProperty(window): $e');
+    }
+
+    // Tentativa para window.parent e window.top (se acessível)
+    try {
+      final parent = html.window.parent;
+      if (parent != null) {
+        js_util.setProperty(parent, 'flutterReceiveMessage', (dynamic msg) {
           // ignore: avoid_print
-          print('flutterReceiveMessage called from JS with: $msg');
+          print('flutterReceiveMessage called from JS (parent) with: $msg');
           if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
             _sendMessage(msg.toString().trim());
           }
         });
-      } catch (e) {
-        // ignore: avoid_print
-        print('Erro ao registar flutterReceiveMessage: $e');
       }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Erro setProperty(parent): $e');
+    }
+
+    try {
+      final top = html.window.top;
+      if (top != null) {
+        js_util.setProperty(top, 'flutterReceiveMessage', (dynamic msg) {
+          // ignore: avoid_print
+          print('flutterReceiveMessage called from JS (top) with: $msg');
+          if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
+            _sendMessage(msg.toString().trim());
+          }
+        });
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Erro setProperty(top): $e');
+    }
+  }
+
+  // Listener que escuta message events (postMessage etc)
+  void _setupMessageListener() {
+    html.window.onMessage.listen((event) {
+      // ignore: avoid_print
+      print('JS -> Dart (window.onMessage) raw data: ${event.data}');
+      _processIncomingData(event.data);
+    });
+  }
+
+  // Escuta CustomEvent('fromHtmlInput') disparado no document pelo HTML embutido
+  void _registerDocumentCustomEventListener() {
+    try {
+      html.document.addEventListener('fromHtmlInput', (event) {
+        try {
+          final ce = event as html.CustomEvent;
+          final detail = ce.detail;
+          // ignore: avoid_print
+          print('JS -> Dart (CustomEvent fromHtmlInput) detail: $detail');
+          if (detail != null && detail.toString().trim().isNotEmpty && mounted) {
+            _sendMessage(detail.toString().trim());
+          }
+        } catch (e) {
+          // ignore: avoid_print
+          print('Erro processando CustomEvent: $e');
+        }
+      });
+    } catch (e) {
+      // ignore: avoid_print
+      print('Erro a registar CustomEvent listener: $e');
+    }
+  }
+
+  // Processamento robusto do event.data vindo por postMessage/dispatchEvent
+  void _processIncomingData(dynamic data) {
+    String? message;
+    try {
+      if (data == null) {
+        message = null;
+      } else if (data is Map) {
+        if (data['type'] == 'chat-message') {
+          message = data['message']?.toString();
+        } else {
+          // fallback: checar 'message' chave se existir
+          message = data['message']?.toString() ?? data.toString();
+        }
+      } else if (data is String) {
+        try {
+          final parsed = jsonDecode(data);
+          if (parsed is Map && parsed['type'] == 'chat-message') {
+            message = parsed['message']?.toString();
+          } else {
+            message = data;
+          }
+        } catch (_) {
+          message = data;
+        }
+      } else {
+        // generic fallback
+        try {
+          final dyn = data as dynamic;
+          final t = dyn['type'];
+          final m = dyn['message'];
+          if (t == 'chat-message') {
+            message = m?.toString();
+          } else {
+            message = data.toString();
+          }
+        } catch (_) {
+          message = data.toString();
+        }
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Erro a processar incoming data: $e');
+      message = data?.toString();
+    }
+
+    if (message != null && message.trim().isNotEmpty && mounted) {
+      _sendMessage(message.trim());
+    } else {
+      // ignore: avoid_print
+      print('No message extracted from incoming data.');
     }
   }
 
@@ -64,7 +188,6 @@ class _ChatTabState extends State<ChatTab> {
             ..style.height = '100%';
 
           element.setInnerHtml(
-            // placeholder "Ask DocuGen" e SVG de envio; envio faz postMessage + chamada direta a flutterReceiveMessage
             '''
             <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
               <input 
@@ -109,7 +232,6 @@ class _ChatTabState extends State<ChatTab> {
                   -webkit-tap-highlight-color: transparent;
                 "
               >
-                <!-- SVG 'arrow' -->
                 <svg width="20" height="20" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <rect x="20" y="16" width="8" height="24" rx="4"/>
                   <path d="M24 4L12 16H20V20H28V16H36L24 4Z"/>
@@ -117,40 +239,12 @@ class _ChatTabState extends State<ChatTab> {
               </button>
             </div>
             <style>
-              * {
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-              }
-              
-              /* permitir seleção apenas no input */
-              #chatInput {
-                -webkit-user-select: text !important;
-                user-select: text !important;
-              }
-
-              /* remover efeitos visuais de foco */
-              #chatInput:focus {
-                background-color: #FFFFFF;
-                box-shadow: none !important;
-                outline: none !important;
-              }
-              
-              #chatInput::placeholder {
-                color: #ADB5BD;
-              }
-              
-              #sendBtn:hover {
-                background-color: #343A40;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-              }
-              
-              #sendBtn:active {
-                transform: scale(0.95);
-                background-color: #495057;
-              }
+              * { -webkit-touch-callout: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+              #chatInput { -webkit-user-select: text !important; user-select: text !important; }
+              #chatInput:focus { background-color: #FFFFFF; box-shadow: none !important; outline: none !important; }
+              #chatInput::placeholder { color: #ADB5BD; }
+              #sendBtn:hover { background-color: #343A40; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+              #sendBtn:active { transform: scale(0.95); background-color: #495057; }
             </style>
             <script>
               const input = document.getElementById('chatInput');
@@ -158,52 +252,47 @@ class _ChatTabState extends State<ChatTab> {
 
               function send() {
                 const msg = input.value.trim();
+                console.log('HTML: sending payload ->', msg);
                 if (!msg) return;
 
                 const payload = { type: 'chat-message', message: msg };
 
-                // TENTATIVAS MULTIPLAS: postMessage + dispatchEvent + chamada direta se existir
-                try { window.parent.postMessage(payload, '*'); } catch(e) {}
-                try { window.postMessage(payload, '*'); } catch(e) {}
-                try { window.dispatchEvent(new MessageEvent('message', { data: payload })); } catch(e) {}
+                // postMessage para window.parent / window / dispatchEvent
+                try { window.parent.postMessage(payload, '*'); console.log('HTML: postMessage to parent'); } catch(e) { console.warn('postMessage parent failed', e); }
+                try { window.postMessage(payload, '*'); console.log('HTML: postMessage to window'); } catch(e) { console.warn('postMessage window failed', e); }
+                try { window.dispatchEvent(new MessageEvent('message', { data: payload })); console.log('HTML: dispatchEvent message'); } catch(e) { console.warn('dispatchEvent failed', e); }
 
-                // Chamada direta para flutterReceiveMessage (registered by Dart)
+                // Dispatch CustomEvent on document (Dart listens to document.addEventListener('fromHtmlInput', ...))
+                try {
+                  const ce = new CustomEvent('fromHtmlInput', { detail: msg });
+                  document.dispatchEvent(ce);
+                  console.log('HTML: dispatch CustomEvent fromHtmlInput');
+                } catch (e) { console.warn('CustomEvent dispatch failed', e); }
+
+                // Chamada direta se a função flutterReceiveMessage estiver disponível
                 try {
                   if (typeof window.flutterReceiveMessage === 'function') {
                     window.flutterReceiveMessage(msg);
+                    console.log('HTML: called window.flutterReceiveMessage');
+                  } else if (window.parent && typeof window.parent.flutterReceiveMessage === 'function') {
+                    window.parent.flutterReceiveMessage(msg);
+                    console.log('HTML: called parent.flutterReceiveMessage');
+                  } else if (window.top && typeof window.top.flutterReceiveMessage === 'function') {
+                    window.top.flutterReceiveMessage(msg);
+                    console.log('HTML: called top.flutterReceiveMessage');
+                  } else {
+                    console.log('HTML: flutterReceiveMessage not found on window/parent/top');
                   }
-                } catch (e) {}
+                } catch (e) { console.warn('call flutterReceiveMessage failed', e); }
 
                 input.value = '';
               }
 
-              btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                send();
-              });
-
-              input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  send();
-                }
-              });
-
-              input.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-              });
-
-              btn.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
-              });
-
-              input.addEventListener('focus', (e) => {
-                input.style.outline = 'none';
-                input.style.boxShadow = 'none';
-              });
-
-              // botão de teste no HTML (não visível por padrão) -- comentado por segurança
-              // const testBtn = document.createElement('button'); testBtn.innerText = 'TEST'; testBtn.style.display='none'; document.body.appendChild(testBtn);
+              btn.addEventListener('click', (e) => { e.preventDefault(); send(); });
+              input.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
+              input.addEventListener('touchstart', (e) => { e.stopPropagation(); });
+              btn.addEventListener('touchstart', (e) => { e.stopPropagation(); });
+              input.addEventListener('focus', (e) => { input.style.outline = 'none'; input.style.boxShadow = 'none'; });
             </script>
             ''',
             treeSanitizer: html.NodeTreeSanitizer.trusted,
@@ -216,61 +305,6 @@ class _ChatTabState extends State<ChatTab> {
       // ignore: avoid_print
       print('Error registering view: $e');
     }
-  }
-
-  void _setupMessageListener() {
-    // Listener padrão de message events
-    html.window.onMessage.listen((event) {
-      // debug
-      // ignore: avoid_print
-      print('Message received (raw): ${event.data}');
-
-      String? message;
-      final data = event.data;
-
-      try {
-        if (data == null) {
-          // nada
-        } else if (data is Map) {
-          if (data['type'] == 'chat-message') {
-            message = data['message']?.toString();
-          }
-        } else if (data is String) {
-          try {
-            final parsed = jsonDecode(data);
-            if (parsed is Map && parsed['type'] == 'chat-message') {
-              message = parsed['message']?.toString();
-            } else {
-              // fallback: tratar a string como mensagem direta
-              message = data;
-            }
-          } catch (_) {
-            // fallback: tratar a string como mensagem direta
-            message = data;
-          }
-        } else {
-          // tentativa genérica
-          try {
-            final dyn = data as dynamic;
-            final t = dyn['type'];
-            final m = dyn['message'];
-            if (t == 'chat-message') {
-              message = m?.toString();
-            }
-          } catch (_) {
-            message = data.toString();
-          }
-        }
-      } catch (e) {
-        // ignore: avoid_print
-        print('Erro ao processar event.data: $e');
-        message = data?.toString();
-      }
-
-      if (message != null && message.trim().isNotEmpty && mounted) {
-        _sendMessage(message.trim());
-      }
-    });
   }
 
   @override
@@ -323,7 +357,8 @@ class _ChatTabState extends State<ChatTab> {
           ],
         ),
         _buildInputArea(),
-        // pequeno botão de debug (nativo) no canto inferior direito — útil para testar envio direto
+
+        // botao debug já existente: confirma que UI está OK
         Positioned(
           right: 16,
           bottom: 80,
@@ -350,9 +385,7 @@ class _ChatTabState extends State<ChatTab> {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: message.isUser
-              ? const Color(0xFF212529)
-              : const Color(0xFFF1F3F5),
+          color: message.isUser ? const Color(0xFF212529) : const Color(0xFFF1F3F5),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -374,17 +407,8 @@ class _ChatTabState extends State<ChatTab> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -4))],
         ),
         child: SafeArea(
           top: false,
@@ -392,9 +416,7 @@ class _ChatTabState extends State<ChatTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: SizedBox(
               height: 50,
-              child: kIsWeb
-                  ? HtmlElementView(viewType: _viewType)
-                  : _buildNativeInput(),
+              child: kIsWeb ? HtmlElementView(viewType: _viewType) : _buildNativeInput(),
             ),
           ),
         ),
@@ -408,24 +430,12 @@ class _ChatTabState extends State<ChatTab> {
       children: [
         Expanded(
           child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFFFF),
-              borderRadius: BorderRadius.circular(24),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFFFFFFF), borderRadius: BorderRadius.circular(24)),
             child: TextField(
               controller: _messageController,
               focusNode: _focusNode,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF212529),
-              ),
-              decoration: const InputDecoration.collapsed(
-                hintText: 'Ask DocuGen',
-                hintStyle: TextStyle(
-                  color: Color(0xFFADB5BD),
-                  fontSize: 16,
-                ),
-              ),
+              style: const TextStyle(fontSize: 16, color: Color(0xFF212529)),
+              decoration: const InputDecoration.collapsed(hintText: 'Ask DocuGen', hintStyle: TextStyle(color: Color(0xFFADB5BD), fontSize: 16)),
               cursorColor: const Color(0xFF212529),
               enableSuggestions: false,
               autocorrect: false,
@@ -434,7 +444,6 @@ class _ChatTabState extends State<ChatTab> {
           ),
         ),
         const SizedBox(width: 12),
-        // Botão com SVG fornecido
         GestureDetector(
           onTap: _sendMessageNative,
           child: Container(
@@ -443,13 +452,7 @@ class _ChatTabState extends State<ChatTab> {
             decoration: BoxDecoration(
               color: const Color(0xFF212529),
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             padding: const EdgeInsets.all(12),
             child: Center(
@@ -471,7 +474,6 @@ class _ChatTabState extends State<ChatTab> {
     // ignore: avoid_print
     print('Native send: $text');
     if (text.isEmpty) return;
-
     _sendMessage(text);
     _messageController.clear();
     _focusNode.unfocus();
@@ -482,24 +484,14 @@ class _ChatTabState extends State<ChatTab> {
     print('Adding message: $text');
     if (text.trim().isEmpty) return;
     if (!mounted) return;
-
     setState(() {
-      _messages.add(ChatMessage(
-        text: text.trim(),
-        isUser: true,
-      ));
+      _messages.add(ChatMessage(text: text.trim(), isUser: true));
       // ignore: avoid_print
       print('Messages count: ${_messages.length}');
     });
-
-    // scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
+        _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
       }
     });
   }
@@ -516,9 +508,5 @@ class _ChatTabState extends State<ChatTab> {
 class ChatMessage {
   final String text;
   final bool isUser;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-  });
+  ChatMessage({required this.text, required this.isUser});
 }
