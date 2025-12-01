@@ -47,6 +47,10 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      transitionAnimationController: AnimationController(
+        duration: const Duration(milliseconds: 500),
+        vsync: this,
+      ),
       builder: (context) => _buildSettingsModal(),
     );
   }
@@ -94,14 +98,14 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
     return StatefulBuilder(
       builder: (context, setModalState) {
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 500),
           curve: Curves.easeOutCubic,
-          height: MediaQuery.of(context).size.height * 0.5,
+          height: MediaQuery.of(context).size.height * 0.6,
           decoration: const BoxDecoration(
             color: Color(0xFFF8F9FA),
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
             ),
           ),
           child: Column(
@@ -150,10 +154,10 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
 
               const SizedBox(height: 24),
 
-              // Content - Lista sem seções
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+              // Content - Lista sem scroll
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
                   children: [
                     _buildSettingItem(
                       icon: Ionicons.moon_outline,
@@ -181,8 +185,6 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
                       subtitle: 'Cores e aparência',
                       onTap: () {},
                     ),
-
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -204,20 +206,27 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         leading: Container(
-          width: 48,
-          height: 48,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             color: const Color(0xFFF8F9FA),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(
             icon,
             color: const Color(0xFF212529),
-            size: 24,
+            size: 26,
           ),
         ),
         title: Text(
@@ -226,13 +235,18 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: Color(0xFF212529),
+            letterSpacing: -0.3,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF868E96),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF868E96),
+              letterSpacing: -0.2,
+            ),
           ),
         ),
         trailing: const Icon(
@@ -253,33 +267,14 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
         children: [
           const SizedBox(height: 50),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              switchInCurve: Curves.easeInOut,
-              switchOutCurve: Curves.easeInOut,
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.1, 0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeInOutCubic,
-                    )),
-                    child: child,
-                  ),
-                );
-              },
-              child: IndexedStack(
-                key: ValueKey<int>(_selectedIndex),
-                index: _selectedIndex,
-                children: const [
-                  ChatTab(),
-                  PreviewTab(),
-                ],
-              ),
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              physics: const BouncingScrollPhysics(),
+              children: const [
+                ChatTab(),
+                PreviewTab(),
+              ],
             ),
           ),
         ],
