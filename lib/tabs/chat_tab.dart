@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:js_util' as js_util; // para registar função global JS
 
 class ChatTab extends StatefulWidget {
   const ChatTab({Key? key}) : super(key: key);
@@ -23,10 +24,7 @@ class _ChatTabState extends State<ChatTab> {
 
   // SVG fornecido pelo utilizador (usado na versão nativa via flutter_svg)
   static const String _userArrowSvg = '''
-<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="20" y="16" width="8" height="24" rx="4" fill="#000000"/>
-  <path d="M24 4L12 16H20V20H28V16H36L24 4Z" fill="#000000"/>
-</svg>
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
 ''';
 
   @override
@@ -38,6 +36,21 @@ class _ChatTabState extends State<ChatTab> {
     }
     if (kIsWeb) {
       _setupMessageListener();
+      // Registar função global JS para chamada direta (fallback robusto)
+      try {
+        js_util.setProperty(html.window, 'flutterReceiveMessage',
+            (dynamic msg) {
+          // debug
+          // ignore: avoid_print
+          print('flutterReceiveMessage called from JS with: $msg');
+          if (msg != null && msg.toString().trim().isNotEmpty && mounted) {
+            _sendMessage(msg.toString().trim());
+          }
+        });
+      } catch (e) {
+        // ignore: avoid_print
+        print('Erro ao registar flutterReceiveMessage: $e');
+      }
     }
   }
 
@@ -51,7 +64,7 @@ class _ChatTabState extends State<ChatTab> {
             ..style.height = '100%';
 
           element.setInnerHtml(
-            // placeholder "Ask DocuGen" e SVG de envio simples usando dispatchEvent + postMessage
+            // placeholder "Ask DocuGen" e SVG de envio; envio faz postMessage + chamada direta a flutterReceiveMessage
             '''
             <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
               <input 
@@ -96,7 +109,7 @@ class _ChatTabState extends State<ChatTab> {
                   -webkit-tap-highlight-color: transparent;
                 "
               >
-                <!-- SVG 'arrow' (mantive aparência preta; o botão tem color branco) -->
+                <!-- SVG 'arrow' -->
                 <svg width="20" height="20" viewBox="0 0 48 48" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <rect x="20" y="16" width="8" height="24" rx="4"/>
                   <path d="M24 4L12 16H20V20H28V16H36L24 4Z"/>
@@ -149,10 +162,17 @@ class _ChatTabState extends State<ChatTab> {
 
                 const payload = { type: 'chat-message', message: msg };
 
-                // tentamos várias formas para garantir que o Dart/Flutter a receberá:
+                // TENTATIVAS MULTIPLAS: postMessage + dispatchEvent + chamada direta se existir
                 try { window.parent.postMessage(payload, '*'); } catch(e) {}
                 try { window.postMessage(payload, '*'); } catch(e) {}
                 try { window.dispatchEvent(new MessageEvent('message', { data: payload })); } catch(e) {}
+
+                // Chamada direta para flutterReceiveMessage (registered by Dart)
+                try {
+                  if (typeof window.flutterReceiveMessage === 'function') {
+                    window.flutterReceiveMessage(msg);
+                  }
+                } catch (e) {}
 
                 input.value = '';
               }
@@ -169,7 +189,6 @@ class _ChatTabState extends State<ChatTab> {
                 }
               });
 
-              // evitar propagação de touch
               input.addEventListener('touchstart', (e) => {
                 e.stopPropagation();
               });
@@ -178,11 +197,13 @@ class _ChatTabState extends State<ChatTab> {
                 e.stopPropagation();
               });
 
-              // remove focus outline em alguns browsers
               input.addEventListener('focus', (e) => {
                 input.style.outline = 'none';
                 input.style.boxShadow = 'none';
               });
+
+              // botão de teste no HTML (não visível por padrão) -- comentado por segurança
+              // const testBtn = document.createElement('button'); testBtn.innerText = 'TEST'; testBtn.style.display='none'; document.body.appendChild(testBtn);
             </script>
             ''',
             treeSanitizer: html.NodeTreeSanitizer.trusted,
@@ -198,7 +219,9 @@ class _ChatTabState extends State<ChatTab> {
   }
 
   void _setupMessageListener() {
+    // Listener padrão de message events
     html.window.onMessage.listen((event) {
+      // debug
       // ignore: avoid_print
       print('Message received (raw): ${event.data}');
 
@@ -213,18 +236,20 @@ class _ChatTabState extends State<ChatTab> {
             message = data['message']?.toString();
           }
         } else if (data is String) {
-          // tenta desserializar JSON stringificado
           try {
             final parsed = jsonDecode(data);
             if (parsed is Map && parsed['type'] == 'chat-message') {
               message = parsed['message']?.toString();
+            } else {
+              // fallback: tratar a string como mensagem direta
+              message = data;
             }
           } catch (_) {
-            // se não for JSON, consideramos string como conteúdo direto
+            // fallback: tratar a string como mensagem direta
             message = data;
           }
         } else {
-          // acesso dinâmico (caso venha como JsObject/dynamic)
+          // tentativa genérica
           try {
             final dyn = data as dynamic;
             final t = dyn['type'];
@@ -233,17 +258,13 @@ class _ChatTabState extends State<ChatTab> {
               message = m?.toString();
             }
           } catch (_) {
-            // fallback: usar toString()
             message = data.toString();
           }
         }
       } catch (e) {
-        // ignore parsing errors e tentamos fallback
-        try {
-          message = data.toString();
-        } catch (_) {
-          message = null;
-        }
+        // ignore: avoid_print
+        print('Erro ao processar event.data: $e');
+        message = data?.toString();
       }
 
       if (message != null && message.trim().isNotEmpty && mounted) {
@@ -302,6 +323,19 @@ class _ChatTabState extends State<ChatTab> {
           ],
         ),
         _buildInputArea(),
+        // pequeno botão de debug (nativo) no canto inferior direito — útil para testar envio direto
+        Positioned(
+          right: 16,
+          bottom: 80,
+          child: FloatingActionButton(
+            mini: true,
+            onPressed: () {
+              _sendMessage('Mensagem de teste (debug)');
+            },
+            child: const Icon(Icons.bug_report),
+            backgroundColor: const Color(0xFF212529),
+          ),
+        ),
       ],
     );
   }
@@ -423,7 +457,6 @@ class _ChatTabState extends State<ChatTab> {
                 _userArrowSvg,
                 width: 24,
                 height: 24,
-                // recolore para branco (botão escuro)
                 colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
               ),
             ),
