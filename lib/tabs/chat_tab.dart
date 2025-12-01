@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -41,12 +42,13 @@ class _ChatTabState extends State<ChatTab> {
             ..style.height = '100%';
 
           element.setInnerHtml(
+            // substituí placeholder para "Ask DocuGen" e alterei o SVG para ícone de send/arrow
             '''
             <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
               <input 
                 type="text" 
                 id="chatInput" 
-                placeholder="Envie uma mensagem..."
+                placeholder="Ask DocuGen"
                 autocomplete="off"
                 spellcheck="false"
                 style="
@@ -85,8 +87,9 @@ class _ChatTabState extends State<ChatTab> {
                   -webkit-tap-highlight-color: transparent;
                 "
               >
-                <svg fill="currentColor" width="20" height="20" viewBox="0 0 512 512">
-                  <path d="M233.4 105.4c12.5-12.5 32.8-12.5 45.3 0l192 192c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L256 173.3 86.6 342.6c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l192-192z"/>
+                <!-- papel/arrow send icon SVG (direita) -->
+                <svg fill="currentColor" width="20" height="20" viewBox="0 0 512 512" aria-hidden="true">
+                  <path d="M476 3L36 213c-30 14-25 54 7 62l93 26 26 93c8 32 48 37 62 7L509 36c19-33-6-69-33-33zM124 265l-12-42 272-160-260 202z"/>
                 </svg>
               </button>
             </div>
@@ -99,14 +102,17 @@ class _ChatTabState extends State<ChatTab> {
                 user-select: none;
               }
               
+              /* permitir seleção apenas no input */
               #chatInput {
                 -webkit-user-select: text !important;
                 user-select: text !important;
               }
-              
+
+              /* REMOVE efeitos de foco: sem box-shadow, sem outline */
               #chatInput:focus {
                 background-color: #FFFFFF;
-                box-shadow: 0 0 0 2px rgba(33, 37, 41, 0.15);
+                box-shadow: none !important;
+                outline: none !important;
               }
               
               #chatInput::placeholder {
@@ -131,7 +137,12 @@ class _ChatTabState extends State<ChatTab> {
                 const msg = input.value.trim();
                 console.log('Sending message:', msg);
                 if (msg) {
-                  window.parent.postMessage({type: 'chat-message', message: msg}, '*');
+                  // usamos window.postMessage (funciona melhor em diferentes contextos)
+                  try {
+                    window.postMessage({type: 'chat-message', message: msg}, '*');
+                  } catch (e) {
+                    window.parent.postMessage({type: 'chat-message', message: msg}, '*');
+                  }
                   input.value = '';
                 }
               }
@@ -155,6 +166,12 @@ class _ChatTabState extends State<ChatTab> {
               btn.addEventListener('touchstart', (e) => {
                 e.stopPropagation();
               });
+
+              // garantir que ao focar não surja nenhum outline nativo em alguns browsers
+              input.addEventListener('focus', (e) => {
+                input.style.outline = 'none';
+                input.style.boxShadow = 'none';
+              });
             </script>
             ''',
             treeSanitizer: html.NodeTreeSanitizer.trusted,
@@ -164,17 +181,42 @@ class _ChatTabState extends State<ChatTab> {
         },
       );
     } catch (e) {
+      // log de erro mas sem quebrar app
+      // ignore: avoid_print
       print('Error registering view: $e');
     }
   }
 
   void _setupMessageListener() {
     html.window.onMessage.listen((event) {
-      print('Message received: ${event.data}');
-      if (event.data is Map && event.data['type'] == 'chat-message') {
-        final message = event.data['message'];
-        print('Processing message: $message');
-        _sendMessage(message);
+      // Debug
+      // ignore: avoid_print
+      print('Message received (raw): ${event.data}');
+
+      String? message;
+
+      final data = event.data;
+      if (data is Map) {
+        if (data['type'] == 'chat-message') {
+          message = data['message']?.toString();
+        }
+      } else if (data is String) {
+        // às vezes chega string JSON — tentamos desserializar
+        try {
+          final parsed = jsonDecode(data);
+          if (parsed is Map && parsed['type'] == 'chat-message') {
+            message = parsed['message']?.toString();
+          }
+        } catch (e) {
+          // não era JSON — ignorar
+        }
+      }
+
+      if (message != null) {
+        // garantimos que chamamos setState no zone do Flutter
+        if (mounted) {
+          _sendMessage(message);
+        }
       }
     });
   }
@@ -312,18 +354,17 @@ class _ChatTabState extends State<ChatTab> {
                 fontSize: 16,
                 color: Color(0xFF212529),
               ),
-              decoration: const InputDecoration(
-                hintText: 'Envie uma mensagem...',
+              // usamos collapsed para remover qualquer borda/outline nativo ao focar
+              decoration: const InputDecoration.collapsed(
+                hintText: 'Ask DocuGen',
                 hintStyle: TextStyle(
                   color: Color(0xFFADB5BD),
                   fontSize: 16,
                 ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
               ),
+              cursorColor: const Color(0xFF212529),
+              enableSuggestions: false,
+              autocorrect: false,
               onSubmitted: (_) => _sendMessageNative(),
             ),
           ),
@@ -343,7 +384,8 @@ class _ChatTabState extends State<ChatTab> {
           ),
           child: IconButton(
             onPressed: _sendMessageNative,
-            icon: const Icon(Ionicons.arrow_up),
+            // ícone arrow (em vez de chevron)
+            icon: const Icon(Ionicons.arrow_forward),
             color: Colors.white,
             iconSize: 20,
             padding: const EdgeInsets.all(14),
@@ -359,31 +401,38 @@ class _ChatTabState extends State<ChatTab> {
 
   void _sendMessageNative() {
     final text = _messageController.text.trim();
+    // ignore: avoid_print
     print('Native send: $text');
     if (text.isEmpty) return;
-    
+
     _sendMessage(text);
     _messageController.clear();
     _focusNode.unfocus();
   }
 
   void _sendMessage(String text) {
+    // ignore: avoid_print
     print('Adding message: $text');
     if (text.trim().isEmpty) return;
+
+    if (!mounted) return;
 
     setState(() {
       _messages.add(ChatMessage(
         text: text.trim(),
         isUser: true,
       ));
+      // debug
+      // ignore: avoid_print
       print('Messages count: ${_messages.length}');
     });
 
+    // garantir que o ListView role até o fim
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }
