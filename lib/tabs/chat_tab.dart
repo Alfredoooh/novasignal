@@ -20,8 +20,9 @@ class _ChatTabState extends State<ChatTab> {
   final FocusNode _focusNode = FocusNode();
   final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
-  static const String _viewType = 'chat-input-view';
+  static const String _viewType = 'chat-input-only';
   static bool _viewRegistered = false;
+  html.InputElement? _htmlInput;
 
   static const String _sendIconSvg = '''
 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -33,30 +34,9 @@ class _ChatTabState extends State<ChatTab> {
   void initState() {
     super.initState();
     if (kIsWeb && !_viewRegistered) {
-      _setupMessageListener();
       _registerWebView();
       _viewRegistered = true;
     }
-  }
-
-  void _setupMessageListener() {
-    html.window.addEventListener('message', (event) {
-      final messageEvent = event as html.MessageEvent;
-      final data = messageEvent.data;
-      
-      if (data is Map) {
-        try {
-          if (data['source'] == 'docugen-chat') {
-            final message = data['message']?.toString().trim();
-            if (message != null && message.isNotEmpty && mounted) {
-              _sendMessage(message);
-            }
-          }
-        } catch (e) {
-          debugPrint('Error processing message: $e');
-        }
-      }
-    });
   }
 
   void _registerWebView() {
@@ -64,118 +44,58 @@ class _ChatTabState extends State<ChatTab> {
       ui_web.platformViewRegistry.registerViewFactory(
         _viewType,
         (int viewId) {
+          final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+          final inputBgColor = themeProvider.isDarkMode ? '#495057' : '#FFFFFF';
+          final inputTextColor = themeProvider.isDarkMode ? '#FFFFFF' : '#212529';
+          final inputPlaceholderColor = themeProvider.isDarkMode ? '#ADB5BD' : '#6C757D';
+
           final element = html.DivElement()
-            ..id = 'chat-input-container-$viewId'
+            ..id = 'chat-input-wrapper-$viewId'
             ..style.width = '100%'
-            ..style.height = '100%';
+            ..style.height = '100%'
+            ..style.display = 'flex'
+            ..style.alignItems = 'center';
 
-          // Usar Consumer para obter o tema atual
-          final isDarkMode = Provider.of<ThemeProvider>(context, listen: false).isDarkMode;
-          
-          final inputBgColor = isDarkMode ? '#495057' : '#FFFFFF';
-          final inputTextColor = isDarkMode ? '#FFFFFF' : '#212529';
-          final inputPlaceholderColor = isDarkMode ? '#ADB5BD' : '#6C757D';
-          final buttonBgColor = isDarkMode ? '#495057' : '#212529';
+          _htmlInput = html.InputElement()
+            ..id = 'chatInput-$viewId'
+            ..type = 'text'
+            ..placeholder = 'Ask DocuGen'
+            ..autocomplete = 'off'
+            ..setAttribute('spellcheck', 'false')
+            ..style.flex = '1'
+            ..style.padding = '12px 20px'
+            ..style.border = 'none'
+            ..style.borderRadius = '24px'
+            ..style.fontSize = '16px'
+            ..style.outline = 'none'
+            ..style.backgroundColor = inputBgColor
+            ..style.color = inputTextColor
+            ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            ..style.transition = 'background-color 0.3s'
+            ..style.setProperty('-webkit-user-select', 'text')
+            ..style.userSelect = 'text'
+            ..style.setProperty('-webkit-tap-highlight-color', 'transparent');
 
-          element.innerHtml = '''
-            <div style="display: flex; align-items: center; gap: 12px; width: 100%; height: 100%; padding: 0;">
-              <input 
-                type="text" 
-                id="chatInput-$viewId" 
-                placeholder="Ask DocuGen"
-                autocomplete="off"
-                spellcheck="false"
-                style="
-                  flex: 1;
-                  padding: 12px 20px;
-                  border: none;
-                  border-radius: 24px;
-                  font-size: 16px;
-                  outline: none;
-                  background-color: $inputBgColor;
-                  color: $inputTextColor;
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                  transition: background-color 0.3s;
-                  -webkit-user-select: text;
-                  user-select: text;
-                  -webkit-tap-highlight-color: transparent;
-                "
-              >
-              <button 
-                id="sendBtn-$viewId"
-                type="button"
-                style="
-                  width: 48px;
-                  height: 48px;
-                  border: none;
-                  border-radius: 50%;
-                  background-color: $buttonBgColor;
-                  color: white;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  flex-shrink: 0;
-                  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-                  transition: all 0.2s;
-                  -webkit-tap-highlight-color: transparent;
-                "
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            </div>
-            <style>
-              #chat-input-container-$viewId * { 
-                -webkit-touch-callout: none; 
-                -webkit-user-select: none; 
-                -moz-user-select: none; 
-                -ms-user-select: none; 
-                user-select: none; 
+          // CSS para placeholder
+          final style = html.StyleElement()
+            ..text = '''
+              #chatInput-$viewId::placeholder {
+                color: $inputPlaceholderColor;
               }
-              #chatInput-$viewId { 
-                -webkit-user-select: text !important; 
-                user-select: text !important; 
+              #chatInput-$viewId:focus {
+                box-shadow: none !important;
+                outline: none !important;
               }
-              #chatInput-$viewId:focus { 
-                box-shadow: none !important; 
-                outline: none !important; 
-              }
-              #chatInput-$viewId::placeholder { 
-                color: $inputPlaceholderColor; 
-              }
-              #sendBtn-$viewId:hover { 
-                background-color: #343A40; 
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
-              }
-              #sendBtn-$viewId:active { 
-                transform: scale(0.95); 
-              }
-            </style>
-          ''';
+            ''';
 
-          final input = element.querySelector('#chatInput-$viewId') as html.InputElement?;
-          final btn = element.querySelector('#sendBtn-$viewId') as html.ButtonElement?;
+          element.append(style);
+          element.append(_htmlInput!);
 
-          void sendMessage() {
-            if (input != null) {
-              final msg = input.value?.trim() ?? '';
-              if (msg.isNotEmpty) {
-                html.window.postMessage({
-                  'source': 'docugen-chat',
-                  'message': msg,
-                }, '*');
-                input.value = '';
-              }
-            }
-          }
-
-          btn?.onClick.listen((_) => sendMessage());
-          input?.onKeyPress.listen((e) {
+          // Listener para Enter
+          _htmlInput!.onKeyPress.listen((e) {
             if (e.key == 'Enter') {
               e.preventDefault();
-              sendMessage();
+              _sendMessageFromHtml();
             }
           });
 
@@ -184,6 +104,16 @@ class _ChatTabState extends State<ChatTab> {
       );
     } catch (e) {
       debugPrint('Error registering view: $e');
+    }
+  }
+
+  void _sendMessageFromHtml() {
+    if (_htmlInput != null) {
+      final text = _htmlInput!.value?.trim() ?? '';
+      if (text.isNotEmpty) {
+        _sendMessage(text);
+        _htmlInput!.value = '';
+      }
     }
   }
 
@@ -318,80 +248,78 @@ class _ChatTabState extends State<ChatTab> {
           top: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: SizedBox(
-              height: 50,
-              child: kIsWeb
-                  ? HtmlElementView(
-                      viewType: _viewType,
-                      key: ValueKey(themeProvider.isDarkMode),
-                    )
-                  : _buildNativeInput(themeProvider),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Input (HTML no web, nativo no app)
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: kIsWeb
+                        ? HtmlElementView(
+                            viewType: _viewType,
+                            key: ValueKey(themeProvider.isDarkMode),
+                          )
+                        : Container(
+                            decoration: BoxDecoration(
+                              color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFFFFFFF),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: TextField(
+                              controller: _messageController,
+                              focusNode: _focusNode,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                              ),
+                              decoration: InputDecoration.collapsed(
+                                hintText: 'Ask DocuGen',
+                                hintStyle: TextStyle(
+                                  color: themeProvider.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
+                                  fontSize: 16,
+                                ),
+                              ),
+                              cursorColor: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                              enableSuggestions: false,
+                              autocorrect: false,
+                              onSubmitted: (_) => _sendMessageNative(),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Botão de enviar (sempre Flutter nativo)
+                GestureDetector(
+                  onTap: kIsWeb ? _sendMessageFromHtml : _sendMessageNative,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
+                    ),
+                    child: Center(
+                      child: SvgPicture.string(
+                        _sendIconSvg,
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildNativeInput(ThemeProvider themeProvider) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFFFFFFF),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: TextField(
-              controller: _messageController,
-              focusNode: _focusNode,
-              style: TextStyle(
-                fontSize: 16,
-                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-              ),
-              decoration: InputDecoration.collapsed(
-                hintText: 'Ask DocuGen',
-                hintStyle: TextStyle(
-                  color: themeProvider.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
-                  fontSize: 16,
-                ),
-              ),
-              cursorColor: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-              enableSuggestions: false,
-              autocorrect: false,
-              onSubmitted: (_) => _sendMessageNative(),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        GestureDetector(
-          onTap: _sendMessageNative,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                )
-              ],
-            ),
-            child: Center(
-              child: SvgPicture.string(
-                _sendIconSvg,
-                width: 24,
-                height: 24,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -407,7 +335,7 @@ class _ChatTabState extends State<ChatTab> {
     if (text.trim().isEmpty) return;
     if (!mounted) return;
     
-    debugPrint('📨 Mensagem recebida: $text');
+    debugPrint('📨 Mensagem enviada: $text');
     
     setState(() {
       _messages.add(ChatMessage(text: text.trim(), isUser: true));
