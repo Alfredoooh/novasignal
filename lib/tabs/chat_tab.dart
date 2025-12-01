@@ -9,15 +9,18 @@ import 'dart:ui_web' as ui_web;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 class ChatTab extends StatefulWidget {
-  const ChatTab({Key? key}) : super(key: key);
+  final Function(String htmlContent)? onDocumentGenerated;
+  
+  const ChatTab({Key? key, this.onDocumentGenerated}) : super(key: key);
 
   @override
   State<ChatTab> createState() => _ChatTabState();
 }
 
-class _ChatTabState extends State<ChatTab> {
+class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final List<ChatMessage> _messages = [];
@@ -27,9 +30,21 @@ class _ChatTabState extends State<ChatTab> {
   html.InputElement? _htmlInput;
   bool _isLoading = false;
   String? _conversationTitle;
+  DateTime? _conversationStartTime;
+  String _currentThinkingStep = '';
+  
+  late AnimationController _shimmerController;
 
   static const String _groqApiKey = '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';
   static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+
+  static const List<String> _thinkingSteps = [
+    'Analisando o pedido',
+    'Processando os requisitos',
+    'Buscando melhores resultados',
+    'Dando últimos toques',
+    'Concluindo',
+  ];
 
   static const String _sendIconSvg = '''
 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -46,6 +61,11 @@ class _ChatTabState extends State<ChatTab> {
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+    
     if (kIsWeb && !_viewRegistered) {
       _registerWebView();
       _viewRegistered = true;
@@ -128,7 +148,6 @@ class _ChatTabState extends State<ChatTab> {
     }
   }
 
-  // Fechar teclado ao clicar fora
   void _unfocusKeyboard() {
     _focusNode.unfocus();
     if (kIsWeb && _htmlInput != null) {
@@ -147,9 +166,7 @@ class _ChatTabState extends State<ChatTab> {
         children: [
           Column(
             children: [
-              // Header (removido o título estático)
               const SizedBox(height: 16),
-              // Messages Area
               Expanded(
                 child: _messages.isEmpty
                     ? Center(
@@ -190,28 +207,46 @@ class _ChatTabState extends State<ChatTab> {
                       )
                     : Column(
                         children: [
-                          // Título gerado por IA
                           if (_conversationTitle != null)
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                              child: Text(
-                                _conversationTitle!,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: themeProvider.isDarkMode 
-                                      ? Colors.white 
-                                      : const Color(0xFF212529),
-                                ),
-                                textAlign: TextAlign.center,
+                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    _conversationTitle!,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: themeProvider.isDarkMode 
+                                          ? Colors.white 
+                                          : const Color(0xFF212529),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (_conversationStartTime != null)
+                                    Text(
+                                      DateFormat('dd/MM/yyyy \'at\' HH:mm').format(_conversationStartTime!),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: themeProvider.isDarkMode 
+                                            ? Colors.grey.shade500 
+                                            : Colors.grey.shade600,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
+                          const SizedBox(height: 8),
                           Expanded(
                             child: ListView.builder(
                               controller: _scrollController,
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-                              itemCount: _messages.length,
+                              itemCount: _messages.length + (_isLoading ? 1 : 0),
                               itemBuilder: (context, index) {
+                                if (_isLoading && index == _messages.length) {
+                                  return _buildThinkingIndicator(themeProvider);
+                                }
                                 return _buildMessageBubble(_messages[index], themeProvider);
                               },
                             ),
@@ -223,6 +258,97 @@ class _ChatTabState extends State<ChatTab> {
           ),
           _buildInputArea(themeProvider),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThinkingIndicator(ThemeProvider themeProvider) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AnimatedBuilder(
+        animation: _shimmerController,
+        builder: (context, child) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            margin: const EdgeInsets.only(right: 60),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: themeProvider.isDarkMode
+                    ? [
+                        const Color(0xFF343A40).withOpacity(0.6),
+                        const Color(0xFF495057).withOpacity(0.4),
+                      ]
+                    : [
+                        Colors.white.withOpacity(0.8),
+                        const Color(0xFFF8F9FA).withOpacity(0.9),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: themeProvider.isDarkMode
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.05),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: themeProvider.isDarkMode
+                      ? Colors.blue.withOpacity(0.15 + _shimmerController.value * 0.15)
+                      : Colors.blue.withOpacity(0.1 + _shimmerController.value * 0.1),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Ionicons.bulb,
+                  size: 18,
+                  color: themeProvider.isDarkMode
+                      ? Colors.blue.shade300
+                      : Colors.blue.shade600,
+                ),
+                const SizedBox(width: 12),
+                ShaderMask(
+                  shaderCallback: (bounds) {
+                    return LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: themeProvider.isDarkMode
+                          ? [
+                              Colors.white,
+                              Colors.blue.shade300,
+                              Colors.white,
+                            ]
+                          : [
+                              const Color(0xFF212529),
+                              Colors.blue.shade700,
+                              const Color(0xFF212529),
+                            ],
+                      stops: [
+                        0.0,
+                        _shimmerController.value,
+                        1.0,
+                      ],
+                    ).createShader(bounds);
+                  },
+                  child: Text(
+                    _currentThinkingStep,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -242,24 +368,15 @@ class _ChatTabState extends State<ChatTab> {
               : (themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF1F3F5)),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: message.isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
-                ),
-              )
-            : Text(
-                message.text,
-                style: TextStyle(
-                  color: message.isUser 
-                      ? Colors.white 
-                      : (themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529)),
-                  fontSize: 16,
-                ),
-              ),
+        child: Text(
+          message.text,
+          style: TextStyle(
+            color: message.isUser 
+                ? Colors.white 
+                : (themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529)),
+            fontSize: 15,
+          ),
+        ),
       ),
     );
   }
@@ -337,7 +454,6 @@ class _ChatTabState extends State<ChatTab> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Botão de enviar/parar
                 GestureDetector(
                   onTap: _isLoading ? null : (kIsWeb ? _sendMessageFromHtml : _sendMessageNative),
                   child: Container(
@@ -391,13 +507,18 @@ class _ChatTabState extends State<ChatTab> {
     if (text.trim().isEmpty || _isLoading) return;
     if (!mounted) return;
 
+    if (_conversationStartTime == null) {
+      _conversationStartTime = DateTime.now();
+    }
+
     setState(() {
       _messages.add(ChatMessage(text: text.trim(), isUser: true));
-      _messages.add(ChatMessage(text: '', isUser: false, isLoading: true));
       _isLoading = true;
+      _currentThinkingStep = _thinkingSteps[0];
     });
 
     _scrollToBottom();
+    _animateThinkingSteps();
 
     try {
       final response = await http.post(
@@ -407,10 +528,16 @@ class _ChatTabState extends State<ChatTab> {
           'Authorization': 'Bearer $_groqApiKey',
         },
         body: jsonEncode({
-          'model': 'llama-3.3-70b-versatile',
-          'messages': _buildMessageHistory(),
+          'model': 'llama-3.3-70b-specdec',
+          'messages': [
+            {
+              'role': 'system',
+              'content': 'Você é um assistente especializado em criar documentos HTML estilizados. Sempre que solicitado, crie documentos HTML completos com CSS inline elegante e moderno. Ao finalizar, sempre responda: "Trabalho concluído! Carregando o preview..."',
+            },
+            ..._buildMessageHistory(),
+          ],
           'temperature': 0.7,
-          'max_tokens': 1024,
+          'max_tokens': 2048,
         }),
       );
 
@@ -420,12 +547,18 @@ class _ChatTabState extends State<ChatTab> {
 
         if (mounted) {
           setState(() {
-            _messages.removeLast();
             _messages.add(ChatMessage(text: aiResponse, isUser: false));
             _isLoading = false;
           });
 
-          // Gerar título após a primeira troca de mensagens
+          // Verificar se é um documento HTML
+          if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
+            final htmlContent = _extractHtmlFromResponse(aiResponse);
+            if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
+              widget.onDocumentGenerated!(htmlContent);
+            }
+          }
+
           if (_conversationTitle == null && _messages.length == 2) {
             _generateConversationTitle();
           }
@@ -437,7 +570,6 @@ class _ChatTabState extends State<ChatTab> {
       debugPrint('Erro ao enviar mensagem: $e');
       if (mounted) {
         setState(() {
-          _messages.removeLast();
           _messages.add(ChatMessage(
             text: 'Desculpe, ocorreu um erro. Tente novamente.',
             isUser: false,
@@ -450,9 +582,31 @@ class _ChatTabState extends State<ChatTab> {
     _scrollToBottom();
   }
 
+  String _extractHtmlFromResponse(String response) {
+    final htmlStart = response.indexOf('<!DOCTYPE html>');
+    if (htmlStart != -1) {
+      final htmlEnd = response.indexOf('</html>', htmlStart);
+      if (htmlEnd != -1) {
+        return response.substring(htmlStart, htmlEnd + 7);
+      }
+    }
+    return '';
+  }
+
+  Future<void> _animateThinkingSteps() async {
+    for (int i = 0; i < _thinkingSteps.length; i++) {
+      if (!_isLoading) break;
+      await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted && _isLoading) {
+        setState(() {
+          _currentThinkingStep = _thinkingSteps[i];
+        });
+      }
+    }
+  }
+
   List<Map<String, String>> _buildMessageHistory() {
     return _messages
-        .where((msg) => !msg.isLoading)
         .map((msg) => {
               'role': msg.isUser ? 'user' : 'assistant',
               'content': msg.text,
@@ -472,11 +626,11 @@ class _ChatTabState extends State<ChatTab> {
           'Authorization': 'Bearer $_groqApiKey',
         },
         body: jsonEncode({
-          'model': 'llama-3.3-70b-versatile',
+          'model': 'llama-3.3-70b-specdec',
           'messages': [
             {
               'role': 'system',
-              'content': 'Gere um título curto e descritivo (máximo 6 palavras) para esta conversa. Responda apenas com o título, sem pontuação no final.',
+              'content': 'Gere um título curto e descritivo (máximo 5 palavras) para esta conversa. Responda apenas com o título, sem pontuação no final.',
             },
             {
               'role': 'user',
@@ -517,6 +671,7 @@ class _ChatTabState extends State<ChatTab> {
 
   @override
   void dispose() {
+    _shimmerController.dispose();
     _messageController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
@@ -527,11 +682,9 @@ class _ChatTabState extends State<ChatTab> {
 class ChatMessage {
   final String text;
   final bool isUser;
-  final bool isLoading;
 
   ChatMessage({
     required this.text,
     required this.isUser,
-    this.isLoading = false,
   });
 }
