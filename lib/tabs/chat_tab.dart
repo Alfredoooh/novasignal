@@ -532,7 +532,35 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           'messages': [
             {
               'role': 'system',
-              'content': 'Você é um assistente especializado em criar documentos HTML estilizados. Sempre que solicitado, crie documentos HTML completos com CSS inline elegante e moderno. Ao finalizar, sempre responda: "Trabalho concluído! Carregando o preview..."',
+              'content': '''Você é o DocuGen AI, um assistente especializado em criar documentos HTML profissionais e estilizados.
+
+REGRAS IMPORTANTES:
+1. Quando o usuário pedir para criar um documento, SEMPRE gere HTML completo com estrutura <!DOCTYPE html>
+2. Use CSS inline moderno e elegante
+3. Garanta que o documento seja responsivo e profissional
+4. Use fontes web-safe ou Google Fonts
+5. Após gerar o HTML, SEMPRE termine sua resposta com exatamente esta frase: "Trabalho concluído! Carregando o preview..."
+
+EXEMPLO DE ESTRUTURA:
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documento</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; padding: 40px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+    p { margin: 15px 0; }
+  </style>
+</head>
+<body>
+  <h1>Título do Documento</h1>
+  <p>Conteúdo aqui...</p>
+</body>
+</html>
+
+Trabalho concluído! Carregando o preview...''',
             },
             ..._buildMessageHistory(),
           ],
@@ -583,13 +611,29 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   String _extractHtmlFromResponse(String response) {
-    final htmlStart = response.indexOf('<!DOCTYPE html>');
+    // Procurar por <!DOCTYPE html> ou <html
+    int htmlStart = response.indexOf('<!DOCTYPE html>');
+    if (htmlStart == -1) {
+      htmlStart = response.indexOf('<html');
+    }
+    
     if (htmlStart != -1) {
       final htmlEnd = response.indexOf('</html>', htmlStart);
       if (htmlEnd != -1) {
         return response.substring(htmlStart, htmlEnd + 7);
       }
     }
+    
+    // Se não encontrar, procurar por blocos de código
+    final codeBlockStart = response.indexOf('```html');
+    if (codeBlockStart != -1) {
+      final contentStart = response.indexOf('\n', codeBlockStart) + 1;
+      final codeBlockEnd = response.indexOf('```', contentStart);
+      if (codeBlockEnd != -1) {
+        return response.substring(contentStart, codeBlockEnd).trim();
+      }
+    }
+    
     return '';
   }
 
