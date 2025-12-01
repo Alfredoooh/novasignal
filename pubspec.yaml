@@ -14,6 +14,7 @@ dependencies:
   webview_flutter: any
   http: any
   flutter_staggered_grid_view: any
+  intl: ^0.18.1
 
   # Nova dependência obrigatória para extração de cor
   palette_generator: any
