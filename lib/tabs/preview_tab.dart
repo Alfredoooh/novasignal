@@ -10,23 +10,21 @@ class PreviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    
+
     return Column(
       children: [
         // Header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Row(
-            children: [
-              Text(
-                'Preview',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                ),
+          child: Center(
+            child: Text(
+              'Preview',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
               ),
-            ],
+            ),
           ),
         ),
         // Content
