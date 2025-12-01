@@ -1,7 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
-import 'tabs/chat_tab.dart';
+import 'tas/chat_tab.dart';
 import 'tabs/preview_tab.dart';
 
 class DocuGenHomePage extends StatefulWidget {
@@ -48,38 +47,87 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: CupertinoSlidingSegmentedControl<int>(
-              backgroundColor: const Color(0xFFE5E5EA),
-              thumbColor: Colors.white,
-              groupValue: _selectedIndex,
-              children: const {
-                0: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    'Chat',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5E5EA),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedIndex = 0),
+                      child: Container(
+                        margin: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: _selectedIndex == 0
+                              ? Colors.white
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: _selectedIndex == 0
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Chat',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: _selectedIndex == 0
+                                  ? const Color(0xFF007AFF)
+                                  : const Color(0xFF8E8E93),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                1: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    'Preview',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedIndex = 1),
+                      child: Container(
+                        margin: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: _selectedIndex == 1
+                              ? Colors.white
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: _selectedIndex == 1
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Preview',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: _selectedIndex == 1
+                                  ? const Color(0xFF007AFF)
+                                  : const Color(0xFF8E8E93),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              },
-              onValueChanged: (value) {
-                setState(() {
-                  _selectedIndex = value!;
-                });
-              },
+                ],
+              ),
             ),
           ),
           Expanded(
