@@ -18,10 +18,18 @@ class DocuGenHomePage extends StatefulWidget {
 class _DocuGenHomePageState extends State<DocuGenHomePage> {
   int _selectedIndex = 0;
   String _selectedLanguage = 'Português';
+  String? _generatedHtmlContent;
 
   void _onTabTapped(int index) {
     setState(() {
       _selectedIndex = index;
+    });
+  }
+
+  void _onDocumentGenerated(String htmlContent) {
+    setState(() {
+      _generatedHtmlContent = htmlContent;
+      _selectedIndex = 1; // Mudar para aba Preview
     });
   }
 
@@ -80,9 +88,9 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
       body: SafeArea(
         child: IndexedStack(
           index: _selectedIndex,
-          children: const [
-            ChatTab(),
-            PreviewTab(),
+          children: [
+            ChatTab(onDocumentGenerated: _onDocumentGenerated),
+            PreviewTab(htmlContent: _generatedHtmlContent),
           ],
         ),
       ),
@@ -233,7 +241,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
 class _SettingsModal extends StatefulWidget {
   final String selectedLanguage;
   final Function(String) onLanguageChanged;
-  
+
   const _SettingsModal({
     required this.selectedLanguage,
     required this.onLanguageChanged,
