@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:ionicons/ionicons.dart';
 import 'tabs/chat_tab.dart';
 import 'tabs/preview_tab.dart';
@@ -12,330 +11,223 @@ class DocuGenHomePage extends StatefulWidget {
 }
 
 class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProviderStateMixin {
-  late PageController _pageController;
   int _selectedIndex = 0;
   bool _isDarkMode = false;
   String _selectedLanguage = 'Português';
 
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _onPageChanged(int index) {
+  void _onTabTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  void _onTabTapped(int index) {
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
   void _showSettingsModal() {
-    showCupertinoModalPopup(
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) => _buildIOSSettingsModal(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildSettingsModal(),
     );
   }
 
   void _showLanguageDialog() {
-    showCupertinoModalPopup(
+    showDialog(
       context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        title: const Text(
-          'Selecionar Idioma',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            color: Color(0xFF8E8E93),
-          ),
+      builder: (context) => AlertDialog(
+        title: const Text('Selecionar Idioma'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLanguageOption('Português'),
+            _buildLanguageOption('English'),
+            _buildLanguageOption('Español'),
+            _buildLanguageOption('Français'),
+          ],
         ),
         actions: [
-          _buildLanguageAction('Português'),
-          _buildLanguageAction('English'),
-          _buildLanguageAction('Español'),
-          _buildLanguageAction('Français'),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
         ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          isDefaultAction: true,
-          child: const Text('Cancelar'),
-        ),
       ),
     );
   }
 
-  Widget _buildLanguageAction(String language) {
-    return CupertinoActionSheetAction(
-      onPressed: () {
+  Widget _buildLanguageOption(String language) {
+    return ListTile(
+      title: Text(language),
+      trailing: _selectedLanguage == language
+          ? const Icon(Ionicons.checkmark_circle, color: Color(0xFF212529))
+          : null,
+      onTap: () {
         setState(() {
           _selectedLanguage = language;
         });
         Navigator.pop(context);
       },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            language,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          if (_selectedLanguage == language) ...[
-            const SizedBox(width: 8),
-            const Icon(
-              CupertinoIcons.checkmark_alt,
-              color: CupertinoColors.activeBlue,
-              size: 20,
-            ),
-          ],
-        ],
-      ),
     );
   }
 
-  Widget _buildIOSSettingsModal() {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.65,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF2F2F7),
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(13),
-          topRight: Radius.circular(13),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Handle bar (iOS style)
-          Container(
-            margin: const EdgeInsets.only(top: 8, bottom: 8),
-            width: 36,
-            height: 5,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD1D1D6),
-              borderRadius: BorderRadius.circular(2.5),
+  Widget _buildSettingsModal() {
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
             ),
           ),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const SizedBox(width: 40),
-                const Text(
-                  'Definições',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF000000),
-                    letterSpacing: -0.41,
-                  ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDEE2E6),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () => Navigator.pop(context),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE5E5EA),
-                      borderRadius: BorderRadius.circular(15),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Definições',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF212529),
+                      ),
                     ),
-                    child: const Icon(
-                      CupertinoIcons.xmark,
-                      color: Color(0xFF636366),
-                      size: 16,
+                    const Spacer(),
+                    Container(
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFFFFF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Ionicons.close),
+                        color: const Color(0xFF495057),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          // Lista de opções (iOS grouped style)
-          Expanded(
-            child: CupertinoScrollbar(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  // Grupo 1: Aparência
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildIOSSettingItem(
-                          icon: CupertinoIcons.circle_lefthalf_fill,
-                          title: 'Tema',
-                          subtitle: _isDarkMode ? 'Escuro' : 'Claro',
-                          onTap: () {
-                            setState(() => _isDarkMode = !_isDarkMode);
-                          },
-                          isFirst: true,
-                        ),
-                        const Divider(height: 1, indent: 60),
-                        _buildIOSSettingItem(
-                          icon: CupertinoIcons.globe,
-                          title: 'Linguagem',
-                          subtitle: _selectedLanguage,
-                          onTap: () {
-                            Navigator.pop(context);
-                            Future.delayed(const Duration(milliseconds: 300), () {
-                              _showLanguageDialog();
-                            });
-                          },
-                          isLast: true,
-                        ),
-                      ],
-                    ),
-                  ),
+              const SizedBox(height: 24),
 
-                  const SizedBox(height: 20),
-
-                  // Grupo 2: Personalização
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+              // Content
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  children: [
+                    _buildSettingItem(
+                      icon: Ionicons.contrast_outline,
+                      title: 'Tema',
+                      subtitle: _isDarkMode ? 'Escuro' : 'Claro',
+                      onTap: () {
+                        setModalState(() => _isDarkMode = !_isDarkMode);
+                        setState(() => _isDarkMode = !_isDarkMode);
+                      },
                     ),
-                    child: _buildIOSSettingItem(
-                      icon: CupertinoIcons.paintbrush_fill,
+
+                    _buildSettingItem(
+                      icon: Ionicons.language_outline,
+                      title: 'Linguagem',
+                      subtitle: _selectedLanguage,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showLanguageDialog();
+                      },
+                    ),
+
+                    _buildSettingItem(
+                      icon: Ionicons.color_palette_outline,
                       title: 'Personalização',
                       subtitle: 'Cores e aparência',
                       onTap: () {},
-                      isFirst: true,
-                      isLast: true,
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Grupo 3: Outras opções
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildIOSSettingItem(
-                          icon: CupertinoIcons.bell_fill,
-                          title: 'Notificações',
-                          subtitle: 'Gerenciar alertas',
-                          onTap: () {},
-                          isFirst: true,
-                        ),
-                        const Divider(height: 1, indent: 60),
-                        _buildIOSSettingItem(
-                          icon: CupertinoIcons.lock_fill,
-                          title: 'Privacidade',
-                          subtitle: 'Configurações de segurança',
-                          onTap: () {},
-                          isLast: true,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildIOSSettingItem({
+  Widget _buildSettingItem({
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
-    bool isFirst = false,
-    bool isLast = false,
   }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.vertical(
-            top: isFirst ? const Radius.circular(10) : Radius.zero,
-            bottom: isLast ? const Radius.circular(10) : Radius.zero,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        leading: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFF212529),
+            size: 26,
           ),
         ),
-        child: Row(
-          children: [
-            // Ícone
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: const Color(0xFF007AFF),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Textos
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF000000),
-                      letterSpacing: -0.41,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF8E8E93),
-                      letterSpacing: -0.08,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Seta
-            const Icon(
-              CupertinoIcons.chevron_forward,
-              color: Color(0xFFC7C7CC),
-              size: 20,
-            ),
-          ],
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF212529),
+            letterSpacing: -0.3,
+          ),
         ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF868E96),
+              letterSpacing: -0.2,
+            ),
+          ),
+        ),
+        trailing: const Icon(
+          Ionicons.chevron_forward,
+          color: Color(0xFFADB5BD),
+          size: 20,
+        ),
+        onTap: onTap,
       ),
     );
   }
@@ -348,10 +240,8 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
         children: [
           const SizedBox(height: 50),
           Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              physics: const BouncingScrollPhysics(),
+            child: IndexedStack(
+              index: _selectedIndex,
               children: const [
                 ChatTab(),
                 PreviewTab(),
@@ -404,15 +294,16 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
                   child: Stack(
                     children: [
                       // Indicador deslizante
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 300),
+                      AnimatedAlign(
+                        duration: const Duration(milliseconds: 250),
                         curve: Curves.easeInOut,
-                        left: _selectedIndex == 0 ? 4 : null,
-                        right: _selectedIndex == 1 ? 4 : null,
-                        top: 4,
-                        bottom: 4,
-                        width: (MediaQuery.of(context).size.width - 136) / 2,
+                        alignment: _selectedIndex == 0 
+                            ? Alignment.centerLeft 
+                            : Alignment.centerRight,
                         child: Container(
+                          margin: const EdgeInsets.all(4),
+                          width: (MediaQuery.of(context).size.width - 136) / 2,
+                          height: 40,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -437,7 +328,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
                                 color: Colors.transparent,
                                 child: Center(
                                   child: AnimatedDefaultTextStyle(
-                                    duration: const Duration(milliseconds: 300),
+                                    duration: const Duration(milliseconds: 250),
                                     curve: Curves.easeInOut,
                                     style: TextStyle(
                                       fontSize: 15,
@@ -460,7 +351,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
                                 color: Colors.transparent,
                                 child: Center(
                                   child: AnimatedDefaultTextStyle(
-                                    duration: const Duration(milliseconds: 300),
+                                    duration: const Duration(milliseconds: 250),
                                     curve: Curves.easeInOut,
                                     style: TextStyle(
                                       fontSize: 15,
@@ -484,7 +375,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> with SingleTickerProv
 
               const SizedBox(width: 16),
 
-              // Botão Direita (Redondo - Settings) - Ícone correto
+              // Botão Direita (Redondo - Settings)
               Container(
                 width: 48,
                 height: 48,
