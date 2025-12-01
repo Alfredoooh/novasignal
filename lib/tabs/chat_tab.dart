@@ -42,52 +42,80 @@ class _ChatTabState extends State<ChatTab> {
               type="text" 
               id="chatInput" 
               placeholder="Type a message..."
+              autocomplete="off"
+              spellcheck="false"
               style="
                 flex: 1;
                 padding: 12px 20px;
-                border: 1px solid #e0e0e0;
+                border: none;
                 border-radius: 24px;
                 font-size: 16px;
                 outline: none;
-                background-color: #f5f5f5;
+                background-color: #F8F9FA;
+                color: #212529;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 transition: all 0.3s;
+                -webkit-user-select: text;
+                user-select: text;
+                -webkit-tap-highlight-color: transparent;
               "
             >
             <button 
               id="sendBtn"
+              type="button"
               style="
                 width: 48px;
                 height: 48px;
                 border: none;
                 border-radius: 50%;
-                background-color: #2196F3;
+                background-color: #212529;
                 color: white;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
-                box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-                transition: all 0.3s;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                transition: all 0.2s;
+                -webkit-tap-highlight-color: transparent;
               "
             >
-              <svg fill="currentColor" width="24" height="24" viewBox="0 0 512 512">
-                <path d="M476.59 227.05l-.16-.07L49.35 49.84A23.56 23.56 0 0027.14 52 24.65 24.65 0 0016 72.59v113.29a24 24 0 0019.52 23.57l232.93 43.07a4 4 0 010 7.86L35.53 303.45A24 24 0 0016 327v113.31A23.57 23.57 0 0026.59 460a23.94 23.94 0 0013.22 4 24.55 24.55 0 009.52-1.93L476.4 285.94l.19-.09a32 32 0 000-58.8z"/>
+              <svg fill="currentColor" width="20" height="20" viewBox="0 0 512 512" style="transform: rotate(-90deg);">
+                <path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/>
               </svg>
             </button>
           </div>
           <style>
+            * {
+              -webkit-touch-callout: none;
+              -webkit-user-select: none;
+              -moz-user-select: none;
+              -ms-user-select: none;
+              user-select: none;
+            }
+            
+            #chatInput {
+              -webkit-user-select: text !important;
+              user-select: text !important;
+            }
+            
             #chatInput:focus {
-              border-color: #2196F3;
-              background-color: white;
+              background-color: #FFFFFF;
+              box-shadow: 0 0 0 2px rgba(33, 37, 41, 0.1);
             }
+            
+            #chatInput::placeholder {
+              color: #ADB5BD;
+            }
+            
             #sendBtn:hover {
-              background-color: #1976D2;
-              box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+              background-color: #343A40;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }
+            
             #sendBtn:active {
               transform: scale(0.95);
+              background-color: #495057;
             }
           </style>
           <script>
@@ -99,13 +127,28 @@ class _ChatTabState extends State<ChatTab> {
               if (msg) {
                 window.parent.postMessage({type: 'chat-message', message: msg}, '*');
                 input.value = '';
-                input.blur();
               }
             }
             
-            btn.addEventListener('click', send);
+            btn.addEventListener('click', (e) => {
+              e.preventDefault();
+              send();
+            });
+            
             input.addEventListener('keypress', (e) => {
-              if (e.key === 'Enter') send();
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                send();
+              }
+            });
+            
+            // Prevenir comportamentos indesejados
+            input.addEventListener('touchstart', (e) => {
+              e.stopPropagation();
+            });
+            
+            btn.addEventListener('touchstart', (e) => {
+              e.stopPropagation();
             });
           </script>
           ''',
@@ -171,14 +214,14 @@ class _ChatTabState extends State<ChatTab> {
         ),
         decoration: BoxDecoration(
           color: message.isUser
-              ? const Color(0xFF2196F3)
-              : Colors.grey.shade200,
+              ? const Color(0xFF212529)
+              : const Color(0xFFF1F3F5),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           message.text,
           style: TextStyle(
-            color: message.isUser ? Colors.white : Colors.black87,
+            color: message.isUser ? Colors.white : const Color(0xFF212529),
             fontSize: 16,
           ),
         ),
@@ -200,9 +243,9 @@ class _ChatTabState extends State<ChatTab> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -3),
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
@@ -229,24 +272,20 @@ class _ChatTabState extends State<ChatTab> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
             ),
             child: TextField(
               controller: _messageController,
               focusNode: _focusNode,
               style: const TextStyle(
                 fontSize: 16,
-                color: Colors.black87,
+                color: Color(0xFF212529),
               ),
               decoration: InputDecoration(
                 hintText: 'Type a message...',
-                hintStyle: TextStyle(
-                  color: Colors.grey.shade500,
+                hintStyle: const TextStyle(
+                  color: Color(0xFFADB5BD),
                   fontSize: 16,
                 ),
                 border: InputBorder.none,
@@ -259,14 +298,14 @@ class _ChatTabState extends State<ChatTab> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF2196F3),
+            color: const Color(0xFF212529),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2196F3).withOpacity(0.3),
+                color: Colors.black.withOpacity(0.15),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -274,10 +313,13 @@ class _ChatTabState extends State<ChatTab> {
           ),
           child: IconButton(
             onPressed: _sendMessageNative,
-            icon: const Icon(Ionicons.send),
+            icon: Transform.rotate(
+              angle: -1.5708, // -90 graus em radianos
+              child: const Icon(Ionicons.chevron_down),
+            ),
             color: Colors.white,
-            iconSize: 22,
-            padding: const EdgeInsets.all(12),
+            iconSize: 20,
+            padding: const EdgeInsets.all(14),
             constraints: const BoxConstraints(
               minWidth: 48,
               minHeight: 48,
