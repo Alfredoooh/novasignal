@@ -1,15 +1,16 @@
 // lib/tabs/chat_tab.dart
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:ionicons/ionicons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import '../widgets/chat_input.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
+import 'package:ionicons/ionicons.dart';
 
 class ChatMessage {
   final String text;
@@ -61,7 +62,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     super.initState();
     _loadingController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     )..repeat();
   }
 
@@ -137,38 +138,53 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
+  // substitui o efeito anterior por três pontos animados
   Widget _buildLoadingIndicator(ThemeProvider themeProvider) {
+    final dotColor = themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, left: 0),
+      padding: const EdgeInsets.only(bottom: 12, left: 12),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: AnimatedBuilder(
-          animation: _loadingController,
-          builder: (context, child) {
-            return Container(
-              width: 60,
-              height: 4,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    (themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
-                    (themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade500),
-                    (themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
-                  ],
-                  stops: [
-                    0.0,
-                    _loadingController.value,
-                    1.0,
-                  ],
-                ),
-              ),
-            );
-          },
+        child: SizedBox(
+          height: 28,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _animatedDot(0, dotColor),
+              const SizedBox(width: 6),
+              _animatedDot(1, dotColor),
+              const SizedBox(width: 6),
+              _animatedDot(2, dotColor),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _animatedDot(int index, Color color) {
+    return AnimatedBuilder(
+      animation: _loadingController,
+      builder: (context, child) {
+        // animação com fase para cada ponto; sai ~ -8..8 em Y
+        final phase = _loadingController.value * 2 * math.pi;
+        final offsetY = math.sin(phase + index * 0.9) * 8;
+        final scale = 0.8 + (math.sin(phase + index * 0.9) + 1) * 0.1;
+        return Transform.translate(
+          offset: Offset(0, -offsetY),
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -210,6 +226,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
+    // se tiver HTML, mostra uma pré-visualização com ícone de código
     if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
       int htmlStart = text.indexOf('<!DOCTYPE html>');
       if (htmlStart == -1) htmlStart = text.indexOf('<html');
@@ -227,10 +244,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF343A40).withOpacity(0.5) : const Color(0xFFF8F9FA),
+              color: themeProvider.isDarkMode ? const Color(0xFF1F2933) : const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
               ),
             ),
             child: Row(
@@ -245,7 +262,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                 Text(
                   'Documento HTML gerado',
                   style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                    color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
                   ),
@@ -257,94 +274,266 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       );
     }
 
+    // caso contrário, usa formatação avançada
     return _buildFormattedText(text, themeProvider);
   }
 
   Widget _buildFormattedText(String text, ThemeProvider themeProvider) {
     final color = themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529);
-    
-    // Detectar marcadores comuns de formatação
-    List<InlineSpan> spans = [];
-    final lines = text.split('\n');
-    
-    for (int i = 0; i < lines.length; i++) {
-      String line = lines[i];
-      
-      // Títulos (linhas que começam com #)
-      if (line.startsWith('# ')) {
-        spans.add(TextSpan(
-          text: line.substring(2) + '\n',
-          style: TextStyle(
-            color: color,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            height: 1.4,
-          ),
-        ));
+    final accentBlue = const Color(0xFF1E88E5);
+
+    // suporte a blocos de código delimitados por ```
+    if (text.contains('```')) {
+      final parts = text.split('```');
+      List<Widget> widgets = [];
+      for (int i = 0; i < parts.length; i++) {
+        final part = parts[i];
+        if (i % 2 == 0) {
+          // texto normal
+          widgets.addAll(_buildWidgetsFromLines(part, color, accentBlue, themeProvider));
+        } else {
+          // bloco de código
+          widgets.add(
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode ? Colors.black.withOpacity(0.6) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.06)),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Icon(Ionicons.code_slash, size: 16, color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
+                    const SizedBox(width: 8),
+                    SelectableText(
+                      part.trim(),
+                      style: TextStyle(
+                        fontFamily: kIsWeb ? 'monospace' : 'Courier',
+                        fontSize: 13,
+                        color: themeProvider.isDarkMode ? Colors.grey.shade200 : Colors.grey.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
       }
-      // Subtítulos
-      else if (line.startsWith('## ')) {
-        spans.add(TextSpan(
-          text: line.substring(3) + '\n',
-          style: TextStyle(
-            color: color,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            height: 1.4,
-          ),
-        ));
-      }
-      // Lista com bullet points
-      else if (line.trim().startsWith('- ') || line.trim().startsWith('• ')) {
-        spans.add(TextSpan(
-          text: '  • ' + line.trim().substring(2) + '\n',
-          style: TextStyle(
-            color: color,
-            fontSize: 15,
-            height: 1.6,
-          ),
-        ));
-      }
-      // Lista numerada
-      else if (RegExp(r'^\d+\.').hasMatch(line.trim())) {
-        spans.add(TextSpan(
-          text: '  ' + line.trim() + '\n',
-          style: TextStyle(
-            color: color,
-            fontSize: 15,
-            height: 1.6,
-          ),
-        ));
-      }
-      // Negrito simples
-      else if (line.contains('**')) {
-        spans.addAll(_parseInlineFormatting(line + (i < lines.length - 1 ? '\n' : ''), color));
-      }
-      // Texto normal
-      else {
-        spans.add(TextSpan(
-          text: line + (i < lines.length - 1 ? '\n' : ''),
-          style: TextStyle(
-            color: color,
-            fontSize: 15,
-            height: 1.6,
-          ),
-        ));
-      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      );
     }
 
-    return RichText(
-      text: TextSpan(children: spans),
+    // se não tiver blocos de código, gera widgets a partir das linhas
+    final children = _buildWidgetsFromLines(text, color, accentBlue, themeProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
     );
+  }
+
+  List<Widget> _buildWidgetsFromLines(String text, Color color, Color accentBlue, ThemeProvider themeProvider) {
+    List<Widget> widgets = [];
+    final lines = text.replaceAll('\r', '').split('\n');
+
+    for (int i = 0; i < lines.length; i++) {
+      String line = lines[i].trimRight();
+
+      if (line.isEmpty) {
+        widgets.add(const SizedBox(height: 8));
+        continue;
+      }
+
+      final lower = line.toLowerCase();
+
+      // Linha com marcador de "informação crítica" - pinta em azul e adiciona ícone
+      if (lower.contains('importante') || lower.contains('atenção') || line.startsWith('Info:') || line.contains('[info]')) {
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.06) : accentBlue.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.14) : accentBlue.withOpacity(0.12)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Ionicons.information_circle_outline, size: 18, color: accentBlue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    line,
+                    style: TextStyle(
+                      color: accentBlue,
+                      fontSize: 15,
+                      height: 1.45,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Títulos
+      if (line.startsWith('# ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    line.substring(2).trim(),
+                    style: TextStyle(
+                      color: accentBlue,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      } else if (line.startsWith('## ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 6),
+            child: Text(
+              line.substring(3).trim(),
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        );
+        continue;
+      } else if (line.startsWith('### ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 6),
+            child: Text(
+              line.substring(4).trim(),
+              style: TextStyle(
+                color: color,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Lista com bullet
+      if (line.startsWith('- ') || line.startsWith('• ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('• ', style: TextStyle(color: color, fontSize: 15, height: 1.6)),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: _parseInlineFormatting(line.substring(2), color)),
+                    textAlign: TextAlign.left,
+                    softWrap: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Lista numerada
+      if (RegExp(r'^\d+\.\s').hasMatch(line)) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 34,
+                  child: Text(
+                    line.split(' ')[0],
+                    style: TextStyle(color: color, fontSize: 15, height: 1.6),
+                  ),
+                ),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: _parseInlineFormatting(line.substring(line.indexOf(' ') + 1), color)),
+                    softWrap: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Se contém negrito inline ou outros marcadores, utiliza parse
+      if (line.contains('**')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text.rich(
+              TextSpan(children: _parseInlineFormatting(line, color)),
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Texto simples
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Text(
+            line,
+            style: TextStyle(
+              color: color,
+              fontSize: 15,
+              height: 1.6,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
   }
 
   List<InlineSpan> _parseInlineFormatting(String text, Color color) {
     List<InlineSpan> spans = [];
-    final regex = RegExp(r'\*\*(.*?)\*\*');
+    final boldRegex = RegExp(r'\*\*(.*?)\*\*');
     int lastIndex = 0;
 
-    for (final match in regex.allMatches(text)) {
-      // Texto antes do negrito
+    for (final match in boldRegex.allMatches(text)) {
       if (match.start > lastIndex) {
         spans.add(TextSpan(
           text: text.substring(lastIndex, match.start),
@@ -352,7 +541,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         ));
       }
 
-      // Texto em negrito
       spans.add(TextSpan(
         text: match.group(1),
         style: TextStyle(
@@ -366,7 +554,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       lastIndex = match.end;
     }
 
-    // Texto restante
     if (lastIndex < text.length) {
       spans.add(TextSpan(
         text: text.substring(lastIndex),
