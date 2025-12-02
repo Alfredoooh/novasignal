@@ -7,9 +7,9 @@ import '../providers/theme_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart';
-import 'dart:ui' as ui; // para ImageFilter
 import '../widgets/chat_input.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
 
 class ChatMessage {
   final String text;
@@ -39,21 +39,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   static const String _viewType = 'chat-input-only';
 
   bool _isLoading = false;
-  String? _conversationTitle;
-  DateTime? _conversationStartTime;
-  String _currentThinkingStep = '';
-  late AnimationController _shimmerController;
+  late AnimationController _loadingController;
 
   static const String _groqApiKey = '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';
   static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-
-  static const List<String> _thinkingSteps = [
-    'Analisando o pedido',
-    'Processando os requisitos',
-    'Buscando melhores resultados',
-    'Dando últimos toques',
-    'Concluindo',
-  ];
 
   static const String _sendIconSvg = '''
 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,7 +59,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _shimmerController = AnimationController(
+    _loadingController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
@@ -78,7 +67,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
-    _shimmerController.dispose();
+    _loadingController.dispose();
     _messageController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
@@ -90,13 +79,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return GestureDetector(
-      onTap: _unfocusKeyboard,
+      onTap: () => _focusNode.unfocus(),
       behavior: HitTestBehavior.translucent,
       child: Stack(
         children: [
           Column(
             children: [
-              _buildAppBar(themeProvider),
               Expanded(
                 child: _messages.isEmpty
                     ? Center(
@@ -129,49 +117,16 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                           ],
                         ),
                       )
-                    : Column(
-                        children: [
-                          if (_conversationTitle != null)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    _conversationTitle!,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (_conversationStartTime != null)
-                                    Text(
-                                      DateFormat('dd/MM/yyyy \'at\' HH:mm').format(_conversationStartTime!),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-                              itemCount: _messages.length + (_isLoading ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (_isLoading && index == _messages.length) {
-                                  return _buildThinkingIndicator(themeProvider);
-                                }
-                                return _buildMessageBubble(_messages[index], themeProvider);
-                              },
-                            ),
-                          ),
-                        ],
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                        itemCount: _messages.length + (_isLoading ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (_isLoading && index == _messages.length) {
+                            return _buildLoadingIndicator(themeProvider);
+                          }
+                          return _buildMessageBubble(_messages[index], themeProvider);
+                        },
                       ),
               ),
             ],
@@ -182,112 +137,33 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  void _unfocusKeyboard() {
-    _focusNode.unfocus();
-    // ChatInput trata do input web, não precisamos manipular html aqui
-  }
-
-  Widget _buildAppBar(ThemeProvider themeProvider) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: (themeProvider.isDarkMode ? const Color(0xFF212529) : Colors.white).withOpacity(0.85),
-        border: Border(
-          bottom: BorderSide(
-            color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
-            width: 1,
-          ),
-        ),
-      ),
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            color: Colors.transparent,
-            alignment: Alignment.center,
-            child: Text(
-              'DocuGen Chat',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildThinkingIndicator(ThemeProvider themeProvider) {
+  Widget _buildLoadingIndicator(ThemeProvider themeProvider) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 0),
+      padding: const EdgeInsets.only(bottom: 16, left: 0),
       child: Align(
         alignment: Alignment.centerLeft,
         child: AnimatedBuilder(
-          animation: _shimmerController,
+          animation: _loadingController,
           builder: (context, child) {
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              margin: const EdgeInsets.only(right: 60),
+              width: 60,
+              height: 4,
               decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                   colors: [
-                    const Color(0xFFC0C0C0).withOpacity(0.3),
-                    const Color(0xFFE8E8E8).withOpacity(0.2),
+                    (themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
+                    (themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade500),
+                    (themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
+                  ],
+                  stops: [
+                    0.0,
+                    _loadingController.value,
+                    1.0,
                   ],
                 ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFFC0C0C0).withOpacity(0.3),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFC0C0C0).withOpacity(0.2 + _shimmerController.value * 0.15),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Ionicons.bulb,
-                    size: 18,
-                    color: const Color(0xFF808080),
-                  ),
-                  const SizedBox(width: 12),
-                  ShaderMask(
-                    shaderCallback: (bounds) {
-                      return LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          const Color(0xFF808080),
-                          const Color(0xFFC0C0C0),
-                          const Color(0xFF808080),
-                        ],
-                        stops: [
-                          0.0,
-                          _shimmerController.value,
-                          1.0,
-                        ],
-                      ).createShader(bounds);
-                    },
-                    child: Text(
-                      _currentThinkingStep,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             );
           },
@@ -346,13 +222,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           if (textBeforeHtml.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                textBeforeHtml,
-                style: TextStyle(
-                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                  fontSize: 15,
-                ),
-              ),
+              child: _buildFormattedText(textBeforeHtml, themeProvider),
             ),
           Container(
             padding: const EdgeInsets.all(12),
@@ -387,13 +257,124 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       );
     }
 
-    return Text(
-      text,
-      style: TextStyle(
-        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-        fontSize: 15,
-      ),
+    return _buildFormattedText(text, themeProvider);
+  }
+
+  Widget _buildFormattedText(String text, ThemeProvider themeProvider) {
+    final color = themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529);
+    
+    // Detectar marcadores comuns de formatação
+    List<InlineSpan> spans = [];
+    final lines = text.split('\n');
+    
+    for (int i = 0; i < lines.length; i++) {
+      String line = lines[i];
+      
+      // Títulos (linhas que começam com #)
+      if (line.startsWith('# ')) {
+        spans.add(TextSpan(
+          text: line.substring(2) + '\n',
+          style: TextStyle(
+            color: color,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            height: 1.4,
+          ),
+        ));
+      }
+      // Subtítulos
+      else if (line.startsWith('## ')) {
+        spans.add(TextSpan(
+          text: line.substring(3) + '\n',
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            height: 1.4,
+          ),
+        ));
+      }
+      // Lista com bullet points
+      else if (line.trim().startsWith('- ') || line.trim().startsWith('• ')) {
+        spans.add(TextSpan(
+          text: '  • ' + line.trim().substring(2) + '\n',
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ));
+      }
+      // Lista numerada
+      else if (RegExp(r'^\d+\.').hasMatch(line.trim())) {
+        spans.add(TextSpan(
+          text: '  ' + line.trim() + '\n',
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ));
+      }
+      // Negrito simples
+      else if (line.contains('**')) {
+        spans.addAll(_parseInlineFormatting(line + (i < lines.length - 1 ? '\n' : ''), color));
+      }
+      // Texto normal
+      else {
+        spans.add(TextSpan(
+          text: line + (i < lines.length - 1 ? '\n' : ''),
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ));
+      }
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
     );
+  }
+
+  List<InlineSpan> _parseInlineFormatting(String text, Color color) {
+    List<InlineSpan> spans = [];
+    final regex = RegExp(r'\*\*(.*?)\*\*');
+    int lastIndex = 0;
+
+    for (final match in regex.allMatches(text)) {
+      // Texto antes do negrito
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: TextStyle(color: color, fontSize: 15, height: 1.6),
+        ));
+      }
+
+      // Texto em negrito
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: TextStyle(
+          color: color,
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          height: 1.6,
+        ),
+      ));
+
+      lastIndex = match.end;
+    }
+
+    // Texto restante
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: TextStyle(color: color, fontSize: 15, height: 1.6),
+      ));
+    }
+
+    return spans;
   }
 
   Widget _buildInputArea(ThemeProvider themeProvider) {
@@ -420,20 +401,14 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     if (text.trim().isEmpty || _isLoading) return;
     if (!mounted) return;
 
-    if (_conversationStartTime == null) {
-      _conversationStartTime = DateTime.now();
-    }
-
     if (mounted) {
       setState(() {
         _messages.add(ChatMessage(text: text.trim(), isUser: true));
         _isLoading = true;
-        _currentThinkingStep = _thinkingSteps[0];
       });
     }
 
     _scrollToBottom();
-    _animateThinkingSteps();
 
     try {
       final response = await http.post(
@@ -454,9 +429,15 @@ REGRAS IMPORTANTES:
 2. Use CSS inline moderno e elegante
 3. Garanta que o documento seja responsivo e profissional
 4. Use fontes web-safe ou Google Fonts
-5. Após gerar o HTML, SEMPRE termine sua resposta com exatamente esta frase: "Trabalho concluído! Carregando o preview..."
+5. Para respostas de chat normais, use formatação markdown simples:
+   - Use # para títulos principais
+   - Use ## para subtítulos
+   - Use **texto** para negrito
+   - Use - ou • para listas
+   - Use números (1., 2., etc) para listas ordenadas
+6. Seja claro, direto e bem formatado nas respostas
 
-EXEMPLO DE ESTRUTURA:
+EXEMPLO DE ESTRUTURA HTML:
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -473,9 +454,7 @@ EXEMPLO DE ESTRUTURA:
   <h1>Título do Documento</h1>
   <p>Conteúdo aqui...</p>
 </body>
-</html>
-
-Trabalho concluído! Carregando o preview...''',
+</html>''',
             },
             ..._buildMessageHistory(),
           ],
@@ -499,10 +478,6 @@ Trabalho concluído! Carregando o preview...''',
             if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
               widget.onDocumentGenerated!(htmlContent);
             }
-          }
-
-          if (_conversationTitle == null && _messages.length == 2) {
-            _generateConversationTitle();
           }
         }
       } else {
@@ -549,18 +524,6 @@ Trabalho concluído! Carregando o preview...''',
     return '';
   }
 
-  Future<void> _animateThinkingSteps() async {
-    for (int i = 0; i < _thinkingSteps.length; i++) {
-      if (!_isLoading) break;
-      await Future.delayed(const Duration(milliseconds: 800));
-      if (mounted && _isLoading) {
-        setState(() {
-          _currentThinkingStep = _thinkingSteps[i];
-        });
-      }
-    }
-  }
-
   List<Map<String, String>> _buildMessageHistory() {
     return _messages
         .map((msg) => {
@@ -568,49 +531,6 @@ Trabalho concluído! Carregando o preview...''',
               'content': msg.text,
             })
         .toList();
-  }
-
-  Future<void> _generateConversationTitle() async {
-    if (_messages.isEmpty) return;
-
-    try {
-      final firstMessage = _messages.first.text;
-      final response = await http.post(
-        Uri.parse(_groqApiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_groqApiKey',
-        },
-        body: jsonEncode({
-          'model': 'groq/compound',
-          'messages': [
-            {
-              'role': 'system',
-              'content': 'Gere um título curto e descritivo (máximo 5 palavras) para esta conversa. Responda apenas com o título, sem pontuação no final.',
-            },
-            {
-              'role': 'user',
-              'content': firstMessage,
-            },
-          ],
-          'temperature': 0.3,
-          'max_tokens': 20,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final title = data['choices'][0]['message']['content'].trim();
-
-        if (mounted) {
-          setState(() {
-            _conversationTitle = title;
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Erro ao gerar título: $e');
-    }
   }
 
   void _scrollToBottom() {
