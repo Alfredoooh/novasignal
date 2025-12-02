@@ -752,7 +752,7 @@ Trabalho concluído! Carregando o preview...''',
             ..._buildMessageHistory(),
           ],
           'temperature': 0.3,
-          'max_tokens': 1024,
+          'max_tokens': 2048,
         }),
       );
 
