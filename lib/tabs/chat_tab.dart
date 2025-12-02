@@ -4,13 +4,12 @@ import 'package:ionicons/ionicons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import 'dart:html' as html;
-import 'dart:ui' as ui; // For ImageFilter
-import 'dart:ui_web' as ui_web; // For platformViewRegistry on web
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'dart:ui' as ui; // para ImageFilter
+import '../widgets/chat_input.dart';
 
 class ChatMessage {
   final String text;
@@ -36,15 +35,13 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   final FocusNode _focusNode = FocusNode();
   final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
+
   static const String _viewType = 'chat-input-only';
-  static bool _viewRegistered = false;
-  html.InputElement? _htmlInput;
+
   bool _isLoading = false;
   String? _conversationTitle;
   DateTime? _conversationStartTime;
   String _currentThinkingStep = '';
-  bool _isInputActive = false;
-
   late AnimationController _shimmerController;
 
   static const String _groqApiKey = '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';
@@ -77,113 +74,15 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-
-    if (kIsWeb && !_viewRegistered) {
-      _registerWebView();
-      _viewRegistered = true;
-    }
   }
 
-  void _registerWebView() {
-    try {
-      ui_web.platformViewRegistry.registerViewFactory(
-        _viewType,
-        (int viewId) {
-          final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-          final inputBgColor = themeProvider.isDarkMode ? '#343A40' : '#F8F9FA';
-          final inputTextColor = themeProvider.isDarkMode ? '#FFFFFF' : '#212529';
-          final inputPlaceholderColor = themeProvider.isDarkMode ? '#ADB5BD' : '#6C757D';
-
-          final element = html.DivElement()
-            ..id = 'chat-input-wrapper-$viewId'
-            ..style.width = '100%'
-            ..style.height = '100%'
-            ..style.display = 'flex'
-            ..style.alignItems = 'center';
-
-          _htmlInput = html.InputElement()
-            ..id = 'chatInput-$viewId'
-            ..type = 'text'
-            ..placeholder = 'Ask DocuGen'
-            ..autocomplete = 'off'
-            ..setAttribute('spellcheck', 'false')
-            ..style.flex = '1'
-            ..style.padding = '12px 20px'
-            ..style.border = 'none'
-            ..style.borderRadius = '24px'
-            ..style.fontSize = '16px'
-            ..style.outline = 'none'
-            ..style.backgroundColor = inputBgColor
-            ..style.color = inputTextColor
-            ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-            ..style.transition = 'background-color 0.3s'
-            ..style.setProperty('-webkit-user-select', 'text')
-            ..style.userSelect = 'text'
-            ..style.setProperty('-webkit-tap-highlight-color', 'transparent');
-
-          final style = html.StyleElement()
-            ..text = '''
-              #chatInput-$viewId::placeholder {
-                color: $inputPlaceholderColor;
-              }
-              #chatInput-$viewId:focus {
-                box-shadow: none !important;
-                outline: none !important;
-              }
-            ''';
-
-          element.append(style);
-          element.append(_htmlInput!);
-
-          _htmlInput!.onKeyPress.listen((e) {
-            if (e.key == 'Enter') {
-              e.preventDefault();
-              _sendMessageFromHtml();
-            }
-          });
-
-          _htmlInput!.onFocus.listen((_) {
-            if (mounted) {
-              setState(() {
-                _isInputActive = true;
-              });
-            }
-          });
-
-          return element;
-        },
-      );
-    } catch (e) {
-      debugPrint('Error registering view: $e');
-    }
-  }
-
-  void _sendMessageFromHtml() {
-    if (_htmlInput != null) {
-      final text = _htmlInput!.value?.trim() ?? '';
-      if (text.isNotEmpty && !_isLoading) {
-        _sendMessage(text);
-        _htmlInput!.value = '';
-        _htmlInput!.blur();
-        if (mounted) {
-          setState(() {
-            _isInputActive = false;
-          });
-        }
-      }
-    }
-  }
-
-  void _unfocusKeyboard() {
-    _focusNode.unfocus();
-    if (kIsWeb && _htmlInput != null) {
-      _htmlInput!.blur();
-    }
-    if (mounted) {
-      setState(() {
-        _isInputActive = false;
-      });
-    }
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    _messageController.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -207,17 +106,13 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                             Icon(
                               Ionicons.chatbubble_ellipses_outline,
                               size: 64,
-                              color: themeProvider.isDarkMode
-                                  ? Colors.grey.shade700
-                                  : Colors.grey.shade300,
+                              color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Comece uma conversa',
                               style: TextStyle(
-                                color: themeProvider.isDarkMode
-                                    ? Colors.grey.shade600
-                                    : Colors.grey.shade400,
+                                color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w500,
                                 letterSpacing: 0.5,
@@ -227,9 +122,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                             Text(
                               'Envie uma mensagem para iniciar',
                               style: TextStyle(
-                                color: themeProvider.isDarkMode
-                                    ? Colors.grey.shade600
-                                    : Colors.grey.shade400,
+                                color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
                                 fontSize: 14,
                               ),
                             ),
@@ -248,9 +141,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
-                                      color: themeProvider.isDarkMode
-                                          ? Colors.white
-                                          : const Color(0xFF212529),
+                                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -260,9 +151,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                                       DateFormat('dd/MM/yyyy \'at\' HH:mm').format(_conversationStartTime!),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: themeProvider.isDarkMode
-                                            ? Colors.grey.shade500
-                                            : Colors.grey.shade600,
+                                        color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
                                       ),
                                     ),
                                 ],
@@ -291,6 +180,11 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         ],
       ),
     );
+  }
+
+  void _unfocusKeyboard() {
+    _focusNode.unfocus();
+    // ChatInput trata do input web, não precisamos manipular html aqui
   }
 
   Widget _buildAppBar(ThemeProvider themeProvider) {
@@ -426,7 +320,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         ),
       );
     } else {
-      // Mensagem da IA sem container
       return Align(
         alignment: Alignment.centerLeft,
         child: Container(
@@ -441,13 +334,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
-    // Verificar se contém HTML
     if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
-      // Extrair texto antes do HTML
       int htmlStart = text.indexOf('<!DOCTYPE html>');
-      if (htmlStart == -1) {
-        htmlStart = text.indexOf('<html');
-      }
+      if (htmlStart == -1) htmlStart = text.indexOf('<html');
 
       String textBeforeHtml = htmlStart > 0 ? text.substring(0, htmlStart).trim() : '';
 
@@ -498,7 +387,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       );
     }
 
-    // Texto normal
     return Text(
       text,
       style: TextStyle(
@@ -513,157 +401,19 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       left: 0,
       right: 0,
       bottom: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: (themeProvider.isDarkMode ? const Color(0xFF212529) : Colors.white).withOpacity(0.95),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            )
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (!_isInputActive && kIsWeb && _htmlInput != null) {
-                            _htmlInput!.focus();
-                            if (mounted) {
-                              setState(() {
-                                _isInputActive = true;
-                              });
-                            }
-                          } else if (!_isInputActive && !kIsWeb) {
-                            _focusNode.requestFocus();
-                            if (mounted) {
-                              setState(() {
-                                _isInputActive = true;
-                              });
-                            }
-                          }
-                        },
-                        child: Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: kIsWeb
-                              ? IgnorePointer(
-                                  ignoring: !_isInputActive,
-                                  child: Opacity(
-                                    opacity: _isInputActive ? 1.0 : 0.7,
-                                    child: HtmlElementView(
-                                      viewType: _viewType,
-                                      key: ValueKey(themeProvider.isDarkMode),
-                                    ),
-                                  ),
-                                )
-                              : Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                                  child: TextField(
-                                    controller: _messageController,
-                                    focusNode: _focusNode,
-                                    enabled: _isInputActive,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                                    ),
-                                    decoration: InputDecoration.collapsed(
-                                      hintText: 'Ask DocuGen',
-                                      hintStyle: TextStyle(
-                                        color: themeProvider.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    cursorColor: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                                    enableSuggestions: false,
-                                    autocorrect: false,
-                                    onTap: () {
-                                      if (mounted) {
-                                        setState(() {
-                                          _isInputActive = true;
-                                        });
-                                      }
-                                    },
-                                    onSubmitted: (_) => _sendMessageNative(),
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: _isLoading ? null : (kIsWeb ? _sendMessageFromHtml : _sendMessageNative),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
-                        ),
-                        child: Center(
-                          child: _isLoading
-                              ? SvgPicture.string(
-                                  _stopIconSvg,
-                                  width: 20,
-                                  height: 20,
-                                )
-                              : SvgPicture.string(
-                                  _sendIconSvg,
-                                  width: 24,
-                                  height: 24,
-                                ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+      child: ChatInput(
+        messageController: _messageController,
+        focusNode: _focusNode,
+        isDarkMode: themeProvider.isDarkMode,
+        isLoading: _isLoading,
+        onSend: (text) async {
+          await _sendMessage(text);
+        },
+        viewType: _viewType,
+        sendIconSvg: _sendIconSvg,
+        stopIconSvg: _stopIconSvg,
       ),
     );
-  }
-
-  void _sendMessageNative() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty || _isLoading) return;
-    _sendMessage(text);
-    _messageController.clear();
-    _focusNode.unfocus();
-    if (mounted) {
-      setState(() {
-        _isInputActive = false;
-      });
-    }
   }
 
   Future<void> _sendMessage(String text) async {
@@ -736,7 +486,7 @@ Trabalho concluído! Carregando o preview...''',
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final aiResponse = data['choices'][0]['message']['content'];
+        final aiResponse = data['choices'][0]['message']['content'] as String;
 
         if (mounted) {
           setState(() {
@@ -873,14 +623,5 @@ Trabalho concluído! Carregando o preview...''',
         );
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _shimmerController.dispose();
-    _messageController.dispose();
-    _focusNode.dispose();
-    _scrollController.dispose();
-    super.dispose();
   }
 }
