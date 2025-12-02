@@ -13,7 +13,7 @@ import 'package:intl/intl.dart';
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
-  
+
   const ChatTab({Key? key, this.onDocumentGenerated}) : super(key: key);
 
   @override
@@ -32,7 +32,8 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   String? _conversationTitle;
   DateTime? _conversationStartTime;
   String _currentThinkingStep = '';
-  
+  bool _isInputActive = false;
+
   late AnimationController _shimmerController;
 
   static const String _groqApiKey = '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';
@@ -59,13 +60,30 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 ''';
 
   @override
-  void initState() {
+  void dispose() {
+    _shimmerController.dispose();
+    _messageController.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+}
+
+class ChatMessage {
+  final String text;
+  final bool isUser;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+  });
+}d initState() {
     super.initState();
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    
+
     if (kIsWeb && !_viewRegistered) {
       _registerWebView();
       _viewRegistered = true;
@@ -78,7 +96,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         _viewType,
         (int viewId) {
           final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-          final inputBgColor = themeProvider.isDarkMode ? '#495057' : '#FFFFFF';
+          final inputBgColor = themeProvider.isDarkMode ? '#343A40' : '#F8F9FA';
           final inputTextColor = themeProvider.isDarkMode ? '#FFFFFF' : '#212529';
           final inputPlaceholderColor = themeProvider.isDarkMode ? '#ADB5BD' : '#6C757D';
 
@@ -130,6 +148,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             }
           });
 
+          _htmlInput!.onFocus.listen((_) {
+            setState(() {
+              _isInputActive = true;
+            });
+          });
+
           return element;
         },
       );
@@ -144,6 +168,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       if (text.isNotEmpty && !_isLoading) {
         _sendMessage(text);
         _htmlInput!.value = '';
+        _htmlInput!.blur();
+        setState(() {
+          _isInputActive = false;
+        });
       }
     }
   }
@@ -153,6 +181,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     if (kIsWeb && _htmlInput != null) {
       _htmlInput!.blur();
     }
+    setState(() {
+      _isInputActive = false;
+    });
   }
 
   @override
@@ -166,7 +197,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         children: [
           Column(
             children: [
-              const SizedBox(height: 16),
+              _buildAppBar(themeProvider),
               Expanded(
                 child: _messages.isEmpty
                     ? Center(
@@ -262,121 +293,237 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
+  Widget _buildAppBar(ThemeProvider themeProvider) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: (themeProvider.isDarkMode 
+            ? const Color(0xFF212529) 
+            : Colors.white).withOpacity(0.85),
+        border: Border(
+          bottom: BorderSide(
+            color: themeProvider.isDarkMode 
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.05),
+            width: 1,
+          ),
+        ),
+      ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: Colors.transparent,
+            alignment: Alignment.center,
+            child: Text(
+              'DocuGen Chat',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: themeProvider.isDarkMode 
+                    ? Colors.white 
+                    : const Color(0xFF212529),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildThinkingIndicator(ThemeProvider themeProvider) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: AnimatedBuilder(
-        animation: _shimmerController,
-        builder: (context, child) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            margin: const EdgeInsets.only(right: 60),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: themeProvider.isDarkMode
-                    ? [
-                        const Color(0xFF343A40).withOpacity(0.6),
-                        const Color(0xFF495057).withOpacity(0.4),
-                      ]
-                    : [
-                        Colors.white.withOpacity(0.8),
-                        const Color(0xFFF8F9FA).withOpacity(0.9),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: themeProvider.isDarkMode
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.05),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: themeProvider.isDarkMode
-                      ? Colors.blue.withOpacity(0.15 + _shimmerController.value * 0.15)
-                      : Colors.blue.withOpacity(0.1 + _shimmerController.value * 0.1),
-                  blurRadius: 20,
-                  spreadRadius: 2,
+      padding: const EdgeInsets.only(bottom: 12, left: 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: AnimatedBuilder(
+          animation: _shimmerController,
+          builder: (context, child) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              margin: const EdgeInsets.only(right: 60),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFFC0C0C0).withOpacity(0.3),
+                    const Color(0xFFE8E8E8).withOpacity(0.2),
+                  ],
                 ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Ionicons.bulb,
-                  size: 18,
-                  color: themeProvider.isDarkMode
-                      ? Colors.blue.shade300
-                      : Colors.blue.shade600,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFC0C0C0).withOpacity(0.3),
+                  width: 1,
                 ),
-                const SizedBox(width: 12),
-                ShaderMask(
-                  shaderCallback: (bounds) {
-                    return LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: themeProvider.isDarkMode
-                          ? [
-                              Colors.white,
-                              Colors.blue.shade300,
-                              Colors.white,
-                            ]
-                          : [
-                              const Color(0xFF212529),
-                              Colors.blue.shade700,
-                              const Color(0xFF212529),
-                            ],
-                      stops: [
-                        0.0,
-                        _shimmerController.value,
-                        1.0,
-                      ],
-                    ).createShader(bounds);
-                  },
-                  child: Text(
-                    _currentThinkingStep,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFC0C0C0).withOpacity(0.2 + _shimmerController.value * 0.15),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Ionicons.bulb,
+                    size: 18,
+                    color: const Color(0xFF808080),
+                  ),
+                  const SizedBox(width: 12),
+                  ShaderMask(
+                    shaderCallback: (bounds) {
+                      return LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          const Color(0xFF808080),
+                          const Color(0xFFC0C0C0),
+                          const Color(0xFF808080),
+                        ],
+                        stops: [
+                          0.0,
+                          _shimmerController.value,
+                          1.0,
+                        ],
+                      ).createShader(bounds);
+                    },
+                    child: Text(
+                      _currentThinkingStep,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildMessageBubble(ChatMessage message, ThemeProvider themeProvider) {
-    return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: message.isUser 
-              ? (themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529))
-              : (themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF1F3F5)),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: message.isUser 
-                ? Colors.white 
-                : (themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529)),
-            fontSize: 15,
+    if (message.isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode 
+                ? const Color(0xFF343A40) 
+                : const Color(0xFF212529),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            message.text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+            ),
           ),
         ),
+      );
+    } else {
+      // Mensagem da IA sem container
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
+          ),
+          child: _buildAiResponseContent(message.text, themeProvider),
+        ),
+      );
+    }
+  }
+
+  Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
+    // Verificar se contém HTML
+    if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
+      // Extrair texto antes do HTML
+      int htmlStart = text.indexOf('<!DOCTYPE html>');
+      if (htmlStart == -1) {
+        htmlStart = text.indexOf('<html');
+      }
+      
+      String textBeforeHtml = htmlStart > 0 ? text.substring(0, htmlStart).trim() : '';
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (textBeforeHtml.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                textBeforeHtml,
+                style: TextStyle(
+                  color: themeProvider.isDarkMode 
+                      ? Colors.white 
+                      : const Color(0xFF212529),
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode 
+                  ? const Color(0xFF343A40).withOpacity(0.5)
+                  : const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: themeProvider.isDarkMode 
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.05),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Ionicons.code_slash,
+                  size: 16,
+                  color: themeProvider.isDarkMode 
+                      ? Colors.grey.shade400 
+                      : Colors.grey.shade600,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Documento HTML gerado',
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode 
+                        ? Colors.grey.shade400 
+                        : Colors.grey.shade600,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Texto normal
+    return Text(
+      text,
+      style: TextStyle(
+        color: themeProvider.isDarkMode 
+            ? Colors.white 
+            : const Color(0xFF212529),
+        fontSize: 15,
       ),
     );
   }
@@ -388,7 +535,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+          color: (themeProvider.isDarkMode 
+              ? const Color(0xFF212529) 
+              : Colors.white).withOpacity(0.95),
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
@@ -401,93 +550,128 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             )
           ],
         ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 50,
-                    child: kIsWeb
-                        ? HtmlElementView(
-                            viewType: _viewType,
-                            key: ValueKey(themeProvider.isDarkMode),
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                              color: themeProvider.isDarkMode 
-                                  ? const Color(0xFF495057) 
-                                  : const Color(0xFFFFFFFF),
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: TextField(
-                              controller: _messageController,
-                              focusNode: _focusNode,
-                              enabled: !_isLoading,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: themeProvider.isDarkMode 
-                                    ? Colors.white 
-                                    : const Color(0xFF212529),
-                              ),
-                              decoration: InputDecoration.collapsed(
-                                hintText: 'Ask DocuGen',
-                                hintStyle: TextStyle(
-                                  color: themeProvider.isDarkMode 
-                                      ? Colors.white54 
-                                      : const Color(0xFFADB5BD),
-                                  fontSize: 16,
-                                ),
-                              ),
-                              cursorColor: themeProvider.isDarkMode 
-                                  ? Colors.white 
-                                  : const Color(0xFF212529),
-                              enableSuggestions: false,
-                              autocorrect: false,
-                              onSubmitted: (_) => _sendMessageNative(),
-                            ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!_isInputActive && kIsWeb && _htmlInput != null) {
+                            _htmlInput!.focus();
+                            setState(() {
+                              _isInputActive = true;
+                            });
+                          } else if (!_isInputActive && !kIsWeb) {
+                            _focusNode.requestFocus();
+                            setState(() {
+                              _isInputActive = true;
+                            });
+                          }
+                        },
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: themeProvider.isDarkMode 
+                                ? const Color(0xFF343A40) 
+                                : const Color(0xFFF8F9FA),
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _isLoading ? null : (kIsWeb ? _sendMessageFromHtml : _sendMessageNative),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode 
-                          ? const Color(0xFF6C757D) 
-                          : const Color(0xFF212529),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
+                          child: kIsWeb
+                              ? IgnorePointer(
+                                  ignoring: !_isInputActive,
+                                  child: Opacity(
+                                    opacity: _isInputActive ? 1.0 : 0.7,
+                                    child: HtmlElementView(
+                                      viewType: _viewType,
+                                      key: ValueKey(themeProvider.isDarkMode),
+                                    ),
+                                  ),
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  child: TextField(
+                                    controller: _messageController,
+                                    focusNode: _focusNode,
+                                    enabled: _isInputActive,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: themeProvider.isDarkMode 
+                                          ? Colors.white 
+                                          : const Color(0xFF212529),
+                                    ),
+                                    decoration: InputDecoration.collapsed(
+                                      hintText: 'Ask DocuGen',
+                                      hintStyle: TextStyle(
+                                        color: themeProvider.isDarkMode 
+                                            ? Colors.white54 
+                                            : const Color(0xFFADB5BD),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    cursorColor: themeProvider.isDarkMode 
+                                        ? Colors.white 
+                                        : const Color(0xFF212529),
+                                    enableSuggestions: false,
+                                    autocorrect: false,
+                                    onTap: () {
+                                      setState(() {
+                                        _isInputActive = true;
+                                      });
+                                    },
+                                    onSubmitted: (_) => _sendMessageNative(),
+                                  ),
+                                ),
+                        ),
+                      ),
                     ),
-                    child: Center(
-                      child: _isLoading
-                          ? SvgPicture.string(
-                              _stopIconSvg,
-                              width: 20,
-                              height: 20,
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _isLoading ? null : (kIsWeb ? _sendMessageFromHtml : _sendMessageNative),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: themeProvider.isDarkMode 
+                              ? const Color(0xFF495057) 
+                              : const Color(0xFF212529),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             )
-                          : SvgPicture.string(
-                              _sendIconSvg,
-                              width: 24,
-                              height: 24,
-                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: _isLoading
+                              ? SvgPicture.string(
+                                  _stopIconSvg,
+                                  width: 20,
+                                  height: 20,
+                                )
+                              : SvgPicture.string(
+                                  _sendIconSvg,
+                                  width: 24,
+                                  height: 24,
+                                ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -501,6 +685,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     _sendMessage(text);
     _messageController.clear();
     _focusNode.unfocus();
+    setState(() {
+      _isInputActive = false;
+    });
   }
 
   Future<void> _sendMessage(String text) async {
@@ -579,7 +766,6 @@ Trabalho concluído! Carregando o preview...''',
             _isLoading = false;
           });
 
-          // Verificar se é um documento HTML
           if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
             final htmlContent = _extractHtmlFromResponse(aiResponse);
             if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
@@ -611,20 +797,18 @@ Trabalho concluído! Carregando o preview...''',
   }
 
   String _extractHtmlFromResponse(String response) {
-    // Procurar por <!DOCTYPE html> ou <html
     int htmlStart = response.indexOf('<!DOCTYPE html>');
     if (htmlStart == -1) {
       htmlStart = response.indexOf('<html');
     }
-    
+
     if (htmlStart != -1) {
       final htmlEnd = response.indexOf('</html>', htmlStart);
       if (htmlEnd != -1) {
         return response.substring(htmlStart, htmlEnd + 7);
       }
     }
-    
-    // Se não encontrar, procurar por blocos de código
+
     final codeBlockStart = response.indexOf('```html');
     if (codeBlockStart != -1) {
       final contentStart = response.indexOf('\n', codeBlockStart) + 1;
@@ -633,7 +817,7 @@ Trabalho concluído! Carregando o preview...''',
         return response.substring(contentStart, codeBlockEnd).trim();
       }
     }
-    
+
     return '';
   }
 
@@ -701,7 +885,8 @@ Trabalho concluído! Carregando o preview...''',
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom():
+void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
