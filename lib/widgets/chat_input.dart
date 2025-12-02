@@ -2,10 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:ionicons/ionicons.dart';
-import 'dart:html' as html; // Web input
-import 'dart:ui_web' as ui_web; // platformViewRegistry
-import 'dart:ui' as ui; // ImageFilter
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
 
 class ChatInput extends StatefulWidget {
   final TextEditingController messageController;
@@ -138,88 +136,83 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA);
+    final bgColor = widget.isDarkMode ? const Color(0xFF343A40) : Colors.white;
+    final inputBgColor = widget.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA);
     final circleColor = widget.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529);
 
     return Container(
       decoration: BoxDecoration(
-        color: (widget.isDarkMode ? const Color(0xFF212529) : Colors.white).withOpacity(0.95),
+        color: bgColor,
         borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -4))],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        if (!_isInputActive && kIsWeb && _htmlInput != null) {
-                          _htmlInput!.focus();
-                          setState(() => _isInputActive = true);
-                        } else if (!_isInputActive && !kIsWeb) {
-                          widget.focusNode.requestFocus();
-                          setState(() => _isInputActive = true);
-                        }
-                      },
-                      child: Container(
-                        height: 50,
-                        decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(24)),
-                        child: kIsWeb
-                            ? IgnorePointer(
-                                ignoring: !_isInputActive,
-                                child: Opacity(
-                                  opacity: _isInputActive ? 1.0 : 0.7,
-                                  child: HtmlElementView(viewType: widget.viewType, key: ValueKey(widget.isDarkMode)),
-                                ),
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                child: TextField(
-                                  controller: widget.messageController,
-                                  focusNode: widget.focusNode,
-                                  enabled: true,
-                                  style: TextStyle(fontSize: 16, color: widget.isDarkMode ? Colors.white : const Color(0xFF212529)),
-                                  decoration: InputDecoration.collapsed(
-                                    hintText: 'Ask DocuGen',
-                                    hintStyle: TextStyle(color: widget.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD), fontSize: 16),
-                                  ),
-                                  cursorColor: widget.isDarkMode ? Colors.white : const Color(0xFF212529),
-                                  enableSuggestions: false,
-                                  autocorrect: false,
-                                  onTap: () => setState(() => _isInputActive = true),
-                                  onSubmitted: (_) => _handleSend(),
-                                ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (!_isInputActive && kIsWeb && _htmlInput != null) {
+                      _htmlInput!.focus();
+                      setState(() => _isInputActive = true);
+                    } else if (!_isInputActive && !kIsWeb) {
+                      widget.focusNode.requestFocus();
+                      setState(() => _isInputActive = true);
+                    }
+                  },
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(color: inputBgColor, borderRadius: BorderRadius.circular(24)),
+                    child: kIsWeb
+                        ? IgnorePointer(
+                            ignoring: !_isInputActive,
+                            child: Opacity(
+                              opacity: _isInputActive ? 1.0 : 0.7,
+                              child: HtmlElementView(viewType: widget.viewType, key: ValueKey(widget.isDarkMode)),
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: TextField(
+                              controller: widget.messageController,
+                              focusNode: widget.focusNode,
+                              enabled: true,
+                              style: TextStyle(fontSize: 16, color: widget.isDarkMode ? Colors.white : const Color(0xFF212529)),
+                              decoration: InputDecoration.collapsed(
+                                hintText: 'Ask DocuGen',
+                                hintStyle: TextStyle(color: widget.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD), fontSize: 16),
                               ),
-                      ),
-                    ),
+                              cursorColor: widget.isDarkMode ? Colors.white : const Color(0xFF212529),
+                              enableSuggestions: false,
+                              autocorrect: false,
+                              onTap: () => setState(() => _isInputActive = true),
+                              onSubmitted: (_) => _handleSend(),
+                            ),
+                          ),
                   ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: widget.isLoading ? null : _handleSend,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(color: circleColor, shape: BoxShape.circle, boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))
-                      ]),
-                      child: Center(
-                        child: widget.isLoading
-                            ? SvgPicture.string(widget.stopIconSvg, width: 20, height: 20)
-                            : SvgPicture.string(widget.sendIconSvg, width: 24, height: 24),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: widget.isLoading ? null : _handleSend,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(color: circleColor, shape: BoxShape.circle, boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))
+                  ]),
+                  child: Center(
+                    child: widget.isLoading
+                        ? SvgPicture.string(widget.stopIconSvg, width: 20, height: 20)
+                        : SvgPicture.string(widget.sendIconSvg, width: 24, height: 24),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
