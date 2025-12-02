@@ -5,11 +5,22 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import 'dart:ui' as ui; // For ImageFilter
+import 'dart:ui_web' as ui_web; // For platformViewRegistry on web
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+
+class ChatMessage {
+  final String text;
+  final bool isUser;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+  });
+}
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -60,24 +71,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 ''';
 
   @override
-  void dispose() {
-    _shimmerController.dispose();
-    _messageController.dispose();
-    _focusNode.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-}
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-  });
-}d initState() {
+  void initState() {
     super.initState();
     _shimmerController = AnimationController(
       vsync: this,
@@ -149,9 +143,11 @@ class ChatMessage {
           });
 
           _htmlInput!.onFocus.listen((_) {
-            setState(() {
-              _isInputActive = true;
-            });
+            if (mounted) {
+              setState(() {
+                _isInputActive = true;
+              });
+            }
           });
 
           return element;
@@ -169,9 +165,11 @@ class ChatMessage {
         _sendMessage(text);
         _htmlInput!.value = '';
         _htmlInput!.blur();
-        setState(() {
-          _isInputActive = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isInputActive = false;
+          });
+        }
       }
     }
   }
@@ -181,9 +179,11 @@ class ChatMessage {
     if (kIsWeb && _htmlInput != null) {
       _htmlInput!.blur();
     }
-    setState(() {
-      _isInputActive = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isInputActive = false;
+      });
+    }
   }
 
   @override
@@ -207,16 +207,16 @@ class ChatMessage {
                             Icon(
                               Ionicons.chatbubble_ellipses_outline,
                               size: 64,
-                              color: themeProvider.isDarkMode 
-                                  ? Colors.grey.shade700 
+                              color: themeProvider.isDarkMode
+                                  ? Colors.grey.shade700
                                   : Colors.grey.shade300,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Comece uma conversa',
                               style: TextStyle(
-                                color: themeProvider.isDarkMode 
-                                    ? Colors.grey.shade600 
+                                color: themeProvider.isDarkMode
+                                    ? Colors.grey.shade600
                                     : Colors.grey.shade400,
                                 fontSize: 20,
                                 fontWeight: FontWeight.w500,
@@ -227,8 +227,8 @@ class ChatMessage {
                             Text(
                               'Envie uma mensagem para iniciar',
                               style: TextStyle(
-                                color: themeProvider.isDarkMode 
-                                    ? Colors.grey.shade600 
+                                color: themeProvider.isDarkMode
+                                    ? Colors.grey.shade600
                                     : Colors.grey.shade400,
                                 fontSize: 14,
                               ),
@@ -248,8 +248,8 @@ class ChatMessage {
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
-                                      color: themeProvider.isDarkMode 
-                                          ? Colors.white 
+                                      color: themeProvider.isDarkMode
+                                          ? Colors.white
                                           : const Color(0xFF212529),
                                     ),
                                     textAlign: TextAlign.center,
@@ -260,8 +260,8 @@ class ChatMessage {
                                       DateFormat('dd/MM/yyyy \'at\' HH:mm').format(_conversationStartTime!),
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: themeProvider.isDarkMode 
-                                            ? Colors.grey.shade500 
+                                        color: themeProvider.isDarkMode
+                                            ? Colors.grey.shade500
                                             : Colors.grey.shade600,
                                       ),
                                     ),
@@ -297,21 +297,17 @@ class ChatMessage {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: (themeProvider.isDarkMode 
-            ? const Color(0xFF212529) 
-            : Colors.white).withOpacity(0.85),
+        color: (themeProvider.isDarkMode ? const Color(0xFF212529) : Colors.white).withOpacity(0.85),
         border: Border(
           bottom: BorderSide(
-            color: themeProvider.isDarkMode 
-                ? Colors.white.withOpacity(0.1)
-                : Colors.black.withOpacity(0.05),
+            color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
             width: 1,
           ),
         ),
       ),
       child: ClipRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             color: Colors.transparent,
             alignment: Alignment.center,
@@ -320,9 +316,7 @@ class ChatMessage {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: themeProvider.isDarkMode 
-                    ? Colors.white 
-                    : const Color(0xFF212529),
+                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
               ),
             ),
           ),
@@ -419,9 +413,7 @@ class ChatMessage {
             maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
           decoration: BoxDecoration(
-            color: themeProvider.isDarkMode 
-                ? const Color(0xFF343A40) 
-                : const Color(0xFF212529),
+            color: themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFF212529),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -456,9 +448,9 @@ class ChatMessage {
       if (htmlStart == -1) {
         htmlStart = text.indexOf('<html');
       }
-      
+
       String textBeforeHtml = htmlStart > 0 ? text.substring(0, htmlStart).trim() : '';
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -468,9 +460,7 @@ class ChatMessage {
               child: Text(
                 textBeforeHtml,
                 style: TextStyle(
-                  color: themeProvider.isDarkMode 
-                      ? Colors.white 
-                      : const Color(0xFF212529),
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
                   fontSize: 15,
                 ),
               ),
@@ -478,14 +468,10 @@ class ChatMessage {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode 
-                  ? const Color(0xFF343A40).withOpacity(0.5)
-                  : const Color(0xFFF8F9FA),
+              color: themeProvider.isDarkMode ? const Color(0xFF343A40).withOpacity(0.5) : const Color(0xFFF8F9FA),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: themeProvider.isDarkMode 
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.05),
+                color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
               ),
             ),
             child: Row(
@@ -494,17 +480,13 @@ class ChatMessage {
                 Icon(
                   Ionicons.code_slash,
                   size: 16,
-                  color: themeProvider.isDarkMode 
-                      ? Colors.grey.shade400 
-                      : Colors.grey.shade600,
+                  color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Documento HTML gerado',
                   style: TextStyle(
-                    color: themeProvider.isDarkMode 
-                        ? Colors.grey.shade400 
-                        : Colors.grey.shade600,
+                    color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
                   ),
@@ -515,14 +497,12 @@ class ChatMessage {
         ],
       );
     }
-    
+
     // Texto normal
     return Text(
       text,
       style: TextStyle(
-        color: themeProvider.isDarkMode 
-            ? Colors.white 
-            : const Color(0xFF212529),
+        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
         fontSize: 15,
       ),
     );
@@ -535,9 +515,7 @@ class ChatMessage {
       bottom: 0,
       child: Container(
         decoration: BoxDecoration(
-          color: (themeProvider.isDarkMode 
-              ? const Color(0xFF212529) 
-              : Colors.white).withOpacity(0.95),
+          color: (themeProvider.isDarkMode ? const Color(0xFF212529) : Colors.white).withOpacity(0.95),
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
@@ -556,7 +534,7 @@ class ChatMessage {
             topRight: Radius.circular(24),
           ),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: SafeArea(
               top: false,
               child: Padding(
@@ -569,22 +547,24 @@ class ChatMessage {
                         onTap: () {
                           if (!_isInputActive && kIsWeb && _htmlInput != null) {
                             _htmlInput!.focus();
-                            setState(() {
-                              _isInputActive = true;
-                            });
+                            if (mounted) {
+                              setState(() {
+                                _isInputActive = true;
+                              });
+                            }
                           } else if (!_isInputActive && !kIsWeb) {
                             _focusNode.requestFocus();
-                            setState(() {
-                              _isInputActive = true;
-                            });
+                            if (mounted) {
+                              setState(() {
+                                _isInputActive = true;
+                              });
+                            }
                           }
                         },
                         child: Container(
                           height: 50,
                           decoration: BoxDecoration(
-                            color: themeProvider.isDarkMode 
-                                ? const Color(0xFF343A40) 
-                                : const Color(0xFFF8F9FA),
+                            color: themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA),
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: kIsWeb
@@ -606,28 +586,24 @@ class ChatMessage {
                                     enabled: _isInputActive,
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: themeProvider.isDarkMode 
-                                          ? Colors.white 
-                                          : const Color(0xFF212529),
+                                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
                                     ),
                                     decoration: InputDecoration.collapsed(
                                       hintText: 'Ask DocuGen',
                                       hintStyle: TextStyle(
-                                        color: themeProvider.isDarkMode 
-                                            ? Colors.white54 
-                                            : const Color(0xFFADB5BD),
+                                        color: themeProvider.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
                                         fontSize: 16,
                                       ),
                                     ),
-                                    cursorColor: themeProvider.isDarkMode 
-                                        ? Colors.white 
-                                        : const Color(0xFF212529),
+                                    cursorColor: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
                                     enableSuggestions: false,
                                     autocorrect: false,
                                     onTap: () {
-                                      setState(() {
-                                        _isInputActive = true;
-                                      });
+                                      if (mounted) {
+                                        setState(() {
+                                          _isInputActive = true;
+                                        });
+                                      }
                                     },
                                     onSubmitted: (_) => _sendMessageNative(),
                                   ),
@@ -642,9 +618,7 @@ class ChatMessage {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: themeProvider.isDarkMode 
-                              ? const Color(0xFF495057) 
-                              : const Color(0xFF212529),
+                          color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -685,9 +659,11 @@ class ChatMessage {
     _sendMessage(text);
     _messageController.clear();
     _focusNode.unfocus();
-    setState(() {
-      _isInputActive = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isInputActive = false;
+      });
+    }
   }
 
   Future<void> _sendMessage(String text) async {
@@ -698,11 +674,13 @@ class ChatMessage {
       _conversationStartTime = DateTime.now();
     }
 
-    setState(() {
-      _messages.add(ChatMessage(text: text.trim(), isUser: true));
-      _isLoading = true;
-      _currentThinkingStep = _thinkingSteps[0];
-    });
+    if (mounted) {
+      setState(() {
+        _messages.add(ChatMessage(text: text.trim(), isUser: true));
+        _isLoading = true;
+        _currentThinkingStep = _thinkingSteps[0];
+      });
+    }
 
     _scrollToBottom();
     _animateThinkingSteps();
@@ -885,8 +863,7 @@ Trabalho concluído! Carregando o preview...''',
     }
   }
 
-  void _scrollToBottom():
-void _scrollToBottom() {
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -906,14 +883,4 @@ void _scrollToBottom() {
     _scrollController.dispose();
     super.dispose();
   }
-}
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-  });
 }
