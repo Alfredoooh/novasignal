@@ -33,7 +33,7 @@ class ChatInput extends StatefulWidget {
 
 class _ChatInputState extends State<ChatInput> {
   static bool _viewRegistered = false;
-  html.InputElement? _htmlInput;
+  html.TextAreaElement? _htmlInput;
   bool _isInputActive = false;
 
   @override
@@ -58,12 +58,12 @@ class _ChatInputState extends State<ChatInput> {
           ..style.display = 'flex'
           ..style.alignItems = 'center';
 
-        _htmlInput = html.InputElement()
+        _htmlInput = html.TextAreaElement()
           ..id = 'chatInput-$viewId'
-          ..type = 'text'
           ..placeholder = 'Ask DocuGen'
           ..autocomplete = 'off'
           ..setAttribute('spellcheck', 'false')
+          ..rows = 1
           ..style.flex = '1'
           ..style.padding = '12px 20px'
           ..style.border = 'none'
@@ -74,6 +74,11 @@ class _ChatInputState extends State<ChatInput> {
           ..style.color = inputTextColor
           ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
           ..style.transition = 'background-color 0.3s'
+          ..style.resize = 'none'
+          ..style.overflow = 'hidden'
+          ..style.minHeight = '26px'
+          ..style.maxHeight = '120px'
+          ..style.lineHeight = '1.4'
           ..style.setProperty('-webkit-user-select', 'text')
           ..style.userSelect = 'text'
           ..style.setProperty('-webkit-tap-highlight-color', 'transparent');
@@ -82,18 +87,25 @@ class _ChatInputState extends State<ChatInput> {
           ..text = '''
             #chatInput-$viewId::placeholder { color: $inputPlaceholderColor; }
             #chatInput-$viewId:focus { box-shadow: none !important; outline: none !important; }
+            #chatInput-$viewId::-webkit-scrollbar { width: 4px; }
+            #chatInput-$viewId::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
           ''';
 
         wrapper.append(style);
         wrapper.append(_htmlInput!);
 
-        _htmlInput!.onKeyPress.listen((e) {
-          if (e.key == 'Enter') {
+        _htmlInput!.onInput.listen((_) {
+          _adjustHeight();
+        });
+
+        _htmlInput!.onKeyDown.listen((e) {
+          if (e.key == 'Enter' && !e.shiftKey) {
             e.preventDefault();
             final text = _htmlInput!.value?.trim() ?? '';
             if (text.isNotEmpty && !widget.isLoading) {
               widget.onSend(text);
               _htmlInput!.value = '';
+              _resetHeight();
               _htmlInput!.blur();
               setState(() => _isInputActive = false);
             }
@@ -115,12 +127,24 @@ class _ChatInputState extends State<ChatInput> {
     }
   }
 
+  void _adjustHeight() {
+    if (_htmlInput == null) return;
+    _htmlInput!.style.height = 'auto';
+    _htmlInput!.style.height = '${_htmlInput!.scrollHeight}px';
+  }
+
+  void _resetHeight() {
+    if (_htmlInput == null) return;
+    _htmlInput!.style.height = '26px';
+  }
+
   void _handleSend() {
     if (kIsWeb) {
       final text = _htmlInput?.value?.trim() ?? '';
       if (text.isEmpty) return;
       widget.onSend(text);
       _htmlInput?.value = '';
+      _resetHeight();
       _htmlInput?.blur();
       setState(() => _isInputActive = false);
       return;
@@ -138,7 +162,7 @@ class _ChatInputState extends State<ChatInput> {
   Widget build(BuildContext context) {
     final bgColor = widget.isDarkMode ? const Color(0xFF343A40) : Colors.white;
     final inputBgColor = widget.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA);
-    final circleColor = widget.isDarkMode ? const Color(0xFF495057) : const Color(0xFF212529);
+    final circleColor = widget.isDarkMode ? Colors.white : const Color(0xFF212529);
 
     return Container(
       decoration: BoxDecoration(
@@ -151,7 +175,7 @@ class _ChatInputState extends State<ChatInput> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: GestureDetector(
@@ -165,7 +189,7 @@ class _ChatInputState extends State<ChatInput> {
                     }
                   },
                   child: Container(
-                    height: 50,
+                    constraints: const BoxConstraints(minHeight: 50),
                     decoration: BoxDecoration(color: inputBgColor, borderRadius: BorderRadius.circular(24)),
                     child: kIsWeb
                         ? IgnorePointer(
@@ -176,11 +200,13 @@ class _ChatInputState extends State<ChatInput> {
                             ),
                           )
                         : Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             child: TextField(
                               controller: widget.messageController,
                               focusNode: widget.focusNode,
                               enabled: true,
+                              maxLines: null,
+                              keyboardType: TextInputType.multiline,
                               style: TextStyle(fontSize: 16, color: widget.isDarkMode ? Colors.white : const Color(0xFF212529)),
                               decoration: InputDecoration.collapsed(
                                 hintText: 'Ask DocuGen',
@@ -207,8 +233,24 @@ class _ChatInputState extends State<ChatInput> {
                   ]),
                   child: Center(
                     child: widget.isLoading
-                        ? SvgPicture.string(widget.stopIconSvg, width: 20, height: 20)
-                        : SvgPicture.string(widget.sendIconSvg, width: 24, height: 24),
+                        ? SvgPicture.string(
+                            widget.stopIconSvg,
+                            width: 20,
+                            height: 20,
+                            colorFilter: ColorFilter.mode(
+                              widget.isDarkMode ? const Color(0xFF212529) : Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          )
+                        : SvgPicture.string(
+                            widget.sendIconSvg,
+                            width: 24,
+                            height: 24,
+                            colorFilter: ColorFilter.mode(
+                              widget.isDarkMode ? const Color(0xFF212529) : Colors.white,
+                              BlendMode.srcIn,
+                            ),
+                          ),
                   ),
                 ),
               ),
