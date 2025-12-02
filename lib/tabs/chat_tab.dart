@@ -9,9 +9,7 @@ import '../providers/chat_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
-import '../widgets/chat_drawer.dart';
 import '../models/chat_message.dart';
-import '../models/conversation.dart';
 import 'package:ionicons/ionicons.dart';
 
 class ChatTab extends StatefulWidget {
@@ -27,7 +25,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   static const String _viewType = 'chat-input-only';
 
@@ -67,82 +64,104 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
+  void _openConversationsScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => _ConversationsScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(-1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context);
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: const ChatDrawer(),
-      body: GestureDetector(
-        onTap: () => _focusNode.unfocus(),
-        behavior: HitTestBehavior.translucent,
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                _buildAppBar(themeProvider, chatProvider),
-                Expanded(
-                  child: chatProvider.currentMessages.isEmpty
-                      ? _buildEmptyState(themeProvider)
-                      : _buildMessageList(themeProvider, chatProvider),
-                ),
-              ],
-            ),
-            _buildInputArea(themeProvider),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(ThemeProvider themeProvider, ChatProvider chatProvider) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: themeProvider.isDarkMode ? const Color(0xFF212529) : Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () => _focusNode.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: chatProvider.currentMessages.isEmpty
+                    ? _buildEmptyState(themeProvider)
+                    : _buildMessageList(themeProvider, chatProvider),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(
-                Ionicons.menu_outline,
-                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-              ),
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  chatProvider.currentConversation?.title ?? 'DocuGen AI',
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+          Positioned(
+            top: 0,
+            left: 16,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: () => _openConversationsScreen(context),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  child: Icon(
+                    Ionicons.menu_outline,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    size: 24,
+                  ),
                 ),
               ),
             ),
-            IconButton(
-              icon: Icon(
-                Ionicons.add_circle_outline,
-                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+          ),
+          Positioned(
+            top: 0,
+            right: 16,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: () => chatProvider.createNewConversation(),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Ionicons.add_outline,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    size: 24,
+                  ),
+                ),
               ),
-              onPressed: () => chatProvider.createNewConversation(),
             ),
-          ],
-        ),
+          ),
+          _buildInputArea(themeProvider),
+        ],
       ),
     );
   }
@@ -183,7 +202,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   Widget _buildMessageList(ThemeProvider themeProvider, ChatProvider chatProvider) {
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      padding: const EdgeInsets.fromLTRB(16, 80, 16, 120),
       itemCount: chatProvider.currentMessages.length + (_isLoading ? 1 : 0),
       itemBuilder: (context, index) {
         if (_isLoading && index == chatProvider.currentMessages.length) {
@@ -303,15 +322,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                 color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Ionicons.document_outline,
-                  size: 16,
-                  color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                ),
-              ],
+            child: Icon(
+              Ionicons.document_outline,
+              size: 20,
+              color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
           ),
         ],
@@ -746,5 +760,239 @@ EXEMPLO DE TABELA EM MARKDOWN (use isto para tabelas):
         );
       }
     });
+  }
+}
+
+class _ConversationsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final chatProvider = Provider.of<ChatProvider>(context);
+
+    return Scaffold(
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF212529) : Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Ionicons.chatbubbles_outline,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Conversas',
+                      style: TextStyle(
+                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Ionicons.close_outline,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Divider(
+              height: 1,
+              color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+            ),
+            Expanded(
+              child: chatProvider.conversations.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Ionicons.file_tray_outline,
+                            size: 48,
+                            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Nenhuma conversa',
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: chatProvider.conversations.length,
+                      itemBuilder: (context, index) {
+                        final conversation = chatProvider.conversations[index];
+                        final isSelected = chatProvider.currentConversation?.id == conversation.id;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? (themeProvider.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA))
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            onTap: () {
+                              chatProvider.switchConversation(conversation.id);
+                              Navigator.pop(context);
+                            },
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFE9ECEF),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Ionicons.chatbubble_outline,
+                                size: 18,
+                                color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                              ),
+                            ),
+                            title: Text(
+                              conversation.title,
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                                fontSize: 15,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              _formatDate(conversation.lastUpdated),
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              icon: Icon(
+                                Ionicons.ellipsis_horizontal,
+                                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Ionicons.trash_outline,
+                                        size: 18,
+                                        color: Colors.red.shade400,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Excluir',
+                                        style: TextStyle(
+                                          color: Colors.red.shade400,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                if (value == 'delete') {
+                                  _showDeleteDialog(context, themeProvider, chatProvider, conversation.id);
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Hoje';
+    } else if (difference.inDays == 1) {
+      return 'Ontem';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} dias atrás';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks ${weeks == 1 ? "semana" : "semanas"} atrás';
+    } else {
+      final months = (difference.inDays / 30).floor();
+      return '$months ${months == 1 ? "mês" : "meses"} atrás';
+    }
+  }
+
+  void _showDeleteDialog(BuildContext context, ThemeProvider themeProvider, ChatProvider chatProvider, String conversationId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Excluir conversa',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              chatProvider.deleteConversation(conversationId);
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Excluir',
+              style: TextStyle(
+                color: Colors.red.shade400,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
