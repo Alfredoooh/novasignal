@@ -5,22 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/chat_provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
-import 'package:flutter/services.dart';
-import 'dart:ui' as ui;
+import '../widgets/chat_drawer.dart';
+import '../models/chat_message.dart';
+import '../models/conversation.dart';
 import 'package:ionicons/ionicons.dart';
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-  });
-}
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -34,8 +26,8 @@ class ChatTab extends StatefulWidget {
 class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   static const String _viewType = 'chat-input-only';
 
@@ -78,67 +70,130 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final chatProvider = Provider.of<ChatProvider>(context);
 
-    return GestureDetector(
-      onTap: () => _focusNode.unfocus(),
-      behavior: HitTestBehavior.translucent,
-      child: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: _messages.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Ionicons.chatbubble_ellipses_outline,
-                              size: 64,
-                              color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Comece uma conversa',
-                              style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Envie uma mensagem para iniciar',
-                              style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                        itemCount: _messages.length + (_isLoading ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (_isLoading && index == _messages.length) {
-                            return _buildLoadingIndicator(themeProvider);
-                          }
-                          return _buildMessageBubble(_messages[index], themeProvider);
-                        },
-                      ),
-              ),
-            ],
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: const ChatDrawer(),
+      body: GestureDetector(
+        onTap: () => _focusNode.unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                _buildAppBar(themeProvider, chatProvider),
+                Expanded(
+                  child: chatProvider.currentMessages.isEmpty
+                      ? _buildEmptyState(themeProvider)
+                      : _buildMessageList(themeProvider, chatProvider),
+                ),
+              ],
+            ),
+            _buildInputArea(themeProvider),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar(ThemeProvider themeProvider, ChatProvider chatProvider) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: themeProvider.isDarkMode ? const Color(0xFF212529) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          _buildInputArea(themeProvider),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(
+                Ionicons.menu_outline,
+                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+              ),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  chatProvider.currentConversation?.title ?? 'DocuGen AI',
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Ionicons.add_circle_outline,
+                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+              ),
+              onPressed: () => chatProvider.createNewConversation(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeProvider themeProvider) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Ionicons.chatbubble_ellipses_outline,
+            size: 64,
+            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Comece uma conversa',
+            style: TextStyle(
+              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Envie uma mensagem para iniciar',
+            style: TextStyle(
+              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              fontSize: 14,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // substitui o efeito anterior por três pontos animados
+  Widget _buildMessageList(ThemeProvider themeProvider, ChatProvider chatProvider) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      itemCount: chatProvider.currentMessages.length + (_isLoading ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (_isLoading && index == chatProvider.currentMessages.length) {
+          return _buildLoadingIndicator(themeProvider);
+        }
+        return _buildMessageBubble(chatProvider.currentMessages[index], themeProvider);
+      },
+    );
+  }
+
   Widget _buildLoadingIndicator(ThemeProvider themeProvider) {
     final dotColor = themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
     return Padding(
@@ -166,7 +221,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     return AnimatedBuilder(
       animation: _loadingController,
       builder: (context, child) {
-        // animação com fase para cada ponto; sai ~ -8..8 em Y
         final phase = _loadingController.value * 2 * math.pi;
         final offsetY = math.sin(phase + index * 0.9) * 8;
         final scale = 0.8 + (math.sin(phase + index * 0.9) + 1) * 0.1;
@@ -226,7 +280,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
-    // se tiver HTML, mostra uma pré-visualização com ícone de código
     if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
       int htmlStart = text.indexOf('<!DOCTYPE html>');
       if (htmlStart == -1) htmlStart = text.indexOf('<html');
@@ -254,18 +307,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Ionicons.code_slash,
+                  Ionicons.document_outline,
                   size: 16,
                   color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Documento HTML gerado',
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
-                  ),
                 ),
               ],
             ),
@@ -274,7 +318,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       );
     }
 
-    // caso contrário, usa formatação avançada
     return _buildFormattedText(text, themeProvider);
   }
 
@@ -282,17 +325,14 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     final color = themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529);
     final accentBlue = const Color(0xFF1E88E5);
 
-    // suporte a blocos de código delimitados por ```
     if (text.contains('```')) {
       final parts = text.split('```');
       List<Widget> widgets = [];
       for (int i = 0; i < parts.length; i++) {
         final part = parts[i];
         if (i % 2 == 0) {
-          // texto normal
           widgets.addAll(_buildWidgetsFromLines(part, color, accentBlue, themeProvider));
         } else {
-          // bloco de código
           widgets.add(
             Container(
               width: double.infinity,
@@ -331,7 +371,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       );
     }
 
-    // se não tiver blocos de código, gera widgets a partir das linhas
     final children = _buildWidgetsFromLines(text, color, accentBlue, themeProvider);
 
     return Column(
@@ -354,7 +393,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
       final lower = line.toLowerCase();
 
-      // Linha com marcador de "informação crítica" - pinta em azul e adiciona ícone
       if (lower.contains('importante') || lower.contains('atenção') || line.startsWith('Info:') || line.contains('[info]')) {
         widgets.add(
           Container(
@@ -388,7 +426,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         continue;
       }
 
-      // Títulos
       if (line.startsWith('# ')) {
         widgets.add(
           Padding(
@@ -445,7 +482,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         continue;
       }
 
-      // Lista com bullet
       if (line.startsWith('- ') || line.startsWith('• ')) {
         widgets.add(
           Padding(
@@ -468,7 +504,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         continue;
       }
 
-      // Lista numerada
       if (RegExp(r'^\d+\.\s').hasMatch(line)) {
         widgets.add(
           Padding(
@@ -496,7 +531,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         continue;
       }
 
-      // Se contém negrito inline ou outros marcadores, utiliza parse
       if (line.contains('**')) {
         widgets.add(
           Padding(
@@ -509,7 +543,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         continue;
       }
 
-      // Texto simples
       widgets.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -588,9 +621,11 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     if (text.trim().isEmpty || _isLoading) return;
     if (!mounted) return;
 
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
     if (mounted) {
       setState(() {
-        _messages.add(ChatMessage(text: text.trim(), isUser: true));
+        chatProvider.addMessage(ChatMessage(text: text.trim(), isUser: true));
         _isLoading = true;
       });
     }
@@ -611,39 +646,29 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               'role': 'system',
               'content': '''Você é o DocuGen AI, um assistente especializado em criar documentos HTML profissionais e estilizados.
 
-REGRAS IMPORTANTES:
-1. Quando o usuário pedir para criar um documento, SEMPRE gere HTML completo com estrutura <!DOCTYPE html>
-2. Use CSS inline moderno e elegante
-3. Garanta que o documento seja responsivo e profissional
-4. Use fontes web-safe ou Google Fonts
-5. Para respostas de chat normais, use formatação markdown simples:
-   - Use # para títulos principais
-   - Use ## para subtítulos
-   - Use **texto** para negrito
-   - Use - ou • para listas
-   - Use números (1., 2., etc) para listas ordenadas
-6. Seja claro, direto e bem formatado nas respostas
+REGRAS CRÍTICAS:
+1. NUNCA crie documentos HTML a menos que o usuário peça explicitamente com palavras como: "crie um documento", "gere um HTML", "faça um site", "monte uma página"
+2. Para perguntas normais, conversas, explicações ou tabelas, SEMPRE use formatação markdown simples
+3. Tabelas devem ser criadas em markdown, NÃO em HTML
+4. Use # para títulos principais
+5. Use ## para subtítulos
+6. Use **texto** para negrito
+7. Use - ou • para listas
+8. Use números (1., 2., etc) para listas ordenadas
 
-EXEMPLO DE ESTRUTURA HTML:
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Documento</title>
-  <style>
-    body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; padding: 40px; max-width: 800px; margin: 0 auto; }
-    h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-    p { margin: 15px 0; }
-  </style>
-</head>
-<body>
-  <h1>Título do Documento</h1>
-  <p>Conteúdo aqui...</p>
-</body>
-</html>''',
+QUANDO CRIAR HTML:
+- Somente quando o usuário pedir explicitamente para criar um documento/página/site
+- Use estrutura completa <!DOCTYPE html>
+- CSS inline moderno e responsivo
+- Design profissional
+
+EXEMPLO DE TABELA EM MARKDOWN (use isto para tabelas):
+| Coluna 1 | Coluna 2 | Coluna 3 |
+|----------|----------|----------|
+| Dado 1   | Dado 2   | Dado 3   |
+| Dado 4   | Dado 5   | Dado 6   |''',
             },
-            ..._buildMessageHistory(),
+            ...chatProvider.buildMessageHistory(),
           ],
           'temperature': 0.3,
           'max_tokens': 2048,
@@ -656,7 +681,7 @@ EXEMPLO DE ESTRUTURA HTML:
 
         if (mounted) {
           setState(() {
-            _messages.add(ChatMessage(text: aiResponse, isUser: false));
+            chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
             _isLoading = false;
           });
 
@@ -674,7 +699,7 @@ EXEMPLO DE ESTRUTURA HTML:
       debugPrint('Erro ao enviar mensagem: $e');
       if (mounted) {
         setState(() {
-          _messages.add(ChatMessage(
+          chatProvider.addMessage(ChatMessage(
             text: 'Desculpe, ocorreu um erro. Tente novamente.',
             isUser: false,
           ));
@@ -709,15 +734,6 @@ EXEMPLO DE ESTRUTURA HTML:
     }
 
     return '';
-  }
-
-  List<Map<String, String>> _buildMessageHistory() {
-    return _messages
-        .map((msg) => {
-              'role': msg.isUser ? 'user' : 'assistant',
-              'content': msg.text,
-            })
-        .toList();
   }
 
   void _scrollToBottom() {
