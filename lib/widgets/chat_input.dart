@@ -61,8 +61,8 @@ class _ChatInputState extends State<ChatInput> {
         _htmlInput = html.TextAreaElement()
           ..id = 'chatInput-$viewId'
           ..placeholder = 'Ask DocuGen'
-          ..autocomplete = 'off'
           ..setAttribute('spellcheck', 'false')
+          ..setAttribute('autocomplete', 'off')
           ..rows = 1
           ..style.flex = '1'
           ..style.padding = '12px 20px'
