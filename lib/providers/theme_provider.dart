@@ -18,13 +18,13 @@ class ThemeProvider extends ChangeNotifier {
         seedColor: _primaryColor,
         brightness: _isDarkMode ? Brightness.dark : Brightness.light,
       ),
-      scaffoldBackgroundColor: _isDarkMode ? const Color(0xFF212529) : const Color(0xFFF8F9FA),
+      scaffoldBackgroundColor: _isDarkMode ? Colors.black : Colors.white,
       appBarTheme: AppBarTheme(
-        backgroundColor: _isDarkMode ? const Color(0xFF343A40) : Colors.white,
+        backgroundColor: _isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         foregroundColor: _isDarkMode ? Colors.white : const Color(0xFF212529),
         elevation: 0,
       ),
-      cardColor: _isDarkMode ? const Color(0xFF343A40) : Colors.white,
+      cardColor: _isDarkMode ? const Color(0xFF1C2128) : Colors.white,
       iconTheme: IconThemeData(
         color: _isDarkMode ? Colors.white : const Color(0xFF495057),
       ),
