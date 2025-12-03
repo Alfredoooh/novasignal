@@ -29,7 +29,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
   void _onDocumentGenerated(String htmlContent) {
     setState(() {
       _generatedHtmlContent = htmlContent;
-      _selectedIndex = 1; // Mudar para aba Preview
+      _selectedIndex = 1;
     });
   }
 
@@ -84,7 +84,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF212529) : const Color(0xFFF8F9FA),
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F5F5),
       body: SafeArea(
         child: IndexedStack(
           index: _selectedIndex,
@@ -97,7 +97,14 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+          color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
         child: SafeArea(
           child: Row(
@@ -106,7 +113,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFF1F3F5),
+                  color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -128,7 +135,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFF1F3F5),
+                    color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Stack(
@@ -142,7 +149,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
                           width: (MediaQuery.of(context).size.width - 136) / 2,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+                            color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
@@ -213,7 +220,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFF1F3F5),
+                  color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -304,7 +311,7 @@ class _SettingsModalState extends State<_SettingsModal> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: themeProvider.isDarkMode ? const Color(0xFF212529) : const Color(0xFFF8F9FA),
+            color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF8F9FA),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(24),
               topRight: Radius.circular(24),
@@ -382,7 +389,7 @@ class _SettingsModalState extends State<_SettingsModal> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         borderRadius: BorderRadius.vertical(
           top: isFirst ? const Radius.circular(12) : const Radius.circular(2),
           bottom: isLast && !_isThemeExpanded ? const Radius.circular(12) : const Radius.circular(2),
@@ -445,12 +452,12 @@ class _SettingsModalState extends State<_SettingsModal> {
                     children: [
                       Divider(
                         height: 1,
-                        color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFE9ECEF),
+                        color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
                       ),
                       _buildThemeOption('Claro', !themeProvider.isDarkMode, themeProvider),
                       Divider(
                         height: 1,
-                        color: themeProvider.isDarkMode ? const Color(0xFF495057) : const Color(0xFFE9ECEF),
+                        color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
                       ),
                       _buildThemeOption('Escuro', themeProvider.isDarkMode, themeProvider),
                     ],
@@ -474,9 +481,9 @@ class _SettingsModalState extends State<_SettingsModal> {
         ),
       ),
       trailing: isSelected
-          ? Icon(
+          ? const Icon(
               Ionicons.checkmark_circle,
-              color: const Color(0xFF4CAF50),
+              color: Color(0xFF4CAF50),
               size: 22,
             )
           : null,
@@ -498,7 +505,7 @@ class _SettingsModalState extends State<_SettingsModal> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         borderRadius: BorderRadius.vertical(
           top: isFirst ? const Radius.circular(12) : const Radius.circular(2),
           bottom: isLast ? const Radius.circular(12) : const Radius.circular(2),
