@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -283,11 +284,17 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 15,
+              fontFamily: 'Times New Roman',
             ),
           ),
         ),
       );
     } else {
+      // Verifica se a mensagem contém HTML (tabelas ou imagens)
+      final hasHtmlContent = message.text.contains('<table') || 
+                            message.text.contains('<img') ||
+                            message.text.contains('</table>');
+
       return Align(
         alignment: Alignment.centerLeft,
         child: Container(
@@ -300,14 +307,57 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: SelectableText(
-            message.text,
-            style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-              fontSize: 15,
-              height: 1.5,
-            ),
-          ),
+          child: hasHtmlContent
+              ? Html(
+                  data: message.text,
+                  style: {
+                    "body": Style(
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                      fontSize: FontSize(15),
+                      fontFamily: 'Times New Roman',
+                      lineHeight: const LineHeight(1.5),
+                      margin: Margins.zero,
+                      padding: HtmlPaddings.zero,
+                    ),
+                    "table": Style(
+                      border: Border.all(
+                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                        width: 1,
+                      ),
+                      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF2D333B) : Colors.white,
+                      margin: Margins.symmetric(vertical: 8),
+                    ),
+                    "th": Style(
+                      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF373E47) : const Color(0xFFE9ECEF),
+                      padding: HtmlPaddings.all(12),
+                      fontWeight: FontWeight.bold,
+                      border: Border.all(
+                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                        width: 1,
+                      ),
+                    ),
+                    "td": Style(
+                      padding: HtmlPaddings.all(12),
+                      border: Border.all(
+                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                        width: 1,
+                      ),
+                    ),
+                    "img": Style(
+                      width: Width(100, Unit.percent),
+                      margin: Margins.symmetric(vertical: 8),
+                    ),
+                  },
+                )
+              : SelectableText(
+                  message.text,
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    fontSize: 15,
+                    height: 1.5,
+                    fontFamily: 'Times New Roman',
+                  ),
+                ),
         ),
       );
     }
@@ -360,33 +410,62 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           'messages': [
             {
               'role': 'system',
-              'content': '''Você é o DocuGen AI, um assistente profissional e direto.
+              'content': '''Você é o DocuGen AI, um assistente profissional, criativo e expressivo! 🎯
 
-REGRAS IMPORTANTES:
+REGRAS DE FORMATAÇÃO:
 
-1. NUNCA use asteriscos (**), markdown ou formatação especial no texto
-2. NUNCA crie caixas de informação ou avisos destacados
-3. Escreva texto LIMPO e SIMPLES, como uma conversa normal
-4. Use apenas texto puro - sem símbolos especiais, sem emojis
-5. Para tabelas, use APENAS formato de tabela markdown padrão (| Coluna | Coluna |)
-6. NUNCA use caracteres especiais para desenhar tabelas
-7. Seja direto e profissional
+1. ✨ USE EMOJIS para expressar criatividade e emoções
+2. 📝 Respostas normais: texto em Times New Roman (automaticamente aplicado)
+3. 📊 Para TABELAS: use SEMPRE HTML com <table></table>
+4. 🖼️ Para IMAGENS: use <img src="URL" alt="descrição" style="max-width:100%; border-radius:8px;">
+5. 🎨 Seja criativo e expressivo nas respostas
+
+FORMATO DE TABELAS HTML:
+<table>
+  <thead>
+    <tr>
+      <th>Coluna 1</th>
+      <th>Coluna 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dado 1</td>
+      <td>Dado 2</td>
+    </tr>
+  </tbody>
+</table>
+
+EXEMPLOS DE USO:
+
+📺 Jogos/Resultados:
+<table>
+  <thead>
+    <tr><th>🏆 Equipa</th><th>⚽ Golos</th><th>📊 Classificação</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>🇵🇹 Portugal</td><td>3</td><td>1º</td></tr>
+    <tr><td>🇧🇷 Brasil</td><td>1</td><td>2º</td></tr>
+  </tbody>
+</table>
+
+🖼️ Imagens (use URLs públicas):
+Quando o usuário pedir sobre pessoas, lugares ou temas:
+<img src="https://exemplo.com/imagem.jpg" alt="Descrição" style="max-width:100%; border-radius:8px; margin:10px 0;">
+
+💡 DICAS:
+- Use emojis relevantes ao contexto 🎉
+- Para jogos: 🏆⚽🥅📊🏅
+- Para pessoas famosas: busque imagens de domínio público
+- Seja sempre criativo e expressivo!
 
 CRIAÇÃO DE DOCUMENTOS HTML:
-- Só crie HTML quando o usuário pedir explicitamente: "crie um documento", "gere um HTML", "faça um site"
-- Para conversas normais, use apenas texto simples
-
-EXEMPLO DE TABELA CORRETA:
-| Nome | Idade | Cidade |
-|------|-------|--------|
-| João | 25 | Lisboa |
-| Maria | 30 | Porto |
-
-Responda de forma clara, direta e sem formatações desnecessárias.''',
+- Só crie documentos HTML completos quando explicitamente pedido
+- Para conversas normais: use texto + emojis + tabelas HTML quando necessário''',
             },
             ...chatProvider.buildMessageHistory(),
           ],
-          'temperature': 0.5,
+          'temperature': 0.7,
           'max_tokens': 4096,
         }),
       );
@@ -398,10 +477,12 @@ Responda de forma clara, direta e sem formatações desnecessárias.''',
         if (mounted) {
           setState(() {
             chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
-            _isLoading = false,
+            _isLoading = false;
           });
 
-          if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
+          // Verifica se é um documento HTML completo para preview
+          if (aiResponse.contains('<!DOCTYPE html>') || 
+              (aiResponse.contains('<html') && aiResponse.contains('</html>'))) {
             final htmlContent = _extractHtmlFromResponse(aiResponse);
             if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
               widget.onDocumentGenerated!(htmlContent);
@@ -416,7 +497,7 @@ Responda de forma clara, direta e sem formatações desnecessárias.''',
       if (mounted) {
         setState(() {
           chatProvider.addMessage(ChatMessage(
-            text: 'Desculpe, ocorreu um erro. Tente novamente.',
+            text: '❌ Desculpe, ocorreu um erro. Tente novamente.',
             isUser: false,
           ));
           _isLoading = false;
@@ -646,6 +727,58 @@ class _ConversationsScreen extends StatelessWidget {
       return '$weeks ${weeks == 1 ? "semana" : "semanas"} atrás';
     } else {
       final months = (difference.inDays / 30).floor();
+      return '$months ${months == 1 ? "mês" : "meses"} atrás';
+    }
+  }
+
+  void _showDeleteDialog(BuildContext context, ThemeProvider themeProvider, ChatProvider chatProvider, String conversationId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Excluir conversa',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              chatProvider.deleteConversation(conversationId);
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Excluir',
+              style: TextStyle(
+                color: Colors.red.shade400,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}30).floor();
       return '$months ${months == 1 ? "mês" : "meses"} atrás';
     }
   }
