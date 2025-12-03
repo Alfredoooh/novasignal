@@ -1,327 +1,753 @@
-// lib/tabs/preview_tab.dart
+// lib/tabs/chat_tab.dart
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:ionicons/ionicons.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
-import 'dart:js' as js;
+import '../providers/chat_provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
+import '../widgets/chat_input.dart';
+import '../models/chat_message.dart';
+import 'package:ionicons/ionicons.dart';
+import 'package:flutter_html/flutter_html.dart';
 
-class PreviewTab extends StatefulWidget {
-  final String? htmlContent;
-  
-  const PreviewTab({Key? key, this.htmlContent}) : super(key: key);
+class ChatTab extends StatefulWidget {
+  final Function(String htmlContent)? onDocumentGenerated;
+
+  const ChatTab({Key? key, this.onDocumentGenerated}) : super(key: key);
 
   @override
-  State<PreviewTab> createState() => _PreviewTabState();
+  State<ChatTab> createState() => _ChatTabState();
 }
 
-class _PreviewTabState extends State<PreviewTab> {
-  static const String _previewViewType = 'pdf-preview-viewer';
-  bool _isConverting = false;
-  bool _hasDocument = false;
-  String? _pdfViewId;
-  String _documentName = 'Documento sem título';
-  final TextEditingController _nameController = TextEditingController();
-  String? _lastProcessedContent;
+class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
+  final TextEditingController _messageController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+
+  static const String _viewType = 'chat-input-only';
+
+  bool _isLoading = false;
+  late AnimationController _loadingController;
+
+  static const String _groqApiKey = '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';
+  static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+
+  static const String _sendIconSvg = '''
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+''';
+
+  static const String _stopIconSvg = '''
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6" y="6" width="12" height="12" rx="2" fill="#FFFFFF"/>
+</svg>
+''';
 
   @override
   void initState() {
     super.initState();
-    _initializePDFLibraries();
-    if (widget.htmlContent != null && widget.htmlContent!.isNotEmpty) {
-      _convertAndRenderPDF(widget.htmlContent!);
-    }
+    _loadingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
   }
 
   @override
-  void didUpdateWidget(PreviewTab oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.htmlContent != oldWidget.htmlContent && 
-        widget.htmlContent != null && 
-        widget.htmlContent!.isNotEmpty &&
-        widget.htmlContent != _lastProcessedContent) {
-      _lastProcessedContent = widget.htmlContent;
-      _convertAndRenderPDF(widget.htmlContent!);
-    }
+  void dispose() {
+    _loadingController.dispose();
+    _messageController.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  void _initializePDFLibraries() {
-    final script1 = html.document.querySelector('script[src*="jspdf"]');
-    final script2 = html.document.querySelector('script[src*="html2canvas"]');
-    final script3 = html.document.querySelector('script[src*="pdf.js"]');
-
-    if (script1 == null) {
-      final jspdfScript = html.ScriptElement()
-        ..src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-        ..async = true;
-      html.document.head?.append(jspdfScript);
-    }
-
-    if (script2 == null) {
-      final html2canvasScript = html.ScriptElement()
-        ..src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
-        ..async = true;
-      html.document.head?.append(html2canvasScript);
-    }
-
-    if (script3 == null) {
-      final pdfjsScript = html.ScriptElement()
-        ..src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
-        ..async = true;
-      html.document.head?.append(pdfjsScript);
-
-      js.context['pdfjsLib']?['GlobalWorkerOptions']?['workerSrc'] = 
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
+  void _openConversationsScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => _ConversationsScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(-1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
-  Future<void> _convertAndRenderPDF(String htmlContent) async {
-    if (!mounted) return;
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final chatProvider = Provider.of<ChatProvider>(context);
 
-    setState(() {
-      _isConverting = true;
-      _hasDocument = false;
-    });
-
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final viewId = 'pdf-preview-${DateTime.now().millisecondsSinceEpoch}';
-      
-      _registerPDFView(viewId);
-
-      await _executeHTMLtoPDF(htmlContent, viewId);
-
-      if (mounted) {
-        setState(() {
-          _hasDocument = true;
-          _isConverting = false;
-          _pdfViewId = viewId;
-        });
-      }
-    } catch (e) {
-      debugPrint('Erro ao converter PDF: $e');
-      if (mounted) {
-        setState(() {
-          _isConverting = false;
-        });
-      }
-    }
+    return GestureDetector(
+      onTap: () => _focusNode.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Container(
+        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: chatProvider.currentMessages.isEmpty
+                      ? _buildEmptyState(themeProvider)
+                      : _buildMessageList(themeProvider, chatProvider),
+                ),
+              ],
+            ),
+            Positioned(
+              top: 16,
+              left: 16,
+              child: SafeArea(
+                child: GestureDetector(
+                  onTap: () => _openConversationsScreen(context),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Ionicons.menu_outline,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: SafeArea(
+                child: GestureDetector(
+                  onTap: () => chatProvider.createNewConversation(),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Ionicons.add_outline,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            _buildInputArea(themeProvider),
+          ],
+        ),
+      ),
+    );
   }
 
-  void _registerPDFView(String viewId) {
-    ui_web.platformViewRegistry.registerViewFactory(
-      '$_previewViewType-$viewId',
-      (int id) {
-        final container = html.DivElement()
-          ..id = 'pdf-container-$viewId'
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.overflow = 'auto'
-          ..style.padding = '40px 20px'
-          ..style.boxSizing = 'border-box'
-          ..style.display = 'flex'
-          ..style.flexDirection = 'column'
-          ..style.alignItems = 'center'
-          ..style.gap = '20px';
+  Widget _buildEmptyState(ThemeProvider themeProvider) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Ionicons.chatbubble_ellipses_outline,
+            size: 64,
+            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Comece uma conversa',
+            style: TextStyle(
+              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Envie uma mensagem para iniciar',
+            style: TextStyle(
+              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-        return container;
+  Widget _buildMessageList(ThemeProvider themeProvider, ChatProvider chatProvider) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 80, 16, 120),
+      itemCount: chatProvider.currentMessages.length + (_isLoading ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (_isLoading && index == chatProvider.currentMessages.length) {
+          return _buildLoadingIndicator(themeProvider);
+        }
+        return _buildMessageBubble(chatProvider.currentMessages[index], themeProvider);
       },
     );
   }
 
-  Future<void> _executeHTMLtoPDF(String htmlContent, String viewId) async {
-    final script = '''
-    (async function() {
-      try {
-        const { jsPDF } = window.jspdf;
-        const html2canvas = window.html2canvas;
-        const pdfjsLib = window.pdfjsLib;
-        
-        if (!jsPDF || !html2canvas || !pdfjsLib) {
-          console.error('Bibliotecas não carregadas');
-          return;
+  Widget _buildLoadingIndicator(ThemeProvider themeProvider) {
+    final dotColor = themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 12),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SizedBox(
+          height: 28,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _animatedDot(0, dotColor),
+              const SizedBox(width: 6),
+              _animatedDot(1, dotColor),
+              const SizedBox(width: 6),
+              _animatedDot(2, dotColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _animatedDot(int index, Color color) {
+    return AnimatedBuilder(
+      animation: _loadingController,
+      builder: (context, child) {
+        final phase = _loadingController.value * 2 * math.pi;
+        final offsetY = math.sin(phase + index * 0.9) * 8;
+        final scale = 0.8 + (math.sin(phase + index * 0.9) + 1) * 0.1;
+        return Transform.translate(
+          offset: Offset(0, -offsetY),
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMessageBubble(ChatMessage message, ThemeProvider themeProvider) {
+    if (message.isUser) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFF212529),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            message.text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontFamily: 'Times New Roman',
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Verifica se a mensagem contém HTML (tabelas ou imagens)
+      final hasHtmlContent = message.text.contains('<table') || 
+                            message.text.contains('<img') ||
+                            message.text.contains('</table>');
+
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: hasHtmlContent
+              ? Html(
+                  data: message.text,
+                  style: {
+                    "body": Style(
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                      fontSize: FontSize(15),
+                      fontFamily: 'Times New Roman',
+                      lineHeight: const LineHeight(1.5),
+                      margin: Margins.zero,
+                      padding: HtmlPaddings.zero,
+                    ),
+                    "table": Style(
+                      border: Border.all(
+                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                        width: 1,
+                      ),
+                      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF2D333B) : Colors.white,
+                      margin: Margins.symmetric(vertical: 8),
+                    ),
+                    "th": Style(
+                      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF373E47) : const Color(0xFFE9ECEF),
+                      padding: HtmlPaddings.all(12),
+                      fontWeight: FontWeight.bold,
+                      border: Border.all(
+                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                        width: 1,
+                      ),
+                    ),
+                    "td": Style(
+                      padding: HtmlPaddings.all(12),
+                      border: Border.all(
+                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                        width: 1,
+                      ),
+                    ),
+                    "img": Style(
+                      width: Width(100, Unit.percent),
+                      margin: Margins.symmetric(vertical: 8),
+                    ),
+                  },
+                )
+              : SelectableText(
+                  message.text,
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    fontSize: 15,
+                    height: 1.5,
+                    fontFamily: 'Times New Roman',
+                  ),
+                ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildInputArea(ThemeProvider themeProvider) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: ChatInput(
+        messageController: _messageController,
+        focusNode: _focusNode,
+        isDarkMode: themeProvider.isDarkMode,
+        isLoading: _isLoading,
+        onSend: (text) async {
+          await _sendMessage(text);
+        },
+        viewType: _viewType,
+        sendIconSvg: _sendIconSvg,
+        stopIconSvg: _stopIconSvg,
+      ),
+    );
+  }
+
+  Future<void> _sendMessage(String text) async {
+    if (text.trim().isEmpty || _isLoading) return;
+    if (!mounted) return;
+
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+    if (mounted) {
+      setState(() {
+        chatProvider.addMessage(ChatMessage(text: text.trim(), isUser: true));
+        _isLoading = true;
+      });
+    }
+
+    _scrollToBottom();
+
+    try {
+      final response = await http.post(
+        Uri.parse(_groqApiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_groqApiKey',
+        },
+        body: jsonEncode({
+          'model': 'groq/compound',
+          'messages': [
+            {
+              'role': 'system',
+              'content': '''Você é o DocuGen AI, um assistente profissional, criativo e expressivo! 🎯
+
+REGRAS DE FORMATAÇÃO:
+
+1. ✨ USE EMOJIS para expressar criatividade e emoções
+2. 📝 Respostas normais: texto em Times New Roman (automaticamente aplicado)
+3. 📊 Para TABELAS: use SEMPRE HTML com <table></table>
+4. 🖼️ Para IMAGENS: use <img src="URL" alt="descrição" style="max-width:100%; border-radius:8px;">
+5. 🎨 Seja criativo e expressivo nas respostas
+
+FORMATO DE TABELAS HTML:
+<table>
+  <thead>
+    <tr>
+      <th>Coluna 1</th>
+      <th>Coluna 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dado 1</td>
+      <td>Dado 2</td>
+    </tr>
+  </tbody>
+</table>
+
+EXEMPLOS DE USO:
+
+📺 Jogos/Resultados:
+<table>
+  <thead>
+    <tr><th>🏆 Equipa</th><th>⚽ Golos</th><th>📊 Classificação</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>🇵🇹 Portugal</td><td>3</td><td>1º</td></tr>
+    <tr><td>🇧🇷 Brasil</td><td>1</td><td>2º</td></tr>
+  </tbody>
+</table>
+
+🖼️ Imagens (use URLs públicas):
+Quando o usuário pedir sobre pessoas, lugares ou temas:
+<img src="https://exemplo.com/imagem.jpg" alt="Descrição" style="max-width:100%; border-radius:8px; margin:10px 0;">
+
+💡 DICAS:
+- Use emojis relevantes ao contexto 🎉
+- Para jogos: 🏆⚽🥅📊🏅
+- Para pessoas famosas: busque imagens de domínio público
+- Seja sempre criativo e expressivo!
+
+CRIAÇÃO DE DOCUMENTOS HTML:
+- Só crie documentos HTML completos quando explicitamente pedido
+- Para conversas normais: use texto + emojis + tabelas HTML quando necessário''',
+            },
+            ...chatProvider.buildMessageHistory(),
+          ],
+          'temperature': 0.7,
+          'max_tokens': 4096,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final aiResponse = data['choices'][0]['message']['content'] as String;
+
+        if (mounted) {
+          setState(() {
+            chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
+            _isLoading = false;
+          });
+
+          // Verifica se é um documento HTML completo para preview
+          if (aiResponse.contains('<!DOCTYPE html>') || 
+              (aiResponse.contains('<html') && aiResponse.contains('</html>'))) {
+            final htmlContent = _extractHtmlFromResponse(aiResponse);
+            if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
+              widget.onDocumentGenerated!(htmlContent);
+            }
+          }
         }
-        
-        const container = document.createElement('div');
-        container.style.cssText = `
-          position: absolute;
-          left: -9999px;
-          top: 0;
-          width: 794px;
-          background: white;
-          padding: 40px;
-          box-sizing: border-box;
-        `;
-        
-        container.innerHTML = `$htmlContent`;
-        document.body.appendChild(container);
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const canvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          width: 794,
-          windowWidth: 794
+      } else {
+        throw Exception('Erro na API: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Erro ao enviar mensagem: $e');
+      if (mounted) {
+        setState(() {
+          chatProvider.addMessage(ChatMessage(
+            text: '❌ Desculpe, ocorreu um erro. Tente novamente.',
+            isUser: false,
+          ));
+          _isLoading = false;
         });
-        
-        document.body.removeChild(container);
-        
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'px',
-          format: [794, 1123],
-          compress: true
-        });
-        
-        const imgData = canvas.toDataURL('image/png', 1.0);
-        const pdfWidth = 794;
-        const pdfHeight = 1123;
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        let heightLeft = imgHeight;
-        let position = 0;
-        
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
-        heightLeft -= pdfHeight;
-        
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
-          heightLeft -= pdfHeight;
-        }
-        
-        const pdfData = pdf.output('arraybuffer');
-        
-        const pdfContainer = document.getElementById('pdf-container-$viewId');
-        if (!pdfContainer) return;
-        
-        pdfContainer.innerHTML = '';
-        
-        const loadingTask = pdfjsLib.getDocument({ data: pdfData });
-        const pdfDoc = await loadingTask.promise;
-        
-        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-          const page = await pdfDoc.getPage(pageNum);
-          const scale = 1.5;
-          const viewport = page.getViewport({ scale });
-          
-          const canvas = document.createElement('canvas');
-          canvas.style.cssText = `
-            background: white;
-            display: block;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            margin: 0 auto 20px auto;
-            max-width: 100%;
-            height: auto;
-          `;
-          
-          const ctx = canvas.getContext('2d');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          
-          pdfContainer.appendChild(canvas);
-          
-          await page.render({
-            canvasContext: ctx,
-            viewport: viewport
-          }).promise;
-        }
-        
-        window.currentPdfBlob = new Blob([pdfData], { type: 'application/pdf' });
-        
-      } catch (error) {
-        console.error('Erro na conversão PDF:', error);
       }
-    })();
-    ''';
+    }
 
-    js.context.callMethod('eval', [script]);
+    _scrollToBottom();
   }
 
-  void _downloadPDF() {
-    final script = '''
-    (function() {
-      if (window.currentPdfBlob) {
-        const url = URL.createObjectURL(window.currentPdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '${_documentName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+  String _extractHtmlFromResponse(String response) {
+    int htmlStart = response.indexOf('<!DOCTYPE html>');
+    if (htmlStart == -1) {
+      htmlStart = response.indexOf('<html');
+    }
+
+    if (htmlStart != -1) {
+      final htmlEnd = response.indexOf('</html>', htmlStart);
+      if (htmlEnd != -1) {
+        return response.substring(htmlStart, htmlEnd + 7);
       }
-    })();
-    ''';
-    
-    js.context.callMethod('eval', [script]);
+    }
+
+    final codeBlockStart = response.indexOf('```html');
+    if (codeBlockStart != -1) {
+      final contentStart = response.indexOf('\n', codeBlockStart) + 1;
+      final codeBlockEnd = response.indexOf('```', contentStart);
+      if (codeBlockEnd != -1) {
+        return response.substring(contentStart, codeBlockEnd).trim();
+      }
+    }
+
+    return '';
   }
 
-  void _printPDF() {
-    final script = '''
-    (function() {
-      if (window.currentPdfBlob) {
-        const url = URL.createObjectURL(window.currentPdfBlob);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        document.body.appendChild(iframe);
-        iframe.onload = function() {
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            URL.revokeObjectURL(url);
-          }, 100);
-        };
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
-    })();
-    ''';
-    
-    js.context.callMethod('eval', [script]);
+    });
+  }
+}
+
+class _ConversationsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final chatProvider = Provider.of<ChatProvider>(context);
+
+    return Scaffold(
+      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Ionicons.chatbubbles_outline,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Conversas',
+                      style: TextStyle(
+                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Ionicons.close_outline,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Divider(
+              height: 1,
+              color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+            ),
+            Expanded(
+              child: chatProvider.conversations.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Ionicons.file_tray_outline,
+                            size: 48,
+                            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Nenhuma conversa',
+                            style: TextStyle(
+                              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: chatProvider.conversations.length,
+                      itemBuilder: (context, index) {
+                        final conversation = chatProvider.conversations[index];
+                        final isSelected = chatProvider.currentConversation?.id == conversation.id;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? (themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF8F9FA))
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            onTap: () {
+                              chatProvider.switchConversation(conversation.id);
+                              Navigator.pop(context);
+                            },
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Ionicons.chatbubble_outline,
+                                size: 18,
+                                color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                              ),
+                            ),
+                            title: Text(
+                              conversation.title,
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                                fontSize: 15,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              _formatDate(conversation.lastUpdated),
+                              style: TextStyle(
+                                color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              icon: Icon(
+                                Ionicons.ellipsis_horizontal,
+                                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Ionicons.trash_outline,
+                                        size: 18,
+                                        color: Colors.red.shade400,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Excluir',
+                                        style: TextStyle(
+                                          color: Colors.red.shade400,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                if (value == 'delete') {
+                                  _showDeleteDialog(context, themeProvider, chatProvider, conversation.id);
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  void _showRenameDialog() {
-    _nameController.text = _documentName;
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Hoje';
+    } else if (difference.inDays == 1) {
+      return 'Ontem';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} dias atrás';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks ${weeks == 1 ? "semana" : "semanas"} atrás';
+    } else {
+      final months = (difference.inDays / 30).floor();
+      return '$months ${months == 1 ? "mês" : "meses"} atrás';
+    }
+  }
+
+  void _showDeleteDialog(BuildContext context, ThemeProvider themeProvider, ChatProvider chatProvider, String conversationId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Renomear documento',
+          'Excluir conversa',
           style: TextStyle(
             color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
-        content: TextField(
-          controller: _nameController,
-          autofocus: true,
+        content: Text(
+          'Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.',
           style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-          ),
-          decoration: InputDecoration(
-            hintText: 'Nome do documento',
-            hintStyle: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.white54 : Colors.grey,
-            ),
-            filled: true,
-            fillColor: themeProvider.isDarkMode 
-                ? const Color(0xFF2D333B) 
-                : const Color(0xFFF8F9FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
+            color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
           ),
         ),
         actions: [
@@ -330,293 +756,78 @@ class _PreviewTabState extends State<PreviewTab> {
             child: Text(
               'Cancelar',
               style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
+                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
             ),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
-              setState(() {
-                _documentName = _nameController.text.trim().isEmpty 
-                    ? 'Documento sem título' 
-                    : _nameController.text.trim();
-              });
+              chatProvider.deleteConversation(conversationId);
+              Navigator.pop(context);
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF007AFF),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            child: Text(
+              'Excluir',
+              style: TextStyle(
+                color: Colors.red.shade400,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            child: const Text('Salvar'),
           ),
         ],
       ),
     );
   }
+}30).floor();
+      return '$months ${months == 1 ? "mês" : "meses"} atrás';
+    }
+  }
 
-  void _showOptionsModal() {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
-    showModalBottomSheet(
+  void _showDeleteDialog(BuildContext context, ThemeProvider themeProvider, ChatProvider chatProvider, String conversationId) {
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Excluir conversa',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontWeight: FontWeight.w600,
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 20),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFDEE2E6),
-                borderRadius: BorderRadius.circular(2),
+        content: Text(
+          'Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  _buildModalOption(
-                    icon: Ionicons.create_outline,
-                    title: 'Renomear',
-                    subtitle: 'Alterar nome do documento',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showRenameDialog();
-                    },
-                    themeProvider: themeProvider,
-                    isFirst: true,
-                  ),
-                  const SizedBox(height: 2),
-                  _buildModalOption(
-                    icon: Ionicons.download_outline,
-                    title: 'Download PDF',
-                    subtitle: 'Baixar documento em PDF',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _downloadPDF();
-                    },
-                    themeProvider: themeProvider,
-                  ),
-                  const SizedBox(height: 2),
-                  _buildModalOption(
-                    icon: Ionicons.print_outline,
-                    title: 'Imprimir',
-                    subtitle: 'Enviar para impressora',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _printPDF();
-                    },
-                    themeProvider: themeProvider,
-                    isLast: true,
-                  ),
-                ],
+          ),
+          TextButton(
+            onPressed: () {
+              chatProvider.deleteConversation(conversationId);
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Excluir',
+              style: TextStyle(
+                color: Colors.red.shade400,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildModalOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required ThemeProvider themeProvider,
-    bool isFirst = false,
-    bool isLast = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.vertical(
-          top: isFirst ? const Radius.circular(12) : const Radius.circular(2),
-          bottom: isLast ? const Radius.circular(12) : const Radius.circular(2),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(
-          icon,
-          color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-          size: 22,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 13,
-              color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFF868E96),
-            ),
-          ),
-        ),
-        trailing: Icon(
-          Ionicons.chevron_forward,
-          color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFFADB5BD),
-          size: 18,
-        ),
-        onTap: onTap,
-      ),
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
-    return Stack(
-      children: [
-        _buildContent(themeProvider),
-        
-        if (_hasDocument && !_isConverting)
-          Positioned(
-            top: 16,
-            right: 16,
-            child: SafeArea(
-              child: GestureDetector(
-                onTap: _showOptionsModal,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Ionicons.list_outline,
-                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildContent(ThemeProvider themeProvider) {
-    if (_isConverting) {
-      return Container(
-        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                color: themeProvider.isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Convertendo HTML para PDF...',
-                style: TextStyle(
-                  color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (!_hasDocument) {
-      return Container(
-        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Ionicons.document_text_outline,
-                size: 64,
-                color: themeProvider.isDarkMode 
-                    ? Colors.grey.shade700 
-                    : Colors.grey.shade300,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Nenhum documento gerado ainda',
-                style: TextStyle(
-                  color: themeProvider.isDarkMode 
-                      ? Colors.grey.shade600 
-                      : Colors.grey.shade400,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Gere um documento no chat para visualizar',
-                style: TextStyle(
-                  color: themeProvider.isDarkMode 
-                      ? Colors.grey.shade600 
-                      : Colors.grey.shade400,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
-      child: Center(
-        child: SingleChildScrollView(
-          child: SizedBox(
-            width: double.infinity,
-            child: HtmlElementView(
-              viewType: '$_previewViewType-$_pdfViewId',
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    js.context.callMethod('eval', ['delete window.currentPdfBlob;']);
-    super.dispose();
   }
 }
