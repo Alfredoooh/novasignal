@@ -18,13 +18,12 @@ class PreviewTab extends StatefulWidget {
 
 class _PreviewTabState extends State<PreviewTab> {
   static const String _previewViewType = 'pdf-preview-viewer';
-  static bool _viewRegistered = false;
   bool _isConverting = false;
   bool _hasDocument = false;
   String? _pdfViewId;
-  bool _showMenu = false;
   String _documentName = 'Documento sem título';
   final TextEditingController _nameController = TextEditingController();
+  String? _lastProcessedContent;
 
   @override
   void initState() {
@@ -40,7 +39,9 @@ class _PreviewTabState extends State<PreviewTab> {
     super.didUpdateWidget(oldWidget);
     if (widget.htmlContent != oldWidget.htmlContent && 
         widget.htmlContent != null && 
-        widget.htmlContent!.isNotEmpty) {
+        widget.htmlContent!.isNotEmpty &&
+        widget.htmlContent != _lastProcessedContent) {
+      _lastProcessedContent = widget.htmlContent;
       _convertAndRenderPDF(widget.htmlContent!);
     }
   }
@@ -80,6 +81,7 @@ class _PreviewTabState extends State<PreviewTab> {
 
     setState(() {
       _isConverting = true;
+      _hasDocument = false;
     });
 
     try {
@@ -87,10 +89,7 @@ class _PreviewTabState extends State<PreviewTab> {
 
       final viewId = 'pdf-preview-${DateTime.now().millisecondsSinceEpoch}';
       
-      if (!_viewRegistered) {
-        _registerPDFView(viewId);
-        _viewRegistered = true;
-      }
+      _registerPDFView(viewId);
 
       await _executeHTMLtoPDF(htmlContent, viewId);
 
@@ -120,7 +119,6 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.overflow = 'auto'
-          ..style.background = '#525252'
           ..style.padding = '40px 20px'
           ..style.boxSizing = 'border-box'
           ..style.display = 'flex'
@@ -146,70 +144,87 @@ class _PreviewTabState extends State<PreviewTab> {
           return;
         }
         
-        // Criar container temporário com margens adequadas (A4: 210mm x 297mm)
+        // Criar container temporário
         const container = document.createElement('div');
         container.style.cssText = `
           position: absolute;
           left: -9999px;
           top: 0;
-          width: 170mm;
-          min-height: 257mm;
+          width: 794px;
           background: white;
-          padding: 20mm;
-          box-sizing: content-box;
+          padding: 40px;
+          box-sizing: border-box;
         `;
         
         container.innerHTML = `$htmlContent`;
         document.body.appendChild(container);
         
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Converter para canvas com qualidade alta
-        const canvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          width: container.offsetWidth,
-          height: container.offsetHeight
-        });
-        
-        document.body.removeChild(container);
-        
-        // Criar PDF com margens (A4 = 210mm x 297mm)
+        // Criar PDF com páginas múltiplas
         const pdf = new jsPDF({
           orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
+          unit: 'px',
+          format: 'a4',
+          hotfixes: ['px_scaling']
         });
         
-        const imgData = canvas.toDataURL('image/png');
-        const pdfWidth = 210;
-        const pdfHeight = 297;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const contentWidth = 794;
         
-        // Área útil com margens (20mm cada lado)
-        const contentWidth = 170;
-        const contentHeight = 257;
-        const marginX = 20;
-        const marginY = 20;
+        // Dividir conteúdo em páginas
+        const pageHeight = 1123; // A4 height em px
+        let position = 0;
+        let pageNumber = 0;
         
-        const imgWidth = contentWidth;
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
-        
-        let position = marginY;
-        let heightLeft = imgHeight;
-        
-        // Primeira página
-        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, Math.min(imgHeight, contentHeight));
-        heightLeft -= contentHeight;
-        
-        // Páginas adicionais
-        while (heightLeft > 0) {
-          pdf.addPage();
-          position = marginY - (imgHeight - heightLeft);
-          pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
-          heightLeft -= contentHeight;
+        while (position < container.offsetHeight) {
+          const pageContainer = document.createElement('div');
+          pageContainer.style.cssText = `
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 794px;
+            height: 1123px;
+            background: white;
+            padding: 40px;
+            box-sizing: border-box;
+            overflow: hidden;
+          `;
+          
+          const clonedContent = container.cloneNode(true);
+          clonedContent.style.position = 'relative';
+          clonedContent.style.top = -position + 'px';
+          pageContainer.appendChild(clonedContent);
+          document.body.appendChild(pageContainer);
+          
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          const canvas = await html2canvas(pageContainer, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            width: contentWidth,
+            height: pageHeight
+          });
+          
+          document.body.removeChild(pageContainer);
+          
+          if (pageNumber > 0) {
+            pdf.addPage();
+          }
+          
+          const imgData = canvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          
+          position += pageHeight - 80; // Overlap para continuidade
+          pageNumber++;
+          
+          if (pageNumber > 20) break; // Limite de segurança
         }
+        
+        document.body.removeChild(container);
         
         const pdfData = pdf.output('arraybuffer');
         
@@ -232,10 +247,11 @@ class _PreviewTabState extends State<PreviewTab> {
           canvas.style.cssText = `
             background: white;
             display: block;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             margin: 0 auto 20px auto;
             max-width: 100%;
             height: auto;
+            border-radius: 4px;
           `;
           
           const ctx = canvas.getContext('2d');
@@ -278,7 +294,6 @@ class _PreviewTabState extends State<PreviewTab> {
     ''';
     
     js.context.callMethod('eval', [script]);
-    setState(() => _showMenu = false);
   }
 
   void _printPDF() {
@@ -302,7 +317,6 @@ class _PreviewTabState extends State<PreviewTab> {
     ''';
     
     js.context.callMethod('eval', [script]);
-    setState(() => _showMenu = false);
   }
 
   void _showRenameDialog() {
@@ -312,7 +326,8 @@ class _PreviewTabState extends State<PreviewTab> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Renomear documento',
           style: TextStyle(
@@ -334,7 +349,7 @@ class _PreviewTabState extends State<PreviewTab> {
             ),
             filled: true,
             fillColor: themeProvider.isDarkMode 
-                ? const Color(0xFF495057) 
+                ? const Color(0xFF2D333B) 
                 : const Color(0xFFF8F9FA),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -375,206 +390,253 @@ class _PreviewTabState extends State<PreviewTab> {
     );
   }
 
+  void _showOptionsModal() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF8F9FA),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFDEE2E6),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  _buildModalOption(
+                    icon: Ionicons.create_outline,
+                    title: 'Renomear',
+                    subtitle: 'Alterar nome do documento',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showRenameDialog();
+                    },
+                    themeProvider: themeProvider,
+                    isFirst: true,
+                  ),
+                  const SizedBox(height: 2),
+                  _buildModalOption(
+                    icon: Ionicons.download_outline,
+                    title: 'Download PDF',
+                    subtitle: 'Baixar documento em PDF',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _downloadPDF();
+                    },
+                    themeProvider: themeProvider,
+                  ),
+                  const SizedBox(height: 2),
+                  _buildModalOption(
+                    icon: Ionicons.print_outline,
+                    title: 'Imprimir',
+                    subtitle: 'Enviar para impressora',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _printPDF();
+                    },
+                    themeProvider: themeProvider,
+                    isLast: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModalOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required ThemeProvider themeProvider,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? const Radius.circular(12) : const Radius.circular(2),
+          bottom: isLast ? const Radius.circular(12) : const Radius.circular(2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Icon(
+          icon,
+          color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+          size: 22,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 13,
+              color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFF868E96),
+            ),
+          ),
+        ),
+        trailing: Icon(
+          Ionicons.chevron_forward,
+          color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFFADB5BD),
+          size: 18,
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Stack(
       children: [
-        // Conteúdo principal
         _buildContent(themeProvider),
         
-        // Botão flutuante de menu
         if (_hasDocument && !_isConverting)
           Positioned(
             top: 16,
             right: 16,
-            child: _buildFloatingMenu(themeProvider),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildFloatingMenu(ThemeProvider themeProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Menu expandido
-        if (_showMenu)
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                _buildMenuItem(
-                  icon: Ionicons.create_outline,
-                  label: 'Renomear',
-                  onTap: () {
-                    setState(() => _showMenu = false);
-                    _showRenameDialog();
-                  },
-                  themeProvider: themeProvider,
-                ),
-                const SizedBox(height: 4),
-                _buildMenuItem(
-                  icon: Ionicons.download_outline,
-                  label: 'Download PDF',
-                  onTap: _downloadPDF,
-                  themeProvider: themeProvider,
-                ),
-                const SizedBox(height: 4),
-                _buildMenuItem(
-                  icon: Ionicons.print_outline,
-                  label: 'Imprimir',
-                  onTap: _printPDF,
-                  themeProvider: themeProvider,
-                ),
-              ],
-            ),
-          ),
-        
-        // Botão principal
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => setState(() => _showMenu = !_showMenu),
-            borderRadius: BorderRadius.circular(28),
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: const Color(0xFF007AFF),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+            child: SafeArea(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _showOptionsModal,
+                  borderRadius: BorderRadius.circular(28),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF007AFF),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Ionicons.list_outline,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
-                ],
-              ),
-              child: Icon(
-                _showMenu ? Ionicons.close : Ionicons.add,
-                color: Colors.white,
-                size: 28,
+                ),
               ),
             ),
           ),
-        ),
       ],
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required ThemeProvider themeProvider,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
   Widget _buildContent(ThemeProvider themeProvider) {
     if (_isConverting) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              color: themeProvider.isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Convertendo HTML para PDF...',
-              style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                fontSize: 16,
+      return Container(
+        color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F5F5),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: themeProvider.isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700,
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Convertendo HTML para PDF...',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (!_hasDocument) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Ionicons.document_text_outline,
-              size: 64,
-              color: themeProvider.isDarkMode 
-                  ? Colors.grey.shade700 
-                  : Colors.grey.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Nenhum documento gerado ainda',
-              style: TextStyle(
+      return Container(
+        color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F5F5),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Ionicons.document_text_outline,
+                size: 64,
                 color: themeProvider.isDarkMode 
-                    ? Colors.grey.shade600 
-                    : Colors.grey.shade400,
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
+                    ? Colors.grey.shade700 
+                    : Colors.grey.shade300,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Gere um documento no chat para visualizar',
-              style: TextStyle(
-                color: themeProvider.isDarkMode 
-                    ? Colors.grey.shade600 
-                    : Colors.grey.shade400,
-                fontSize: 14,
+              const SizedBox(height: 16),
+              Text(
+                'Nenhum documento gerado ainda',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode 
+                      ? Colors.grey.shade600 
+                      : Colors.grey.shade400,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'Gere um documento no chat para visualizar',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode 
+                      ? Colors.grey.shade600 
+                      : Colors.grey.shade400,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     return Container(
-      color: const Color(0xFF525252),
+      color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F5F5),
       child: Center(
         child: SingleChildScrollView(
           child: SizedBox(
