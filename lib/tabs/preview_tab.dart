@@ -144,7 +144,6 @@ class _PreviewTabState extends State<PreviewTab> {
           return;
         }
         
-        // Criar container temporário
         const container = document.createElement('div');
         container.style.cssText = `
           position: absolute;
@@ -161,74 +160,44 @@ class _PreviewTabState extends State<PreviewTab> {
         
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Criar PDF com páginas múltiplas
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'px',
-          format: 'a4',
-          hotfixes: ['px_scaling']
+        const canvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          width: 794,
+          windowWidth: 794
         });
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const contentWidth = 794;
-        
-        // Dividir conteúdo em páginas
-        const pageHeight = 1123; // A4 height em px
-        let position = 0;
-        let pageNumber = 0;
-        
-        while (position < container.offsetHeight) {
-          const pageContainer = document.createElement('div');
-          pageContainer.style.cssText = `
-            position: absolute;
-            left: -9999px;
-            top: 0;
-            width: 794px;
-            height: 1123px;
-            background: white;
-            padding: 40px;
-            box-sizing: border-box;
-            overflow: hidden;
-          `;
-          
-          const clonedContent = container.cloneNode(true);
-          clonedContent.style.position = 'relative';
-          clonedContent.style.top = -position + 'px';
-          pageContainer.appendChild(clonedContent);
-          document.body.appendChild(pageContainer);
-          
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          const canvas = await html2canvas(pageContainer, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            width: contentWidth,
-            height: pageHeight
-          });
-          
-          document.body.removeChild(pageContainer);
-          
-          if (pageNumber > 0) {
-            pdf.addPage();
-          }
-          
-          const imgData = canvas.toDataURL('image/png');
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-          
-          position += pageHeight - 80; // Overlap para continuidade
-          pageNumber++;
-          
-          if (pageNumber > 20) break; // Limite de segurança
-        }
         
         document.body.removeChild(container);
         
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [794, 1123],
+          compress: true
+        });
+        
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        const pdfWidth = 794;
+        const pdfHeight = 1123;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
+        heightLeft -= pdfHeight;
+        
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
+          heightLeft -= pdfHeight;
+        }
+        
         const pdfData = pdf.output('arraybuffer');
         
-        // Renderizar preview com PDF.js
         const pdfContainer = document.getElementById('pdf-container-$viewId');
         if (!pdfContainer) return;
         
@@ -243,7 +212,6 @@ class _PreviewTabState extends State<PreviewTab> {
           const viewport = page.getViewport({ scale });
           
           const canvas = document.createElement('canvas');
-          canvas.className = 'pdf-page-canvas';
           canvas.style.cssText = `
             background: white;
             display: block;
@@ -251,7 +219,6 @@ class _PreviewTabState extends State<PreviewTab> {
             margin: 0 auto 20px auto;
             max-width: 100%;
             height: auto;
-            border-radius: 4px;
           `;
           
           const ctx = canvas.getContext('2d');
@@ -398,7 +365,7 @@ class _PreviewTabState extends State<PreviewTab> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF8F9FA),
+          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
@@ -475,7 +442,7 @@ class _PreviewTabState extends State<PreviewTab> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.vertical(
           top: isFirst ? const Radius.circular(12) : const Radius.circular(2),
           bottom: isLast ? const Radius.circular(12) : const Radius.circular(2),
@@ -536,30 +503,26 @@ class _PreviewTabState extends State<PreviewTab> {
             top: 16,
             right: 16,
             child: SafeArea(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _showOptionsModal,
-                  borderRadius: BorderRadius.circular(28),
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF007AFF),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Ionicons.list_outline,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+              child: GestureDetector(
+                onTap: _showOptionsModal,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Ionicons.list_outline,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    size: 24,
                   ),
                 ),
               ),
@@ -572,7 +535,7 @@ class _PreviewTabState extends State<PreviewTab> {
   Widget _buildContent(ThemeProvider themeProvider) {
     if (_isConverting) {
       return Container(
-        color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F5F5),
+        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -596,7 +559,7 @@ class _PreviewTabState extends State<PreviewTab> {
 
     if (!_hasDocument) {
       return Container(
-        color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F5F5),
+        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -636,7 +599,7 @@ class _PreviewTabState extends State<PreviewTab> {
     }
 
     return Container(
-      color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : const Color(0xFFF5F5F5),
+      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
       child: Center(
         child: SingleChildScrollView(
           child: SizedBox(
