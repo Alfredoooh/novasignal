@@ -1,4 +1,6 @@
 // lib/tabs/chat_tab.dart
+import 'dart:convert';
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -74,11 +76,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context);
 
+    // Fundo principal — apenas preto ou branco
     return GestureDetector(
       onTap: () => _focusNode.unfocus(),
       behavior: HitTestBehavior.translucent,
       child: Container(
-        color: themeProvider.isDarkMode ? const Color(0xFF050810) : Colors.white,
+        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
         child: Stack(
           children: [
             Column(
@@ -100,19 +103,19 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,
+                      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withOpacity(0.6),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
                     child: Icon(
                       Ionicons.menu_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                       size: 24,
                     ),
                   ),
@@ -129,19 +132,19 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,
+                      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withOpacity(0.6),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
                     child: Icon(
                       Ionicons.add_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                       size: 24,
                     ),
                   ),
@@ -163,13 +166,13 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           Icon(
             Ionicons.chatbubble_ellipses_outline,
             size: 64,
-            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+            color: themeProvider.isDarkMode ? Colors.white : Colors.black,
           ),
           const SizedBox(height: 16),
           Text(
             'Comece uma conversa',
             style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
               fontSize: 20,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
@@ -179,7 +182,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           Text(
             'Envie uma mensagem para iniciar',
             style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
               fontSize: 14,
             ),
           ),
@@ -207,7 +210,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildLoadingIndicator(ThemeProvider themeProvider) {
-    final dotColor = themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    final dotColor = themeProvider.isDarkMode ? Colors.white : Colors.black;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, left: 12),
       child: Align(
@@ -267,18 +270,27 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFF212529),
+              color: themeProvider.isDarkMode ? Colors.black : Colors.white,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
                 bottomLeft: Radius.circular(20),
                 bottomRight: Radius.circular(4),
               ),
+              boxShadow: themeProvider.isDarkMode
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.6),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
             child: Text(
               message.text,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                 fontSize: 15,
               ),
             ),
@@ -361,7 +373,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       child: Icon(
         icon,
         size: 20,
-        color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
       ),
     );
   }
@@ -385,16 +397,16 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
   Future<void> _regenerateMessage(int aiMessageIndex) async {
     if (_isLoading) return;
-    
+
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    
+
     // Encontra a mensagem do usuário anterior à resposta da IA
     if (aiMessageIndex > 0) {
       final userMessage = chatProvider.currentMessages[aiMessageIndex - 1];
       if (userMessage.isUser) {
         // Remove a resposta antiga da IA
         chatProvider.currentMessages.removeAt(aiMessageIndex);
-        
+
         // Reenvia a mensagem do usuário
         await _sendMessage(userMessage.text, isRegeneration: true);
       }
@@ -402,176 +414,57 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
+    // Se for HTML, mostramos uma resposta simples com emoji e ícone de download
     if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
-      return _buildDocumentPreview(text, themeProvider);
+      return _buildDocumentInline(text, themeProvider);
     }
 
+    // Para texto normal, usamos o formatter habitual
     return MessageFormatter.buildFormattedText(text, themeProvider);
   }
 
-  Widget _buildDocumentPreview(String text, ThemeProvider themeProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1E88E5).withOpacity(0.1),
-                const Color(0xFF1976D2).withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFF1E88E5).withOpacity(0.3),
-              width: 2,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E88E5).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Ionicons.document_text,
-                      color: Color(0xFF1E88E5),
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '📄 Documento Criado',
-                          style: TextStyle(
-                            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'HTML profissional gerado com sucesso',
-                          style: TextStyle(
-                            color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Ionicons.checkmark_circle,
-                          color: Colors.green.shade400,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Destaques do documento:',
-                          style: TextStyle(
-                            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildHighlight('Design responsivo e moderno', themeProvider),
-                    _buildHighlight('Otimizado para todos os dispositivos', themeProvider),
-                    _buildHighlight('Código limpo e profissional', themeProvider),
-                    const SizedBox(height: 16),
-                    GestureDetector(
-                      onTap: () {
-                        if (widget.onDocumentGenerated != null) {
-                          widget.onDocumentGenerated!(_chatService.extractHtmlFromResponse(text));
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E88E5),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Ionicons.eye_outline, color: Colors.white, size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              'Veja o Preview!',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildDocumentInline(String text, ThemeProvider themeProvider) {
+    // Extrai o HTML limpo (caso o serviço tenha prefixos)
+    final htmlContent = _chatService.extractHtmlFromResponse(text);
 
-  Widget _buildHighlight(String text, ThemeProvider themeProvider) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E88E5),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 10),
+          // Texto simples: emoji de check + mensagem
           Expanded(
             child: Text(
-              text,
+              '✅ Documento criado',
               style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
-                fontSize: 14,
-                height: 1.5,
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+
+          // Download: sempre visível — chama conversão HTML→PDF e força download no browser
+          GestureDetector(
+            onTap: () {
+              if (htmlContent.isNotEmpty) {
+                _downloadHtmlAsPdf(htmlContent);
+                // Notifica também o callback externo caso necessário
+                if (widget.onDocumentGenerated != null) {
+                  widget.onDocumentGenerated!(htmlContent);
+                }
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(
+                Ionicons.download_outline,
+                size: 22,
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
               ),
             ),
           ),
@@ -580,27 +473,110 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildInputArea(ThemeProvider themeProvider) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: ChatInput(
-        messageController: _messageController,
-        focusNode: _focusNode,
-        isDarkMode: themeProvider.isDarkMode,
-        isLoading: _isLoading,
-        isEditing: _editingMessage != null,
-        onSend: (text) async {
-          if (_editingMessage != null && _editingIndex != null) {
-            await _handleEditMessage(text);
-          } else {
-            await _sendMessage(text);
-          }
-        },
-        onCancelEdit: _cancelEditing,
-      ),
-    );
+  /// Converte HTML para PDF no browser (usando jsPDF + html2canvas) e força
+  /// o download. O script injeta as libs se necessário.
+  void _downloadHtmlAsPdf(String htmlContent) {
+    final filename = 'document_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final safeHtml = jsonEncode(htmlContent); // garante escaping correto
+    final safeFilename = jsonEncode(filename);
+
+    final script = '''
+(function(){
+  const htmlContent = $safeHtml;
+  const filename = $safeFilename;
+
+  function ensureLibsAndRun(cb){
+    let toLoad = 0;
+    const onLoaded = () => { if(--toLoad === 0) cb(); };
+
+    if(!window.jspdf){
+      toLoad++;
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.async = true;
+      s.onload = onLoaded;
+      s.onerror = onLoaded;
+      document.head.appendChild(s);
+    }
+    if(!window.html2canvas){
+      toLoad++;
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s2.async = true;
+      s2.onload = onLoaded;
+      s2.onerror = onLoaded;
+      document.head.appendChild(s2);
+    }
+    if(toLoad === 0) cb();
+  }
+
+  ensureLibsAndRun(async function(){
+    try {
+      const { jsPDF } = window.jspdf || {};
+      const html2canvas = window.html2canvas;
+      if(!jsPDF || !html2canvas){
+        console.error('Bibliotecas jspdf/html2canvas não estão disponíveis.');
+        return;
+      }
+
+      const container = document.createElement('div');
+      container.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#ffffff;padding:40px;box-sizing:border-box;';
+      container.innerHTML = htmlContent;
+      document.body.appendChild(container);
+
+      // Espera um pouco para o layout estabilizar
+      await new Promise(r => setTimeout(r, 800));
+
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 794,
+        logging: false
+      });
+
+      document.body.removeChild(container);
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const pdfWidth = 794;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfPageHeight = 1123;
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [pdfWidth, pdfPageHeight],
+        compress: true
+      });
+
+      let position = 0;
+      let heightLeft = imgHeight;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
+      heightLeft -= pdfPageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
+        heightLeft -= pdfPageHeight;
+      }
+
+      // Aciona download
+      pdf.save(filename);
+
+    } catch (err) {
+      console.error('Erro ao converter/baixar PDF:', err);
+    }
+  });
+})();
+''';
+
+    try {
+      js.context.callMethod('eval', [script]);
+    } catch (e) {
+      debugPrint('Erro ao executar script de download: $e');
+    }
   }
 
   Future<void> _handleEditMessage(String newText) async {
@@ -610,17 +586,17 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     }
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    
+
     // Remove mensagens após a editada
     final messagesToKeep = chatProvider.currentMessages.sublist(0, _editingIndex!);
-    
+
     chatProvider.currentMessages.clear();
     for (var msg in messagesToKeep) {
       chatProvider.addMessage(msg);
     }
 
     _cancelEditing();
-    
+
     // Reenvia a mensagem editada
     await _sendMessage(newText);
   }
@@ -692,7 +668,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 }
 
-// Tela de conversas (mantida igual)
+// Tela de conversas (mantida igual, mas com fundo preto/branco)
 class _ConversationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -700,7 +676,7 @@ class _ConversationsScreen extends StatelessWidget {
     final chatProvider = Provider.of<ChatProvider>(context);
 
     return Scaffold(
-      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF050810) : Colors.white,
+      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -710,7 +686,7 @@ class _ConversationsScreen extends StatelessWidget {
                 children: [
                   Icon(
                     Ionicons.chatbubbles_outline,
-                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
@@ -718,7 +694,7 @@ class _ConversationsScreen extends StatelessWidget {
                     child: Text(
                       'Conversas',
                       style: TextStyle(
-                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -727,7 +703,7 @@ class _ConversationsScreen extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Ionicons.close_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -736,126 +712,133 @@ class _ConversationsScreen extends StatelessWidget {
             ),
             Divider(
               height: 1,
-              color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+              color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
             ),
             Expanded(
-              child: chatProvider.conversations.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Ionicons.file_tray_outline,
-                            size: 48,
-                            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Nenhuma conversa',
-                            style: TextStyle(
-                              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: chatProvider.conversations.length,
-                      itemBuilder: (context, index) {
-                        final conversation = chatProvider.conversations[index];
-                        final isSelected = chatProvider.currentConversation?.id == conversation.id;
-
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? (themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFFF8F9FA))
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            onTap: () {
-                              chatProvider.switchConversation(conversation.id);
-                              Navigator.pop(context);
-                            },
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: themeProvider.isDarkMode ? const Color(0xFF161B22) : const Color(0xFFE9ECEF),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Ionicons.chatbubble_outline,
-                                size: 18,
-                                color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
-                              ),
-                            ),
-                            title: Text(
-                              conversation.title,
-                              style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                                fontSize: 15,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              _formatDate(conversation.lastUpdated),
-                              style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                                fontSize: 13,
-                              ),
-                            ),
-                            trailing: PopupMenuButton<String>(
-                              icon: Icon(
-                                Ionicons.ellipsis_horizontal,
-                                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                                size: 20,
-                              ),
-                              color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              itemBuilder: (context) => [
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Ionicons.trash_outline,
-                                        size: 18,
-                                        color: Colors.red.shade400,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'Excluir',
-                                        style: TextStyle(
-                                          color: Colors.red.shade400,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              onSelected: (value) {
-                                if (value == 'delete') {
-                                  _showDeleteDialog(context, themeProvider, chatProvider, conversation.id);
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+              child: chat_provider_list_builder(themeProvider, chatProvider),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // Small helper to keep ListView builder code readable (same behavior as antes)
+  Widget chat_provider_list_builder(ThemeProvider themeProvider, ChatProvider chatProvider) {
+    if (chatProvider.conversations.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Ionicons.file_tray_outline,
+              size: 48,
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhuma conversa',
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: chatProvider.conversations.length,
+      itemBuilder: (context, index) {
+        final conversation = chatProvider.conversations[index];
+        final isSelected = chatProvider.currentConversation?.id == conversation.id;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (themeProvider.isDarkMode ? Colors.black : const Color(0xFFF8F9FA))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            onTap: () {
+              chatProvider.switchConversation(conversation.id);
+              Navigator.pop(context);
+            },
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode ? Colors.black : const Color(0xFFE9ECEF),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Ionicons.chatbubble_outline,
+                size: 18,
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+            title: Text(
+              conversation.title,
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              _formatDate(conversation.lastUpdated),
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white70 : Colors.black54,
+                fontSize: 13,
+              ),
+            ),
+            trailing: PopupMenuButton<String>(
+              icon: Icon(
+                Ionicons.ellipsis_horizontal,
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                size: 20,
+              ),
+              color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Ionicons.trash_outline,
+                        size: 18,
+                        color: Colors.red.shade400,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Excluir',
+                        style: TextStyle(
+                          color: Colors.red.shade400,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              onSelected: (value) {
+                if (value == 'delete') {
+                  _showDeleteDialog(context, themeProvider, chatProvider, conversation.id);
+                }
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -882,19 +865,19 @@ class _ConversationsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,
+        backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Excluir conversa',
           style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            color: themeProvider.isDarkMode ? Colors.white : Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
           'Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.',
           style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+            color: themeProvider.isDarkMode ? Colors.white70 : Colors.black87,
           ),
         ),
         actions: [
@@ -903,7 +886,7 @@ class _ConversationsScreen extends StatelessWidget {
             child: Text(
               'Cancelar',
               style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                color: themeProvider.isDarkMode ? Colors.white70 : Colors.black54,
               ),
             ),
           ),
