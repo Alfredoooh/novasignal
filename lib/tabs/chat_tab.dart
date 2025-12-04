@@ -1,6 +1,7 @@
 // lib/tabs/chat_tab.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/theme_provider.dart';
@@ -11,6 +12,9 @@ import '../services/chat_service.dart';
 import '../services/message_formatter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'dart:math' as math;
+
+// Import condicional para web
+import 'dart:js' as js show context;
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -50,7 +54,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  // safety dispose helper to avoid potential null errors if controller was replaced elsewhere
   void _scroll_controller_dispose_safe() {
     try {
       _scrollController.dispose();
@@ -155,7 +158,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                 ),
               ),
             ),
-            // *** Aqui estava a chamada que gerou o erro — agora a função existe abaixo ***
             _buildInputArea(themeProvider),
           ],
         ),
@@ -200,7 +202,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 80, 16, 120),
-      itemCount: chat_provider_item_count(chatProvider) ,
+      itemCount: chat_provider_item_count(chatProvider),
       itemBuilder: (context, index) {
         if (_isLoading && index == chatProvider.currentMessages.length) {
           return _buildLoadingIndicator(themeProvider);
@@ -408,14 +410,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
-    // Encontra a mensagem do usuário anterior à resposta da IA
     if (aiMessageIndex > 0) {
       final userMessage = chatProvider.currentMessages[aiMessageIndex - 1];
       if (userMessage.isUser) {
-        // Remove a resposta antiga da IA
         chatProvider.currentMessages.removeAt(aiMessageIndex);
-
-        // Reenvia a mensagem do usuário
         await _sendMessage(userMessage.text, isRegeneration: true);
       }
     }
@@ -483,7 +481,11 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   void _downloadHtmlAsPdf(String htmlContent) {
-    // Mantém a implementação JavaScript de conversão/baixar tal como antes.
+    if (!kIsWeb) {
+      debugPrint('PDF download só está disponível na versão web');
+      return;
+    }
+
     final filename = 'document_${DateTime.now().millisecondsSinceEpoch}.pdf';
     final safeHtml = Uri.encodeComponent(htmlContent);
     final script = '''
@@ -491,57 +493,97 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   try {
     const html = decodeURIComponent('$safeHtml');
     const filename = '$filename';
-    // tenta usar jspdf + html2canvas; assume que libs podem já estar carregadas
+    
     function ensureAndRender(cb) {
       let toLoad = 0;
       const onLoaded = () => { if(--toLoad === 0) cb(); };
-      if(!window.jspdf) { toLoad++; const s = document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload=onLoaded; s.onerror=onLoaded; document.head.appendChild(s); }
-      if(!window.html2canvas) { toLoad++; const s2 = document.createElement('script'); s2.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s2.onload=onLoaded; s2.onerror=onLoaded; document.head.appendChild(s2); }
+      
+      if(!window.jspdf) { 
+        toLoad++; 
+        const s = document.createElement('script'); 
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; 
+        s.onload=onLoaded; 
+        s.onerror=onLoaded; 
+        document.head.appendChild(s); 
+      }
+      
+      if(!window.html2canvas) { 
+        toLoad++; 
+        const s2 = document.createElement('script'); 
+        s2.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; 
+        s2.onload=onLoaded; 
+        s2.onerror=onLoaded; 
+        document.head.appendChild(s2); 
+      }
+      
       if(toLoad===0) cb();
     }
+    
     ensureAndRender(async function(){
       const { jsPDF } = window.jspdf || {};
       const html2canvas = window.html2canvas;
-      if(!jsPDF || !html2canvas) { console.error('libs missing'); return; }
+      
+      if(!jsPDF || !html2canvas) { 
+        console.error('libs missing'); 
+        return; 
+      }
+      
       const container = document.createElement('div');
       container.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;padding:40px;box-sizing:border-box;';
       container.innerHTML = html;
       document.body.appendChild(container);
+      
       await new Promise(r => setTimeout(r, 700));
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794 });
+      
+      const canvas = await html2canvas(container, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff', 
+        width: 794 
+      });
+      
       document.body.removeChild(container);
+      
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [794, 1123], compress: true });
+      const pdf = new jsPDF({ 
+        orientation: 'portrait', 
+        unit: 'px', 
+        format: [794, 1123], 
+        compress: true 
+      });
+      
       const pdfWidth = 794;
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
       let position = 0;
       let heightLeft = imgHeight;
+      
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
       heightLeft -= 1123;
+      
       while(heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
         heightLeft -= 1123;
       }
+      
       pdf.save(filename);
     });
-  } catch (e) { console.error(e); }
+  } catch (e) { 
+    console.error(e); 
+  }
 })();
 ''';
+
     try {
-      // ignore: avoid_dynamic_calls
-      // uso de js.context é feito no web build; em mobile não fará efeito mas não quebra
-      // se estiveres em ambiente que não suporta dart:js, isto falhará — neste caso, adapta para plataforma nativa
-      import 'dart:js' as _js; // (nota: no teu projecto real tens dart:js import no topo para web)
-    } catch (_) {}
-    // Para não introduzir dart:js dependência aqui (evitar compilar erros em mobile),
-    // usamos 'Uri' technique via platform channel na tua app real — mas deixo script pronto para web.
-    // Se precisares que eu integre com dart:js corretamente, digo e adapto.
+      // Executa o script JavaScript no contexto web
+      js.context.callMethod('eval', [script]);
+    } catch (e) {
+      debugPrint('Erro ao executar script de download: $e');
+    }
   }
 
   Widget _buildInputArea(ThemeProvider themeProvider) {
-    // ESTE método é o que faltava — garante que ChatInput está disponível e posicionado
     return Positioned(
       left: 0,
       right: 0,
@@ -572,7 +614,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
-    // Remove mensagens após a editada
     final messagesToKeep = chatProvider.currentMessages.sublist(0, _editingIndex!);
 
     chatProvider.currentMessages.clear();
@@ -581,8 +622,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     }
 
     _cancelEditing();
-
-    // Reenvia a mensagem editada
     await _sendMessage(newText);
   }
 
@@ -653,7 +692,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 }
 
-// Tela de conversas (mantida igual, mas com fundo profundo)
+// Tela de conversas
 class _ConversationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
