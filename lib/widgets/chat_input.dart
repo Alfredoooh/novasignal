@@ -48,14 +48,12 @@ class _ChatInputState extends State<ChatInput> {
   void didUpdateWidget(ChatInput oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Atualiza o input HTML quando estiver editando
     if (kIsWeb && widget.isEditing && _htmlInput != null) {
       _htmlInput!.value = widget.messageController.text;
       _htmlInput!.focus();
       setState(() => _isInputActive = true);
     }
 
-    // Limpa o input quando não estiver mais editando
     if (kIsWeb && !widget.isEditing && oldWidget.isEditing && _htmlInput != null) {
       _htmlInput!.value = '';
     }
@@ -64,7 +62,7 @@ class _ChatInputState extends State<ChatInput> {
   void _registerWebView() {
     try {
       ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-        final inputBgColor = widget.isDarkMode ? '#343A40' : '#F8F9FA';
+        final inputBgColor = widget.isDarkMode ? '#2D333B' : '#F1F3F5';
         final inputTextColor = widget.isDarkMode ? '#FFFFFF' : '#212529';
         final inputPlaceholderColor = widget.isDarkMode ? '#ADB5BD' : '#6C757D';
 
@@ -97,7 +95,10 @@ class _ChatInputState extends State<ChatInput> {
         final style = html.StyleElement()
           ..text = '''
             #chatInput-$viewId::placeholder { color: $inputPlaceholderColor; }
-            #chatInput-$viewId:focus { box-shadow: none !important; outline: none !important; }
+            #chatInput-$viewId:focus { 
+              box-shadow: none !important;
+              outline: none !important;
+            }
           ''';
 
         wrapper.append(style);
@@ -119,7 +120,6 @@ class _ChatInputState extends State<ChatInput> {
         });
 
         _htmlInput!.onInput.listen((_) {
-          // Sincroniza o valor com o controller do Flutter
           if (!kIsWeb) {
             widget.messageController.text = _htmlInput!.value ?? '';
           }
@@ -167,8 +167,8 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isDarkMode ? const Color(0xFF343A40) : Colors.white;
-    final inputBgColor = widget.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA);
+    final bgColor = widget.isDarkMode ? const Color(0xFF1C2128) : Colors.white;
+    final inputBgColor = widget.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5);
     final circleColor = widget.isDarkMode ? Colors.white : const Color(0xFF212529);
 
     return Container(
@@ -180,9 +180,16 @@ class _ChatInputState extends State<ChatInput> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
+            color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.06),
+            blurRadius: 8,
+            spreadRadius: 0,
             offset: const Offset(0, -4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.isDarkMode ? 0.1 : 0.03),
+            blurRadius: 16,
+            spreadRadius: 0,
+            offset: const Offset(0, -8),
           ),
         ],
       ),
@@ -193,7 +200,6 @@ class _ChatInputState extends State<ChatInput> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Barra de edição
               if (widget.isEditing)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -207,17 +213,17 @@ class _ChatInputState extends State<ChatInput> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Ionicons.create_outline,
                         size: 18,
-                        color: const Color(0xFF1E88E5),
+                        color: Color(0xFF1E88E5),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           'Editando mensagem',
                           style: TextStyle(
-                            color: const Color(0xFF1E88E5),
+                            color: Color(0xFF1E88E5),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -225,17 +231,16 @@ class _ChatInputState extends State<ChatInput> {
                       ),
                       GestureDetector(
                         onTap: widget.onCancelEdit,
-                        child: Icon(
+                        child: const Icon(
                           Ionicons.close_outline,
                           size: 20,
-                          color: const Color(0xFF1E88E5),
+                          color: Color(0xFF1E88E5),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-              // Input principal
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -251,7 +256,7 @@ class _ChatInputState extends State<ChatInput> {
                         }
                       },
                       child: Container(
-                        height: 50,
+                        height: 48,
                         decoration: BoxDecoration(
                           color: inputBgColor,
                           borderRadius: BorderRadius.circular(24),
@@ -296,7 +301,6 @@ class _ChatInputState extends State<ChatInput> {
                   ),
                   const SizedBox(width: 12),
 
-                  // Botão de enviar/stop
                   GestureDetector(
                     onTap: widget.isLoading ? null : _handleSend,
                     child: Container(
@@ -305,13 +309,6 @@ class _ChatInputState extends State<ChatInput> {
                       decoration: BoxDecoration(
                         color: circleColor,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                       child: Center(
                         child: Icon(
