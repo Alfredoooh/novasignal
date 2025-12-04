@@ -35,6 +35,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   late AnimationController _loadingController;
   ChatMessage? _editingMessage;
   int? _editingIndex;
+  
+  // Para animação de texto
+  String _displayedText = '';
+  int _currentCharIndex = 0;
 
   @override
   void initState() {
@@ -110,19 +114,19 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.6),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: Icon(
                       Ionicons.menu_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                       size: 24,
                     ),
                   ),
@@ -134,25 +138,28 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               right: 16,
               child: SafeArea(
                 child: GestureDetector(
-                  onTap: () => chatProvider.createNewConversation(),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.6),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Ionicons.add_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                      size: 24,
+                  onTap: () => _createNewConversationWithAnimation(context),
+                  child: Hero(
+                    tag: 'new_conversation',
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Ionicons.add_outline,
+                        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
@@ -165,35 +172,75 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
+  void _createNewConversationWithAnimation(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Container();
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            ),
+          ),
+          child: FadeTransition(
+            opacity: animation,
+            child: Center(
+              child: Hero(
+                tag: 'new_conversation',
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 30,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Ionicons.add_outline,
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                      size: 80,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      chatProvider.createNewConversation();
+    });
+  }
+
   Widget _buildEmptyState(ThemeProvider themeProvider) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Ionicons.chatbubble_ellipses_outline,
-            size: 64,
-            color: themeProvider.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Comece uma conversa',
-            style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade400,
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Envie uma mensagem para iniciar',
-            style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade400,
-              fontSize: 14,
-            ),
-          ),
-        ],
+      child: Text(
+        'Crie algo novo!',
+        style: TextStyle(
+          color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+          fontSize: 24,
+          fontWeight: FontWeight.w300,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
@@ -289,7 +336,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFF212529),
+              color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -299,8 +346,8 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             ),
             child: Text(
               message.text,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                 fontSize: 15,
               ),
             ),
@@ -355,17 +402,32 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         ),
         const SizedBox(width: 12),
         _buildActionButton(
-          icon: Ionicons.thumbs_up_outline,
+          icon: Ionicons.happy_outline,
           onTap: () {
-            // Implementar feedback positivo
+            // Feedback positivo
           },
           themeProvider: themeProvider,
         ),
         const SizedBox(width: 12),
         _buildActionButton(
-          icon: Ionicons.thumbs_down_outline,
+          icon: Ionicons.sad_outline,
           onTap: () {
-            // Implementar feedback negativo
+            // Feedback negativo
+          },
+          themeProvider: themeProvider,
+        ),
+        const SizedBox(width: 12),
+        _buildActionButton(
+          icon: Ionicons.pencil_outline,
+          onTap: () {
+            // Editar mensagem
+            if (messageIndex > 0) {
+              final userMessage = Provider.of<ChatProvider>(context, listen: false)
+                  .currentMessages[messageIndex - 1];
+              if (userMessage.isUser) {
+                _startEditingMessage(userMessage, messageIndex - 1);
+              }
+            }
           },
           themeProvider: themeProvider,
         ),
@@ -444,7 +506,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               '✅ Documento criado',
               style: TextStyle(
                 color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -576,7 +638,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 ''';
 
     try {
-      // Executa o script JavaScript no contexto web
       js.context.callMethod('eval', [script]);
     } catch (e) {
       debugPrint('Erro ao executar script de download: $e');
@@ -613,7 +674,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     }
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-
     final messagesToKeep = chatProvider.currentMessages.sublist(0, _editingIndex!);
 
     chatProvider.currentMessages.clear();
@@ -645,10 +705,14 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     _scrollToBottom();
 
     try {
-      final aiResponse = await _chatService.sendMessage(
-        text,
-        chatProvider.buildMessageHistory(),
-      );
+      final conversationHistory = chatProvider.buildMessageHistory();
+      
+      // Limita o histórico para evitar erro de token
+      final limitedHistory = conversationHistory.length > 10 
+          ? conversationHistory.sublist(conversationHistory.length - 10)
+          : conversationHistory;
+
+      final aiResponse = await _chatService.sendMessage(text, limitedHistory);
 
       if (mounted) {
         setState(() {
@@ -710,7 +774,7 @@ class _ConversationsScreen extends StatelessWidget {
                 children: [
                   Icon(
                     Ionicons.chatbubbles_outline,
-                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
@@ -718,7 +782,7 @@ class _ConversationsScreen extends StatelessWidget {
                     child: Text(
                       'Conversas',
                       style: TextStyle(
-                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -727,7 +791,7 @@ class _ConversationsScreen extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Ionicons.close_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -771,7 +835,7 @@ class _ConversationsScreen extends StatelessWidget {
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? (themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFFF8F9FA))
+                                ? (themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5))
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -784,7 +848,7 @@ class _ConversationsScreen extends StatelessWidget {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: themeProvider.isDarkMode ? const Color(0xFF161B22) : const Color(0xFFE9ECEF),
+                                color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFFE9ECEF),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -796,7 +860,7 @@ class _ConversationsScreen extends StatelessWidget {
                             title: Text(
                               conversation.title,
                               style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                                 fontSize: 15,
                                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                               ),
@@ -887,7 +951,7 @@ class _ConversationsScreen extends StatelessWidget {
         title: Text(
           'Excluir conversa',
           style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            color: themeProvider.isDarkMode ? Colors.white : Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ),
