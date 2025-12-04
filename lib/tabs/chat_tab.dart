@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -398,7 +399,7 @@ Responda de forma clara, direta e sem formatações desnecessárias.''',
         if (mounted) {
           setState(() {
             chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
-            _isLoading = false,
+            _isLoading = false;
           });
 
           if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
