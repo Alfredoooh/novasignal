@@ -48,9 +48,8 @@ class _ChatInputState extends State<ChatInput> {
   @override
   void initState() {
     super.initState();
-    // remove indicadores de foco do FocusNode (não forçamos autofocus)
     try {
-      widget.focusNode.canRequestFocus = true; // allow focus if user taps
+      widget.focusNode.canRequestFocus = true;
     } catch (_) {}
     if (kIsWeb && !_viewRegistered) {
       _registerWebView();
@@ -61,7 +60,7 @@ class _ChatInputState extends State<ChatInput> {
   void _registerWebView() {
     try {
       ui_web.platformViewRegistry.registerViewFactory(widget.viewType, (int viewId) {
-        // usar as mesmas cores do bottom tabbar: escuro 0xFF1C2128 ou branco no claro
+        // O tom do bottom tabbar: escuro 0xFF1C2128 ; claro: #FFFFFF
         final inputBgColor = widget.isDarkMode ? '#1C2128' : '#FFFFFF';
         final inputTextColor = widget.isDarkMode ? '#FFFFFF' : '#212529';
         final inputPlaceholderColor = widget.isDarkMode ? '#ADB5BD' : '#6C757D';
@@ -69,11 +68,10 @@ class _ChatInputState extends State<ChatInput> {
 
         final wrapper = html.DivElement()
           ..style.width = '100%'
-          ..style.height = '100%'
+          // permitir que o textarea ocupe toda a altura disponível/ cresça verticalmente
           ..style.display = 'flex'
-          ..style.alignItems = 'center';
+          ..style.alignItems = 'stretch';
 
-        // textarea para suportar múltiplas linhas e auto-resize
         _htmlTextarea = html.TextAreaElement()
           ..id = 'chatTextarea-$viewId'
           ..placeholder = 'Ask DocuGen'
@@ -88,30 +86,37 @@ class _ChatInputState extends State<ChatInput> {
           ..style.outline = 'none'
           ..style.backgroundColor = inputBgColor
           ..style.color = inputTextColor
-          ..style.resize = 'none' // impedir redimensionamento manual
+          // impedir redimensionamento manual horizontal; permitir overflow-y
+          ..style.resize = 'none'
           ..style.overflowY = 'auto'
           ..style.overflowX = 'hidden'
           ..style.maxHeight = '${maxHeightPx}px'
           ..style.lineHeight = '${_lineHeightPx}px'
           ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-          ..style.transition = 'background-color 0.3s, height 0.08s'
+          ..style.transition = 'background-color 0.2s, height 0.08s'
           ..style.setProperty('-webkit-user-select', 'text')
           ..style.userSelect = 'text'
           ..setAttribute('rows', '1')
           ..setAttribute('wrap', 'soft')
-          ..setAttribute('spellcheck', 'false')
+          ..style.whiteSpace = 'pre-wrap' // permite wraps
+          ..style.wordWrap = 'break-word'
+          ..style.setProperty('word-break', 'break-word') // compatibilidade
+          ..style.setProperty('overflow-wrap', 'anywhere') // força quebra onde necessário
+          ..style.whiteSpace = 'pre-wrap'
+          ..style.wordWrap = 'break-word'
           ..style.whiteSpace = 'pre-wrap'
           ..style.wordWrap = 'break-word';
 
-        // corrige aqui: tabIndex pertence ao elemento, não a style
-        _htmlTextarea!.tabIndex = 0; // mantém acessível por tab / clique
+        // tabindex no elemento (não em style)
+        _htmlTextarea!.tabIndex = 0;
 
-        // estilo extra para placeholder + remoção de foco visual
         final style = html.StyleElement()
           ..text = '''
             #chatTextarea-$viewId::placeholder { color: $inputPlaceholderColor; }
             #chatTextarea-$viewId:focus { box-shadow: none !important; outline: none !important; }
             #chatTextarea-$viewId { scrollbar-width: thin; }
+            /* Forçar quebra de linha em navegadores que precisam */
+            #chatTextarea-$viewId { word-wrap: break-word; overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap; }
           ''';
 
         wrapper.append(style);
@@ -119,14 +124,15 @@ class _ChatInputState extends State<ChatInput> {
 
         // auto-resize handler
         void resize() {
-          // reset height to auto to measure scrollHeight
-          _htmlTextarea!.style.height = 'auto';
-          final scrollH = _htmlTextarea!.scrollHeight!;
-          final cap = maxHeightPx;
-          final newH = math.min(scrollH, cap);
-          // garantir altura mínima de uma linha
-          final minH = _lineHeightPx + 12; // lineHeight + padding
-          _htmlTextarea!.style.height = '${math.max(newH, minH)}px';
+          try {
+            // reset height to auto para medir corretamente o scrollHeight
+            _htmlTextarea!.style.height = 'auto';
+            final scrollH = _htmlTextarea!.scrollHeight ?? 0;
+            final cap = maxHeightPx;
+            final newH = math.min(scrollH, cap);
+            final minH = _lineHeightPx + 12; // linha + padding
+            _htmlTextarea!.style.height = '${math.max(newH, minH)}px';
+          } catch (_) {}
         }
 
         // listeners
@@ -136,21 +142,18 @@ class _ChatInputState extends State<ChatInput> {
 
         _htmlTextarea!.onKeyPress.listen((e) {
           if (e.key == 'Enter' && !e.shiftKey) {
-            // Enter envia (Shift+Enter adiciona nova linha)
             e.preventDefault();
             final text = _htmlTextarea!.value?.trim() ?? '';
             if (text.isNotEmpty && !widget.isLoading) {
               widget.onSend(text);
               _htmlTextarea!.value = '';
               resize();
-              // mantemos sem foco visual (mas não fazemos blur automático)
               setState(() => _isInputActive = false);
             }
           }
         });
 
         _htmlTextarea!.onFocus.listen((_) {
-          // removemos qualquer foco visual (CSS já cuida), e marcamos ativo
           setState(() => _isInputActive = true);
           resize();
         });
@@ -159,12 +162,7 @@ class _ChatInputState extends State<ChatInput> {
           setState(() => _isInputActive = false);
         });
 
-        // inicial resize
-        Future.delayed(const Duration(milliseconds: 20), () {
-          try {
-            resize();
-          } catch (_) {}
-        });
+        Future.delayed(const Duration(milliseconds: 20), () => resize());
 
         return wrapper;
       });
@@ -179,7 +177,6 @@ class _ChatInputState extends State<ChatInput> {
       if (text.isEmpty) return;
       widget.onSend(text);
       _htmlTextarea?.value = '';
-      // ajustar altura após limpar
       try {
         _htmlTextarea?.style.height = 'auto';
       } catch (_) {}
@@ -197,73 +194,84 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    // **Match do bottom tabbar**:
-    // bottom tabbar usa: escuro 0xFF1C2128 ; claro: Colors.white
+    // Match do bottom tabbar:
     final bgColor = widget.isDarkMode ? const Color(0xFF1C2128) : Colors.white;
-    final inputBgColor = bgColor; // input icónico com o mesmo tom
+    final inputBgColor = bgColor; // input com o mesmo tom do tabbar
     final circleColor = widget.isDarkMode ? Colors.white : const Color(0xFF212529);
-
-    // remover outline/box-shadow visível ao focar (TextField)
-    final inputDecoration = const InputDecoration.collapsed(
-      hintText: 'Ask DocuGen',
-    );
 
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-        // mantive a sombra do container - se quiser remover, diga
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: Offset(0, -4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -4))],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Container(
-                  // o input deve ter o mesmo tom do bottom tabbar
-                  decoration: BoxDecoration(color: inputBgColor, borderRadius: BorderRadius.circular(24)),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  constraints: const BoxConstraints(minHeight: 50),
-                  child: kIsWeb
-                      ? // Web: Html textarea view
-                      HtmlElementView(viewType: widget.viewType, key: ValueKey(widget.isDarkMode))
-                      : // Mobile/Desktop: TextField multiline com auto-expand até 10 linhas
-                      Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(maxHeight: _maxVisibleLines * _lineHeightPx.toDouble() + 24),
-                            child: Scrollbar(
-                              child: TextField(
-                                controller: widget.messageController,
-                                focusNode: widget.focusNode,
-                                keyboardType: TextInputType.multiline,
-                                textInputAction: TextInputAction.newline,
-                                minLines: 1,
-                                maxLines: _maxVisibleLines,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: widget.isDarkMode ? Colors.white : const Color(0xFF212529),
-                                  height: 1.2,
+                child: GestureDetector(
+                  onTap: () {
+                    if (!_isInputActive && kIsWeb && _htmlTextarea != null) {
+                      _htmlTextarea!.focus();
+                      setState(() => _isInputActive = true);
+                    } else if (!_isInputActive && !kIsWeb) {
+                      widget.focusNode.requestFocus();
+                      setState(() => _isInputActive = true);
+                    }
+                  },
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 50),
+                    decoration: BoxDecoration(color: inputBgColor, borderRadius: BorderRadius.circular(24)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: kIsWeb
+                          ? IgnorePointer(
+                              ignoring: !_isInputActive,
+                              child: Opacity(
+                                opacity: _isInputActive ? 1.0 : 0.85,
+                                child: HtmlElementView(viewType: widget.viewType, key: ValueKey(widget.isDarkMode)),
+                              ),
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: _maxVisibleLines * _lineHeightPx.toDouble() + 24,
                                 ),
-                                decoration: inputDecoration.copyWith(
-                                  hintText: 'Ask DocuGen',
-                                  hintStyle: TextStyle(
-                                    color: widget.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
-                                    fontSize: 16,
+                                child: Scrollbar(
+                                  child: TextField(
+                                    controller: widget.messageController,
+                                    focusNode: widget.focusNode,
+                                    keyboardType: TextInputType.multiline,
+                                    textInputAction: TextInputAction.newline,
+                                    minLines: 1,
+                                    maxLines: _maxVisibleLines,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: widget.isDarkMode ? Colors.white : const Color(0xFF212529),
+                                      height: 1.2,
+                                    ),
+                                    decoration: InputDecoration.collapsed(
+                                      hintText: 'Ask DocuGen',
+                                      hintStyle: TextStyle(
+                                        color: widget.isDarkMode ? Colors.white54 : const Color(0xFFADB5BD),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    cursorColor: widget.isDarkMode ? Colors.white : const Color(0xFF212529),
+                                    enableSuggestions: false,
+                                    autocorrect: false,
+                                    onSubmitted: (_) => _handleSend(),
                                   ),
                                 ),
-                                cursorColor: widget.isDarkMode ? Colors.white : const Color(0xFF212529),
-                                enableSuggestions: false,
-                                autocorrect: false,
-                                onSubmitted: (_) => _handleSend(),
                               ),
                             ),
-                          ),
-                        ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -273,7 +281,7 @@ class _ChatInputState extends State<ChatInput> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(color: circleColor, shape: BoxShape.circle, boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: Offset(0, 2))
+                    BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))
                   ]),
                   child: Center(
                     child: widget.isLoading
