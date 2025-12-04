@@ -98,13 +98,7 @@ class _DocuGenHomePageState extends State<DocuGenHomePage> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
+          // <-- removida a boxShadow aqui para eliminar a "sombra no topo" do bottom bar
         ),
         child: SafeArea(
           child: Row(
