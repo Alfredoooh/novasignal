@@ -1,5 +1,6 @@
 // lib/tabs/preview_tab.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
@@ -18,12 +19,16 @@ class PreviewTab extends StatefulWidget {
 
 class _PreviewTabState extends State<PreviewTab> {
   static const String _previewViewType = 'pdf-preview-viewer';
+  static const String _renameInputViewType = 'rename-input-field';
+  static bool _renameViewRegistered = false;
+  
   bool _isConverting = false;
   bool _hasDocument = false;
   String? _pdfViewId;
   String _documentName = 'Documento sem título';
   final TextEditingController _nameController = TextEditingController();
   String? _lastProcessedContent;
+  html.InputElement? _htmlRenameInput;
 
   @override
   void initState() {
@@ -144,44 +149,39 @@ class _PreviewTabState extends State<PreviewTab> {
           return;
         }
         
-        // Tamanho A4 em pixels (300 DPI): 2480 x 3508
-        // Tamanho A4 em mm: 210 x 297
-        const a4Width = 210; // mm
-        const a4Height = 297; // mm
-        const pxWidth = 2480; // pixels para alta resolução
-        const pxHeight = 3508;
-        
-        // Margens em pixels (equivalente a ~20mm em cada lado)
-        const marginPx = 189; // ~20mm nas bordas
-        const contentWidth = pxWidth - (marginPx * 2);
+        const a4Width = 210;
+        const a4Height = 297;
+        const renderWidth = 794;
+        const marginMm = 20;
+        const contentWidthMm = a4Width - (marginMm * 2);
         
         const container = document.createElement('div');
         container.style.cssText = \`
           position: absolute;
           left: -99999px;
           top: 0;
-          width: \${contentWidth}px;
+          width: \${renderWidth}px;
           background: white;
-          padding: \${marginPx}px;
-          box-sizing: content-box;
-          font-family: Arial, sans-serif;
+          padding: 60px;
+          box-sizing: border-box;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 16px;
           line-height: 1.6;
+          color: #000000;
         \`;
         
         container.innerHTML = \`$htmlContent\`;
         document.body.appendChild(container);
         
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         const canvas = await html2canvas(container, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          width: pxWidth,
-          windowWidth: pxWidth,
-          scrollY: -window.scrollY,
-          scrollX: -window.scrollX,
+          windowWidth: renderWidth,
+          windowHeight: container.scrollHeight,
         });
         
         document.body.removeChild(container);
@@ -194,34 +194,29 @@ class _PreviewTabState extends State<PreviewTab> {
         });
         
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgWidth = contentWidthMm;
+        const imgHeight = (canvas.height * contentWidthMm) / canvas.width;
+        const pageHeight = a4Height - (marginMm * 2);
         
-        // Calcular quantas páginas são necessárias
-        const imgWidth = a4Width;
-        const imgHeight = (canvas.height * a4Width) / canvas.width;
-        const pageHeight = a4Height;
         let heightLeft = imgHeight;
         let position = 0;
         
-        // Adicionar primeira página
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+        pdf.addImage(imgData, 'JPEG', marginMm, marginMm, imgWidth, imgHeight, '', 'FAST');
         heightLeft -= pageHeight;
         
-        // Adicionar páginas extras se necessário
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+          pdf.addImage(imgData, 'JPEG', marginMm, position + marginMm, imgWidth, imgHeight, '', 'FAST');
           heightLeft -= pageHeight;
         }
         
         const pdfData = pdf.output('arraybuffer');
         const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
         
-        // Salvar globalmente para download
         window.currentPdfData = pdfData;
         window.currentPdfBlob = pdfBlob;
         
-        // Renderizar visualização
         const pdfContainer = document.getElementById('pdf-container-$viewId');
         if (!pdfContainer) return;
         
@@ -274,7 +269,7 @@ class _PreviewTabState extends State<PreviewTab> {
       final sanitizedName = _documentName
           .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')
           .replaceAll(' ', '_');
-      
+
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final filename = '${sanitizedName}_$timestamp.pdf';
 
@@ -283,7 +278,6 @@ class _PreviewTabState extends State<PreviewTab> {
         try {
           if (!window.currentPdfBlob) {
             console.error('PDF blob não encontrado');
-            alert('Erro: PDF não está pronto para download. Tente novamente.');
             return;
           }
           
@@ -301,37 +295,15 @@ class _PreviewTabState extends State<PreviewTab> {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
           }, 100);
-          
-          console.log('Download iniciado com sucesso');
         } catch (error) {
           console.error('Erro no download:', error);
-          alert('Erro ao fazer download: ' + error.message);
         }
       })();
       ''';
 
       js.context.callMethod('eval', [script]);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Download iniciado: $filename'),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
     } catch (e) {
       debugPrint('Erro ao baixar PDF: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erro ao fazer download do PDF'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -341,35 +313,30 @@ class _PreviewTabState extends State<PreviewTab> {
       try {
         if (!window.currentPdfBlob) {
           console.error('PDF blob não encontrado');
-          alert('Erro: PDF não está pronto para impressão.');
           return;
         }
         
         const blob = window.currentPdfBlob;
         const url = URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
         
-        document.body.appendChild(iframe);
+        // Criar janela de impressão
+        const printWindow = window.open(url, '_blank');
         
-        iframe.onload = function() {
-          try {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            
-            setTimeout(() => {
-              document.body.removeChild(iframe);
-              URL.revokeObjectURL(url);
-            }, 1000);
-          } catch (e) {
-            console.error('Erro ao imprimir:', e);
-            alert('Erro ao abrir janela de impressão');
-          }
-        };
+        if (printWindow) {
+          printWindow.onload = function() {
+            printWindow.focus();
+            printWindow.print();
+          };
+          
+          // Limpar URL após algum tempo
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 60000);
+        } else {
+          console.error('Não foi possível abrir janela de impressão');
+        }
       } catch (error) {
         console.error('Erro na impressão:', error);
-        alert('Erro ao preparar impressão: ' + error.message);
       }
     })();
     ''';
@@ -377,9 +344,67 @@ class _PreviewTabState extends State<PreviewTab> {
     js.context.callMethod('eval', [script]);
   }
 
+  void _registerRenameInputView() {
+    if (_renameViewRegistered) return;
+
+    try {
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      final inputBgColor = themeProvider.isDarkMode ? '#2D333B' : '#F1F3F5';
+      final inputTextColor = themeProvider.isDarkMode ? '#FFFFFF' : '#212529';
+      final inputPlaceholderColor = themeProvider.isDarkMode ? '#ADB5BD' : '#6C757D';
+
+      ui_web.platformViewRegistry.registerViewFactory(_renameInputViewType, (int viewId) {
+        final wrapper = html.DivElement()
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.display = 'flex'
+          ..style.alignItems = 'center';
+
+        _htmlRenameInput = html.InputElement()
+          ..id = 'renameInput-$viewId'
+          ..type = 'text'
+          ..value = _documentName
+          ..placeholder = 'Nome do documento'
+          ..setAttribute('autocomplete', 'off')
+          ..setAttribute('spellcheck', 'false')
+          ..style.flex = '1'
+          ..style.padding = '12px 16px'
+          ..style.border = 'none'
+          ..style.borderRadius = '8px'
+          ..style.fontSize = '16px'
+          ..style.outline = 'none'
+          ..style.backgroundColor = inputBgColor
+          ..style.color = inputTextColor
+          ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          ..style.transition = 'background-color 0.3s'
+          ..style.setProperty('-webkit-user-select', 'text')
+          ..style.userSelect = 'text';
+
+        final style = html.StyleElement()
+          ..text = '''
+            #renameInput-$viewId::placeholder { color: $inputPlaceholderColor; }
+            #renameInput-$viewId:focus { box-shadow: none !important; outline: none !important; }
+          ''';
+
+        wrapper.append(style);
+        wrapper.append(_htmlRenameInput!);
+
+        return wrapper;
+      });
+
+      _renameViewRegistered = true;
+    } catch (e) {
+      debugPrint('Error registering rename input view: $e');
+    }
+  }
+
   void _showRenameDialog() {
     _nameController.text = _documentName;
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    if (kIsWeb) {
+      _registerRenameInputView();
+    }
 
     showDialog(
       context: context,
@@ -394,26 +419,39 @@ class _PreviewTabState extends State<PreviewTab> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        content: TextField(
-          controller: _nameController,
-          autofocus: true,
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-          ),
-          decoration: InputDecoration(
-            hintText: 'Nome do documento',
-            hintStyle: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.white54 : Colors.grey,
-            ),
-            filled: true,
-            fillColor: themeProvider.isDarkMode 
-                ? const Color(0xFF2D333B) 
-                : const Color(0xFFF8F9FA),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
-          ),
+        content: SizedBox(
+          height: 48,
+          child: kIsWeb
+              ? HtmlElementView(
+                  viewType: _renameInputViewType,
+                  key: ValueKey('rename-${themeProvider.isDarkMode}'),
+                )
+              : TextField(
+                  controller: _nameController,
+                  autofocus: true,
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    fontSize: 16,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Nome do documento',
+                    hintStyle: TextStyle(
+                      color: themeProvider.isDarkMode ? Colors.white54 : Colors.grey,
+                    ),
+                    filled: true,
+                    fillColor: themeProvider.isDarkMode 
+                        ? const Color(0xFF2D333B) 
+                        : const Color(0xFFF1F3F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
         ),
         actions: [
           TextButton(
@@ -427,11 +465,18 @@ class _PreviewTabState extends State<PreviewTab> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _documentName = _nameController.text.trim().isEmpty 
-                    ? 'Documento sem título' 
-                    : _nameController.text.trim();
-              });
+              if (kIsWeb) {
+                final newName = _htmlRenameInput?.value?.trim() ?? '';
+                setState(() {
+                  _documentName = newName.isEmpty ? 'Documento sem título' : newName;
+                });
+              } else {
+                setState(() {
+                  _documentName = _nameController.text.trim().isEmpty 
+                      ? 'Documento sem título' 
+                      : _nameController.text.trim();
+                });
+              }
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
