@@ -9,7 +9,7 @@ import 'dart:js' as js;
 
 class PreviewTab extends StatefulWidget {
   final String? htmlContent;
-  
+
   const PreviewTab({Key? key, this.htmlContent}) : super(key: key);
 
   @override
@@ -88,7 +88,7 @@ class _PreviewTabState extends State<PreviewTab> {
       await Future.delayed(const Duration(milliseconds: 500));
 
       final viewId = 'pdf-preview-${DateTime.now().millisecondsSinceEpoch}';
-      
+
       _registerPDFView(viewId);
 
       await _executeHTMLtoPDF(htmlContent, viewId);
@@ -144,60 +144,84 @@ class _PreviewTabState extends State<PreviewTab> {
           return;
         }
         
-        const container = document.createElement('div');
-        container.style.cssText = `
-          position: absolute;
-          left: -9999px;
-          top: 0;
-          width: 794px;
-          background: white;
-          padding: 40px;
-          box-sizing: border-box;
-        `;
+        // Tamanho A4 em pixels (300 DPI): 2480 x 3508
+        // Tamanho A4 em mm: 210 x 297
+        const a4Width = 210; // mm
+        const a4Height = 297; // mm
+        const pxWidth = 2480; // pixels para alta resolução
+        const pxHeight = 3508;
         
-        container.innerHTML = `$htmlContent`;
+        // Margens em pixels (equivalente a ~20mm em cada lado)
+        const marginPx = 189; // ~20mm nas bordas
+        const contentWidth = pxWidth - (marginPx * 2);
+        
+        const container = document.createElement('div');
+        container.style.cssText = \`
+          position: absolute;
+          left: -99999px;
+          top: 0;
+          width: \${contentWidth}px;
+          background: white;
+          padding: \${marginPx}px;
+          box-sizing: content-box;
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+        \`;
+        
+        container.innerHTML = \`$htmlContent\`;
         document.body.appendChild(container);
         
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         const canvas = await html2canvas(container, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          width: 794,
-          windowWidth: 794
+          width: pxWidth,
+          windowWidth: pxWidth,
+          scrollY: -window.scrollY,
+          scrollX: -window.scrollX,
         });
         
         document.body.removeChild(container);
         
         const pdf = new jsPDF({
           orientation: 'portrait',
-          unit: 'px',
-          format: [794, 1123],
+          unit: 'mm',
+          format: 'a4',
           compress: true
         });
         
-        const imgData = canvas.toDataURL('image/png', 1.0);
-        const pdfWidth = 794;
-        const pdfHeight = 1123;
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         
+        // Calcular quantas páginas são necessárias
+        const imgWidth = a4Width;
+        const imgHeight = (canvas.height * a4Width) / canvas.width;
+        const pageHeight = a4Height;
         let heightLeft = imgHeight;
         let position = 0;
         
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
-        heightLeft -= pdfHeight;
+        // Adicionar primeira página
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+        heightLeft -= pageHeight;
         
+        // Adicionar páginas extras se necessário
         while (heightLeft > 0) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, '', 'FAST');
-          heightLeft -= pdfHeight;
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, '', 'FAST');
+          heightLeft -= pageHeight;
         }
         
         const pdfData = pdf.output('arraybuffer');
+        const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });
         
+        // Salvar globalmente para download
+        window.currentPdfData = pdfData;
+        window.currentPdfBlob = pdfBlob;
+        
+        // Renderizar visualização
         const pdfContainer = document.getElementById('pdf-container-$viewId');
         if (!pdfContainer) return;
         
@@ -211,21 +235,23 @@ class _PreviewTabState extends State<PreviewTab> {
           const scale = 1.5;
           const viewport = page.getViewport({ scale });
           
-          const canvas = document.createElement('canvas');
-          canvas.style.cssText = `
+          const pageContainer = document.createElement('div');
+          pageContainer.style.cssText = \`
             background: white;
-            display: block;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             margin: 0 auto 20px auto;
-            max-width: 100%;
-            height: auto;
-          `;
+            position: relative;
+          \`;
+          
+          const canvas = document.createElement('canvas');
+          canvas.style.cssText = 'display: block; width: 100%; height: auto;';
           
           const ctx = canvas.getContext('2d');
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           
-          pdfContainer.appendChild(canvas);
+          pageContainer.appendChild(canvas);
+          pdfContainer.appendChild(pageContainer);
           
           await page.render({
             canvasContext: ctx,
@@ -233,10 +259,9 @@ class _PreviewTabState extends State<PreviewTab> {
           }).promise;
         }
         
-        window.currentPdfBlob = new Blob([pdfData], { type: 'application/pdf' });
-        
       } catch (error) {
         console.error('Erro na conversão PDF:', error);
+        throw error;
       }
     })();
     ''';
@@ -245,51 +270,117 @@ class _PreviewTabState extends State<PreviewTab> {
   }
 
   void _downloadPDF() {
-    final script = '''
-    (function() {
-      if (window.currentPdfBlob) {
-        const url = URL.createObjectURL(window.currentPdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '${_documentName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    try {
+      final sanitizedName = _documentName
+          .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')
+          .replaceAll(' ', '_');
+      
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filename = '${sanitizedName}_$timestamp.pdf';
+
+      final script = '''
+      (function() {
+        try {
+          if (!window.currentPdfBlob) {
+            console.error('PDF blob não encontrado');
+            alert('Erro: PDF não está pronto para download. Tente novamente.');
+            return;
+          }
+          
+          const blob = window.currentPdfBlob;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = '$filename';
+          
+          document.body.appendChild(a);
+          a.click();
+          
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 100);
+          
+          console.log('Download iniciado com sucesso');
+        } catch (error) {
+          console.error('Erro no download:', error);
+          alert('Erro ao fazer download: ' + error.message);
+        }
+      })();
+      ''';
+
+      js.context.callMethod('eval', [script]);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download iniciado: $filename'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-    })();
-    ''';
-    
-    js.context.callMethod('eval', [script]);
+    } catch (e) {
+      debugPrint('Erro ao baixar PDF: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao fazer download do PDF'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _printPDF() {
     final script = '''
     (function() {
-      if (window.currentPdfBlob) {
-        const url = URL.createObjectURL(window.currentPdfBlob);
+      try {
+        if (!window.currentPdfBlob) {
+          console.error('PDF blob não encontrado');
+          alert('Erro: PDF não está pronto para impressão.');
+          return;
+        }
+        
+        const blob = window.currentPdfBlob;
+        const url = URL.createObjectURL(blob);
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = url;
+        
         document.body.appendChild(iframe);
+        
         iframe.onload = function() {
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            URL.revokeObjectURL(url);
-          }, 100);
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              URL.revokeObjectURL(url);
+            }, 1000);
+          } catch (e) {
+            console.error('Erro ao imprimir:', e);
+            alert('Erro ao abrir janela de impressão');
+          }
         };
+      } catch (error) {
+        console.error('Erro na impressão:', error);
+        alert('Erro ao preparar impressão: ' + error.message);
       }
     })();
     ''';
-    
+
     js.context.callMethod('eval', [script]);
   }
 
   void _showRenameDialog() {
     _nameController.text = _documentName;
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -359,7 +450,7 @@ class _PreviewTabState extends State<PreviewTab> {
 
   void _showOptionsModal() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -497,7 +588,7 @@ class _PreviewTabState extends State<PreviewTab> {
     return Stack(
       children: [
         _buildContent(themeProvider),
-        
+
         if (_hasDocument && !_isConverting)
           Positioned(
             top: 16,
@@ -616,7 +707,9 @@ class _PreviewTabState extends State<PreviewTab> {
   @override
   void dispose() {
     _nameController.dispose();
-    js.context.callMethod('eval', ['delete window.currentPdfBlob;']);
+    js.context.callMethod('eval', [
+      'delete window.currentPdfBlob; delete window.currentPdfData;'
+    ]);
     super.dispose();
   }
 }
