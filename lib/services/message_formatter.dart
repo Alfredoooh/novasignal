@@ -6,8 +6,7 @@ import '../providers/theme_provider.dart';
 
 class MessageFormatter {
   static Widget buildFormattedText(String text, ThemeProvider themeProvider) {
-    final color = themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529);
-    final accentBlue = const Color(0xFF1E88E5);
+    final color = themeProvider.isDarkMode ? Colors.white : Colors.black;
 
     if (text.contains('```')) {
       final parts = text.split('```');
@@ -15,7 +14,7 @@ class MessageFormatter {
       for (int i = 0; i < parts.length; i++) {
         final part = parts[i];
         if (i % 2 == 0) {
-          widgets.addAll(_buildWidgetsFromLines(part, color, accentBlue, themeProvider));
+          widgets.addAll(_buildWidgetsFromLines(part, color, themeProvider));
         } else {
           widgets.add(
             Container(
@@ -45,7 +44,7 @@ class MessageFormatter {
                       part.trim(),
                       style: TextStyle(
                         fontFamily: kIsWeb ? 'monospace' : 'Courier',
-                        fontSize: 13,
+                        fontSize: 14,
                         color: themeProvider.isDarkMode ? Colors.grey.shade200 : Colors.grey.shade900,
                       ),
                     ),
@@ -63,7 +62,7 @@ class MessageFormatter {
       );
     }
 
-    final children = _buildWidgetsFromLines(text, color, accentBlue, themeProvider);
+    final children = _buildWidgetsFromLines(text, color, themeProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +71,7 @@ class MessageFormatter {
   }
 
   static List<Widget> _buildWidgetsFromLines(
-      String text, Color color, Color accentBlue, ThemeProvider themeProvider) {
+      String text, Color color, ThemeProvider themeProvider) {
     List<Widget> widgets = [];
     final lines = text.replaceAll('\r', '').split('\n');
 
@@ -83,8 +82,6 @@ class MessageFormatter {
         widgets.add(const SizedBox(height: 10));
         continue;
       }
-
-      final lower = line.toLowerCase();
 
       // Tabelas HTML
       if (line.trim().startsWith('<table') || (i > 0 && lines[i - 1].contains('<table'))) {
@@ -116,13 +113,13 @@ class MessageFormatter {
               children: [
                 Row(
                   children: [
-                    Icon(Ionicons.grid_outline, size: 20, color: accentBlue),
+                    Icon(Ionicons.grid_outline, size: 20, color: color),
                     const SizedBox(width: 8),
                     Text(
                       'Tabela',
                       style: TextStyle(
-                        color: accentBlue,
-                        fontSize: 16,
+                        color: color,
+                        fontSize: 17,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -133,7 +130,7 @@ class MessageFormatter {
                   'Tabela HTML renderizada',
                   style: TextStyle(
                     color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                    fontSize: 14,
+                    fontSize: 15,
                   ),
                 ),
               ],
@@ -144,75 +141,19 @@ class MessageFormatter {
         continue;
       }
 
-      // Info boxes
-      if (lower.contains('importante') ||
-          lower.contains('atenção') ||
-          lower.contains('nota:') ||
-          line.startsWith('Info:') ||
-          line.contains('[info]')) {
-        widgets.add(
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode
-                  ? Colors.blue.withOpacity(0.08)
-                  : accentBlue.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: themeProvider.isDarkMode
-                    ? Colors.blue.withOpacity(0.2)
-                    : accentBlue.withOpacity(0.15),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Ionicons.information_circle, size: 22, color: accentBlue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    line,
-                    style: TextStyle(
-                      color: accentBlue,
-                      fontSize: 15,
-                      height: 1.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        continue;
-      }
-
       // H1
       if (line.startsWith('# ')) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 8),
-            child: Container(
-              padding: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: accentBlue.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-              ),
-              child: Text(
-                line.substring(2).trim(),
-                style: TextStyle(
-                  color: accentBlue,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
-                  letterSpacing: -0.5,
-                ),
+            padding: const EdgeInsets.only(top: 16, bottom: 10),
+            child: Text(
+              line.substring(2).trim(),
+              style: TextStyle(
+                color: color,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                height: 1.3,
+                letterSpacing: -0.5,
               ),
             ),
           ),
@@ -223,12 +164,12 @@ class MessageFormatter {
       else if (line.startsWith('## ')) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.only(top: 10, bottom: 6),
+            padding: const EdgeInsets.only(top: 14, bottom: 8),
             child: Text(
               line.substring(3).trim(),
               style: TextStyle(
                 color: color,
-                fontSize: 19,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 height: 1.35,
                 letterSpacing: -0.3,
@@ -242,12 +183,12 @@ class MessageFormatter {
       else if (line.startsWith('### ')) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 6),
+            padding: const EdgeInsets.only(top: 12, bottom: 8),
             child: Text(
               line.substring(4).trim(),
               style: TextStyle(
                 color: color,
-                fontSize: 17,
+                fontSize: 19,
                 fontWeight: FontWeight.w700,
                 height: 1.4,
               ),
@@ -261,16 +202,16 @@ class MessageFormatter {
       if (line.startsWith('- ') || line.startsWith('• ')) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  margin: const EdgeInsets.only(top: 8, right: 10),
+                  margin: const EdgeInsets.only(top: 9, right: 10),
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: accentBlue,
+                    color: color,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -292,19 +233,19 @@ class MessageFormatter {
       if (RegExp(r'^\d+\.\s').hasMatch(line)) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 32,
+                  width: 36,
                   margin: const EdgeInsets.only(right: 8),
                   child: Text(
                     line.split(' ')[0],
                     style: TextStyle(
-                      color: accentBlue,
-                      fontSize: 15,
-                      height: 1.6,
+                      color: color,
+                      fontSize: 17,
+                      height: 1.7,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -331,7 +272,7 @@ class MessageFormatter {
       if (line.contains('**')) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text.rich(
               TextSpan(children: _parseInlineFormatting(line, color)),
             ),
@@ -343,13 +284,13 @@ class MessageFormatter {
       // Plain text
       widgets.add(
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Text(
             line,
             style: TextStyle(
               color: color,
-              fontSize: 15,
-              height: 1.65,
+              fontSize: 17,
+              height: 1.7,
             ),
           ),
         ),
@@ -368,7 +309,7 @@ class MessageFormatter {
       if (match.start > lastIndex) {
         spans.add(TextSpan(
           text: text.substring(lastIndex, match.start),
-          style: TextStyle(color: color, fontSize: 15, height: 1.65),
+          style: TextStyle(color: color, fontSize: 17, height: 1.7),
         ));
       }
 
@@ -376,9 +317,9 @@ class MessageFormatter {
         text: match.group(1),
         style: TextStyle(
           color: color,
-          fontSize: 15,
+          fontSize: 17,
           fontWeight: FontWeight.bold,
-          height: 1.65,
+          height: 1.7,
         ),
       ));
 
@@ -388,7 +329,7 @@ class MessageFormatter {
     if (lastIndex < text.length) {
       spans.add(TextSpan(
         text: text.substring(lastIndex),
-        style: TextStyle(color: color, fontSize: 15, height: 1.65),
+        style: TextStyle(color: color, fontSize: 17, height: 1.7),
       ));
     }
 
