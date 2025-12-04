@@ -12,12 +12,6 @@ import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
 import 'package:ionicons/ionicons.dart';
 
-// Conditional imports for web platform
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:ui_web' as ui_web;
-
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
 
@@ -289,7 +283,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 15,
-              fontFamily: 'Times New Roman',
             ),
           ),
         ),
@@ -307,245 +300,17 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: _buildMessageContent(message.text, themeProvider),
-        ),
-      );
-    }
-  }
-
-  Widget _buildMessageContent(String text, ThemeProvider themeProvider) {
-    if (text.contains('<table>') && text.contains('</table>')) {
-      List<Widget> widgets = [];
-      int lastIndex = 0;
-
-      final tableRegex = RegExp(r'<table>.*?</table>', dotAll: true);
-      final matches = tableRegex.allMatches(text);
-
-      for (final match in matches) {
-        if (match.start > lastIndex) {
-          widgets.add(
-            SelectableText(
-              text.substring(lastIndex, match.start),
-              style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                fontSize: 15,
-                height: 1.5,
-                fontFamily: 'Times New Roman',
-              ),
-            ),
-          );
-        }
-
-        widgets.add(
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            child: _buildHtmlTable(match.group(0)!, themeProvider),
-          ),
-        );
-
-        lastIndex = match.end;
-      }
-
-      if (lastIndex < text.length) {
-        widgets.add(
-          SelectableText(
-            text.substring(lastIndex),
+          child: SelectableText(
+            message.text,
             style: TextStyle(
               color: themeProvider.isDarkMode ? Colors.white : Colors.black,
               fontSize: 15,
               height: 1.5,
-              fontFamily: 'Times New Roman',
             ),
-          ),
-        );
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: widgets,
-      );
-    }
-
-    if (text.contains('<img ') && text.contains('/>')) {
-      List<Widget> widgets = [];
-      int lastIndex = 0;
-
-      final imgRegex = RegExp(r'<img [^>]+/>', dotAll: true);
-      final matches = imgRegex.allMatches(text);
-
-      for (final match in matches) {
-        if (match.start > lastIndex) {
-          widgets.add(
-            SelectableText(
-              text.substring(lastIndex, match.start),
-              style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                fontSize: 15,
-                height: 1.5,
-                fontFamily: 'Times New Roman',
-              ),
-            ),
-          );
-        }
-
-        final imgTag = match.group(0)!;
-        final srcMatch = RegExp(r'src="([^"]+)"').firstMatch(imgTag);
-        final widthMatch = RegExp(r'width="([^"]+)"').firstMatch(imgTag);
-        final altMatch = RegExp(r'alt="([^"]+)"').firstMatch(imgTag);
-
-        if (srcMatch != null) {
-          widgets.add(
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  srcMatch.group(1)!,
-                  width: widthMatch != null ? double.tryParse(widthMatch.group(1)!) : 200,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Ionicons.image_outline, color: Colors.grey.shade600),
-                          const SizedBox(width: 8),
-                          Text(
-                            altMatch?.group(1) ?? 'Imagem',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          );
-        }
-
-        lastIndex = match.end;
-      }
-
-      if (lastIndex < text.length) {
-        widgets.add(
-          SelectableText(
-            text.substring(lastIndex),
-            style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-              fontSize: 15,
-              height: 1.5,
-              fontFamily: 'Times New Roman',
-            ),
-          ),
-        );
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: widgets,
-      );
-    }
-
-    return SelectableText(
-      text,
-      style: TextStyle(
-        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-        fontSize: 15,
-        height: 1.5,
-        fontFamily: 'Times New Roman',
-      ),
-    );
-  }
-
-  Widget _buildHtmlTable(String htmlTable, ThemeProvider themeProvider) {
-    if (!kIsWeb) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'HTML tables are only supported on web platform',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white70 : Colors.black54,
-            fontSize: 14,
           ),
         ),
       );
     }
-
-    final viewId = 'table-${DateTime.now().millisecondsSinceEpoch}';
-
-    ui_web.platformViewRegistry.registerViewFactory(
-      viewId,
-      (int viewId) {
-        final iframe = html.IFrameElement()
-          ..style.border = 'none'
-          ..style.width = '100%'
-          ..style.height = 'auto';
-
-        final doc = '''
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body {
-              margin: 0;
-              padding: 12px;
-              font-family: 'Times New Roman', serif;
-              background: ${themeProvider.isDarkMode ? '#1C2128' : '#FFFFFF'};
-              color: ${themeProvider.isDarkMode ? '#FFFFFF' : '#000000'};
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              background: ${themeProvider.isDarkMode ? '#0D1117' : '#F8F9FA'};
-              border-radius: 8px;
-              overflow: hidden;
-            }
-            th, td {
-              padding: 12px;
-              text-align: left;
-              border: 1px solid ${themeProvider.isDarkMode ? '#2D333B' : '#DEE2E6'};
-              font-size: 14px;
-            }
-            th {
-              background: ${themeProvider.isDarkMode ? '#1C2128' : '#E9ECEF'};
-              font-weight: bold;
-            }
-            tr:hover {
-              background: ${themeProvider.isDarkMode ? '#161B22' : '#F1F3F5'};
-            }
-            img {
-              width: 20px;
-              height: 14px;
-              margin-right: 6px;
-              vertical-align: middle;
-            }
-          </style>
-        </head>
-        <body>
-          $htmlTable
-        </body>
-        </html>
-        ''';
-
-        iframe.srcdoc = doc;
-        return iframe;
-      },
-    );
-
-    return SizedBox(
-      height: 300,
-      child: HtmlElementView(viewType: viewId),
-    );
   }
 
   Widget _buildInputArea(ThemeProvider themeProvider) {
@@ -595,60 +360,33 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           'messages': [
             {
               'role': 'system',
-              'content': '''Você é o DocuGen AI, um assistente criativo e profissional com capacidade de buscar imagens na internet.
+              'content': '''Você é o DocuGen AI, um assistente profissional e direto.
 
-REGRAS OBRIGATÓRIAS:
+REGRAS IMPORTANTES:
 
-1. 😊 Use emojis para expressar emoções e tornar respostas amigáveis
-2. 📊 Para TABELAS: use SEMPRE HTML com <table></table>
-3. 🖼️ Para IMAGENS: SEMPRE que mencionar pessoas, lugares, objetos, eventos - MOSTRE IMAGENS!
+1. NUNCA use asteriscos (**), markdown ou formatação especial no texto
+2. NUNCA crie caixas de informação ou avisos destacados
+3. Escreva texto LIMPO e SIMPLES, como uma conversa normal
+4. Use apenas texto puro - sem símbolos especiais, sem emojis
+5. Para tabelas, use APENAS formato de tabela markdown padrão (| Coluna | Coluna |)
+6. NUNCA use caracteres especiais para desenhar tabelas
+7. Seja direto e profissional
 
-FORMATO DE IMAGENS (OBRIGATÓRIO):
-Quando falar sobre qualquer tema visual, SEMPRE inclua imagem assim:
-<img src="URL_DA_IMAGEM" width="250" alt="descrição"/>
+CRIAÇÃO DE DOCUMENTOS HTML:
+- Só crie HTML quando o usuário pedir explicitamente: "crie um documento", "gere um HTML", "faça um site"
+- Para conversas normais, use apenas texto simples
 
-COMO ENCONTRAR IMAGENS:
-- Pessoas famosas: Busque URLs reais de fotos da pessoa (Wikipedia, sites oficiais)
-- Lugares: URLs de fotos do local
-- Objetos/Produtos: URLs de imagens do produto
-- Eventos: Fotos do evento
-- Bandeiras: https://flagcdn.com/w320/CODIGO.png (ex: pt para Portugal)
+EXEMPLO DE TABELA CORRETA:
+| Nome | Idade | Cidade |
+|------|-------|--------|
+| João | 25 | Lisboa |
+| Maria | 30 | Porto |
 
-EXEMPLOS PRÁTICOS:
-
-Usuário pergunta: "Quem é Elon Musk?"
-Resposta deve incluir:
-<img src="URL_REAL_FOTO_ELON_MUSK" width="250" alt="Elon Musk"/>
-Elon Musk é CEO da Tesla e SpaceX... [continua]
-
-Usuário pergunta: "Jogo Portugal vs Espanha"
-Resposta com TABELA:
-<table>
-<tr><th>🏆 Equipa</th><th>⚽ Golos</th><th>📊 Posse</th></tr>
-<tr><td><img src="https://flagcdn.com/w40/pt.png" alt="PT"/> Portugal</td><td>2</td><td>58%</td></tr>
-<tr><td><img src="https://flagcdn.com/w40/es.png" alt="ES"/> Espanha</td><td>1</td><td>42%</td></tr>
-</table>
-
-Usuário pergunta: "Torre Eiffel"
-Resposta deve incluir:
-<img src="URL_REAL_FOTO_TORRE_EIFFEL" width="250" alt="Torre Eiffel"/>
-A Torre Eiffel é... [continua]
-
-IMPORTANTE:
-- Use URLs REAIS de imagens que você conhece da internet
-- SEMPRE mostre imagens quando relevante ao tema
-- Imagens deixam respostas mais ricas e visuais
-- Não use placeholders, use URLs reais
-
-DOCUMENTOS HTML:
-- Só crie documentos HTML completos quando pedido explicitamente
-- Imagens e tabelas na conversa NÃO vão para documentos
-
-Seja visual, criativo e sempre mostre imagens quando possível! 📸✨''',
+Responda de forma clara, direta e sem formatações desnecessárias.''',
             },
             ...chatProvider.buildMessageHistory(),
           ],
-          'temperature': 0.7,
+          'temperature': 0.5,
           'max_tokens': 4096,
         }),
       );
@@ -660,7 +398,7 @@ Seja visual, criativo e sempre mostre imagens quando possível! 📸✨''',
         if (mounted) {
           setState(() {
             chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
-            _isLoading = false;
+            _isLoading = false,
           });
 
           if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
@@ -678,7 +416,7 @@ Seja visual, criativo e sempre mostre imagens quando possível! 📸✨''',
       if (mounted) {
         setState(() {
           chatProvider.addMessage(ChatMessage(
-            text: 'Desculpe, ocorreu um erro. Tente novamente. 😔',
+            text: 'Desculpe, ocorreu um erro. Tente novamente.',
             isUser: false,
           ));
           _isLoading = false;
