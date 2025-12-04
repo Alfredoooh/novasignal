@@ -11,7 +11,8 @@ import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:flutter_html/flutter_html.dart';
+import 'dart:html' as html;
+import 'dart:ui' as ui;
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -290,11 +291,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         ),
       );
     } else {
-      // Verifica se a mensagem contém HTML (tabelas ou imagens)
-      final hasHtmlContent = message.text.contains('<table') || 
-                            message.text.contains('<img') ||
-                            message.text.contains('</table>');
-
       return Align(
         alignment: Alignment.centerLeft,
         child: Container(
@@ -307,60 +303,229 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: hasHtmlContent
-              ? Html(
-                  data: message.text,
-                  style: {
-                    "body": Style(
-                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                      fontSize: FontSize(15),
-                      fontFamily: 'Times New Roman',
-                      lineHeight: const LineHeight(1.5),
-                      margin: Margins.zero,
-                      padding: HtmlPaddings.zero,
-                    ),
-                    "table": Style(
-                      border: Border.all(
-                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
-                        width: 1,
-                      ),
-                      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF2D333B) : Colors.white,
-                      margin: Margins.symmetric(vertical: 8),
-                    ),
-                    "th": Style(
-                      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF373E47) : const Color(0xFFE9ECEF),
-                      padding: HtmlPaddings.all(12),
-                      fontWeight: FontWeight.bold,
-                      border: Border.all(
-                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
-                        width: 1,
-                      ),
-                    ),
-                    "td": Style(
-                      padding: HtmlPaddings.all(12),
-                      border: Border.all(
-                        color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
-                        width: 1,
-                      ),
-                    ),
-                    "img": Style(
-                      width: Width(100, Unit.percent),
-                      margin: Margins.symmetric(vertical: 8),
-                    ),
-                  },
-                )
-              : SelectableText(
-                  message.text,
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                    fontSize: 15,
-                    height: 1.5,
-                    fontFamily: 'Times New Roman',
-                  ),
-                ),
+          child: _buildMessageContent(message.text, themeProvider),
         ),
       );
     }
+  }
+
+  Widget _buildMessageContent(String text, ThemeProvider themeProvider) {
+    if (text.contains('<table>') && text.contains('</table>')) {
+      List<Widget> widgets = [];
+      int lastIndex = 0;
+      
+      final tableRegex = RegExp(r'<table>.*?</table>', dotAll: true);
+      final matches = tableRegex.allMatches(text);
+      
+      for (final match in matches) {
+        if (match.start > lastIndex) {
+          widgets.add(
+            SelectableText(
+              text.substring(lastIndex, match.start),
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                fontSize: 15,
+                height: 1.5,
+                fontFamily: 'Times New Roman',
+              ),
+            ),
+          );
+        }
+        
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            child: _buildHtmlTable(match.group(0)!, themeProvider),
+          ),
+        );
+        
+        lastIndex = match.end;
+      }
+      
+      if (lastIndex < text.length) {
+        widgets.add(
+          SelectableText(
+            text.substring(lastIndex),
+            style: TextStyle(
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              fontSize: 15,
+              height: 1.5,
+              fontFamily: 'Times New Roman',
+            ),
+          ),
+        );
+      }
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      );
+    }
+    
+    if (text.contains('<img ') && text.contains('/>')) {
+      List<Widget> widgets = [];
+      int lastIndex = 0;
+      
+      final imgRegex = RegExp(r'<img [^>]+/>', dotAll: true);
+      final matches = imgRegex.allMatches(text);
+      
+      for (final match in matches) {
+        if (match.start > lastIndex) {
+          widgets.add(
+            SelectableText(
+              text.substring(lastIndex, match.start),
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                fontSize: 15,
+                height: 1.5,
+                fontFamily: 'Times New Roman',
+              ),
+            ),
+          );
+        }
+        
+        final imgTag = match.group(0)!;
+        final srcMatch = RegExp(r'src="([^"]+)"').firstMatch(imgTag);
+        final widthMatch = RegExp(r'width="([^"]+)"').firstMatch(imgTag);
+        final altMatch = RegExp(r'alt="([^"]+)"').firstMatch(imgTag);
+        
+        if (srcMatch != null) {
+          widgets.add(
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  srcMatch.group(1)!,
+                  width: widthMatch != null ? double.tryParse(widthMatch.group(1)!) : 200,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Ionicons.image_outline, color: Colors.grey.shade600),
+                          const SizedBox(width: 8),
+                          Text(
+                            altMatch?.group(1) ?? 'Imagem',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        }
+        
+        lastIndex = match.end;
+      }
+      
+      if (lastIndex < text.length) {
+        widgets.add(
+          SelectableText(
+            text.substring(lastIndex),
+            style: TextStyle(
+              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              fontSize: 15,
+              height: 1.5,
+              fontFamily: 'Times New Roman',
+            ),
+          ),
+        );
+      }
+      
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      );
+    }
+    
+    return SelectableText(
+      text,
+      style: TextStyle(
+        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+        fontSize: 15,
+        height: 1.5,
+        fontFamily: 'Times New Roman',
+      ),
+    );
+  }
+
+  Widget _buildHtmlTable(String htmlTable, ThemeProvider themeProvider) {
+    final viewId = 'table-${DateTime.now().millisecondsSinceEpoch}';
+    
+    // ignore: undefined_prefixed_name
+    ui.platformViewRegistry.registerViewFactory(
+      viewId,
+      (int viewId) {
+        final iframe = html.IFrameElement()
+          ..style.border = 'none'
+          ..style.width = '100%'
+          ..style.height = 'auto';
+        
+        final doc = '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              margin: 0;
+              padding: 12px;
+              font-family: 'Times New Roman', serif;
+              background: ${themeProvider.isDarkMode ? '#1C2128' : '#FFFFFF'};
+              color: ${themeProvider.isDarkMode ? '#FFFFFF' : '#000000'};
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              background: ${themeProvider.isDarkMode ? '#0D1117' : '#F8F9FA'};
+              border-radius: 8px;
+              overflow: hidden;
+            }
+            th, td {
+              padding: 12px;
+              text-align: left;
+              border: 1px solid ${themeProvider.isDarkMode ? '#2D333B' : '#DEE2E6'};
+              font-size: 14px;
+            }
+            th {
+              background: ${themeProvider.isDarkMode ? '#1C2128' : '#E9ECEF'};
+              font-weight: bold;
+            }
+            tr:hover {
+              background: ${themeProvider.isDarkMode ? '#161B22' : '#F1F3F5'};
+            }
+            img {
+              width: 20px;
+              height: 14px;
+              margin-right: 6px;
+              vertical-align: middle;
+            }
+          </style>
+        </head>
+        <body>
+          $htmlTable
+        </body>
+        </html>
+        ''';
+        
+        iframe.srcdoc = doc;
+        return iframe;
+      },
+    );
+    
+    return SizedBox(
+      height: 300,
+      child: HtmlElementView(viewType: viewId),
+    );
   }
 
   Widget _buildInputArea(ThemeProvider themeProvider) {
@@ -410,58 +575,56 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           'messages': [
             {
               'role': 'system',
-              'content': '''Você é o DocuGen AI, um assistente profissional, criativo e expressivo! 🎯
+              'content': '''Você é o DocuGen AI, um assistente criativo e profissional com capacidade de buscar imagens na internet.
 
-REGRAS DE FORMATAÇÃO:
+REGRAS OBRIGATÓRIAS:
 
-1. ✨ USE EMOJIS para expressar criatividade e emoções
-2. 📝 Respostas normais: texto em Times New Roman (automaticamente aplicado)
-3. 📊 Para TABELAS: use SEMPRE HTML com <table></table>
-4. 🖼️ Para IMAGENS: use <img src="URL" alt="descrição" style="max-width:100%; border-radius:8px;">
-5. 🎨 Seja criativo e expressivo nas respostas
+1. 😊 Use emojis para expressar emoções e tornar respostas amigáveis
+2. 📊 Para TABELAS: use SEMPRE HTML com <table></table>
+3. 🖼️ Para IMAGENS: SEMPRE que mencionar pessoas, lugares, objetos, eventos - MOSTRE IMAGENS!
 
-FORMATO DE TABELAS HTML:
+FORMATO DE IMAGENS (OBRIGATÓRIO):
+Quando falar sobre qualquer tema visual, SEMPRE inclua imagem assim:
+<img src="URL_DA_IMAGEM" width="250" alt="descrição"/>
+
+COMO ENCONTRAR IMAGENS:
+- Pessoas famosas: Busque URLs reais de fotos da pessoa (Wikipedia, sites oficiais)
+- Lugares: URLs de fotos do local
+- Objetos/Produtos: URLs de imagens do produto
+- Eventos: Fotos do evento
+- Bandeiras: https://flagcdn.com/w320/CODIGO.png (ex: pt para Portugal)
+
+EXEMPLOS PRÁTICOS:
+
+Usuário pergunta: "Quem é Elon Musk?"
+Resposta deve incluir:
+<img src="URL_REAL_FOTO_ELON_MUSK" width="250" alt="Elon Musk"/>
+Elon Musk é CEO da Tesla e SpaceX... [continua]
+
+Usuário pergunta: "Jogo Portugal vs Espanha"
+Resposta com TABELA:
 <table>
-  <thead>
-    <tr>
-      <th>Coluna 1</th>
-      <th>Coluna 2</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Dado 1</td>
-      <td>Dado 2</td>
-    </tr>
-  </tbody>
+<tr><th>🏆 Equipa</th><th>⚽ Golos</th><th>📊 Posse</th></tr>
+<tr><td><img src="https://flagcdn.com/w40/pt.png" alt="PT"/> Portugal</td><td>2</td><td>58%</td></tr>
+<tr><td><img src="https://flagcdn.com/w40/es.png" alt="ES"/> Espanha</td><td>1</td><td>42%</td></tr>
 </table>
 
-EXEMPLOS DE USO:
+Usuário pergunta: "Torre Eiffel"
+Resposta deve incluir:
+<img src="URL_REAL_FOTO_TORRE_EIFFEL" width="250" alt="Torre Eiffel"/>
+A Torre Eiffel é... [continua]
 
-📺 Jogos/Resultados:
-<table>
-  <thead>
-    <tr><th>🏆 Equipa</th><th>⚽ Golos</th><th>📊 Classificação</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>🇵🇹 Portugal</td><td>3</td><td>1º</td></tr>
-    <tr><td>🇧🇷 Brasil</td><td>1</td><td>2º</td></tr>
-  </tbody>
-</table>
+IMPORTANTE:
+- Use URLs REAIS de imagens que você conhece da internet
+- SEMPRE mostre imagens quando relevante ao tema
+- Imagens deixam respostas mais ricas e visuais
+- Não use placeholders, use URLs reais
 
-🖼️ Imagens (use URLs públicas):
-Quando o usuário pedir sobre pessoas, lugares ou temas:
-<img src="https://exemplo.com/imagem.jpg" alt="Descrição" style="max-width:100%; border-radius:8px; margin:10px 0;">
+DOCUMENTOS HTML:
+- Só crie documentos HTML completos quando pedido explicitamente
+- Imagens e tabelas na conversa NÃO vão para documentos
 
-💡 DICAS:
-- Use emojis relevantes ao contexto 🎉
-- Para jogos: 🏆⚽🥅📊🏅
-- Para pessoas famosas: busque imagens de domínio público
-- Seja sempre criativo e expressivo!
-
-CRIAÇÃO DE DOCUMENTOS HTML:
-- Só crie documentos HTML completos quando explicitamente pedido
-- Para conversas normais: use texto + emojis + tabelas HTML quando necessário''',
+Seja visual, criativo e sempre mostre imagens quando possível! 📸✨''',
             },
             ...chatProvider.buildMessageHistory(),
           ],
@@ -480,9 +643,7 @@ CRIAÇÃO DE DOCUMENTOS HTML:
             _isLoading = false;
           });
 
-          // Verifica se é um documento HTML completo para preview
-          if (aiResponse.contains('<!DOCTYPE html>') || 
-              (aiResponse.contains('<html') && aiResponse.contains('</html>'))) {
+          if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
             final htmlContent = _extractHtmlFromResponse(aiResponse);
             if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
               widget.onDocumentGenerated!(htmlContent);
@@ -497,7 +658,7 @@ CRIAÇÃO DE DOCUMENTOS HTML:
       if (mounted) {
         setState(() {
           chatProvider.addMessage(ChatMessage(
-            text: '❌ Desculpe, ocorreu um erro. Tente novamente.',
+            text: 'Desculpe, ocorreu um erro. Tente novamente. 😔',
             isUser: false,
           ));
           _isLoading = false;
@@ -727,58 +888,6 @@ class _ConversationsScreen extends StatelessWidget {
       return '$weeks ${weeks == 1 ? "semana" : "semanas"} atrás';
     } else {
       final months = (difference.inDays / 30).floor();
-      return '$months ${months == 1 ? "mês" : "meses"} atrás';
-    }
-  }
-
-  void _showDeleteDialog(BuildContext context, ThemeProvider themeProvider, ChatProvider chatProvider, String conversationId) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Excluir conversa',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Text(
-          'Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              chatProvider.deleteConversation(conversationId);
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text(
-              'Excluir',
-              style: TextStyle(
-                color: Colors.red.shade400,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}30).floor();
       return '$months ${months == 1 ? "mês" : "meses"} atrás';
     }
   }
