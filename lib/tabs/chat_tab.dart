@@ -88,11 +88,14 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context);
 
+    final bgColor = themeProvider.isDarkMode ? const Color(0xFF0A0E14) : Colors.white;
+    final foregroundOnly = themeProvider.isDarkMode ? Colors.white : Colors.black;
+
     return GestureDetector(
       onTap: () => _focusNode.unfocus(),
       behavior: HitTestBehavior.translucent,
       child: Container(
-        color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : Colors.white,
+        color: bgColor,
         child: Stack(
           children: [
             Column(
@@ -114,19 +117,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                      color: bgColor,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Icon(
                       Ionicons.menu_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: foregroundOnly,
                       size: 24,
                     ),
                   ),
@@ -143,19 +139,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                      color: bgColor,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Icon(
                       Ionicons.add_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: foregroundOnly,
                       size: 24,
                     ),
                   ),
@@ -170,6 +159,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildEmptyState(ThemeProvider themeProvider) {
+    final foregroundOnly = themeProvider.isDarkMode ? Colors.white : Colors.black;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -177,13 +167,13 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           Icon(
             Ionicons.chatbubble_ellipses_outline,
             size: 64,
-            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+            color: foregroundOnly,
           ),
           const SizedBox(height: 16),
           Text(
             'Comece uma conversa',
             style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              color: foregroundOnly,
               fontSize: 20,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.5,
@@ -193,7 +183,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           Text(
             'Envie uma mensagem para iniciar',
             style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+              color: foregroundOnly,
               fontSize: 14,
             ),
           ),
@@ -217,7 +207,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildLoadingIndicator(ThemeProvider themeProvider) {
-    final dotColor = themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600;
+    final dotColor = themeProvider.isDarkMode ? Colors.white : Colors.black;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, left: 12),
       child: Align(
@@ -265,71 +255,187 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildMessageBubble(ChatMessage message, ThemeProvider themeProvider) {
+    final fg = themeProvider.isDarkMode ? Colors.white : Colors.black;
+
     if (message.isUser) {
       return Align(
         alignment: Alignment.centerRight,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          decoration: BoxDecoration(
-            color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFF212529),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            message.text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
+        child: GestureDetector(
+          onTap: () {
+            // Permite editar a mensagem do utilizador ao tocar nela
+            _messageController.text = message.text;
+            _focusNode.requestFocus();
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(8), // menos curvo na lateral direita inferior
+              ),
+              border: Border.all(color: fg.withOpacity(0.08)),
+            ),
+            child: Text(
+              message.text,
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                fontSize: 15,
+              ),
             ),
           ),
         ),
       );
     } else {
+      // IA: NÃO usar Container de fundo — renderizar texto simples
       return Align(
         alignment: Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.85,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.85,
+            ),
+            child: _buildAiResponseContent(message.text, themeProvider),
           ),
-          child: _buildAiResponseContent(message.text, themeProvider),
         ),
       );
     }
   }
 
   Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
-    if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
-      int htmlStart = text.indexOf('<!DOCTYPE html>');
-      if (htmlStart == -1) htmlStart = text.indexOf('<html');
+    final fg = themeProvider.isDarkMode ? Colors.white : Colors.black;
 
-      String textBeforeHtml = htmlStart > 0 ? text.substring(0, htmlStart).trim() : '';
+    // Detecta HTML completo
+    if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
+      // Extrai HTML para enviar para callback se for necessário
+      final htmlContent = _extractHtmlFromResponse(text);
+      if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
+        widget.onDocumentGenerated!(htmlContent);
+      }
+
+      // Mostra apenas um H1 com emoji de papel e algumas opções (sem container)
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // H1 com emoji de papel
+          Padding(
+            padding: const EdgeInsets.only(top: 0, bottom: 8),
+            child: Text(
+              '📄 Documento criado',
+              style: TextStyle(
+                color: fg,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                height: 1.3,
+              ),
+            ),
+          ),
+
+          // Pequena descrição (texto simples)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'O documento foi gerado. Veja as opções abaixo para pré-visualizar, destacar ou partilhar.',
+              style: TextStyle(color: fg, fontSize: 14),
+            ),
+          ),
+
+          // Botões de ação (sem container)
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  // ação preview - o callback onDocumentGenerated já foi chamado
+                  // Se quiseres abrir um preview inline, implementa aqui
+                },
+                icon: Icon(Ionicons.eye_outline, size: 16, color: fg),
+                label: Text('Veja o preview!', style: TextStyle(color: fg)),
+                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6)),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  // Destaques - placeholder
+                },
+                icon: Icon(Ionicons.flash_outline, size: 16, color: fg),
+                label: Text('Destaques', style: TextStyle(color: fg)),
+                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6)),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  // Partilhar - placeholder
+                },
+                icon: Icon(Ionicons.share_social_outline, size: 16, color: fg),
+                label: Text('Partilhar', style: TextStyle(color: fg)),
+                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6)),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Se contém tag <table>, mostrar bloco de HTML (tabela) como texto selecionável (monospace)
+    if (text.contains('<table')) {
+      // apresentar a parte que inclui <table> até </table> se possível
+      final start = text.indexOf('<table');
+      final end = text.indexOf('</table>', start);
+      final tableHtml = (start != -1 && end != -1) ? text.substring(start, end + 8) : text;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (textBeforeHtml.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _buildFormattedText(textBeforeHtml, themeProvider),
+          // Texto explicativo (sem containers)
+          Text(
+            'Tabela (HTML):',
+            style: TextStyle(color: fg, fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          SelectableText(
+            tableHtml,
+            style: TextStyle(
+              fontFamily: kIsWeb ? 'monospace' : 'Courier',
+              fontSize: 13,
+              color: fg,
             ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+          ),
+          const SizedBox(height: 8),
+          // Botões de ação básicos (copiar, partilhar, regenerar, feedback)
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  // copiar tabela
+                },
+                icon: Icon(Ionicons.copy_outline, size: 16, color: fg),
+                label: Text('Copiar', style: TextStyle(color: fg)),
               ),
-            ),
-            child: Icon(
-              Ionicons.document_outline,
-              size: 20,
-              color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-            ),
+              TextButton.icon(
+                onPressed: () {},
+                icon: Icon(Ionicons.share_social_outline, size: 16, color: fg),
+                label: Text('Partilhar', style: TextStyle(color: fg)),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  // regenerar - stub
+                },
+                icon: Icon(Ionicons.reload_outline, size: 16, color: fg),
+                label: Text('Regenerar', style: TextStyle(color: fg)),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  // feedback - stub
+                },
+                icon: Icon(Ionicons.chatbubble_ellipses_outline, size: 16, color: fg),
+                label: Text('Feedback', style: TextStyle(color: fg)),
+              ),
+            ],
           ),
         ],
       );
@@ -339,16 +445,16 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildFormattedText(String text, ThemeProvider themeProvider) {
-    final color = themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529);
-    final accentBlue = const Color(0xFF1E88E5);
+    final color = themeProvider.isDarkMode ? Colors.white : Colors.black;
 
+    // Mantemos o suporte a blocos de código (```), listas, headers, etc.
     if (text.contains('```')) {
       final parts = text.split('```');
       List<Widget> widgets = [];
       for (int i = 0; i < parts.length; i++) {
         final part = parts[i];
         if (i % 2 == 0) {
-          widgets.addAll(_buildWidgetsFromLines(part, color, accentBlue, themeProvider));
+          widgets.addAll(_buildWidgetsFromLines(part, color, themeProvider));
         } else {
           widgets.add(
             Container(
@@ -356,22 +462,22 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               margin: const EdgeInsets.symmetric(vertical: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.grey.shade100,
+                color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
+                border: Border.all(color: color.withOpacity(0.08)),
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    Icon(Ionicons.code_slash, size: 16, color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
+                    Icon(Ionicons.code_slash, size: 16, color: color),
                     const SizedBox(width: 8),
                     SelectableText(
                       part.trim(),
                       style: TextStyle(
                         fontFamily: kIsWeb ? 'monospace' : 'Courier',
                         fontSize: 13,
-                        color: themeProvider.isDarkMode ? Colors.grey.shade200 : Colors.grey.shade900,
+                        color: color,
                       ),
                     ),
                   ],
@@ -388,7 +494,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       );
     }
 
-    final children = _buildWidgetsFromLines(text, color, accentBlue, themeProvider);
+    final children = _buildWidgetsFromLines(text, color, themeProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,7 +502,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  List<Widget> _buildWidgetsFromLines(String text, Color color, Color accentBlue, ThemeProvider themeProvider) {
+  List<Widget> _buildWidgetsFromLines(String text, Color color, ThemeProvider themeProvider) {
     List<Widget> widgets = [];
     final lines = text.replaceAll('\r', '').split('\n');
 
@@ -410,30 +516,24 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
       final lower = line.toLowerCase();
 
-      // Info boxes - destaque especial
+      // Info boxes replaced by simple bolded intro line (sem cores)
       if (lower.contains('importante') || lower.contains('atenção') || lower.contains('nota:') || line.startsWith('Info:') || line.contains('[info]')) {
         widgets.add(
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.08) : accentBlue.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.2) : accentBlue.withOpacity(0.15), width: 1.5),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Ionicons.information_circle, size: 22, color: accentBlue),
+                Icon(Ionicons.information_circle_outline, size: 20, color: color),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     line,
                     style: TextStyle(
-                      color: accentBlue,
+                      color: color,
                       fontSize: 15,
                       height: 1.5,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -444,37 +544,26 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         continue;
       }
 
-      // Headers - H1
+      // Headers - H1 (# )
       if (line.startsWith('# ')) {
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 8),
-            child: Container(
-              padding: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: accentBlue.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-              ),
-              child: Text(
-                line.substring(2).trim(),
-                style: TextStyle(
-                  color: accentBlue,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
-                  letterSpacing: -0.5,
-                ),
+            child: Text(
+              line.substring(2).trim(),
+              style: TextStyle(
+                color: color,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                height: 1.3,
+                letterSpacing: -0.5,
               ),
             ),
           ),
         );
         continue;
       } 
-      // Headers - H2
+      // Headers - H2 (## )
       else if (line.startsWith('## ')) {
         widgets.add(
           Padding(
@@ -493,7 +582,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         );
         continue;
       } 
-      // Headers - H3
+      // Headers - H3 (### )
       else if (line.startsWith('### ')) {
         widgets.add(
           Padding(
@@ -525,7 +614,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: accentBlue,
+                    color: color,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -557,10 +646,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                   child: Text(
                     line.split(' ')[0],
                     style: TextStyle(
-                      color: accentBlue,
+                      color: color,
                       fontSize: 15,
                       height: 1.6,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -577,7 +666,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         continue;
       }
 
-      // Regular text with bold
+      // Regular text with bold or inline formatting
       if (line.contains('**')) {
         widgets.add(
           Padding(
@@ -595,7 +684,8 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 3),
           child: Text(
-            line,
+            // limpa asteriscos soltos que porventura o modelo tenha deixado
+            line.replaceAll('*', ''),
             style: TextStyle(
               color: color,
               fontSize: 15,
@@ -610,20 +700,33 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   List<InlineSpan> _parseInlineFormatting(String text, Color color) {
+    // Este parser:
+    // - Extrai conteúdo entre **...** como bold.
+    // - Remove asteriscos soltos fora de blocos de código.
+    // - Não deixa ** ou * visíveis na UI.
     List<InlineSpan> spans = [];
-    final boldRegex = RegExp(r'\*\*(.*?)\*\*');
+
+    // Primeiro localiza blocos de bold com regex não-gulosa
+    final boldRegex = RegExp(r'\*\*(.+?)\*\*', dotAll: true);
     int lastIndex = 0;
 
     for (final match in boldRegex.allMatches(text)) {
       if (match.start > lastIndex) {
-        spans.add(TextSpan(
-          text: text.substring(lastIndex, match.start),
-          style: TextStyle(color: color, fontSize: 15, height: 1.65),
-        ));
+        String normalText = text.substring(lastIndex, match.start);
+        // remover asteriscos soltos
+        normalText = normalText.replaceAll('*', '');
+        if (normalText.isNotEmpty) {
+          spans.add(TextSpan(
+            text: normalText,
+            style: TextStyle(color: color, fontSize: 15, height: 1.65),
+          ));
+        }
       }
 
+      // Conteúdo em negrito (sem asteriscos)
+      final boldContent = match.group(1)?.replaceAll('*', '') ?? '';
       spans.add(TextSpan(
-        text: match.group(1),
+        text: boldContent,
         style: TextStyle(
           color: color,
           fontSize: 15,
@@ -636,10 +739,14 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     }
 
     if (lastIndex < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastIndex),
-        style: TextStyle(color: color, fontSize: 15, height: 1.65),
-      ));
+      String remaining = text.substring(lastIndex);
+      remaining = remaining.replaceAll('*', '');
+      if (remaining.isNotEmpty) {
+        spans.add(TextSpan(
+          text: remaining,
+          style: TextStyle(color: color, fontSize: 15, height: 1.65),
+        ));
+      }
     }
 
     return spans;
@@ -694,70 +801,33 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               'role': 'system',
               'content': '''Você é o DocuGen AI, um assistente especializado em criar documentos HTML profissionais e fornecer respostas extremamente bem estruturadas e organizadas.
 
-FORMATAÇÃO OBRIGATÓRIA PARA TODAS AS RESPOSTAS:
+INSTRUÇÕES FORÇADAS (seguir estritamente):
 
-1. **Títulos e Seções**:
-   - Use # para títulos principais (destaque máximo)
-   - Use ## para subtítulos importantes
-   - Use ### para seções menores
-   - Sempre separe seções claramente
+1) CORES: em todas as respostas use apenas COR PRETA (modo claro) ou COR BRANCA (modo escuro). Não use outras cores, gradientes ou destaques coloridos.
 
-2. **Listas e Organização**:
-   - Use listas numeradas (1., 2., 3.) para sequências e passos
-   - Use listas com marcadores (- ou •) para itens relacionados
-   - SEMPRE organize informações complexas em listas
-   - Separe cada item com linha em branco para melhor legibilidade
+2) TÍTULOS/SEÇÕES:
+   - Use # para título principal (H1)
+   - Use ## para subtítulo (H2)
+   - Use ### para seções menores (H3)
+   - Não inclua outros marcadores visuais além de texto (nenhum background colorido)
 
-3. **Ênfase e Destaque**:
-   - Use **negrito** para termos importantes, conceitos-chave e palavras de destaque
-   - Use caixas de informação para avisos importantes começando com "Importante:", "Atenção:", "Nota:" ou "[Info]"
-   - Destaque estatísticas, números e dados relevantes em **negrito**
+3) NEGRITO: use **conteúdo em negrito**. **Nunca** produza asteriscos visíveis. Se for necessário emular negrito, envolva com ** sem repetir asteriscos extras. Se já existe negrito, não duplique.
 
-4. **Estrutura de Resposta**:
-   - Sempre comece com uma breve introdução
-   - Organize o conteúdo em seções lógicas com títulos
-   - Use parágrafos curtos (2-3 linhas no máximo)
-   - Termine com conclusão ou próximos passos quando relevante
+4) LISTAS: use '-' ou '•' para bullets e '1.' para numeradas. Para tabelas solicitadas PELO UTILIZADOR NA CONVERSA, gere explicitamente uma `<table>...</table>` em HTML — NÃO use caracteres ASCII para desenhar a tabela.
 
-5. **Exemplos e Código**:
-   - Use \`\`\`código\`\`\` para blocos de código
-   - Use `texto` para termos técnicos inline
+5) HTML: NUNCA crie um documento HTML completo a menos que o usuário peça explicitamente. 
+   - Se o usuário pedir "gere um HTML" ou similar, gerarás o HTML completo.
+   - Se o modelo gerar HTML e for um documento, a aplicação mostrará apenas: "📄 Documento criado" (H1) e opções de preview / destaques / partilhar.
 
-6. **Tabelas** (quando necessário):
-   Use formato markdown:
-   | Coluna 1 | Coluna 2 | Coluna 3 |
-   |----------|----------|----------|
-   | Dado 1   | Dado 2   | Dado 3   |
+6) SAÍDA: sempre comece com uma breve introdução, se pertinente, e termine com próximos passos quando necessário.
 
-EXEMPLO DE BOA FORMATAÇÃO:
+7) CÓDIGO: use ```código``` para blocos de código e `texto` para inline code.
 
-# Título Principal
+8) TABELAS NA CONVERSA: quando o usuário pedir uma tabela **na própria conversa**, entregue-a em HTML com <table>, <thead>, <tbody>, <tr>, <td>. Isso garante que a UI possa capturar a tabela como HTML.
 
-Introdução breve e clara do assunto.
+9) PRIVACIDADE: não inclua chaves API, senhas ou dados sensíveis em qualquer resposta.
 
-## Seção Importante
-
-Explicação detalhada com informações relevantes.
-
-### Pontos-Chave
-
-- **Primeiro ponto**: Explicação detalhada do primeiro item importante
-- **Segundo ponto**: Detalhes sobre o segundo aspecto relevante
-- **Terceiro ponto**: Informações complementares
-
-Importante: Sempre destaque informações críticas desta forma.
-
-## Próximos Passos
-
-1. **Passo inicial**: Descrição clara do que fazer primeiro
-2. **Segundo passo**: Continuação lógica do processo
-3. **Conclusão**: Finalização e próximas ações
-
-REGRAS PARA HTML:
-- NUNCA crie documentos HTML a menos que o usuário peça explicitamente: "crie um documento", "gere um HTML", "faça um site", "monte uma página"
-- Para perguntas, explicações e conversas, use SEMPRE a formatação markdown rica descrita acima
-
-Seja detalhado, organizado e profissional. Priorize clareza e legibilidade em todas as respostas.''',
+Seja preciso, claro e siga estas regras ao pé da letra.''',
             },
             ...chatProvider.buildMessageHistory(),
           ],
@@ -804,9 +874,7 @@ Seja detalhado, organizado e profissional. Priorize clareza e legibilidade em to
 
   String _extractHtmlFromResponse(String response) {
     int htmlStart = response.indexOf('<!DOCTYPE html>');
-    if (htmlStart == -1) {
-      htmlStart = response.indexOf('<html');
-    }
+    if (htmlStart == -1) htmlStart = response.indexOf('<html');
 
     if (htmlStart != -1) {
       final htmlEnd = response.indexOf('</html>', htmlStart);
@@ -846,6 +914,8 @@ class _ConversationsScreen extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context);
 
+    final fg = themeProvider.isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
       backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : Colors.white,
       body: SafeArea(
@@ -857,7 +927,7 @@ class _ConversationsScreen extends StatelessWidget {
                 children: [
                   Icon(
                     Ionicons.chatbubbles_outline,
-                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    color: fg,
                     size: 24,
                   ),
                   const SizedBox(width: 12),
@@ -865,7 +935,7 @@ class _ConversationsScreen extends StatelessWidget {
                     child: Text(
                       'Conversas',
                       style: TextStyle(
-                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                        color: fg,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -874,7 +944,7 @@ class _ConversationsScreen extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Ionicons.close_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      color: fg,
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -883,7 +953,7 @@ class _ConversationsScreen extends StatelessWidget {
             ),
             Divider(
               height: 1,
-              color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+              color: fg.withOpacity(0.08),
             ),
             Expanded(
               child: chatProvider.conversations.isEmpty
@@ -894,13 +964,13 @@ class _ConversationsScreen extends StatelessWidget {
                           Icon(
                             Ionicons.file_tray_outline,
                             size: 48,
-                            color: themeProvider.isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                            color: fg,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Nenhuma conversa',
                             style: TextStyle(
-                              color: themeProvider.isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
+                              color: fg,
                               fontSize: 16,
                             ),
                           ),
@@ -917,9 +987,7 @@ class _ConversationsScreen extends StatelessWidget {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? (themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF8F9FA))
-                                : Colors.transparent,
+                            color: isSelected ? (themeProvider.isDarkMode ? Colors.black : Colors.white) : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListTile(
@@ -931,19 +999,19 @@ class _ConversationsScreen extends StatelessWidget {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
+                                color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
                                 Ionicons.chatbubble_outline,
                                 size: 18,
-                                color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                                color: fg,
                               ),
                             ),
                             title: Text(
                               conversation.title,
                               style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                                color: fg,
                                 fontSize: 15,
                                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                               ),
@@ -953,17 +1021,17 @@ class _ConversationsScreen extends StatelessWidget {
                             subtitle: Text(
                               _formatDate(conversation.lastUpdated),
                               style: TextStyle(
-                                color: themeProvider.isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                color: fg.withOpacity(0.7),
                                 fontSize: 13,
                               ),
                             ),
                             trailing: PopupMenuButton<String>(
                               icon: Icon(
                                 Ionicons.ellipsis_horizontal,
-                                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                                color: fg,
                                 size: 20,
                               ),
-                              color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                              color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -1026,22 +1094,23 @@ class _ConversationsScreen extends StatelessWidget {
   }
 
   void _showDeleteDialog(BuildContext context, ThemeProvider themeProvider, ChatProvider chatProvider, String conversationId) {
+    final fg = themeProvider.isDarkMode ? Colors.white : Colors.black;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Excluir conversa',
           style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            color: fg,
             fontWeight: FontWeight.w600,
           ),
         ),
         content: Text(
           'Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.',
           style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+            color: fg,
           ),
         ),
         actions: [
@@ -1050,7 +1119,7 @@ class _ConversationsScreen extends StatelessWidget {
             child: Text(
               'Cancelar',
               style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                color: fg,
               ),
             ),
           ),
