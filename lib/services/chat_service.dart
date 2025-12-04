@@ -12,10 +12,10 @@ class ChatService {
     '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',
     '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',
   ];
-  
+
   static int _currentKeyIndex = 0;
   static final Set<int> _blockedKeys = {}; // Keys que atingiram limite
-  
+
   static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
   static const String _systemPrompt = '''Você é o DocuGen AI, um assistente extremamente profissional e sofisticado especializado em criar documentos HTML de alta qualidade.
@@ -115,7 +115,7 @@ Seja sempre extremamente detalhado e profissional ao criar documentos!''';
 
   Future<String> sendMessage(String userMessage, List<Map<String, String>> messageHistory) async {
     debugPrint('═══════════════════════════════════════');
-    debugPrint('🚀 INICIANDO CHAMADA API');
+    debugPrint('🚀 INICIANDO CHAMADA API COM GROQ COMPOUND');
     debugPrint('📝 Mensagem do usuário: $userMessage');
     debugPrint('═══════════════════════════════════════');
 
@@ -126,7 +126,7 @@ Seja sempre extremamente detalhado e profissional ao criar documentos!''';
       try {
         final currentApiKey = _getNextValidApiKey();
         final keyPreview = '${currentApiKey.substring(0, 15)}...${currentApiKey.substring(currentApiKey.length - 4)}';
-        
+
         debugPrint('🔑 Tentativa ${retryCount + 1}/$maxRetries');
         debugPrint('🔑 Usando API Key #$_currentKeyIndex: $keyPreview');
         debugPrint('🚫 Keys bloqueadas: $_blockedKeys');
@@ -152,7 +152,7 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
         }
 
         final requestBody = {
-          'model': 'llama-3.3-70b-versatile',
+          'model': 'groq/compound', // 🔥 MODELO COMPOUND COM PESQUISA WEB
           'messages': [
             {
               'role': 'system',
@@ -160,11 +160,12 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
             },
             ...messageHistory,
           ],
-          'temperature': 0.7,
+          'temperature': 0.3,
           'max_tokens': 8000,
         };
 
         debugPrint('📤 Enviando requisição para: $_groqApiUrl');
+        debugPrint('🤖 Modelo: groq/compound');
 
         final response = await http.post(
           Uri.parse(_groqApiUrl),
@@ -174,9 +175,9 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
           },
           body: jsonEncode(requestBody),
         ).timeout(
-          const Duration(seconds: 60),
+          const Duration(seconds: 90), // Compound pode demorar mais por fazer pesquisas
           onTimeout: () {
-            debugPrint('⏰ TIMEOUT: Requisição demorou mais de 60 segundos');
+            debugPrint('⏰ TIMEOUT: Requisição demorou mais de 90 segundos');
             throw Exception('Timeout: A requisição demorou muito tempo');
           },
         );
@@ -203,7 +204,7 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
-          
+
           if (data['choices'] == null || data['choices'].isEmpty) {
             debugPrint('❌ ERRO: Resposta não contém choices');
             throw Exception('Resposta da API inválida');
@@ -219,14 +220,14 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
           }
 
           debugPrint('═══════════════════════════════════════');
-          debugPrint('✨ SUCESSO! Resposta processada com API Key #$_currentKeyIndex');
+          debugPrint('✨ SUCESSO COM GROQ COMPOUND! API Key #$_currentKeyIndex');
           debugPrint('═══════════════════════════════════════');
 
           return content;
         } else {
           debugPrint('❌ ERRO HTTP: ${response.statusCode}');
           debugPrint('📄 Corpo do erro: ${response.body}');
-          
+
           // Tenta parsear o erro da API
           try {
             final errorData = jsonDecode(response.body);
@@ -241,7 +242,7 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
         debugPrint('💥 ERRO NA TENTATIVA ${retryCount + 1}:');
         debugPrint('$e');
         debugPrint('═══════════════════════════════════════');
-        
+
         // Se for erro de conexão ou timeout, não tenta outras keys
         if (e.toString().contains('SocketException') || 
             e.toString().contains('Failed host lookup')) {
@@ -250,12 +251,12 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
                    e.toString().contains('Timeout')) {
           throw Exception('⏰ Timeout: Requisição demorou muito. Tente novamente.');
         }
-        
+
         // Se for último retry, lança o erro
         if (retryCount >= maxRetries - 1) {
           throw Exception('❌ Todas as API Keys falharam. Tente novamente mais tarde.');
         }
-        
+
         // Caso contrário, tenta próxima key
         retryCount++;
         _blockCurrentKeyAndSwitchToNext();
@@ -371,6 +372,7 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
       'current_key_index': _currentKeyIndex,
       'blocked_keys': _blockedKeys.toList(),
       'available_keys': _groqApiKeys.length - _blockedKeys.length,
+      'model': 'groq/compound',
     };
   }
 }
