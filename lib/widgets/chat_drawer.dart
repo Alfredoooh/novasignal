@@ -47,14 +47,14 @@ class _ChatInputState extends State<ChatInput> {
   @override
   void didUpdateWidget(ChatInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-
+    
     // Atualiza o input HTML quando estiver editando
     if (kIsWeb && widget.isEditing && _htmlInput != null) {
       _htmlInput!.value = widget.messageController.text;
       _htmlInput!.focus();
       setState(() => _isInputActive = true);
     }
-
+    
     // Limpa o input quando não estiver mais editando
     if (kIsWeb && !widget.isEditing && oldWidget.isEditing && _htmlInput != null) {
       _htmlInput!.value = '';
@@ -64,7 +64,7 @@ class _ChatInputState extends State<ChatInput> {
   void _registerWebView() {
     try {
       ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-        final inputBgColor = widget.isDarkMode ? '#2D333B' : '#F1F3F5';
+        final inputBgColor = widget.isDarkMode ? '#343A40' : '#F8F9FA';
         final inputTextColor = widget.isDarkMode ? '#FFFFFF' : '#212529';
         final inputPlaceholderColor = widget.isDarkMode ? '#ADB5BD' : '#6C757D';
 
@@ -168,7 +168,7 @@ class _ChatInputState extends State<ChatInput> {
   @override
   Widget build(BuildContext context) {
     final bgColor = widget.isDarkMode ? const Color(0xFF343A40) : Colors.white;
-    final inputBgColor = widget.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5);
+    final inputBgColor = widget.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA);
     final circleColor = widget.isDarkMode ? Colors.white : const Color(0xFF212529);
 
     return Container(
@@ -234,7 +234,7 @@ class _ChatInputState extends State<ChatInput> {
                     ],
                   ),
                 ),
-
+              
               // Input principal
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -295,7 +295,7 @@ class _ChatInputState extends State<ChatInput> {
                     ),
                   ),
                   const SizedBox(width: 12),
-
+                  
                   // Botão de enviar/stop
                   GestureDetector(
                     onTap: widget.isLoading ? null : _handleSend,
