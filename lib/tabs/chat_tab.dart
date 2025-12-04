@@ -156,7 +156,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                         ],
                       ),
                       child: Icon(
-                        Ionicons.add_outline,
+                        Ionicons.pencil_outline,
                         color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                         size: 24,
                       ),
@@ -414,21 +414,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           icon: Ionicons.sad_outline,
           onTap: () {
             // Feedback negativo
-          },
-          themeProvider: themeProvider,
-        ),
-        const SizedBox(width: 12),
-        _buildActionButton(
-          icon: Ionicons.pencil_outline,
-          onTap: () {
-            // Editar mensagem
-            if (messageIndex > 0) {
-              final userMessage = Provider.of<ChatProvider>(context, listen: false)
-                  .currentMessages[messageIndex - 1];
-              if (userMessage.isUser) {
-                _startEditingMessage(userMessage, messageIndex - 1);
-              }
-            }
           },
           themeProvider: themeProvider,
         ),
@@ -708,9 +693,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     try {
       final conversationHistory = chatProvider.buildMessageHistory();
       
-      // Limita o histórico para evitar erro de token (mantém últimas 60 mensagens)
-      final limitedHistory = conversationHistory.length > 60 
-          ? conversationHistory.sublist(conversationHistory.length - 60)
+      // Limita o histórico para evitar erro de token (mantém últimas 20 mensagens)
+      final limitedHistory = conversationHistory.length > 20 
+          ? conversationHistory.sublist(conversationHistory.length - 20)
           : conversationHistory;
 
       final aiResponse = await _chatService.sendMessage(text, limitedHistory);
