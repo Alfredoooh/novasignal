@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:ionicons/ionicons.dart';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
+import 'dart:convert';
 
 class ChatInput extends StatefulWidget {
   final TextEditingController messageController;
@@ -47,14 +48,14 @@ class _ChatInputState extends State<ChatInput> {
   @override
   void didUpdateWidget(ChatInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Atualiza o input HTML quando estiver editando
     if (kIsWeb && widget.isEditing && _htmlInput != null) {
       _htmlInput!.value = widget.messageController.text;
       _htmlInput!.focus();
       setState(() => _isInputActive = true);
     }
-    
+
     // Limpa o input quando não estiver mais editando
     if (kIsWeb && !widget.isEditing && oldWidget.isEditing && _htmlInput != null) {
       _htmlInput!.value = '';
@@ -64,15 +65,18 @@ class _ChatInputState extends State<ChatInput> {
   void _registerWebView() {
     try {
       ui_web.platformViewRegistry.registerViewFactory(_viewType, (int viewId) {
-        final inputBgColor = widget.isDarkMode ? '#343A40' : '#F8F9FA';
+        // cores alinhadas com bottom tab do home_page.dart
+        final inputBgColor = widget.isDarkMode ? '#2D333B' : '#F1F3F5';
+        final wrapperBg = widget.isDarkMode ? '#1C2128' : '#FFFFFF';
         final inputTextColor = widget.isDarkMode ? '#FFFFFF' : '#212529';
-        final inputPlaceholderColor = widget.isDarkMode ? '#ADB5BD' : '#6C757D';
+        final inputPlaceholderColor = widget.isDarkMode ? '#BFC4C9' : '#6C757D';
 
         final wrapper = html.DivElement()
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.display = 'flex'
-          ..style.alignItems = 'center';
+          ..style.alignItems = 'center'
+          ..style.background = wrapperBg;
 
         _htmlInput = html.InputElement()
           ..id = 'chatInput-$viewId'
@@ -119,10 +123,8 @@ class _ChatInputState extends State<ChatInput> {
         });
 
         _htmlInput!.onInput.listen((_) {
-          // Sincroniza o valor com o controller do Flutter
-          if (!kIsWeb) {
-            widget.messageController.text = _htmlInput!.value ?? '';
-          }
+          // Sincroniza o valor com o controller do Flutter (fallback)
+          widget.messageController.text = _htmlInput!.value ?? '';
         });
 
         _htmlInput!.onFocus.listen((_) {
@@ -167,9 +169,11 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isDarkMode ? const Color(0xFF343A40) : Colors.white;
-    final inputBgColor = widget.isDarkMode ? const Color(0xFF343A40) : const Color(0xFFF8F9FA);
-    final circleColor = widget.isDarkMode ? Colors.white : const Color(0xFF212529);
+    // cores alinhadas com bottom tab do home_page.dart (sem alterar o home)
+    final bgColor = widget.isDarkMode ? const Color(0xFF1C2128) : Colors.white;
+    final inputBgColor = widget.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5);
+    final circleColor = widget.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5);
+    final iconColorOnCircle = widget.isDarkMode ? Colors.white : Colors.black;
 
     return Container(
       decoration: BoxDecoration(
@@ -193,16 +197,20 @@ class _ChatInputState extends State<ChatInput> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Barra de edição
+              // Barra de edição — sem azul, só tons do inputBgColor
               if (widget.isEditing)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E88E5).withOpacity(0.1),
+                    color: widget.isDarkMode
+                        ? inputBgColor.withOpacity(0.12)
+                        : inputBgColor.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFF1E88E5).withOpacity(0.3),
+                      color: widget.isDarkMode
+                          ? inputBgColor.withOpacity(0.25)
+                          : inputBgColor.withOpacity(0.6),
                     ),
                   ),
                   child: Row(
@@ -210,14 +218,14 @@ class _ChatInputState extends State<ChatInput> {
                       Icon(
                         Ionicons.create_outline,
                         size: 18,
-                        color: const Color(0xFF1E88E5),
+                        color: widget.isDarkMode ? Colors.white : Colors.black,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Editando mensagem',
                           style: TextStyle(
-                            color: const Color(0xFF1E88E5),
+                            color: widget.isDarkMode ? Colors.white : Colors.black,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -228,13 +236,13 @@ class _ChatInputState extends State<ChatInput> {
                         child: Icon(
                           Ionicons.close_outline,
                           size: 20,
-                          color: const Color(0xFF1E88E5),
+                          color: widget.isDarkMode ? Colors.white : Colors.black,
                         ),
                       ),
                     ],
                   ),
                 ),
-              
+
               // Input principal
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -260,7 +268,7 @@ class _ChatInputState extends State<ChatInput> {
                             ? IgnorePointer(
                                 ignoring: !_isInputActive && !widget.isEditing,
                                 child: Opacity(
-                                  opacity: _isInputActive || widget.isEditing ? 1.0 : 0.7,
+                                  opacity: _isInputActive || widget.isEditing ? 1.0 : 0.9,
                                   child: HtmlElementView(
                                     viewType: _viewType,
                                     key: ValueKey('${widget.isDarkMode}-${widget.isEditing}'),
@@ -295,8 +303,8 @@ class _ChatInputState extends State<ChatInput> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  
-                  // Botão de enviar/stop
+
+                  // Botão de enviar/stop (com tom igual ao interior do bottom)
                   GestureDetector(
                     onTap: widget.isLoading ? null : _handleSend,
                     child: Container(
@@ -320,7 +328,7 @@ class _ChatInputState extends State<ChatInput> {
                               : widget.isEditing
                                   ? Ionicons.checkmark
                                   : Ionicons.arrow_up,
-                          color: widget.isDarkMode ? const Color(0xFF212529) : Colors.white,
+                          color: iconColorOnCircle,
                           size: 24,
                         ),
                       ),
