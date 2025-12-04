@@ -4,7 +4,18 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 class ChatService {
-  static const String _groqApiKey = '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';
+  // Lista de API Keys com fallback automático
+  static final List<String> _groqApiKeys = [
+    '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',
+    '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',
+    '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',
+    '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',
+    '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',
+  ];
+  
+  static int _currentKeyIndex = 0;
+  static final Set<int> _blockedKeys = {}; // Keys que atingiram limite
+  
   static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
   static const String _systemPrompt = '''Você é o DocuGen AI, um assistente extremamente profissional e sofisticado especializado em criar documentos HTML de alta qualidade.
@@ -75,21 +86,59 @@ PALAVRAS-CHAVE QUE INDICAM PEDIDO DE DOCUMENTO:
 
 Seja sempre extremamente detalhado e profissional ao criar documentos!''';
 
+  /// Obtém a próxima API Key válida (que não esteja bloqueada)
+  static String _getNextValidApiKey() {
+    // Se todas as keys estão bloqueadas, reseta os bloqueios
+    if (_blockedKeys.length >= _groqApiKeys.length) {
+      debugPrint('⚠️ TODAS AS API KEYS BLOQUEADAS - RESETANDO');
+      _blockedKeys.clear();
+      _currentKeyIndex = 0;
+    }
+
+    // Encontra a próxima key não bloqueada
+    int attempts = 0;
+    while (_blockedKeys.contains(_currentKeyIndex) && attempts < _groqApiKeys.length) {
+      _currentKeyIndex = (_currentKeyIndex + 1) % _groqApiKeys.length;
+      attempts++;
+    }
+
+    return _groqApiKeys[_currentKeyIndex];
+  }
+
+  /// Marca a key atual como bloqueada e passa para a próxima
+  static void _blockCurrentKeyAndSwitchToNext() {
+    debugPrint('🚫 Bloqueando API Key #$_currentKeyIndex');
+    _blockedKeys.add(_currentKeyIndex);
+    _currentKeyIndex = (_currentKeyIndex + 1) % _groqApiKeys.length;
+    debugPrint('🔄 Mudando para API Key #$_currentKeyIndex');
+  }
+
   Future<String> sendMessage(String userMessage, List<Map<String, String>> messageHistory) async {
     debugPrint('═══════════════════════════════════════');
     debugPrint('🚀 INICIANDO CHAMADA API');
     debugPrint('📝 Mensagem do usuário: $userMessage');
     debugPrint('═══════════════════════════════════════');
 
-    try {
-      // Detecta se é pedido de documento
-      final isDocumentRequest = _isDocumentRequest(userMessage);
-      debugPrint('📄 É pedido de documento? $isDocumentRequest');
+    int maxRetries = _groqApiKeys.length; // Tenta todas as keys se necessário
+    int retryCount = 0;
 
-      // Ajusta o prompt do sistema se for documento
-      String systemPrompt = _systemPrompt;
-      if (isDocumentRequest) {
-        systemPrompt += '''
+    while (retryCount < maxRetries) {
+      try {
+        final currentApiKey = _getNextValidApiKey();
+        final keyPreview = '${currentApiKey.substring(0, 15)}...${currentApiKey.substring(currentApiKey.length - 4)}';
+        
+        debugPrint('🔑 Tentativa ${retryCount + 1}/$maxRetries');
+        debugPrint('🔑 Usando API Key #$_currentKeyIndex: $keyPreview');
+        debugPrint('🚫 Keys bloqueadas: $_blockedKeys');
+
+        // Detecta se é pedido de documento
+        final isDocumentRequest = _isDocumentRequest(userMessage);
+        debugPrint('📄 É pedido de documento? $isDocumentRequest');
+
+        // Ajusta o prompt do sistema se for documento
+        String systemPrompt = _systemPrompt;
+        if (isDocumentRequest) {
+          systemPrompt += '''
 
 LEMBRE-SE: O usuário pediu um DOCUMENTO HTML. Sua resposta deve ser:
 - APENAS código HTML (<!DOCTYPE html> até </html>)
@@ -100,97 +149,121 @@ LEMBRE-SE: O usuário pediu um DOCUMENTO HTML. Sua resposta deve ser:
 - Cada seção bem desenvolvida com múltiplos parágrafos
 
 Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
-      }
+        }
 
-      final requestBody = {
-        'model': 'llama-3.3-70b-versatile',
-        'messages': [
-          {
-            'role': 'system',
-            'content': systemPrompt,
+        final requestBody = {
+          'model': 'llama-3.3-70b-versatile',
+          'messages': [
+            {
+              'role': 'system',
+              'content': systemPrompt,
+            },
+            ...messageHistory,
+          ],
+          'temperature': 0.7,
+          'max_tokens': 8000,
+        };
+
+        debugPrint('📤 Enviando requisição para: $_groqApiUrl');
+
+        final response = await http.post(
+          Uri.parse(_groqApiUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $currentApiKey',
           },
-          ...messageHistory,
-        ],
-        'temperature': 0.7,
-        'max_tokens': 8000,
-      };
+          body: jsonEncode(requestBody),
+        ).timeout(
+          const Duration(seconds: 60),
+          onTimeout: () {
+            debugPrint('⏰ TIMEOUT: Requisição demorou mais de 60 segundos');
+            throw Exception('Timeout: A requisição demorou muito tempo');
+          },
+        );
 
-      debugPrint('📤 Enviando requisição para: $_groqApiUrl');
-      debugPrint('🔑 Usando API Key: ${_groqApiKey.substring(0, 20)}...');
+        debugPrint('📥 Status da resposta: ${response.statusCode}');
 
-      final response = await http.post(
-        Uri.parse(_groqApiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_groqApiKey',
-        },
-        body: jsonEncode(requestBody),
-      ).timeout(
-        const Duration(seconds: 60),
-        onTimeout: () {
-          debugPrint('⏰ TIMEOUT: Requisição demorou mais de 60 segundos');
-          throw Exception('Timeout: A requisição demorou muito tempo');
-        },
-      );
-
-      debugPrint('📥 Status da resposta: ${response.statusCode}');
-      debugPrint('📦 Corpo da resposta (primeiros 500 chars): ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        
-        if (data['choices'] == null || data['choices'].isEmpty) {
-          debugPrint('❌ ERRO: Resposta não contém choices');
-          throw Exception('Resposta da API inválida');
+        // Verifica se atingiu limite de requisições
+        if (response.statusCode == 429) {
+          debugPrint('⚠️ LIMITE ATINGIDO (429) - Tentando próxima API Key');
+          _blockCurrentKeyAndSwitchToNext();
+          retryCount++;
+          await Future.delayed(const Duration(milliseconds: 500)); // Pequeno delay
+          continue; // Tenta a próxima key
         }
 
-        String content = data['choices'][0]['message']['content'] as String;
-        debugPrint('✅ Conteúdo recebido (${content.length} caracteres)');
-
-        // Se for documento e vier com markdown, remove
-        if (isDocumentRequest) {
-          content = _cleanDocumentResponse(content);
-          debugPrint('🧹 Documento limpo (${content.length} caracteres)');
+        // Verifica se há erro de autenticação
+        if (response.statusCode == 401) {
+          debugPrint('⚠️ ERRO DE AUTENTICAÇÃO (401) - API Key inválida');
+          _blockCurrentKeyAndSwitchToNext();
+          retryCount++;
+          await Future.delayed(const Duration(milliseconds: 500));
+          continue;
         }
 
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          
+          if (data['choices'] == null || data['choices'].isEmpty) {
+            debugPrint('❌ ERRO: Resposta não contém choices');
+            throw Exception('Resposta da API inválida');
+          }
+
+          String content = data['choices'][0]['message']['content'] as String;
+          debugPrint('✅ Conteúdo recebido (${content.length} caracteres)');
+
+          // Se for documento e vier com markdown, remove
+          if (isDocumentRequest) {
+            content = _cleanDocumentResponse(content);
+            debugPrint('🧹 Documento limpo (${content.length} caracteres)');
+          }
+
+          debugPrint('═══════════════════════════════════════');
+          debugPrint('✨ SUCESSO! Resposta processada com API Key #$_currentKeyIndex');
+          debugPrint('═══════════════════════════════════════');
+
+          return content;
+        } else {
+          debugPrint('❌ ERRO HTTP: ${response.statusCode}');
+          debugPrint('📄 Corpo do erro: ${response.body}');
+          
+          // Tenta parsear o erro da API
+          try {
+            final errorData = jsonDecode(response.body);
+            final errorMessage = errorData['error']?['message'] ?? 'Erro desconhecido';
+            throw Exception('Erro na API (${response.statusCode}): $errorMessage');
+          } catch (e) {
+            throw Exception('Erro na API: ${response.statusCode} - ${response.body}');
+          }
+        }
+      } catch (e) {
         debugPrint('═══════════════════════════════════════');
-        debugPrint('✨ SUCESSO! Resposta processada');
+        debugPrint('💥 ERRO NA TENTATIVA ${retryCount + 1}:');
+        debugPrint('$e');
         debugPrint('═══════════════════════════════════════');
-
-        return content;
-      } else {
-        debugPrint('❌ ERRO HTTP: ${response.statusCode}');
-        debugPrint('📄 Corpo do erro: ${response.body}');
         
-        // Tenta parsear o erro da API
-        try {
-          final errorData = jsonDecode(response.body);
-          final errorMessage = errorData['error']?['message'] ?? 'Erro desconhecido';
-          throw Exception('Erro na API (${response.statusCode}): $errorMessage');
-        } catch (e) {
-          throw Exception('Erro na API: ${response.statusCode} - ${response.body}');
+        // Se for erro de conexão ou timeout, não tenta outras keys
+        if (e.toString().contains('SocketException') || 
+            e.toString().contains('Failed host lookup')) {
+          throw Exception('❌ Erro de conexão: Verifique sua internet');
+        } else if (e.toString().contains('TimeoutException') || 
+                   e.toString().contains('Timeout')) {
+          throw Exception('⏰ Timeout: Requisição demorou muito. Tente novamente.');
         }
+        
+        // Se for último retry, lança o erro
+        if (retryCount >= maxRetries - 1) {
+          throw Exception('❌ Todas as API Keys falharam. Tente novamente mais tarde.');
+        }
+        
+        // Caso contrário, tenta próxima key
+        retryCount++;
+        _blockCurrentKeyAndSwitchToNext();
+        await Future.delayed(const Duration(milliseconds: 500));
       }
-    } catch (e) {
-      debugPrint('═══════════════════════════════════════');
-      debugPrint('💥 ERRO CAPTURADO:');
-      debugPrint('$e');
-      debugPrint('═══════════════════════════════════════');
-      
-      if (e.toString().contains('SocketException') || 
-          e.toString().contains('Failed host lookup')) {
-        throw Exception('Erro de conexão: Verifique sua internet');
-      } else if (e.toString().contains('TimeoutException') || 
-                 e.toString().contains('Timeout')) {
-        throw Exception('Timeout: Requisição demorou muito');
-      } else if (e.toString().contains('401')) {
-        throw Exception('Erro de autenticação: API Key inválida');
-      } else if (e.toString().contains('429')) {
-        throw Exception('Limite de requisições atingido');
-      }
-      
-      rethrow;
     }
+
+    throw Exception('❌ Falha após tentar todas as API Keys disponíveis');
   }
 
   bool _isDocumentRequest(String message) {
@@ -282,5 +355,22 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
     }
 
     return '';
+  }
+
+  /// Método para resetar manualmente as keys bloqueadas (útil para debug)
+  static void resetBlockedKeys() {
+    _blockedKeys.clear();
+    _currentKeyIndex = 0;
+    debugPrint('🔄 API Keys resetadas - todas disponíveis novamente');
+  }
+
+  /// Retorna informações sobre o estado atual das keys
+  static Map<String, dynamic> getKeysStatus() {
+    return {
+      'total_keys': _groqApiKeys.length,
+      'current_key_index': _currentKeyIndex,
+      'blocked_keys': _blockedKeys.toList(),
+      'available_keys': _groqApiKeys.length - _blockedKeys.length,
+    };
   }
 }
