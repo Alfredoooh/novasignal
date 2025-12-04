@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 class ChatService {
-  // Lista de API Keys com fallback automático
   static final List<String> _groqApiKeys = [
     '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',
     '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',
@@ -14,60 +13,43 @@ class ChatService {
   ];
 
   static int _currentKeyIndex = 0;
-  static final Set<int> _blockedKeys = {}; // Keys que atingiram limite
+  static final Set<int> _blockedKeys = {};
 
   static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
-  static const String _systemPrompt = '''Você é o DocuGen AI, um assistente extremamente profissional e sofisticado especializado em criar documentos HTML de alta qualidade.
+  static const String _systemPrompt = '''Você é o DocuGen AI, um assistente extremamente profissional e sofisticado.
 
-REGRAS CRÍTICAS PARA RESPOSTAS NORMAIS (NÃO-DOCUMENTOS):
+REGRAS CRÍTICAS:
 
-1. NUNCA mencione ou mostre asteriscos (**) ou símbolos de markdown na resposta final
-2. NUNCA explique como você formata o texto
-3. NUNCA diga "vou usar negrito" ou "formatado com **"
-4. Responda NATURALMENTE como se estivesse escrevendo diretamente
+1. Use emojis de forma natural e frequente nas respostas 😊
+2. Seja amigável e use linguagem conversacional
+3. NUNCA mostre asteriscos (**) ou símbolos markdown nas respostas finais
+4. Responda naturalmente como em uma conversa real
 
-FORMATAÇÃO PARA CONVERSAS NORMAIS:
+FORMATAÇÃO PARA CONVERSAS:
 
-Use # para títulos principais (H1) - destaque máximo com linha inferior azul
-Use ## para subtítulos (H2) - importantes e destacados
+Use # para títulos principais (H1)
+Use ## para subtítulos (H2)
 Use ### para seções menores (H3)
-Use **texto** para negrito (mas NUNCA mostre os asteriscos na resposta)
-Use - ou • para listas com bullets
+Use **texto** para negrito (mas NUNCA mostre os ** na resposta)
+Use - ou • para listas
 Use números 1. 2. 3. para listas ordenadas
-Use Importante:, Atenção:, Nota: para caixas de informação destacadas
-Use ``` para blocos de código
 
-PARA TABELAS EM CONVERSAS:
-SEMPRE use HTML puro com a tag <table>, NUNCA use caracteres ASCII
-Exemplo de tabela HTML:
-<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
-  <thead>
-    <tr style="background-color: #f0f0f0;">
-      <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Coluna 1</th>
-      <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Coluna 2</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="padding: 12px; border: 1px solid #ddd;">Dado 1</td>
-      <td style="padding: 12px; border: 1px solid #ddd;">Dado 2</td>
-    </tr>
-  </tbody>
-</table>
+PARA TABELAS:
+SEMPRE use HTML puro com <table>, NUNCA use caracteres ASCII
 
 ═══════════════════════════════════════════════════════════════════════════════
-ATENÇÃO: CRIAÇÃO DE DOCUMENTOS HTML
+CRIAÇÃO DE DOCUMENTOS HTML
 ═══════════════════════════════════════════════════════════════════════════════
 
-QUANDO O USUÁRIO PEDIR UM DOCUMENTO, VOCÊ **DEVE OBRIGATORIAMENTE**:
+QUANDO O USUÁRIO PEDIR UM DOCUMENTO:
 
 1. Criar APENAS código HTML completo (<!DOCTYPE html> até </html>)
-2. NÃO incluir nenhum texto explicativo antes ou depois do HTML
-3. NÃO usar blocos ```html ou qualquer markdown
+2. NÃO incluir texto explicativo antes ou depois
+3. NÃO usar blocos ```html ou markdown
 4. O HTML deve ser a ÚNICA coisa na resposta
 
-PALAVRAS-CHAVE QUE INDICAM PEDIDO DE DOCUMENTO:
+PALAVRAS-CHAVE PARA DOCUMENTOS:
 - "crie um documento"
 - "gere um documento"
 - "faça um documento"
@@ -86,16 +68,13 @@ PALAVRAS-CHAVE QUE INDICAM PEDIDO DE DOCUMENTO:
 
 Seja sempre extremamente detalhado e profissional ao criar documentos!''';
 
-  /// Obtém a próxima API Key válida (que não esteja bloqueada)
   static String _getNextValidApiKey() {
-    // Se todas as keys estão bloqueadas, reseta os bloqueios
     if (_blockedKeys.length >= _groqApiKeys.length) {
       debugPrint('⚠️ TODAS AS API KEYS BLOQUEADAS - RESETANDO');
       _blockedKeys.clear();
       _currentKeyIndex = 0;
     }
 
-    // Encontra a próxima key não bloqueada
     int attempts = 0;
     while (_blockedKeys.contains(_currentKeyIndex) && attempts < _groqApiKeys.length) {
       _currentKeyIndex = (_currentKeyIndex + 1) % _groqApiKeys.length;
@@ -105,7 +84,6 @@ Seja sempre extremamente detalhado e profissional ao criar documentos!''';
     return _groqApiKeys[_currentKeyIndex];
   }
 
-  /// Marca a key atual como bloqueada e passa para a próxima
   static void _blockCurrentKeyAndSwitchToNext() {
     debugPrint('🚫 Bloqueando API Key #$_currentKeyIndex');
     _blockedKeys.add(_currentKeyIndex);
@@ -117,9 +95,10 @@ Seja sempre extremamente detalhado e profissional ao criar documentos!''';
     debugPrint('═══════════════════════════════════════');
     debugPrint('🚀 INICIANDO CHAMADA API COM GROQ COMPOUND');
     debugPrint('📝 Mensagem do usuário: $userMessage');
+    debugPrint('📊 Histórico: ${messageHistory.length} mensagens');
     debugPrint('═══════════════════════════════════════');
 
-    int maxRetries = _groqApiKeys.length; // Tenta todas as keys se necessário
+    int maxRetries = _groqApiKeys.length;
     int retryCount = 0;
 
     while (retryCount < maxRetries) {
@@ -129,13 +108,10 @@ Seja sempre extremamente detalhado e profissional ao criar documentos!''';
 
         debugPrint('🔑 Tentativa ${retryCount + 1}/$maxRetries');
         debugPrint('🔑 Usando API Key #$_currentKeyIndex: $keyPreview');
-        debugPrint('🚫 Keys bloqueadas: $_blockedKeys');
 
-        // Detecta se é pedido de documento
         final isDocumentRequest = _isDocumentRequest(userMessage);
         debugPrint('📄 É pedido de documento? $isDocumentRequest');
 
-        // Ajusta o prompt do sistema se for documento
         String systemPrompt = _systemPrompt;
         if (isDocumentRequest) {
           systemPrompt += '''
@@ -152,7 +128,7 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
         }
 
         final requestBody = {
-          'model': 'groq/compound', // 🔥 MODELO COMPOUND COM PESQUISA WEB
+          'model': 'groq/compound',
           'messages': [
             {
               'role': 'system',
@@ -160,12 +136,11 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
             },
             ...messageHistory,
           ],
-          'temperature': 0.5,
-          'max_tokens': 8000,
+          'temperature': 0.7,
+          'max_tokens': 6000,
         };
 
-        debugPrint('📤 Enviando requisição para: $_groqApiUrl');
-        debugPrint('🤖 Modelo: groq/compound');
+        debugPrint('📤 Enviando requisição...');
 
         final response = await http.post(
           Uri.parse(_groqApiUrl),
@@ -175,27 +150,25 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
           },
           body: jsonEncode(requestBody),
         ).timeout(
-          const Duration(seconds: 90), // Compound pode demorar mais por fazer pesquisas
+          const Duration(seconds: 90),
           onTimeout: () {
             debugPrint('⏰ TIMEOUT: Requisição demorou mais de 90 segundos');
             throw Exception('Timeout: A requisição demorou muito tempo');
           },
         );
 
-        debugPrint('📥 Status da resposta: ${response.statusCode}');
+        debugPrint('📥 Status: ${response.statusCode}');
 
-        // Verifica se atingiu limite de requisições
         if (response.statusCode == 429) {
           debugPrint('⚠️ LIMITE ATINGIDO (429) - Tentando próxima API Key');
           _blockCurrentKeyAndSwitchToNext();
           retryCount++;
-          await Future.delayed(const Duration(milliseconds: 500)); // Pequeno delay
-          continue; // Tenta a próxima key
+          await Future.delayed(const Duration(milliseconds: 500));
+          continue;
         }
 
-        // Verifica se há erro de autenticação
         if (response.statusCode == 401) {
-          debugPrint('⚠️ ERRO DE AUTENTICAÇÃO (401) - API Key inválida');
+          debugPrint('⚠️ ERRO DE AUTENTICAÇÃO (401)');
           _blockCurrentKeyAndSwitchToNext();
           retryCount++;
           await Future.delayed(const Duration(milliseconds: 500));
@@ -206,44 +179,40 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
           final data = jsonDecode(response.body);
 
           if (data['choices'] == null || data['choices'].isEmpty) {
-            debugPrint('❌ ERRO: Resposta não contém choices');
+            debugPrint('❌ ERRO: Resposta inválida');
             throw Exception('Resposta da API inválida');
           }
 
           String content = data['choices'][0]['message']['content'] as String;
           debugPrint('✅ Conteúdo recebido (${content.length} caracteres)');
 
-          // Se for documento e vier com markdown, remove
           if (isDocumentRequest) {
             content = _cleanDocumentResponse(content);
             debugPrint('🧹 Documento limpo (${content.length} caracteres)');
           }
 
           debugPrint('═══════════════════════════════════════');
-          debugPrint('✨ SUCESSO COM GROQ COMPOUND! API Key #$_currentKeyIndex');
+          debugPrint('✨ SUCESSO COM GROQ COMPOUND!');
           debugPrint('═══════════════════════════════════════');
 
           return content;
         } else {
           debugPrint('❌ ERRO HTTP: ${response.statusCode}');
-          debugPrint('📄 Corpo do erro: ${response.body}');
+          debugPrint('📄 Corpo: ${response.body}');
 
-          // Tenta parsear o erro da API
           try {
             final errorData = jsonDecode(response.body);
             final errorMessage = errorData['error']?['message'] ?? 'Erro desconhecido';
             throw Exception('Erro na API (${response.statusCode}): $errorMessage');
           } catch (e) {
-            throw Exception('Erro na API: ${response.statusCode} - ${response.body}');
+            throw Exception('Erro na API: ${response.statusCode}');
           }
         }
       } catch (e) {
         debugPrint('═══════════════════════════════════════');
-        debugPrint('💥 ERRO NA TENTATIVA ${retryCount + 1}:');
-        debugPrint('$e');
+        debugPrint('💥 ERRO NA TENTATIVA ${retryCount + 1}: $e');
         debugPrint('═══════════════════════════════════════');
 
-        // Se for erro de conexão ou timeout, não tenta outras keys
         if (e.toString().contains('SocketException') || 
             e.toString().contains('Failed host lookup')) {
           throw Exception('❌ Erro de conexão: Verifique sua internet');
@@ -252,19 +221,17 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
           throw Exception('⏰ Timeout: Requisição demorou muito. Tente novamente.');
         }
 
-        // Se for último retry, lança o erro
         if (retryCount >= maxRetries - 1) {
           throw Exception('❌ Todas as API Keys falharam. Tente novamente mais tarde.');
         }
 
-        // Caso contrário, tenta próxima key
         retryCount++;
         _blockCurrentKeyAndSwitchToNext();
         await Future.delayed(const Duration(milliseconds: 500));
       }
     }
 
-    throw Exception('❌ Falha após tentar todas as API Keys disponíveis');
+    throw Exception('❌ Falha após tentar todas as API Keys');
   }
 
   bool _isDocumentRequest(String message) {
@@ -302,12 +269,10 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
   }
 
   String _cleanDocumentResponse(String content) {
-    // Remove blocos de código markdown
     content = content.replaceAll(RegExp(r'```html\s*'), '');
     content = content.replaceAll(RegExp(r'```\s*$'), '');
     content = content.replaceAll(RegExp(r'```'), '');
 
-    // Remove textos explicativos comuns antes do HTML
     final htmlStart = content.indexOf('<!DOCTYPE html>');
     if (htmlStart > 0) {
       content = content.substring(htmlStart);
@@ -318,7 +283,6 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
       }
     }
 
-    // Remove textos explicativos depois do HTML
     final htmlEnd = content.lastIndexOf('</html>');
     if (htmlEnd != -1) {
       content = content.substring(0, htmlEnd + 7);
@@ -328,7 +292,6 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
   }
 
   String extractHtmlFromResponse(String response) {
-    // Tenta encontrar HTML completo
     int htmlStart = response.indexOf('<!DOCTYPE html>');
     if (htmlStart == -1) {
       htmlStart = response.indexOf('<html');
@@ -341,14 +304,12 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
       }
     }
 
-    // Tenta extrair de blocos de código
     final codeBlockPattern = RegExp(r'```html\s*([\s\S]*?)\s*```');
     final match = codeBlockPattern.firstMatch(response);
     if (match != null) {
       return match.group(1)?.trim() ?? '';
     }
 
-    // Se contém tags HTML mas sem <!DOCTYPE>
     if (response.contains('<html') && response.contains('</html>')) {
       final start = response.indexOf('<html');
       final end = response.lastIndexOf('</html>');
@@ -358,14 +319,12 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
     return '';
   }
 
-  /// Método para resetar manualmente as keys bloqueadas (útil para debug)
   static void resetBlockedKeys() {
     _blockedKeys.clear();
     _currentKeyIndex = 0;
-    debugPrint('🔄 API Keys resetadas - todas disponíveis novamente');
+    debugPrint('🔄 API Keys resetadas');
   }
 
-  /// Retorna informações sobre o estado atual das keys
   static Map<String, dynamic> getKeysStatus() {
     return {
       'total_keys': _groqApiKeys.length,
