@@ -11,7 +11,6 @@ import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
 import 'package:ionicons/ionicons.dart';
-import 'package:flutter_html/flutter_html.dart';
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -93,7 +92,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       onTap: () => _focusNode.unfocus(),
       behavior: HitTestBehavior.translucent,
       child: Container(
-        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+        color: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : Colors.white,
         child: Stack(
           children: [
             Column(
@@ -293,25 +292,357 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         alignment: Alignment.centerLeft,
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.85,
           ),
-          decoration: BoxDecoration(
-            color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(20),
+          child: _buildAiResponseContent(message.text, themeProvider),
+        ),
+      );
+    }
+  }
+
+  Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
+    if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
+      int htmlStart = text.indexOf('<!DOCTYPE html>');
+      if (htmlStart == -1) htmlStart = text.indexOf('<html');
+
+      String textBeforeHtml = htmlStart > 0 ? text.substring(0, htmlStart).trim() : '';
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (textBeforeHtml.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _buildFormattedText(textBeforeHtml, themeProvider),
+            ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF8F9FA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
+              ),
+            ),
+            child: Icon(
+              Ionicons.document_outline,
+              size: 20,
+              color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
           ),
-          child: SelectableText(
-            message.text,
+        ],
+      );
+    }
+
+    return _buildFormattedText(text, themeProvider);
+  }
+
+  Widget _buildFormattedText(String text, ThemeProvider themeProvider) {
+    final color = themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529);
+    final accentBlue = const Color(0xFF1E88E5);
+
+    if (text.contains('```')) {
+      final parts = text.split('```');
+      List<Widget> widgets = [];
+      for (int i = 0; i < parts.length; i++) {
+        final part = parts[i];
+        if (i % 2 == 0) {
+          widgets.addAll(_buildWidgetsFromLines(part, color, accentBlue, themeProvider));
+        } else {
+          widgets.add(
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    Icon(Ionicons.code_slash, size: 16, color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
+                    const SizedBox(width: 8),
+                    SelectableText(
+                      part.trim(),
+                      style: TextStyle(
+                        fontFamily: kIsWeb ? 'monospace' : 'Courier',
+                        fontSize: 13,
+                        color: themeProvider.isDarkMode ? Colors.grey.shade200 : Colors.grey.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      );
+    }
+
+    final children = _buildWidgetsFromLines(text, color, accentBlue, themeProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
+  }
+
+  List<Widget> _buildWidgetsFromLines(String text, Color color, Color accentBlue, ThemeProvider themeProvider) {
+    List<Widget> widgets = [];
+    final lines = text.replaceAll('\r', '').split('\n');
+
+    for (int i = 0; i < lines.length; i++) {
+      String line = lines[i].trimRight();
+
+      if (line.isEmpty) {
+        widgets.add(const SizedBox(height: 10));
+        continue;
+      }
+
+      final lower = line.toLowerCase();
+
+      // Info boxes - destaque especial
+      if (lower.contains('importante') || lower.contains('atenção') || lower.contains('nota:') || line.startsWith('Info:') || line.contains('[info]')) {
+        widgets.add(
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.08) : accentBlue.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.2) : accentBlue.withOpacity(0.15), width: 1.5),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Ionicons.information_circle, size: 22, color: accentBlue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    line,
+                    style: TextStyle(
+                      color: accentBlue,
+                      fontSize: 15,
+                      height: 1.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Headers - H1
+      if (line.startsWith('# ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: accentBlue.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+              ),
+              child: Text(
+                line.substring(2).trim(),
+                style: TextStyle(
+                  color: accentBlue,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+          ),
+        );
+        continue;
+      } 
+      // Headers - H2
+      else if (line.startsWith('## ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 6),
+            child: Text(
+              line.substring(3).trim(),
+              style: TextStyle(
+                color: color,
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                height: 1.35,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
+        );
+        continue;
+      } 
+      // Headers - H3
+      else if (line.startsWith('### ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 6),
+            child: Text(
+              line.substring(4).trim(),
+              style: TextStyle(
+                color: color,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                height: 1.4,
+              ),
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Bullet points
+      if (line.startsWith('- ') || line.startsWith('• ')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8, right: 10),
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: accentBlue,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: _parseInlineFormatting(line.substring(2), color)),
+                    textAlign: TextAlign.left,
+                    softWrap: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Numbered lists
+      if (RegExp(r'^\d+\.\s').hasMatch(line)) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  margin: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    line.split(' ')[0],
+                    style: TextStyle(
+                      color: accentBlue,
+                      fontSize: 15,
+                      height: 1.6,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: _parseInlineFormatting(line.substring(line.indexOf(' ') + 1), color)),
+                    softWrap: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Regular text with bold
+      if (line.contains('**')) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Text.rich(
+              TextSpan(children: _parseInlineFormatting(line, color)),
+            ),
+          ),
+        );
+        continue;
+      }
+
+      // Plain text
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Text(
+            line,
             style: TextStyle(
-              color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              color: color,
               fontSize: 15,
-              height: 1.5,
+              height: 1.65,
             ),
           ),
         ),
       );
     }
+
+    return widgets;
+  }
+
+  List<InlineSpan> _parseInlineFormatting(String text, Color color) {
+    List<InlineSpan> spans = [];
+    final boldRegex = RegExp(r'\*\*(.*?)\*\*');
+    int lastIndex = 0;
+
+    for (final match in boldRegex.allMatches(text)) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: TextStyle(color: color, fontSize: 15, height: 1.65),
+        ));
+      }
+
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: TextStyle(
+          color: color,
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          height: 1.65,
+        ),
+      ));
+
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: TextStyle(color: color, fontSize: 15, height: 1.65),
+      ));
+    }
+
+    return spans;
   }
 
   Widget _buildInputArea(ThemeProvider themeProvider) {
@@ -361,33 +692,76 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           'messages': [
             {
               'role': 'system',
-              'content': '''Você é o DocuGen AI, um assistente profissional e direto.
+              'content': '''Você é o DocuGen AI, um assistente especializado em criar documentos HTML profissionais e fornecer respostas extremamente bem estruturadas e organizadas.
 
-REGRAS IMPORTANTES:
+FORMATAÇÃO OBRIGATÓRIA PARA TODAS AS RESPOSTAS:
 
-1. NUNCA use asteriscos (**), markdown ou formatação especial no texto
-2. NUNCA crie caixas de informação ou avisos destacados
-3. Escreva texto LIMPO e SIMPLES, como uma conversa normal
-4. Use apenas texto puro - sem símbolos especiais, sem emojis
-5. Para tabelas, use APENAS formato de tabela markdown padrão (| Coluna | Coluna |)
-6. NUNCA use caracteres especiais para desenhar tabelas
-7. Seja direto e profissional
+1. **Títulos e Seções**:
+   - Use # para títulos principais (destaque máximo)
+   - Use ## para subtítulos importantes
+   - Use ### para seções menores
+   - Sempre separe seções claramente
 
-CRIAÇÃO DE DOCUMENTOS HTML:
-- Só crie HTML quando o usuário pedir explicitamente: "crie um documento", "gere um HTML", "faça um site"
-- Para conversas normais, use apenas texto simples
+2. **Listas e Organização**:
+   - Use listas numeradas (1., 2., 3.) para sequências e passos
+   - Use listas com marcadores (- ou •) para itens relacionados
+   - SEMPRE organize informações complexas em listas
+   - Separe cada item com linha em branco para melhor legibilidade
 
-EXEMPLO DE TABELA CORRETA:
-| Nome | Idade | Cidade |
-|------|-------|--------|
-| João | 25 | Lisboa |
-| Maria | 30 | Porto |
+3. **Ênfase e Destaque**:
+   - Use **negrito** para termos importantes, conceitos-chave e palavras de destaque
+   - Use caixas de informação para avisos importantes começando com "Importante:", "Atenção:", "Nota:" ou "[Info]"
+   - Destaque estatísticas, números e dados relevantes em **negrito**
 
-Responda de forma clara, direta e sem formatações desnecessárias.''',
+4. **Estrutura de Resposta**:
+   - Sempre comece com uma breve introdução
+   - Organize o conteúdo em seções lógicas com títulos
+   - Use parágrafos curtos (2-3 linhas no máximo)
+   - Termine com conclusão ou próximos passos quando relevante
+
+5. **Exemplos e Código**:
+   - Use \`\`\`código\`\`\` para blocos de código
+   - Use `texto` para termos técnicos inline
+
+6. **Tabelas** (quando necessário):
+   Use formato markdown:
+   | Coluna 1 | Coluna 2 | Coluna 3 |
+   |----------|----------|----------|
+   | Dado 1   | Dado 2   | Dado 3   |
+
+EXEMPLO DE BOA FORMATAÇÃO:
+
+# Título Principal
+
+Introdução breve e clara do assunto.
+
+## Seção Importante
+
+Explicação detalhada com informações relevantes.
+
+### Pontos-Chave
+
+- **Primeiro ponto**: Explicação detalhada do primeiro item importante
+- **Segundo ponto**: Detalhes sobre o segundo aspecto relevante
+- **Terceiro ponto**: Informações complementares
+
+Importante: Sempre destaque informações críticas desta forma.
+
+## Próximos Passos
+
+1. **Passo inicial**: Descrição clara do que fazer primeiro
+2. **Segundo passo**: Continuação lógica do processo
+3. **Conclusão**: Finalização e próximas ações
+
+REGRAS PARA HTML:
+- NUNCA crie documentos HTML a menos que o usuário peça explicitamente: "crie um documento", "gere um HTML", "faça um site", "monte uma página"
+- Para perguntas, explicações e conversas, use SEMPRE a formatação markdown rica descrita acima
+
+Seja detalhado, organizado e profissional. Priorize clareza e legibilidade em todas as respostas.''',
             },
             ...chatProvider.buildMessageHistory(),
           ],
-          'temperature': 0.5,
+          'temperature': 0.7,
           'max_tokens': 4096,
         }),
       );
@@ -473,7 +847,7 @@ class _ConversationsScreen extends StatelessWidget {
     final chatProvider = Provider.of<ChatProvider>(context);
 
     return Scaffold(
-      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0A0E14) : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
