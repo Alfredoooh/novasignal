@@ -167,7 +167,8 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isDarkMode ? const Color(0xFF343A40) : Colors.white;
+    // Cores ajustadas para combinar com o home_page
+    final bgColor = widget.isDarkMode ? const Color(0xFF1C2128) : Colors.white;
     final inputBgColor = widget.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5);
     final circleColor = widget.isDarkMode ? Colors.white : const Color(0xFF212529);
 
@@ -178,13 +179,7 @@ class _ChatInputState extends State<ChatInput> {
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
+        // Removida a boxShadow para combinar com o home_page
       ),
       child: SafeArea(
         top: false,
@@ -207,17 +202,17 @@ class _ChatInputState extends State<ChatInput> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Ionicons.create_outline,
                         size: 18,
-                        color: const Color(0xFF1E88E5),
+                        color: Color(0xFF1E88E5),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           'Editando mensagem',
                           style: TextStyle(
-                            color: const Color(0xFF1E88E5),
+                            color: Color(0xFF1E88E5),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -225,10 +220,10 @@ class _ChatInputState extends State<ChatInput> {
                       ),
                       GestureDetector(
                         onTap: widget.onCancelEdit,
-                        child: Icon(
+                        child: const Icon(
                           Ionicons.close_outline,
                           size: 20,
-                          color: const Color(0xFF1E88E5),
+                          color: Color(0xFF1E88E5),
                         ),
                       ),
                     ],
@@ -251,10 +246,17 @@ class _ChatInputState extends State<ChatInput> {
                         }
                       },
                       child: Container(
-                        height: 50,
+                        height: 48,
                         decoration: BoxDecoration(
                           color: inputBgColor,
                           borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: kIsWeb
                             ? IgnorePointer(
@@ -307,7 +309,7 @@ class _ChatInputState extends State<ChatInput> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withOpacity(0.05),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
