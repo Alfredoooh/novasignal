@@ -88,7 +88,7 @@ class _ChatInputState extends State<ChatInput> {
           ..style.outline = 'none'
           ..style.backgroundColor = inputBgColor
           ..style.color = inputTextColor
-          ..style.resize = 'none' // impedir redimensionamento manual horizontal
+          ..style.resize = 'none' // impedir redimensionamento manual
           ..style.overflowY = 'auto'
           ..style.overflowX = 'hidden'
           ..style.maxHeight = '${maxHeightPx}px'
@@ -101,8 +101,10 @@ class _ChatInputState extends State<ChatInput> {
           ..setAttribute('wrap', 'soft')
           ..setAttribute('spellcheck', 'false')
           ..style.whiteSpace = 'pre-wrap'
-          ..style.wordWrap = 'break-word'
-          ..style.tabIndex = '0'; // mantém acessível por tab / clique
+          ..style.wordWrap = 'break-word';
+
+        // corrige aqui: tabIndex pertence ao elemento, não a style
+        _htmlTextarea!.tabIndex = 0; // mantém acessível por tab / clique
 
         // estilo extra para placeholder + remoção de foco visual
         final style = html.StyleElement()
@@ -158,7 +160,6 @@ class _ChatInputState extends State<ChatInput> {
         });
 
         // inicial resize
-        // pequena microtask para garantir que o elemento foi inserido antes de medir
         Future.delayed(const Duration(milliseconds: 20), () {
           try {
             resize();
@@ -259,8 +260,6 @@ class _ChatInputState extends State<ChatInput> {
                                 enableSuggestions: false,
                                 autocorrect: false,
                                 onSubmitted: (_) => _handleSend(),
-                                // remover foco visual: usamos Focus to control overlay
-                                // (o TextField continuará a receber foco normalmente, mas não terá outline)
                               ),
                             ),
                           ),
