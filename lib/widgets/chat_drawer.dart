@@ -164,43 +164,15 @@ class ChatDrawer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  PopupMenuButton<String>(
-                    icon: Icon(
-                      Ionicons.ellipsis_horizontal,
+                  GestureDetector(
+                    onTap: () {
+                      _showDeleteDialog(context, themeProvider, chatProvider, conversation.id);
+                    },
+                    child: Icon(
+                      Ionicons.trash_outline,
                       color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                       size: 20,
                     ),
-                    color: themeProvider.isDarkMode ? const Color(0xFF343A40) : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Ionicons.trash_outline,
-                              size: 18,
-                              color: Colors.red.shade400,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Excluir',
-                              style: TextStyle(
-                                color: Colors.red.shade400,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onSelected: (value) {
-                      if (value == 'delete') {
-                        _showDeleteDialog(context, themeProvider, chatProvider, conversation.id);
-                      }
-                    },
                   ),
                 ],
               ),
