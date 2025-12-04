@@ -413,12 +413,17 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         content: TextField(
           controller: controller,
           maxLines: 5,
+          autofocus: true,
           style: TextStyle(
             color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
           ),
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
             ),
           ),
         ),
@@ -433,13 +438,28 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             ),
           ),
           TextButton(
-            onPressed: () {
-              final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-              chatProvider.updateMessage(index, controller.text);
-              Navigator.pop(context);
+            onPressed: () async {
+              final newText = controller.text.trim();
+              if (newText.isNotEmpty && newText != message.text) {
+                Navigator.pop(context);
+                // Remove mensagens após a editada e reenvia
+                final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+                final messagesToKeep = chatProvider.currentMessages.sublist(0, index);
+                
+                // Limpa as mensagens atuais e adiciona as que queremos manter
+                chatProvider.currentMessages.clear();
+                for (var msg in messagesToKeep) {
+                  chatProvider.addMessage(msg);
+                }
+                
+                // Adiciona a mensagem editada e reenvia
+                await _sendMessage(newText);
+              } else {
+                Navigator.pop(context);
+              }
             },
             child: const Text(
-              'Salvar',
+              'Reenviar',
               style: TextStyle(
                 color: Color(0xFF1E88E5),
                 fontWeight: FontWeight.w600,
