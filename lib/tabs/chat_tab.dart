@@ -76,7 +76,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final chatProvider = Provider.of<ChatProvider>(context);
 
-    // Fundo principal — apenas preto ou branco
     return GestureDetector(
       onTap: () => _focusNode.unfocus(),
       behavior: HitTestBehavior.translucent,
@@ -378,6 +377,142 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
+  Widget _buildInputArea(ThemeProvider themeProvider) {
+    final chatProvider = Provider.of<ChatProvider>(context);
+    
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_editingMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode 
+                        ? Colors.white.withOpacity(0.05) 
+                        : Colors.black.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Ionicons.pencil_outline,
+                        size: 16,
+                        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Editando mensagem',
+                          style: TextStyle(
+                            color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: _cancelEditing,
+                        child: Icon(
+                          Ionicons.close_outline,
+                          size: 18,
+                          color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 150),
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode 
+                            ? Colors.white.withOpacity(0.05) 
+                            : Colors.black.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: TextField(
+                        controller: _messageController,
+                        focusNode: _focusNode,
+                        maxLines: null,
+                        textInputAction: TextInputAction.newline,
+                        style: TextStyle(
+                          color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                          fontSize: 15,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: _editingMessage != null 
+                              ? 'Edite sua mensagem...' 
+                              : 'Digite uma mensagem...',
+                          hintStyle: TextStyle(
+                            color: themeProvider.isDarkMode 
+                                ? Colors.white.withOpacity(0.5) 
+                                : Colors.black.withOpacity(0.5),
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () {
+                      if (_editingMessage != null) {
+                        _handleEditMessage(_messageController.text);
+                      } else {
+                        _sendMessage(_messageController.text);
+                        _messageController.clear();
+                      }
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _editingMessage != null 
+                            ? Ionicons.checkmark_outline 
+                            : Ionicons.send_outline,
+                        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _startEditingMessage(ChatMessage message, int index) {
     setState(() {
       _editingMessage = message;
@@ -400,31 +535,23 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
-    // Encontra a mensagem do usuário anterior à resposta da IA
     if (aiMessageIndex > 0) {
       final userMessage = chatProvider.currentMessages[aiMessageIndex - 1];
       if (userMessage.isUser) {
-        // Remove a resposta antiga da IA
         chatProvider.currentMessages.removeAt(aiMessageIndex);
-
-        // Reenvia a mensagem do usuário
         await _sendMessage(userMessage.text, isRegeneration: true);
       }
     }
   }
 
   Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
-    // Se for HTML, mostramos uma resposta simples com emoji e ícone de download
     if (text.contains('<!DOCTYPE html>') || text.contains('<html')) {
       return _buildDocumentInline(text, themeProvider);
     }
-
-    // Para texto normal, usamos o formatter habitual
     return MessageFormatter.buildFormattedText(text, themeProvider);
   }
 
   Widget _buildDocumentInline(String text, ThemeProvider themeProvider) {
-    // Extrai o HTML limpo (caso o serviço tenha prefixos)
     final htmlContent = _chatService.extractHtmlFromResponse(text);
 
     return Container(
@@ -436,7 +563,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Texto simples: emoji de check + mensagem
           Expanded(
             child: Text(
               '✅ Documento criado',
@@ -447,13 +573,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               ),
             ),
           ),
-
-          // Download: sempre visível — chama conversão HTML→PDF e força download no browser
           GestureDetector(
             onTap: () {
               if (htmlContent.isNotEmpty) {
                 _downloadHtmlAsPdf(htmlContent);
-                // Notifica também o callback externo caso necessário
                 if (widget.onDocumentGenerated != null) {
                   widget.onDocumentGenerated!(htmlContent);
                 }
@@ -473,11 +596,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  /// Converte HTML para PDF no browser (usando jsPDF + html2canvas) e força
-  /// o download. O script injeta as libs se necessário.
   void _downloadHtmlAsPdf(String htmlContent) {
     final filename = 'document_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    final safeHtml = jsonEncode(htmlContent); // garante escaping correto
+    final safeHtml = jsonEncode(htmlContent);
     final safeFilename = jsonEncode(filename);
 
     final script = '''
@@ -524,7 +645,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       container.innerHTML = htmlContent;
       document.body.appendChild(container);
 
-      // Espera um pouco para o layout estabilizar
       await new Promise(r => setTimeout(r, 800));
 
       const canvas = await html2canvas(container, {
@@ -562,7 +682,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         heightLeft -= pdfPageHeight;
       }
 
-      // Aciona download
       pdf.save(filename);
 
     } catch (err) {
@@ -586,8 +705,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     }
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-
-    // Remove mensagens após a editada
     final messagesToKeep = chatProvider.currentMessages.sublist(0, _editingIndex!);
 
     chatProvider.currentMessages.clear();
@@ -596,8 +713,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     }
 
     _cancelEditing();
-
-    // Reenvia a mensagem editada
     await _sendMessage(newText);
   }
 
@@ -668,7 +783,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 }
 
-// Tela de conversas (mantida igual, mas com fundo preto/branco)
 class _ConversationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -723,7 +837,6 @@ class _ConversationsScreen extends StatelessWidget {
     );
   }
 
-  // Small helper to keep ListView builder code readable (same behavior as antes)
   Widget chat_provider_list_builder(ThemeProvider themeProvider, ChatProvider chatProvider) {
     if (chatProvider.conversations.isEmpty) {
       return Center(
