@@ -349,6 +349,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               style: TextStyle(
                 color: themeProvider.isDarkMode ? Colors.white : Colors.black,
                 fontSize: 15,
+                fontFamily: 'Times New Roman',
               ),
             ),
           ),
@@ -707,9 +708,9 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     try {
       final conversationHistory = chatProvider.buildMessageHistory();
       
-      // Limita o histórico para evitar erro de token
-      final limitedHistory = conversationHistory.length > 10 
-          ? conversationHistory.sublist(conversationHistory.length - 10)
+      // Limita o histórico para evitar erro de token (mantém últimas 60 mensagens)
+      final limitedHistory = conversationHistory.length > 60 
+          ? conversationHistory.sublist(conversationHistory.length - 60)
           : conversationHistory;
 
       final aiResponse = await _chatService.sendMessage(text, limitedHistory);
