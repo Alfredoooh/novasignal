@@ -1,17 +1,16 @@
 // lib/tabs/chat_tab.dart
-import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/theme_provider.dart';
 import '../providers/chat_provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
+import '../services/chat_service.dart';
+import '../services/message_formatter.dart';
 import 'package:ionicons/ionicons.dart';
+import 'dart:math' as math;
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -26,26 +25,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
-
-  static const String _viewType = 'chat-input-only';
+  final ChatService _chatService = ChatService();
 
   bool _isLoading = false;
   late AnimationController _loadingController;
-
-  static const String _groqApiKey = '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';
-  static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-
-  static const String _sendIconSvg = '''
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 5V19M12 5L6 11M12 5L18 11" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-''';
-
-  static const String _stopIconSvg = '''
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect x="6" y="6" width="12" height="12" rx="2" fill="#FFFFFF"/>
-</svg>
-''';
+  ChatMessage? _editingMessage;
+  int? _editingIndex;
 
   @override
   void initState() {
@@ -212,7 +197,11 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         if (_isLoading && index == chatProvider.currentMessages.length) {
           return _buildLoadingIndicator(themeProvider);
         }
-        return _buildMessageBubble(chatProvider.currentMessages[index], themeProvider, index);
+        return _buildMessageBubble(
+          chatProvider.currentMessages[index],
+          themeProvider,
+          index,
+        );
       },
     );
   }
@@ -268,7 +257,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   Widget _buildMessageBubble(ChatMessage message, ThemeProvider themeProvider, int index) {
     if (message.isUser) {
       return GestureDetector(
-        onTap: () => _showEditDialog(context, message, index, themeProvider),
+        onTap: () => _startEditingMessage(message, index),
         child: Align(
           alignment: Alignment.centerRight,
           child: Container(
@@ -309,7 +298,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             children: [
               _buildAiResponseContent(message.text, themeProvider),
               const SizedBox(height: 12),
-              _buildActionButtons(message.text, themeProvider),
+              _buildActionButtons(message.text, themeProvider, index),
             ],
           ),
         ),
@@ -317,7 +306,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     }
   }
 
-  Widget _buildActionButtons(String messageText, ThemeProvider themeProvider) {
+  Widget _buildActionButtons(String messageText, ThemeProvider themeProvider, int messageIndex) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -325,33 +314,24 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           icon: Ionicons.copy_outline,
           onTap: () {
             Clipboard.setData(ClipboardData(text: messageText));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Copiado!'),
-                duration: const Duration(seconds: 2),
-                backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFF212529),
-              ),
-            );
           },
           themeProvider: themeProvider,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         _buildActionButton(
           icon: Ionicons.share_outline,
           onTap: () {
-            // Implementar compartilhamento
+            Share.share(messageText);
           },
           themeProvider: themeProvider,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         _buildActionButton(
-          icon: Ionicons.refresh_outline,
-          onTap: () {
-            // Implementar regeneração
-          },
+          icon: Ionicons.reload_outline,
+          onTap: () => _regenerateMessage(messageIndex),
           themeProvider: themeProvider,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         _buildActionButton(
           icon: Ionicons.thumbs_up_outline,
           onTap: () {
@@ -359,7 +339,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           },
           themeProvider: themeProvider,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         _buildActionButton(
           icon: Ionicons.thumbs_down_outline,
           onTap: () {
@@ -378,97 +358,47 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08),
-          ),
-        ),
-        child: Icon(
-          icon,
-          size: 16,
-          color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-        ),
+      child: Icon(
+        icon,
+        size: 20,
+        color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
       ),
     );
   }
 
-  void _showEditDialog(BuildContext context, ChatMessage message, int index, ThemeProvider themeProvider) {
-    final controller = TextEditingController(text: message.text);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Editar mensagem',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          autofocus: true,
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-          ),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              final newText = controller.text.trim();
-              if (newText.isNotEmpty && newText != message.text) {
-                Navigator.pop(context);
-                // Remove mensagens após a editada e reenvia
-                final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-                final messagesToKeep = chatProvider.currentMessages.sublist(0, index);
-                
-                // Limpa as mensagens atuais e adiciona as que queremos manter
-                chatProvider.currentMessages.clear();
-                for (var msg in messagesToKeep) {
-                  chatProvider.addMessage(msg);
-                }
-                
-                // Adiciona a mensagem editada e reenvia
-                await _sendMessage(newText);
-              } else {
-                Navigator.pop(context);
-              }
-            },
-            child: const Text(
-              'Reenviar',
-              style: TextStyle(
-                color: Color(0xFF1E88E5),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  void _startEditingMessage(ChatMessage message, int index) {
+    setState(() {
+      _editingMessage = message;
+      _editingIndex = index;
+      _messageController.text = message.text;
+    });
+    _focusNode.requestFocus();
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _editingMessage = null;
+      _editingIndex = null;
+      _messageController.clear();
+    });
+  }
+
+  Future<void> _regenerateMessage(int aiMessageIndex) async {
+    if (_isLoading) return;
+    
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    
+    // Encontra a mensagem do usuário anterior à resposta da IA
+    if (aiMessageIndex > 0) {
+      final userMessage = chatProvider.currentMessages[aiMessageIndex - 1];
+      if (userMessage.isUser) {
+        // Remove a resposta antiga da IA
+        chatProvider.currentMessages.removeAt(aiMessageIndex);
+        
+        // Reenvia a mensagem do usuário
+        await _sendMessage(userMessage.text, isRegeneration: true);
+      }
+    }
   }
 
   Widget _buildAiResponseContent(String text, ThemeProvider themeProvider) {
@@ -476,7 +406,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       return _buildDocumentPreview(text, themeProvider);
     }
 
-    return _buildFormattedText(text, themeProvider);
+    return MessageFormatter.buildFormattedText(text, themeProvider);
   }
 
   Widget _buildDocumentPreview(String text, ThemeProvider themeProvider) {
@@ -583,7 +513,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                     GestureDetector(
                       onTap: () {
                         if (widget.onDocumentGenerated != null) {
-                          widget.onDocumentGenerated!(_extractHtmlFromResponse(text));
+                          widget.onDocumentGenerated!(_chatService.extractHtmlFromResponse(text));
                         }
                       },
                       child: Container(
@@ -650,371 +580,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildFormattedText(String text, ThemeProvider themeProvider) {
-    final color = themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529);
-    final accentBlue = const Color(0xFF1E88E5);
-
-    if (text.contains('```')) {
-      final parts = text.split('```');
-      List<Widget> widgets = [];
-      for (int i = 0; i < parts.length; i++) {
-        final part = parts[i];
-        if (i % 2 == 0) {
-          widgets.addAll(_buildWidgetsFromLines(part, color, accentBlue, themeProvider));
-        } else {
-          widgets.add(
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    Icon(Ionicons.code_slash, size: 16, color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
-                    const SizedBox(width: 8),
-                    SelectableText(
-                      part.trim(),
-                      style: TextStyle(
-                        fontFamily: kIsWeb ? 'monospace' : 'Courier',
-                        fontSize: 13,
-                        color: themeProvider.isDarkMode ? Colors.grey.shade200 : Colors.grey.shade900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: widgets,
-      );
-    }
-
-    final children = _buildWidgetsFromLines(text, color, accentBlue, themeProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
-    );
-  }
-
-  List<Widget> _buildWidgetsFromLines(String text, Color color, Color accentBlue, ThemeProvider themeProvider) {
-    List<Widget> widgets = [];
-    final lines = text.replaceAll('\r', '').split('\n');
-
-    for (int i = 0; i < lines.length; i++) {
-      String line = lines[i].trimRight();
-
-      if (line.isEmpty) {
-        widgets.add(const SizedBox(height: 10));
-        continue;
-      }
-
-      final lower = line.toLowerCase();
-
-      // Tabelas HTML
-      if (line.trim().startsWith('<table') || (i > 0 && lines[i - 1].contains('<table'))) {
-        String tableHtml = '';
-        int j = i;
-        while (j < lines.length && !lines[j].contains('</table>')) {
-          tableHtml += lines[j] + '\n';
-          j++;
-        }
-        if (j < lines.length) {
-          tableHtml += lines[j];
-        }
-        
-        // Aqui você pode usar um WebView ou HtmlWidget para renderizar a tabela
-        // Por simplicidade, vou criar um placeholder
-        widgets.add(
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Ionicons.grid_outline, size: 20, color: accentBlue),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Tabela',
-                      style: TextStyle(
-                        color: accentBlue,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Tabela HTML renderizada',
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        i = j;
-        continue;
-      }
-
-      // Info boxes
-      if (lower.contains('importante') || lower.contains('atenção') || lower.contains('nota:') || line.startsWith('Info:') || line.contains('[info]')) {
-        widgets.add(
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.08) : accentBlue.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: themeProvider.isDarkMode ? Colors.blue.withOpacity(0.2) : accentBlue.withOpacity(0.15), width: 1.5),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Ionicons.information_circle, size: 22, color: accentBlue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    line,
-                    style: TextStyle(
-                      color: accentBlue,
-                      fontSize: 15,
-                      height: 1.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        continue;
-      }
-
-      // H1
-      if (line.startsWith('# ')) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 8),
-            child: Container(
-              padding: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: accentBlue.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-              ),
-              child: Text(
-                line.substring(2).trim(),
-                style: TextStyle(
-                  color: accentBlue,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          ),
-        );
-        continue;
-      }
-      // H2
-      else if (line.startsWith('## ')) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 10, bottom: 6),
-            child: Text(
-              line.substring(3).trim(),
-              style: TextStyle(
-                color: color,
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
-                height: 1.35,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-        );
-        continue;
-      }
-      // H3
-      else if (line.startsWith('### ')) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 6),
-            child: Text(
-              line.substring(4).trim(),
-              style: TextStyle(
-                color: color,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                height: 1.4,
-              ),
-            ),
-          ),
-        );
-        continue;
-      }
-
-      // Bullet points
-      if (line.startsWith('- ') || line.startsWith('• ')) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 8, right: 10),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: accentBlue,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(children: _parseInlineFormatting(line.substring(2), color)),
-                    textAlign: TextAlign.left,
-                    softWrap: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        continue;
-      }
-
-      // Numbered lists
-      if (RegExp(r'^\d+\.\s').hasMatch(line)) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 32,
-                  margin: const EdgeInsets.only(right: 8),
-                  child: Text(
-                    line.split(' ')[0],
-                    style: TextStyle(
-                      color: accentBlue,
-                      fontSize: 15,
-                      height: 1.6,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(children: _parseInlineFormatting(line.substring(line.indexOf(' ') + 1), color)),
-                    softWrap: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        continue;
-      }
-
-      // Regular text with bold
-      if (line.contains('**')) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Text.rich(
-              TextSpan(children: _parseInlineFormatting(line, color)),
-            ),
-          ),
-        );
-        continue;
-      }
-
-      // Plain text
-      widgets.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Text(
-            line,
-            style: TextStyle(
-              color: color,
-              fontSize: 15,
-              height: 1.65,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return widgets;
-  }
-
-  List<InlineSpan> _parseInlineFormatting(String text, Color color) {
-    List<InlineSpan> spans = [];
-    final boldRegex = RegExp(r'\*\*(.*?)\*\*');
-    int lastIndex = 0;
-
-    for (final match in boldRegex.allMatches(text)) {
-      if (match.start > lastIndex) {
-        spans.add(TextSpan(
-          text: text.substring(lastIndex, match.start),
-          style: TextStyle(color: color, fontSize: 15, height: 1.65),
-        ));
-      }
-
-      spans.add(TextSpan(
-        text: match.group(1),
-        style: TextStyle(
-          color: color,
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
-          height: 1.65,
-        ),
-      ));
-
-      lastIndex = match.end;
-    }
-
-    if (lastIndex < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastIndex),
-        style: TextStyle(color: color, fontSize: 15, height: 1.65),
-      ));
-    }
-
-    return spans;
-  }
-
   Widget _buildInputArea(ThemeProvider themeProvider) {
     return Positioned(
       left: 0,
@@ -1025,25 +590,54 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         focusNode: _focusNode,
         isDarkMode: themeProvider.isDarkMode,
         isLoading: _isLoading,
+        isEditing: _editingMessage != null,
         onSend: (text) async {
-          await _sendMessage(text);
+          if (_editingMessage != null && _editingIndex != null) {
+            await _handleEditMessage(text);
+          } else {
+            await _sendMessage(text);
+          }
         },
-        viewType: _viewType,
-        sendIconSvg: _sendIconSvg,
-        stopIconSvg: _stopIconSvg,
+        onCancelEdit: _cancelEditing,
       ),
     );
   }
 
-  Future<void> _sendMessage(String text) async {
+  Future<void> _handleEditMessage(String newText) async {
+    if (newText.trim().isEmpty) {
+      _cancelEditing();
+      return;
+    }
+
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    
+    // Remove mensagens após a editada
+    final messagesToKeep = chatProvider.currentMessages.sublist(0, _editingIndex!);
+    
+    chatProvider.currentMessages.clear();
+    for (var msg in messagesToKeep) {
+      chatProvider.addMessage(msg);
+    }
+
+    _cancelEditing();
+    
+    // Reenvia a mensagem editada
+    await _sendMessage(newText);
+  }
+
+  Future<void> _sendMessage(String text, {bool isRegeneration = false}) async {
     if (text.trim().isEmpty || _isLoading) return;
     if (!mounted) return;
 
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
-    if (mounted) {
+    if (mounted && !isRegeneration) {
       setState(() {
         chatProvider.addMessage(ChatMessage(text: text.trim(), isUser: true));
+        _isLoading = true;
+      });
+    } else if (isRegeneration) {
+      setState(() {
         _isLoading = true;
       });
     }
@@ -1051,123 +645,23 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     _scrollToBottom();
 
     try {
-      final response = await http.post(
-        Uri.parse(_groqApiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_groqApiKey',
-        },
-        body: jsonEncode({
-          'model': 'gpt-4o',
-          'messages': [
-            {
-              'role': 'system',
-              'content': '''Você é o DocuGen AI, um assistente extremamente profissional e sofisticado.
-
-REGRAS CRÍTICAS DE FORMATAÇÃO:
-
-1. NUNCA mencione ou mostre asteriscos (**) ou símbolos de markdown na resposta final
-2. NUNCA explique como você formata o texto
-3. NUNCA diga "vou usar negrito" ou "formatado com **"
-4. Responda NATURALMENTE como se estivesse escrevendo diretamente
-
-FORMATAÇÃO PARA SUAS RESPOSTAS:
-
-Use # para títulos principais (H1) - destaque máximo com linha inferior azul
-Use ## para subtítulos (H2) - importantes e destacados
-Use ### para seções menores (H3)
-Use **texto** para negrito (mas NUNCA mostre os asteriscos na resposta)
-Use - ou • para listas com bullets
-Use números 1. 2. 3. para listas ordenadas
-Use Importante:, Atenção:, Nota: para caixas de informação destacadas
-Use ``` para blocos de código
-
-PARA TABELAS:
-SEMPRE use HTML puro com a tag <table>, NUNCA use caracteres ASCII
-Exemplo de tabela HTML:
-<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
-  <thead>
-    <tr style="background-color: #f0f0f0;">
-      <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Coluna 1</th>
-      <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Coluna 2</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="padding: 12px; border: 1px solid #ddd;">Dado 1</td>
-      <td style="padding: 12px; border: 1px solid #ddd;">Dado 2</td>
-    </tr>
-  </tbody>
-</table>
-
-EXEMPLO DE BOA RESPOSTA:
-
-# Inteligência Artificial
-
-A inteligência artificial está revolucionando o mundo moderno de formas impressionantes.
-
-## Principais Benefícios
-
-A IA oferece vantagens significativas em diversas áreas:
-
-- Automação de processos complexos e repetitivos
-- Análise de grandes volumes de dados em tempo real
-- Tomada de decisões mais precisas e baseadas em dados
-
-### Aplicações Práticas
-
-1. Saúde: diagnósticos mais precisos e tratamentos personalizados
-2. Finanças: detecção de fraudes e análise de risco
-3. Educação: personalização do aprendizado para cada aluno
-
-Importante: A implementação de IA deve sempre considerar questões éticas e de privacidade.
-
-CRIAÇÃO DE DOCUMENTOS HTML:
-
-APENAS crie documentos HTML quando o usuário pedir EXPLICITAMENTE:
-- "crie um documento"
-- "gere um HTML"
-- "faça um site"
-- "monte uma página"
-- "desenvolva um website"
-
-Para perguntas normais, explicações, conversas: use APENAS a formatação markdown acima
-
-Quando criar HTML:
-1. Crie um documento HTML5 completo e profissional
-2. Use CSS moderno e responsivo
-3. Inclua meta tags apropriadas
-4. Design limpo e elegante
-5. Totalmente funcional
-
-Seja claro, direto, profissional e extremamente bem organizado em todas as respostas.''',
-            },
-            ...chatProvider.buildMessageHistory(),
-          ],
-          'temperature': 0.7,
-          'max_tokens': 4096,
-        }),
+      final aiResponse = await _chatService.sendMessage(
+        text,
+        chatProvider.buildMessageHistory(),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final aiResponse = data['choices'][0]['message']['content'] as String;
+      if (mounted) {
+        setState(() {
+          chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
+          _isLoading = false;
+        });
 
-        if (mounted) {
-          setState(() {
-            chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
-            _isLoading = false;
-          });
-
-          if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
-            final htmlContent = _extractHtmlFromResponse(aiResponse);
-            if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
-              widget.onDocumentGenerated!(htmlContent);
-            }
+        if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
+          final htmlContent = _chatService.extractHtmlFromResponse(aiResponse);
+          if (htmlContent.isNotEmpty && widget.onDocumentGenerated != null) {
+            widget.onDocumentGenerated!(htmlContent);
           }
         }
-      } else {
-        throw Exception('Erro na API: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('Erro ao enviar mensagem: $e');
@@ -1185,31 +679,6 @@ Seja claro, direto, profissional e extremamente bem organizado em todas as respo
     _scrollToBottom();
   }
 
-  String _extractHtmlFromResponse(String response) {
-    int htmlStart = response.indexOf('<!DOCTYPE html>');
-    if (htmlStart == -1) {
-      htmlStart = response.indexOf('<html');
-    }
-
-    if (htmlStart != -1) {
-      final htmlEnd = response.indexOf('</html>', htmlStart);
-      if (htmlEnd != -1) {
-        return response.substring(htmlStart, htmlEnd + 7);
-      }
-    }
-
-    final codeBlockStart = response.indexOf('```html');
-    if (codeBlockStart != -1) {
-      final contentStart = response.indexOf('\n', codeBlockStart) + 1;
-      final codeBlockEnd = response.indexOf('```', contentStart);
-      if (codeBlockEnd != -1) {
-        return response.substring(contentStart, codeBlockEnd).trim();
-      }
-    }
-
-    return '';
-  }
-
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -1223,6 +692,7 @@ Seja claro, direto, profissional e extremamente bem organizado em todas as respo
   }
 }
 
+// Tela de conversas (mantida igual)
 class _ConversationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
