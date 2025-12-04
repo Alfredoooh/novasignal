@@ -65,9 +65,6 @@ class _ChatInputState extends State<ChatInput> {
         final inputBgColor = widget.isDarkMode ? '#2D333B' : '#F1F3F5';
         final inputTextColor = widget.isDarkMode ? '#FFFFFF' : '#212529';
         final inputPlaceholderColor = widget.isDarkMode ? '#ADB5BD' : '#6C757D';
-        final boxShadow = widget.isDarkMode 
-            ? '0 2px 12px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)'
-            : '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.06)';
 
         final wrapper = html.DivElement()
           ..style.width = '100%'
@@ -90,8 +87,7 @@ class _ChatInputState extends State<ChatInput> {
           ..style.backgroundColor = inputBgColor
           ..style.color = inputTextColor
           ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-          ..style.transition = 'background-color 0.3s, box-shadow 0.3s'
-          ..style.boxShadow = boxShadow
+          ..style.transition = 'background-color 0.3s'
           ..style.setProperty('-webkit-user-select', 'text')
           ..style.userSelect = 'text'
           ..style.setProperty('-webkit-tap-highlight-color', 'transparent');
@@ -100,10 +96,7 @@ class _ChatInputState extends State<ChatInput> {
           ..text = '''
             #chatInput-$viewId::placeholder { color: $inputPlaceholderColor; }
             #chatInput-$viewId:focus { 
-              box-shadow: ${widget.isDarkMode 
-                ? '0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)'
-                : '0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)'
-              } !important;
+              box-shadow: none !important;
               outline: none !important;
             }
           ''';
@@ -187,9 +180,16 @@ class _ChatInputState extends State<ChatInput> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(widget.isDarkMode ? 0.3 : 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -2),
+            color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.06),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, -4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.isDarkMode ? 0.1 : 0.03),
+            blurRadius: 16,
+            spreadRadius: 0,
+            offset: const Offset(0, -8),
           ),
         ],
       ),
@@ -260,18 +260,6 @@ class _ChatInputState extends State<ChatInput> {
                         decoration: BoxDecoration(
                           color: inputBgColor,
                           borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(widget.isDarkMode ? 0.3 : 0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 2),
-                            ),
-                            BoxShadow(
-                              color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.06),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
                         ),
                         child: kIsWeb
                             ? IgnorePointer(
@@ -321,18 +309,6 @@ class _ChatInputState extends State<ChatInput> {
                       decoration: BoxDecoration(
                         color: circleColor,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(widget.isDarkMode ? 0.3 : 0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 2),
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.06),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
                       ),
                       child: Center(
                         child: Icon(
