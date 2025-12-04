@@ -160,7 +160,7 @@ Crie um documento COMPLETO, DETALHADO e PROFISSIONAL!''';
             },
             ...messageHistory,
           ],
-          'temperature': 0.3,
+          'temperature': 0.5,
           'max_tokens': 8000,
         };
 
