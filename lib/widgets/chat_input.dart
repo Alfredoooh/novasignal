@@ -68,9 +68,8 @@ class _ChatInputState extends State<ChatInput> {
 
         final wrapper = html.DivElement()
           ..style.width = '100%'
-          // permitir que o textarea ocupe toda a altura disponível/ cresça verticalmente
           ..style.display = 'flex'
-          ..style.alignItems = 'stretch';
+          ..style.alignItems = 'center';
 
         _htmlTextarea = html.TextAreaElement()
           ..id = 'chatTextarea-$viewId'
@@ -86,7 +85,6 @@ class _ChatInputState extends State<ChatInput> {
           ..style.outline = 'none'
           ..style.backgroundColor = inputBgColor
           ..style.color = inputTextColor
-          // impedir redimensionamento manual horizontal; permitir overflow-y
           ..style.resize = 'none'
           ..style.overflowY = 'auto'
           ..style.overflowX = 'hidden'
@@ -98,12 +96,6 @@ class _ChatInputState extends State<ChatInput> {
           ..style.userSelect = 'text'
           ..setAttribute('rows', '1')
           ..setAttribute('wrap', 'soft')
-          ..style.whiteSpace = 'pre-wrap' // permite wraps
-          ..style.wordWrap = 'break-word'
-          ..style.setProperty('word-break', 'break-word') // compatibilidade
-          ..style.setProperty('overflow-wrap', 'anywhere') // força quebra onde necessário
-          ..style.whiteSpace = 'pre-wrap'
-          ..style.wordWrap = 'break-word'
           ..style.whiteSpace = 'pre-wrap'
           ..style.wordWrap = 'break-word';
 
@@ -115,17 +107,13 @@ class _ChatInputState extends State<ChatInput> {
             #chatTextarea-$viewId::placeholder { color: $inputPlaceholderColor; }
             #chatTextarea-$viewId:focus { box-shadow: none !important; outline: none !important; }
             #chatTextarea-$viewId { scrollbar-width: thin; }
-            /* Forçar quebra de linha em navegadores que precisam */
-            #chatTextarea-$viewId { word-wrap: break-word; overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap; }
           ''';
 
         wrapper.append(style);
         wrapper.append(_htmlTextarea!);
 
-        // auto-resize handler
         void resize() {
           try {
-            // reset height to auto para medir corretamente o scrollHeight
             _htmlTextarea!.style.height = 'auto';
             final scrollH = _htmlTextarea!.scrollHeight ?? 0;
             final cap = maxHeightPx;
@@ -135,10 +123,7 @@ class _ChatInputState extends State<ChatInput> {
           } catch (_) {}
         }
 
-        // listeners
-        _htmlTextarea!.onInput.listen((_) {
-          resize();
-        });
+        _htmlTextarea!.onInput.listen((_) => resize());
 
         _htmlTextarea!.onKeyPress.listen((e) {
           if (e.key == 'Enter' && !e.shiftKey) {
@@ -210,8 +195,9 @@ class _ChatInputState extends State<ChatInput> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center, // mantém alinhamento vertical original
             children: [
+              // ESTE GestureDetector + IgnorePointer + Opacity RESTAURA o comportamento anterior
               Expanded(
                 child: GestureDetector(
                   onTap: () {
@@ -224,6 +210,7 @@ class _ChatInputState extends State<ChatInput> {
                     }
                   },
                   child: Container(
+                    // mantemos uma altura mínima para que a posição não mude
                     constraints: const BoxConstraints(minHeight: 50),
                     decoration: BoxDecoration(color: inputBgColor, borderRadius: BorderRadius.circular(24)),
                     child: Padding(
