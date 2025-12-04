@@ -11,8 +11,9 @@ import 'package:http/http.dart' as http;
 import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
 import 'package:ionicons/ionicons.dart';
-import 'dart:html' as html;
-import 'dart:ui' as ui;
+// Only import these on web platform
+import 'dart:html' as html show IFrameElement;
+import 'dart:ui' as ui show platformViewRegistry;
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -313,10 +314,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     if (text.contains('<table>') && text.contains('</table>')) {
       List<Widget> widgets = [];
       int lastIndex = 0;
-      
+
       final tableRegex = RegExp(r'<table>.*?</table>', dotAll: true);
       final matches = tableRegex.allMatches(text);
-      
+
       for (final match in matches) {
         if (match.start > lastIndex) {
           widgets.add(
@@ -331,17 +332,17 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             ),
           );
         }
-        
+
         widgets.add(
           Container(
             margin: const EdgeInsets.symmetric(vertical: 12),
             child: _buildHtmlTable(match.group(0)!, themeProvider),
           ),
         );
-        
+
         lastIndex = match.end;
       }
-      
+
       if (lastIndex < text.length) {
         widgets.add(
           SelectableText(
@@ -355,20 +356,20 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           ),
         );
       }
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: widgets,
       );
     }
-    
+
     if (text.contains('<img ') && text.contains('/>')) {
       List<Widget> widgets = [];
       int lastIndex = 0;
-      
+
       final imgRegex = RegExp(r'<img [^>]+/>', dotAll: true);
       final matches = imgRegex.allMatches(text);
-      
+
       for (final match in matches) {
         if (match.start > lastIndex) {
           widgets.add(
@@ -383,12 +384,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             ),
           );
         }
-        
+
         final imgTag = match.group(0)!;
         final srcMatch = RegExp(r'src="([^"]+)"').firstMatch(imgTag);
         final widthMatch = RegExp(r'width="([^"]+)"').firstMatch(imgTag);
         final altMatch = RegExp(r'alt="([^"]+)"').firstMatch(imgTag);
-        
+
         if (srcMatch != null) {
           widgets.add(
             Container(
@@ -424,10 +425,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             ),
           );
         }
-        
+
         lastIndex = match.end;
       }
-      
+
       if (lastIndex < text.length) {
         widgets.add(
           SelectableText(
@@ -441,13 +442,13 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           ),
         );
       }
-      
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: widgets,
       );
     }
-    
+
     return SelectableText(
       text,
       style: TextStyle(
@@ -460,9 +461,25 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildHtmlTable(String htmlTable, ThemeProvider themeProvider) {
+    if (!kIsWeb) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'HTML tables are only supported on web platform',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white70 : Colors.black54,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
     final viewId = 'table-${DateTime.now().millisecondsSinceEpoch}';
-    
-    // ignore: undefined_prefixed_name
+
     ui.platformViewRegistry.registerViewFactory(
       viewId,
       (int viewId) {
@@ -470,7 +487,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           ..style.border = 'none'
           ..style.width = '100%'
           ..style.height = 'auto';
-        
+
         final doc = '''
         <!DOCTYPE html>
         <html>
@@ -516,12 +533,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         </body>
         </html>
         ''';
-        
+
         iframe.srcdoc = doc;
         return iframe;
       },
     );
-    
+
     return SizedBox(
       height: 300,
       child: HtmlElementView(viewType: viewId),
