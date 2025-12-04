@@ -154,6 +154,7 @@ class MessageFormatter {
                 fontWeight: FontWeight.bold,
                 height: 1.3,
                 letterSpacing: -0.5,
+                fontFamily: 'Times New Roman',
               ),
             ),
           ),
@@ -173,6 +174,7 @@ class MessageFormatter {
                 fontWeight: FontWeight.bold,
                 height: 1.35,
                 letterSpacing: -0.3,
+                fontFamily: 'Times New Roman',
               ),
             ),
           ),
@@ -191,6 +193,7 @@ class MessageFormatter {
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
                 height: 1.4,
+                fontFamily: 'Times New Roman',
               ),
             ),
           ),
@@ -247,6 +250,7 @@ class MessageFormatter {
                       fontSize: 17,
                       height: 1.7,
                       fontWeight: FontWeight.w600,
+                      fontFamily: 'Times New Roman',
                     ),
                   ),
                 ),
@@ -309,7 +313,7 @@ class MessageFormatter {
       if (match.start > lastIndex) {
         spans.add(TextSpan(
           text: text.substring(lastIndex, match.start),
-          style: TextStyle(color: color, fontSize: 17, height: 1.7),
+          style: TextStyle(color: color, fontSize: 17, height: 1.7, fontFamily: 'Times New Roman'),
         ));
       }
 
@@ -320,6 +324,7 @@ class MessageFormatter {
           fontSize: 17,
           fontWeight: FontWeight.bold,
           height: 1.7,
+          fontFamily: 'Times New Roman',
         ),
       ));
 
@@ -329,7 +334,7 @@ class MessageFormatter {
     if (lastIndex < text.length) {
       spans.add(TextSpan(
         text: text.substring(lastIndex),
-        style: TextStyle(color: color, fontSize: 17, height: 1.7),
+        style: TextStyle(color: color, fontSize: 17, height: 1.7, fontFamily: 'Times New Roman'),
       ));
     }
 
