@@ -48,14 +48,12 @@ class _ChatInputState extends State<ChatInput> {
   void didUpdateWidget(ChatInput oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Atualiza o input HTML quando estiver editando
     if (kIsWeb && widget.isEditing && _htmlInput != null) {
       _htmlInput!.value = widget.messageController.text;
       _htmlInput!.focus();
       setState(() => _isInputActive = true);
     }
 
-    // Limpa o input quando não estiver mais editando
     if (kIsWeb && !widget.isEditing && oldWidget.isEditing && _htmlInput != null) {
       _htmlInput!.value = '';
     }
@@ -67,6 +65,9 @@ class _ChatInputState extends State<ChatInput> {
         final inputBgColor = widget.isDarkMode ? '#2D333B' : '#F1F3F5';
         final inputTextColor = widget.isDarkMode ? '#FFFFFF' : '#212529';
         final inputPlaceholderColor = widget.isDarkMode ? '#ADB5BD' : '#6C757D';
+        final boxShadow = widget.isDarkMode 
+            ? '0 2px 12px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)'
+            : '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.06)';
 
         final wrapper = html.DivElement()
           ..style.width = '100%'
@@ -89,7 +90,8 @@ class _ChatInputState extends State<ChatInput> {
           ..style.backgroundColor = inputBgColor
           ..style.color = inputTextColor
           ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-          ..style.transition = 'background-color 0.3s'
+          ..style.transition = 'background-color 0.3s, box-shadow 0.3s'
+          ..style.boxShadow = boxShadow
           ..style.setProperty('-webkit-user-select', 'text')
           ..style.userSelect = 'text'
           ..style.setProperty('-webkit-tap-highlight-color', 'transparent');
@@ -97,7 +99,13 @@ class _ChatInputState extends State<ChatInput> {
         final style = html.StyleElement()
           ..text = '''
             #chatInput-$viewId::placeholder { color: $inputPlaceholderColor; }
-            #chatInput-$viewId:focus { box-shadow: none !important; outline: none !important; }
+            #chatInput-$viewId:focus { 
+              box-shadow: ${widget.isDarkMode 
+                ? '0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)'
+                : '0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)'
+              } !important;
+              outline: none !important;
+            }
           ''';
 
         wrapper.append(style);
@@ -119,7 +127,6 @@ class _ChatInputState extends State<ChatInput> {
         });
 
         _htmlInput!.onInput.listen((_) {
-          // Sincroniza o valor com o controller do Flutter
           if (!kIsWeb) {
             widget.messageController.text = _htmlInput!.value ?? '';
           }
@@ -167,7 +174,6 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
-    // Cores ajustadas para combinar com o home_page
     final bgColor = widget.isDarkMode ? const Color(0xFF1C2128) : Colors.white;
     final inputBgColor = widget.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFF1F3F5);
     final circleColor = widget.isDarkMode ? Colors.white : const Color(0xFF212529);
@@ -179,7 +185,13 @@ class _ChatInputState extends State<ChatInput> {
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
-        // Removida a boxShadow para combinar com o home_page
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.isDarkMode ? 0.3 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
@@ -188,7 +200,6 @@ class _ChatInputState extends State<ChatInput> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Barra de edição
               if (widget.isEditing)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -230,7 +241,6 @@ class _ChatInputState extends State<ChatInput> {
                   ),
                 ),
 
-              // Input principal
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -252,9 +262,14 @@ class _ChatInputState extends State<ChatInput> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
+                              color: Colors.black.withOpacity(widget.isDarkMode ? 0.3 : 0.08),
+                              blurRadius: 12,
                               offset: const Offset(0, 2),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.06),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
                             ),
                           ],
                         ),
@@ -298,7 +313,6 @@ class _ChatInputState extends State<ChatInput> {
                   ),
                   const SizedBox(width: 12),
 
-                  // Botão de enviar/stop
                   GestureDetector(
                     onTap: widget.isLoading ? null : _handleSend,
                     child: Container(
@@ -309,9 +323,14 @@ class _ChatInputState extends State<ChatInput> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
+                            color: Colors.black.withOpacity(widget.isDarkMode ? 0.3 : 0.08),
+                            blurRadius: 12,
                             offset: const Offset(0, 2),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(widget.isDarkMode ? 0.2 : 0.06),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
                           ),
                         ],
                       ),
