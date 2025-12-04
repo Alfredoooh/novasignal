@@ -13,9 +13,10 @@ import '../models/chat_message.dart';
 import 'package:ionicons/ionicons.dart';
 
 // Conditional imports for web platform
-import 'dart:ui' as ui;
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:ui_web' as ui_web;
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -482,8 +483,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
     final viewId = 'table-${DateTime.now().millisecondsSinceEpoch}';
 
-    // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory(
+    ui_web.platformViewRegistry.registerViewFactory(
       viewId,
       (int viewId) {
         final iframe = html.IFrameElement()
