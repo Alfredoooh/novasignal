@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
-  Color _primaryColor = const Color(0xFF212529);
-  Color _accentColor = const Color(0xFF495057);
+  Color _primaryColor = const Color(0xFF1a1a1a); // Cinza escuro
+  Color _accentColor = const Color(0xFF2d2d2d); // Cinza médio escuro
 
   bool get isDarkMode => _isDarkMode;
   Color get primaryColor => _primaryColor;
@@ -17,23 +17,24 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: ColorScheme.fromSeed(
         seedColor: _primaryColor,
         brightness: _isDarkMode ? Brightness.dark : Brightness.light,
+        secondary: const Color(0xFF404040), // Cinza para contraste
       ),
-      scaffoldBackgroundColor: _isDarkMode ? Colors.black : Colors.white,
+      scaffoldBackgroundColor: _isDarkMode ? const Color(0xFF0a0a0a) : Colors.white,
       appBarTheme: AppBarTheme(
-        backgroundColor: _isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-        foregroundColor: _isDarkMode ? Colors.white : const Color(0xFF212529),
+        backgroundColor: _isDarkMode ? const Color(0xFF141414) : Colors.white,
+        foregroundColor: _isDarkMode ? const Color(0xFFe0e0e0) : const Color(0xFF1a1a1a),
         elevation: 0,
       ),
-      cardColor: _isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+      cardColor: _isDarkMode ? const Color(0xFF1f1f1f) : Colors.white,
       iconTheme: IconThemeData(
-        color: _isDarkMode ? Colors.white : const Color(0xFF495057),
+        color: _isDarkMode ? const Color(0xFFe0e0e0) : const Color(0xFF2d2d2d),
       ),
       textTheme: TextTheme(
         bodyLarge: TextStyle(
-          color: _isDarkMode ? Colors.white : const Color(0xFF212529),
+          color: _isDarkMode ? const Color(0xFFe0e0e0) : const Color(0xFF1a1a1a),
         ),
         bodyMedium: TextStyle(
-          color: _isDarkMode ? Colors.white70 : const Color(0xFF495057),
+          color: _isDarkMode ? const Color(0xFFa0a0a0) : const Color(0xFF2d2d2d),
         ),
       ),
     );
@@ -54,3 +55,17 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+/* 
+ * PALETA DE CORES ESCURAS (NEUTRAS):
+ * 
+ * Primária: #1a1a1a (Cinza escuro)
+ * Acento: #2d2d2d (Cinza médio escuro)
+ * Secundário: #404040 (Cinza para contraste)
+ * Background: #0a0a0a (Preto profundo)
+ * Card/AppBar: #141414 / #1f1f1f (Cinzas escuros)
+ * Texto principal: #e0e0e0 (Branco suave)
+ * Texto secundário: #a0a0a0 (Cinza claro)
+ * 
+ * Cores neutras escuras sem tons azuis.
+ */
