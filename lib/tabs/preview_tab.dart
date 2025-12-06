@@ -8,22 +8,22 @@ import '../screens/edit_document_screen.dart';
 import 'dart:html' as html;  
 import 'dart:ui_web' as ui_web;  
 import 'dart:js' as js;  
-  
+
 class PreviewTab extends StatefulWidget {  
   final String? htmlContent;  
   final Function(String)? onContentUpdated;  
-  
+
   const PreviewTab({Key? key, this.htmlContent, this.onContentUpdated}) : super(key: key);  
-  
+
   @override  
   State<PreviewTab> createState() => _PreviewTabState();  
 }  
-  
-class _PreviewTabState extends State<PreviewTab> {  
+
+class _PreviewTabState extends State<PreviewTab> with SingleTickerProviderStateMixin {  
   static const String _previewViewType = 'pdf-preview-viewer';  
   static const String _renameInputViewType = 'rename-input-field';  
   static bool _renameViewRegistered = false;  
-  
+
   bool _isConverting = false;  
   bool _hasDocument = false;  
   String? _pdfViewId;  
@@ -32,7 +32,7 @@ class _PreviewTabState extends State<PreviewTab> {
   String? _lastProcessedContent;  
   String? _currentHtmlContent;  
   html.InputElement? _htmlRenameInput;  
-  
+
   @override  
   void initState() {  
     super.initState();  
@@ -42,7 +42,7 @@ class _PreviewTabState extends State<PreviewTab> {
       _convertAndRenderPDF(widget.htmlContent!);  
     }  
   }  
-  
+
   @override  
   void didUpdateWidget(PreviewTab oldWidget) {  
     super.didUpdateWidget(oldWidget);  
@@ -55,54 +55,54 @@ class _PreviewTabState extends State<PreviewTab> {
       _convertAndRenderPDF(widget.htmlContent!);  
     }  
   }  
-  
+
   void _initializePDFLibraries() {  
     final script1 = html.document.querySelector('script[src*="jspdf"]');  
     final script2 = html.document.querySelector('script[src*="html2canvas"]');  
     final script3 = html.document.querySelector('script[src*="pdf.js"]');  
-  
+
     if (script1 == null) {  
       final jspdfScript = html.ScriptElement()  
         ..src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'  
         ..async = true;  
       html.document.head?.append(jspdfScript);  
     }  
-  
+
     if (script2 == null) {  
       final html2canvasScript = html.ScriptElement()  
         ..src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'  
         ..async = true;  
       html.document.head?.append(html2canvasScript);  
     }  
-  
+
     if (script3 == null) {  
       final pdfjsScript = html.ScriptElement()  
         ..src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'  
         ..async = true;  
       html.document.head?.append(pdfjsScript);  
-  
+
       js.context['pdfjsLib']?['GlobalWorkerOptions']?['workerSrc'] =   
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';  
     }  
   }  
-  
+
   Future<void> _convertAndRenderPDF(String htmlContent) async {  
     if (!mounted) return;  
-  
+
     setState(() {  
       _isConverting = true;  
       _hasDocument = false;  
     });  
-  
+
     try {  
       await Future.delayed(const Duration(milliseconds: 500));  
-  
+
       final viewId = 'pdf-preview-${DateTime.now().millisecondsSinceEpoch}';  
-  
+
       _registerPDFView(viewId);  
-  
+
       await _executeHTMLtoPDF(htmlContent, viewId);  
-  
+
       if (mounted) {  
         setState(() {  
           _hasDocument = true;  
@@ -119,7 +119,7 @@ class _PreviewTabState extends State<PreviewTab> {
       }  
     }  
   }  
-  
+
   void _registerPDFView(String viewId) {  
     ui_web.platformViewRegistry.registerViewFactory(  
       '$_previewViewType-$viewId',  
@@ -129,18 +129,19 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.width = '100%'  
           ..style.height = '100%'  
           ..style.overflow = 'auto'  
-          ..style.padding = '0'
+          ..style.padding = '20px 0'
           ..style.boxSizing = 'border-box'  
           ..style.display = 'flex'  
           ..style.flexDirection = 'column'  
           ..style.alignItems = 'center'  
-          ..style.gap = '0';  
-  
+          ..style.gap = '20px'
+          ..style.backgroundColor = '#e0e0e0';  
+
         return container;  
       },  
     );  
   }  
-  
+
   Future<void> _executeHTMLtoPDF(String htmlContent, String viewId) async {  
     final script = '''  
     (async function() {  
@@ -150,34 +151,62 @@ class _PreviewTabState extends State<PreviewTab> {
         const pdfjsLib = window.pdfjsLib;  
           
         if (!jsPDF || !html2canvas || !pdfjsLib) {  
-          console.error('Bibliotecas não carregadas');  
+          console.error('❌ Bibliotecas não carregadas');  
           return;  
         }  
           
+        console.log('🚀 Iniciando conversão HTML → PDF');
+        
+        // Dimensões A4 em mm
         const a4Width = 210;  
         const a4Height = 297;  
-        const renderWidth = 794;  
-        const marginMm = 20;  
-        const contentWidthMm = a4Width - (marginMm * 2);  
-          
+        
+        // Margens em mm (25mm conforme template)
+        const marginMm = 25;
+        const contentWidthMm = a4Width - (marginMm * 2);
+        const contentHeightMm = a4Height - (marginMm * 2);
+        
+        // Resolução de renderização (maior = melhor qualidade)
+        const dpi = 96;
+        const mmToPx = dpi / 25.4;
+        
+        const pageWidthPx = Math.floor(a4Width * mmToPx);
+        const pageHeightPx = Math.floor(a4Height * mmToPx);
+        const marginPx = Math.floor(marginMm * mmToPx);
+        const contentWidthPx = Math.floor(contentWidthMm * mmToPx);
+        const contentHeightPx = Math.floor(contentHeightMm * mmToPx);
+        
+        console.log('📐 Dimensões:', {
+          pageWidthPx,
+          pageHeightPx,
+          marginPx,
+          contentWidthPx,
+          contentHeightPx
+        });
+        
+        // Container temporário para renderização
         const container = document.createElement('div');  
         container.style.cssText = \`  
           position: absolute;  
           left: -99999px;  
           top: 0;  
-          width: \${renderWidth}px;  
+          width: \${contentWidthPx}px;
           background: white;  
-          padding: 60px;  
+          padding: 0;
+          margin: 0;
           box-sizing: border-box;  
-          font-family: Arial, Helvetica, sans-serif;  
-          font-size: 16px;  
-          line-height: 1.6;  
-          color: #000000;  
+          font-family: Georgia, 'Times New Roman', serif;  
+          font-size: 12px;  
+          line-height: 1.8;  
+          color: #34495e;
+          text-align: justify;
         \`;  
           
         container.innerHTML = \`$htmlContent\`;  
         document.body.appendChild(container);  
         
+        // Aguardar carregamento de imagens
+        console.log('⏳ Aguardando carregamento de imagens...');
         const images = container.querySelectorAll('img');
         await Promise.all(
           Array.from(images).map(img => {
@@ -186,65 +215,140 @@ class _PreviewTabState extends State<PreviewTab> {
                 resolve();
               } else {
                 img.onload = resolve;
-                img.onerror = resolve;
+                img.onerror = () => {
+                  console.warn('⚠️ Falha ao carregar imagem:', img.src);
+                  resolve();
+                };
+                setTimeout(resolve, 5000);
               }
             });
           })
         );
+        
+        console.log('✅ Imagens carregadas');
+        await new Promise(resolve => setTimeout(resolve, 500));  
           
-        await new Promise(resolve => setTimeout(resolve, 1000));  
-          
+        // Renderizar HTML para canvas
+        console.log('🎨 Renderizando HTML para canvas...');
         const canvas = await html2canvas(container, {  
-          scale: 2,  
+          scale: 2,
           useCORS: true,  
           logging: false,  
           backgroundColor: '#ffffff',  
-          windowWidth: renderWidth,  
-          windowHeight: container.scrollHeight,
+          width: contentWidthPx,
+          windowWidth: contentWidthPx,
           allowTaint: true,
           imageTimeout: 15000,
+          letterRendering: true,
+          removeContainer: false,
         });  
-          
+        
+        console.log('✅ Canvas renderizado:', canvas.width, 'x', canvas.height);
         document.body.removeChild(container);  
           
+        // Criar PDF
+        console.log('📄 Criando PDF...');
         const pdf = new jsPDF({  
           orientation: 'portrait',  
           unit: 'mm',  
           format: 'a4',  
           compress: true  
         });  
+        
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);  
+        
+        // Calcular dimensões da imagem no PDF
+        const imgWidthMm = contentWidthMm;
+        const imgHeightMm = (canvas.height * contentWidthMm) / canvas.width;
+        const pageContentHeight = contentHeightMm;
+        
+        console.log('📊 Dimensões da imagem:', {
+          imgWidthMm,
+          imgHeightMm,
+          pageContentHeight
+        });
+        
+        // Adicionar páginas
+        let yOffset = 0;
+        let pageNumber = 1;
+        
+        while (yOffset < imgHeightMm) {
+          if (pageNumber > 1) {
+            pdf.addPage();
+          }
           
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);  
-        const imgWidth = contentWidthMm;  
-        const imgHeight = (canvas.height * contentWidthMm) / canvas.width;  
-        const pageHeight = a4Height - (marginMm * 2);  
+          // Calcular posição Y para esta página
+          const sourceY = yOffset;
+          const remainingHeight = imgHeightMm - yOffset;
+          const pageHeight = Math.min(pageContentHeight, remainingHeight);
           
-        let heightLeft = imgHeight;  
-        let position = 0;  
+          // Calcular posição no canvas original
+          const canvasSourceY = (sourceY / imgHeightMm) * canvas.height;
+          const canvasHeight = (pageHeight / imgHeightMm) * canvas.height;
           
-        pdf.addImage(imgData, 'JPEG', marginMm, marginMm, imgWidth, imgHeight, '', 'FAST');  
-        heightLeft -= pageHeight;  
+          // Criar canvas temporário para esta página
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = canvasHeight;
           
-        while (heightLeft > 0) {  
-          position = heightLeft - imgHeight;  
-          pdf.addPage();  
-          pdf.addImage(imgData, 'JPEG', marginMm, position + marginMm, imgWidth, imgHeight, '', 'FAST');  
-          heightLeft -= pageHeight;  
-        }  
+          const pageCtx = pageCanvas.getContext('2d');
+          pageCtx.fillStyle = '#ffffff';
+          pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
           
+          // Copiar a região apropriada do canvas original
+          pageCtx.drawImage(
+            canvas,
+            0, canvasSourceY,
+            canvas.width, canvasHeight,
+            0, 0,
+            pageCanvas.width, pageCanvas.height
+          );
+          
+          const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+          
+          // Adicionar ao PDF com margens corretas
+          pdf.addImage(
+            pageImgData, 
+            'JPEG', 
+            marginMm, 
+            marginMm, 
+            imgWidthMm, 
+            pageHeight,
+            '',
+            'FAST'
+          );
+          
+          console.log(\`✅ Página \${pageNumber} adicionada (yOffset: \${yOffset.toFixed(2)}mm)\`);
+          
+          yOffset += pageContentHeight;
+          pageNumber++;
+        }
+        
+        console.log(\`📚 Total de páginas: \${pageNumber - 1}\`);
+          
+        // Salvar dados do PDF
         const pdfData = pdf.output('arraybuffer');  
         const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });  
           
         window.currentPdfData = pdfData;  
         window.currentPdfBlob = pdfBlob;  
+        
+        console.log('💾 PDF salvo na memória');
           
+        // Renderizar preview
+        console.log('🖼️ Renderizando preview...');
         const pdfContainer = document.getElementById('pdf-container-$viewId');  
-        if (!pdfContainer) return;  
+        if (!pdfContainer) {
+          console.error('❌ Container não encontrado');
+          return;
+        }
           
         pdfContainer.innerHTML = '';  
           
         const loadingTask = pdfjsLib.getDocument({ data: pdfData });  
         const pdfDoc = await loadingTask.promise;  
+        
+        console.log(\`📄 Renderizando \${pdfDoc.numPages} páginas...\`);
           
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {  
           const page = await pdfDoc.getPage(pageNum);  
@@ -253,10 +357,12 @@ class _PreviewTabState extends State<PreviewTab> {
             
           const pageContainer = document.createElement('div');  
           pageContainer.style.cssText = \`  
+            width: 210mm;
             background: white;  
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);  
-            margin: 20px auto;
-            position: relative;  
+            margin: 0;
+            position: relative;
+            overflow: hidden;
           \`;  
             
           const canvas = document.createElement('canvas');  
@@ -272,28 +378,32 @@ class _PreviewTabState extends State<PreviewTab> {
           await page.render({  
             canvasContext: ctx,  
             viewport: viewport  
-          }).promise;  
+          }).promise;
+          
+          console.log(\`✅ Página \${pageNum} renderizada\`);
         }  
+        
+        console.log('🎉 Conversão concluída com sucesso!');
           
       } catch (error) {  
-        console.error('Erro na conversão PDF:', error);  
+        console.error('💥 Erro na conversão PDF:', error);  
         throw error;  
       }  
     })();  
     ''';  
-  
+
     js.context.callMethod('eval', [script]);  
   }  
-  
+
   void _downloadPDF() {  
     try {  
       final sanitizedName = _documentName  
           .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')  
           .replaceAll(' ', '_');  
-  
+
       final timestamp = DateTime.now().millisecondsSinceEpoch;  
       final filename = '${sanitizedName}_$timestamp.pdf';  
-  
+
       final script = '''  
       (function() {  
         try {  
@@ -321,13 +431,13 @@ class _PreviewTabState extends State<PreviewTab> {
         }  
       })();  
       ''';  
-  
+
       js.context.callMethod('eval', [script]);  
     } catch (e) {  
       debugPrint('Erro ao baixar PDF: $e');  
     }  
   }  
-  
+
   void _printPDF() {  
     final script = '''  
     (function() {  
@@ -359,7 +469,7 @@ class _PreviewTabState extends State<PreviewTab> {
       }  
     })();  
     ''';  
-  
+
     js.context.callMethod('eval', [script]);  
   }  
 
@@ -381,31 +491,31 @@ class _PreviewTabState extends State<PreviewTab> {
         _currentHtmlContent = result;
         _lastProcessedContent = result;
       });
-      
+
       if (widget.onContentUpdated != null) {
         widget.onContentUpdated!(result);
       }
-      
+
       _convertAndRenderPDF(result);
     }
   }
-  
+
   void _registerRenameInputView() {  
     if (_renameViewRegistered) return;  
-  
+
     try {  
       final themeProvider = Provider.of<ThemeProvider>(context, listen: false);  
       final inputBgColor = themeProvider.isDarkMode ? '#2D333B' : '#F1F3F5';  
       final inputTextColor = themeProvider.isDarkMode ? '#FFFFFF' : '#212529';  
       final inputPlaceholderColor = themeProvider.isDarkMode ? '#ADB5BD' : '#6C757D';  
-  
+
       ui_web.platformViewRegistry.registerViewFactory(_renameInputViewType, (int viewId) {  
         final wrapper = html.DivElement()  
           ..style.width = '100%'  
           ..style.height = '100%'  
           ..style.display = 'flex'  
           ..style.alignItems = 'center';  
-  
+
         _htmlRenameInput = html.InputElement()  
           ..id = 'renameInput-$viewId'  
           ..type = 'text'  
@@ -425,33 +535,33 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.transition = 'background-color 0.3s'  
           ..style.setProperty('-webkit-user-select', 'text')  
           ..style.userSelect = 'text';  
-  
+
         final style = html.StyleElement()  
           ..text = '''  
             #renameInput-$viewId::placeholder { color: $inputPlaceholderColor; }  
             #renameInput-$viewId:focus { box-shadow: none !important; outline: none !important; }  
           ''';  
-  
+
         wrapper.append(style);  
         wrapper.append(_htmlRenameInput!);  
-  
+
         return wrapper;  
       });  
-  
+
       _renameViewRegistered = true;  
     } catch (e) {  
       debugPrint('Error registering rename input view: $e');  
     }  
   }  
-  
+
   void _showRenameDialog() {  
     _nameController.text = _documentName;  
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);  
-  
+
     if (kIsWeb) {  
       _registerRenameInputView();  
     }  
-  
+
     showDialog(  
       context: context,  
       builder: (context) => AlertDialog(  
@@ -538,71 +648,81 @@ class _PreviewTabState extends State<PreviewTab> {
       ),  
     );  
   }  
-  
+
   void _showOptionsModal() {  
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);  
-  
+
     showModalBottomSheet(  
       context: context,  
-      backgroundColor: Colors.transparent,  
-      builder: (context) => Container(  
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      enableDrag: true,
+      isDismissible: true,
+      transitionAnimationController: AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+      ),
+      builder: (context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
         decoration: BoxDecoration(  
-          color: themeProvider.isDarkMode ? Colors.black : Colors.white,  
+          color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,  
           borderRadius: const BorderRadius.only(  
-            topLeft: Radius.circular(24),  
-            topRight: Radius.circular(24),  
+            topLeft: Radius.circular(20),  
+            topRight: Radius.circular(20),  
           ),  
         ),  
         child: Column(  
           mainAxisSize: MainAxisSize.min,  
           children: [  
             Container(  
-              margin: const EdgeInsets.only(top: 12, bottom: 20),  
-              width: 40,  
+              margin: const EdgeInsets.only(top: 10, bottom: 16),  
+              width: 36,  
               height: 4,  
               decoration: BoxDecoration(  
-                color: const Color(0xFFDEE2E6),  
+                color: themeProvider.isDarkMode 
+                    ? Colors.grey.shade700 
+                    : const Color(0xFFDEE2E6),  
                 borderRadius: BorderRadius.circular(2),  
               ),  
             ),  
             Padding(  
-              padding: const EdgeInsets.symmetric(horizontal: 24),  
+              padding: const EdgeInsets.symmetric(horizontal: 16),  
               child: Column(  
                 children: [  
                   _buildModalOption(  
                     icon: Ionicons.create_outline,  
                     title: 'Editar',  
-                    subtitle: 'Editar conteúdo do documento',  
+                    subtitle: 'Editar conteúdo',  
                     onTap: () {  
                       Navigator.pop(context);  
                       _editDocument();  
                     },  
                     themeProvider: themeProvider,  
-                    isFirst: true,  
                   ),  
-                  const SizedBox(height: 2),  
+                  const SizedBox(height: 8),  
                   _buildModalOption(  
                     icon: Ionicons.text_outline,  
                     title: 'Renomear',  
-                    subtitle: 'Alterar nome do documento',  
+                    subtitle: 'Alterar nome',  
                     onTap: () {  
                       Navigator.pop(context);  
                       _showRenameDialog();  
                     },  
                     themeProvider: themeProvider,  
                   ),  
-                  const SizedBox(height: 2),  
+                  const SizedBox(height: 8),  
                   _buildModalOption(  
                     icon: Ionicons.download_outline,  
-                    title: 'Download PDF',  
-                    subtitle: 'Baixar documento em PDF',  
+                    title: 'Download',  
+                    subtitle: 'Baixar PDF',  
                     onTap: () {  
                       Navigator.pop(context);  
                       _downloadPDF();  
                     },  
                     themeProvider: themeProvider,  
                   ),  
-                  const SizedBox(height: 2),  
+                  const SizedBox(height: 8),  
                   _buildModalOption(  
                     icon: Ionicons.print_outline,  
                     title: 'Imprimir',  
@@ -612,85 +732,105 @@ class _PreviewTabState extends State<PreviewTab> {
                       _printPDF();  
                     },  
                     themeProvider: themeProvider,  
-                    isLast: true,  
                   ),  
                 ],  
               ),  
             ),  
-            const SizedBox(height: 32),  
+            const SizedBox(height: 24),  
           ],  
         ),  
-      ),  
+      ),
     );  
   }  
-  
+
   Widget _buildModalOption({  
     required IconData icon,  
     required String title,  
     required String subtitle,  
     required VoidCallback onTap,  
     required ThemeProvider themeProvider,  
-    bool isFirst = false,  
-    bool isLast = false,  
   }) {  
-    return Container(  
-      decoration: BoxDecoration(  
-        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),  
-        borderRadius: BorderRadius.vertical(  
-          top: isFirst ? const Radius.circular(12) : const Radius.circular(2),  
-          bottom: isLast ? const Radius.circular(12) : const Radius.circular(2),  
-        ),  
-        boxShadow: [  
-          BoxShadow(  
-            color: Colors.black.withOpacity(0.03),  
-            blurRadius: 8,  
-            offset: const Offset(0, 2),  
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(  
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(  
+            color: themeProvider.isDarkMode 
+                ? const Color(0xFF161B22) 
+                : const Color(0xFFF6F8FA),  
+            borderRadius: BorderRadius.circular(12),  
           ),  
-        ],  
-      ),  
-      child: ListTile(  
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),  
-        leading: Icon(  
-          icon,  
-          color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),  
-          size: 22,  
-        ),  
-        title: Text(  
-          title,  
-          style: TextStyle(  
-            fontSize: 16,  
-            fontWeight: FontWeight.w600,  
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),  
-          ),  
-        ),  
-        subtitle: Padding(  
-          padding: const EdgeInsets.only(top: 2),  
-          child: Text(  
-            subtitle,  
-            style: TextStyle(  
-              fontSize: 13,  
-              color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFF868E96),  
-            ),  
-          ),  
-        ),  
-        trailing: Icon(  
-          Ionicons.chevron_forward,  
-          color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFFADB5BD),  
-          size: 18,  
-        ),  
-        onTap: onTap,  
-      ),  
-    );  
-  }  
-  
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: themeProvider.isDarkMode
+                      ? const Color(0xFF21262D)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(  
+                  icon,  
+                  color: themeProvider.isDarkMode 
+                      ? Colors.blue.shade400 
+                      : const Color(0xFF0969DA),  
+                  size: 20,  
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(  
+                      title,  
+                      style: TextStyle(  
+                        fontSize: 15,  
+                        fontWeight: FontWeight.w600,  
+                        color: themeProvider.isDarkMode 
+                            ? Colors.white 
+                            : const Color(0xFF24292F),  
+                      ),  
+                    ),  
+                    const SizedBox(height: 2),
+                    Text(  
+                      subtitle,  
+                      style: TextStyle(  
+                        fontSize: 12,  
+                        color: themeProvider.isDarkMode 
+                            ? Colors.grey.shade400 
+                            : const Color(0xFF57606A),  
+                      ),  
+                    ),
+                  ],
+                ),
+              ),
+              Icon(  
+                Ionicons.chevron_forward,  
+                color: themeProvider.isDarkMode 
+                    ? Colors.grey.shade600 
+                    : const Color(0xFF8B949E),  
+                size: 16,  
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override  
   Widget build(BuildContext context) {  
     final themeProvider = Provider.of<ThemeProvider>(context);  
-  
+
     return Stack(  
       children: [  
         _buildContent(themeProvider),  
-  
+
         if (_hasDocument && !_isConverting)  
           Positioned(  
             top: 16,  
@@ -724,7 +864,7 @@ class _PreviewTabState extends State<PreviewTab> {
       ],  
     );  
   }  
-  
+
   Widget _buildContent(ThemeProvider themeProvider) {  
     if (_isConverting) {  
       return Container(  
@@ -749,7 +889,7 @@ class _PreviewTabState extends State<PreviewTab> {
         ),  
       );  
     }  
-  
+
     if (!_hasDocument) {  
       return Container(  
         color: themeProvider.isDarkMode ? Colors.black : Colors.white,  
@@ -790,7 +930,7 @@ class _PreviewTabState extends State<PreviewTab> {
         ),  
       );  
     }  
-  
+
     return Container(  
       color: themeProvider.isDarkMode ? Colors.black : Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -806,7 +946,7 @@ class _PreviewTabState extends State<PreviewTab> {
       ),  
     );  
   }  
-  
+
   @override  
   void dispose() {  
     _nameController.dispose();  
