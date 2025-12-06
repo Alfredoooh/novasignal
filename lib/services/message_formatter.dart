@@ -1,7 +1,7 @@
 // lib/services/message_formatter.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:ionicons/ionicons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../providers/theme_provider.dart';
 
 class MessageFormatter {
@@ -34,10 +34,14 @@ class MessageFormatter {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    Icon(
-                      Ionicons.code_slash,
-                      size: 16,
-                      color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                    SvgPicture.asset(
+                      'assets/icons/document.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: ColorFilter.mode(
+                        themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                        BlendMode.srcIn,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     SelectableText(
@@ -100,20 +104,44 @@ class MessageFormatter {
             margin: const EdgeInsets.symmetric(vertical: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.grey.shade50,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: themeProvider.isDarkMode
+                    ? [const Color(0xFF2A2A2A), const Color(0xFF1F1F1F)]
+                    : [Colors.grey.shade50, Colors.white],
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: themeProvider.isDarkMode
                     ? Colors.white.withOpacity(0.1)
                     : Colors.black.withOpacity(0.1),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Ionicons.grid_outline, size: 20, color: color),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF667eea).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.table_chart,
+                        color: const Color(0xFF667eea),
+                        size: 20,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Tabela',
@@ -127,7 +155,7 @@ class MessageFormatter {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Tabela HTML renderizada',
+                  'Dados estruturados',
                   style: TextStyle(
                     color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                     fontSize: 15,
