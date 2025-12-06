@@ -69,7 +69,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
           ..style.outline = 'none'
           ..style.setProperty('-webkit-user-select', 'text')
           ..style.userSelect = 'text'
-          ..innerHTML = _currentContent;
+          ..innerHtml = _currentContent;
 
         editor.onInput.listen((_) {
           if (!_hasChanges) {
