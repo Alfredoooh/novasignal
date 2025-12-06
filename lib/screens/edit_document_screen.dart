@@ -5,9 +5,12 @@ import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 
-// Importações condicionais para Web
+// Web-only imports (silencia avisos para builds não-web)
+ // ignore: uri_does_not_exist
+ // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html show FileUploadInputElement, FileReader, DivElement, StyleElement, ImageElement, NodeTreeSanitizer, HtmlElement;
-import 'dart:ui_web' as ui_web show platformViewRegistry;
+// ignore: uri_does_not_exist
+import 'dart:ui' as ui_web show platformViewRegistry;
 import 'dart:js_util' as js_util;
 
 class EditDocumentScreen extends StatefulWidget {
@@ -30,7 +33,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
   bool _hasChanges = false;
   String? _viewId;
   String _selectedImageId = '';
-  
+
   // Controller para Android/iOS
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
@@ -40,7 +43,7 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
     super.initState();
     _currentContent = _extractBodyContent(widget.htmlContent);
     _viewId = 'editor-${DateTime.now().millisecondsSinceEpoch}';
-    
+
     if (kIsWeb) {
       _registerEditorView();
     } else {
@@ -107,6 +110,7 @@ $bodyContent
   void _registerEditorView() {
     if (!kIsWeb) return;
 
+    // Em web, registrar view factory para HtmlElementView
     ui_web.platformViewRegistry.registerViewFactory(
       '$_editorViewType-$_viewId',
       (int id) {
@@ -368,6 +372,533 @@ $bodyContent
       ),
     );
   }
+
+  void _pickAndInsertImage() async {
+    if (!kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Inserção de imagens disponível apenas na versão web'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final html.FileUploadInputElement uploadInput = html.FileUploadInputElement();
+    uploadInput.accept = 'image/*';
+    uploadInput.click();
+
+    uploadInput.onChange.listen((e) async {
+      final files = uploadInput.files;
+      if (files != null && files.isNotEmpty) {
+        final file = files[0];
+        final reader = html.FileReader();
+
+        reader.onLoadEnd.listen((e) {
+          final dataUrl = reader.result as String;
+          final imageId = 'img-${DateTime.now().millisecondsSinceEpoch}';
+
+          final script = '''
+            (function() {
+              var editor = document.getElementById('editor-content-$_viewId');
+              if (!editor) return;
+              
+              var selection = window.getSelection();
+              var range;
+              
+              if (selection && selection.rangeCount > 0) {
+                range = selection.getRangeAt(0);
+              } else {
+                range = document.createRange();
+                range.selectNodeContents(editor);
+                range.collapse(false);
+              }
+              
+              var container = document.createElement('div');
+              container.className = 'image-container';
+              container.style.textAlign = 'center';
+              container.style.margin = '20px 0';
+              container.contentEditable = 'false';
+              
+              var img = document.createElement('img');
+              img.id = '$imageId';
+              img.src = '$dataUrl';
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.cursor = 'pointer';
+              
+              var caption = document.createElement('div');
+              caption.className = 'image-caption';
+              caption.contentEditable = 'true';
+              caption.textContent = 'Figura: Descrição da imagem';
+              caption.style.fontSize = '11px';
+              caption.style.color = '#666';
+              caption.style.fontStyle = 'italic';
+              caption.style.marginTop = '8px';
+              
+              container.appendChild(img);
+              container.appendChild(caption);
+              
+              range.insertNode(container);
+              
+              range.setStartAfter(container);
+              range.collapse(true);
+              selection.removeAllRanges();
+              selection.addRange(range);
+            })();
+          ''';
+
+          _evalScript(script);
+
+          setState(() {
+            _hasChanges = true;
+          });
+        });
+
+        reader.readAsDataUrl(file);
+      }
+    });
+  }
+
+  void _resizeSelectedImage(String size) {
+    if (!kIsWeb || _selectedImageId.isEmpty) return;
+
+    String width = '100%';
+    switch (size) {
+      case 'small':
+        width = '30%';
+        break;
+      case 'medium':
+        width = '60%';
+        break;
+      case 'large':
+        width = '100%';
+        break;
+    }
+
+    final script = '''
+      (function() {
+        var img = document.getElementById('$_selectedImageId');
+        if (img) {
+          img.style.width = '$width';
+          img.style.height = 'auto';
+          img.style.maxWidth = '$width';
+        }
+      })();
+    ''';
+
+    _evalScript(script);
+
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _deleteSelectedImage() {
+    if (!kIsWeb || _selectedImageId.isEmpty) return;
+
+    final script = '''
+      (function() {
+        var img = document.getElementById('$_selectedImageId');
+        if (img && img.parentElement) {
+          img.parentElement.remove();
+        }
+      })();
+    ''';
+
+    _evalScript(script);
+
+    setState(() {
+      _selectedImageId = '';
+      _hasChanges = true;
+    });
+  }
+
+  void _applyFormatting(String command, [String? value]) {
+    if (!kIsWeb) {
+      _applyFormattingMobile(command, value);
+      return;
+    }
+
+    final script = '''
+      (function() {
+        ${value != null ? "document.execCommand('$command', false, '$value');" : "document.execCommand('$command', false, null);"}
+      })();
+    ''';
+
+    _evalScript(script);
+
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _applyFormattingMobile(String command, [String? value]) {
+    final text = _textController.text;
+    final selection = _textController.selection;
+
+    if (!selection.isValid) return;
+
+    final selectedText = text.substring(selection.start, selection.end);
+    String formattedText = selectedText;
+
+    switch (command) {
+      case 'bold':
+        formattedText = '<strong>$selectedText</strong>';
+        break;
+      case 'italic':
+        formattedText = '<em>$selectedText</em>';
+        break;
+      case 'underline':
+        formattedText = '<u>$selectedText</u>';
+        break;
+      case 'insertUnorderedList':
+        formattedText = '<ul><li>$selectedText</li></ul>';
+        break;
+      case 'insertOrderedList':
+        formattedText = '<ol><li>$selectedText</li></ol>';
+        break;
+      case 'formatBlock':
+        if (value != null) {
+          formattedText = '<$value>$selectedText</$value>';
+        }
+        break;
+      case 'foreColor':
+        if (value != null) {
+          formattedText = '<span style="color: $value">$selectedText</span>';
+        }
+        break;
+      case 'fontName':
+        if (value != null) {
+          formattedText = '<span style="font-family: $value">$selectedText</span>';
+        }
+        break;
+    }
+
+    final newText = text.replaceRange(selection.start, selection.end, formattedText);
+    _textController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
+    );
+
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _insertHeading(int level) {
+    _applyFormatting('formatBlock', 'h$level');
+  }
+
+  void _changeFontSize(String size) {
+    if (!kIsWeb) {
+      final selection = _textController.selection;
+      if (!selection.isValid) return;
+
+      final text = _textController.text;
+      final selectedText = text.substring(selection.start, selection.end);
+      final formattedText = '<span style="font-size: $size">$selectedText</span>';
+
+      final newText = text.replaceRange(selection.start, selection.end, formattedText);
+      _textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
+      );
+
+      setState(() => _hasChanges = true);
+      return;
+    }
+
+    final script = '''
+      (function() {
+        var selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          var range = selection.getRangeAt(0);
+          var span = document.createElement('span');
+          span.style.fontSize = '$size';
+          try {
+            range.surroundContents(span);
+          } catch(e) {
+            console.log('Error applying font size');
+          }
+        }
+      })();
+    ''';
+
+    _evalScript(script);
+
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _changeTextColor(String color) {
+    _applyFormatting('foreColor', color);
+  }
+
+  void _changeFontFamily(String font) {
+    _applyFormatting('fontName', font);
+  }
+
+  void _insertTable() {
+    if (!kIsWeb) {
+      final tableHtml = '''
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; border: 1px solid #ddd;">
+  <thead>
+    <tr>
+      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 1</th>
+      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 2</th>
+      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+    </tr>
+    <tr style="background-color: #fafafa;">
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+    </tr>
+  </tbody>
+</table>
+<div style="font-size: 11px; color: #666; font-style: italic; margin-top: 5px; text-align: center;">Tabela 1: Descrição</div>
+''';
+
+      final cursorPosition = _textController.selection.base.offset;
+      final text = _textController.text;
+      final newText = text.substring(0, cursorPosition) + tableHtml + text.substring(cursorPosition);
+
+      _textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: cursorPosition + tableHtml.length),
+      );
+
+      setState(() => _hasChanges = true);
+      return;
+    }
+
+    final script = '''
+      (function() {
+        var editor = document.getElementById('editor-content-$_viewId');
+        if (!editor) return;
+        
+        var selection = window.getSelection();
+        var range;
+        
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        
+        var table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.margin = '20px 0';
+        table.style.fontSize = '12px';
+        table.style.border = '1px solid #ddd';
+        
+        var thead = document.createElement('thead');
+        var tbody = document.createElement('tbody');
+        
+        var headerRow = document.createElement('tr');
+        for (var i = 0; i < 3; i++) {
+          var th = document.createElement('th');
+          th.contentEditable = 'true';
+          th.textContent = 'Coluna ' + (i + 1);
+          th.style.border = '1px solid #ddd';
+          th.style.padding = '10px';
+          th.style.backgroundColor = '#f5f5f5';
+          th.style.fontWeight = '600';
+          th.style.textAlign = 'left';
+          headerRow.appendChild(th);
+        }
+        thead.appendChild(headerRow);
+        
+        for (var r = 0; r < 3; r++) {
+          var row = document.createElement('tr');
+          if (r % 2 === 1) {
+            row.style.backgroundColor = '#fafafa';
+          }
+          for (var c = 0; c < 3; c++) {
+            var td = document.createElement('td');
+            td.contentEditable = 'true';
+            td.textContent = 'Dado';
+            td.style.border = '1px solid #ddd';
+            td.style.padding = '10px';
+            td.style.textAlign = 'left';
+            row.appendChild(td);
+          }
+          tbody.appendChild(row);
+        }
+        
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        
+        var caption = document.createElement('div');
+        caption.className = 'table-caption';
+        caption.contentEditable = 'true';
+        caption.textContent = 'Tabela 1: Descrição';
+        caption.style.fontSize = '11px';
+        caption.style.color = '#666';
+        caption.style.fontStyle = 'italic';
+        caption.style.marginTop = '5px';
+        caption.style.textAlign = 'center';
+        
+        var wrapper = document.createElement('div');
+        wrapper.appendChild(table);
+        wrapper.appendChild(caption);
+        
+        range.insertNode(wrapper);
+        
+        range.setStartAfter(wrapper);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      })();
+    ''';
+
+    _evalScript(script);
+
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _insertHighlight() {
+    if (!kIsWeb) {
+      final highlightHtml = '<div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; font-style: italic;">Texto destacado importante...</div>';
+
+      final cursorPosition = _textController.selection.base.offset;
+      final text = _textController.text;
+      final newText = text.substring(0, cursorPosition) + highlightHtml + text.substring(cursorPosition);
+
+      _textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: cursorPosition + highlightHtml.length),
+      );
+
+      setState(() => _hasChanges = true);
+      return;
+    }
+
+    final script = '''
+      (function() {
+        var editor = document.getElementById('editor-content-$_viewId');
+        if (!editor) return;
+        
+        var selection = window.getSelection();
+        var range;
+        
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+        }
+        
+        var highlight = document.createElement('div');
+        highlight.className = 'highlight';
+        highlight.contentEditable = 'true';
+        highlight.textContent = 'Texto destacado importante...';
+        highlight.style.background = '#fff3cd';
+        highlight.style.padding = '15px';
+        highlight.style.borderLeft = '4px solid #ffc107';
+        highlight.style.margin = '20px 0';
+        highlight.style.fontStyle = 'italic';
+        
+        range.insertNode(highlight);
+        
+        range.selectNodeContents(highlight);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      })();
+    ''';
+
+    _evalScript(script);
+
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _showFontSizeDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Tamanho da Fonte',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildFontSizeOption('Pequeno (10px)', '10px', themeProvider),
+            _buildFontSizeOption('Normal (12px)', '12px', themeProvider),
+            _buildFontSizeOption('Médio (14px)', '14px', themeProvider),
+            _buildFontSizeOption('Grande (16px)', '16px', themeProvider),
+            _buildFontSizeOption('Muito Grande (20px)', '20px', themeProvider),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFontSizeOption(String label, String size, ThemeProvider themeProvider) {
+    return ListTile(
+      title: Text(
+        label,
+        style: TextStyle(
+          color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+        ),
+      ),
+      onTap: () {
+        _changeFontSize(size);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _showColorPicker() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    final colors = [
+      {'name': 'Preto', 'value': '#000000'},
+      {'name': 'Cinza Escuro', 'value': '#34495e'},
+      {'name': 'Azul', 'value': '#3498db'},
+      {'name': 'Verde', 'value': '#27ae60'},
+      {'name': 'Vermelho', 'value': '#e74c3c'},
+      {'name': 'Laranja', 'value': '#e67e22'},
+      {'name': 'Roxo', 'value': '#9b59b6'},
+      {'name': 'Amarelo', 'value': '#f39c12'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Cor do Texto',
           style: TextStyle(
             color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
             fontSize: 18,
@@ -394,128 +925,6 @@ $bodyContent
               ),
             );
           }).toList(),
-        ),
-      ),
-    );
-  }
-
-  void _showFontFamilyDialog() {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-
-    final fonts = [
-      'Georgia',
-      'Times New Roman',
-      'Arial',
-      'Helvetica',
-      'Courier New',
-      'Verdana',
-    ];
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Fonte',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: fonts.map((font) {
-            return ListTile(
-              title: Text(
-                font,
-                style: TextStyle(
-                  fontFamily: font,
-                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                ),
-              ),
-              onTap: () {
-                _changeFontFamily(font);
-                Navigator.pop(context);
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  void _showImageOptionsDialog() {
-    if (_selectedImageId.isEmpty) return;
-
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Opções da Imagem',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Ionicons.contract_outline),
-              title: Text(
-                'Pequena (30%)',
-                style: TextStyle(
-                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                ),
-              ),
-              onTap: () {
-                _resizeSelectedImage('small');
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Ionicons.resize_outline),
-              title: Text(
-                'Média (60%)',
-                style: TextStyle(
-                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                ),
-              ),
-              onTap: () {
-                _resizeSelectedImage('medium');
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Ionicons.expand_outline),
-              title: Text(
-                'Grande (100%)',
-                style: TextStyle(
-                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                ),
-              ),
-              onTap: () {
-                _resizeSelectedImage('large');
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Ionicons.trash_outline, color: Colors.red),
-              title: const Text('Excluir', style: TextStyle(color: Colors.red)),
-              onTap: () {
-                _deleteSelectedImage();
-                Navigator.pop(context);
-              },
-            ),
-          ],
         ),
       ),
     );
@@ -764,513 +1173,57 @@ $bodyContent
       ),
     );
   }
-}1C2128) : Colors.white,
+
+  void _showFontFamilyDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    final fonts = [
+      'Georgia',
+      'Times New Roman',
+      'Arial',
+      'Helvetica',
+      'Courier New',
+      'Verdana',
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Descartar alterações?',
+          'Fonte',
           style: TextStyle(
             color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
-        content: Text(
-          'Você tem alterações não salvas. Deseja descartar?',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFF6C757D),
-            fontSize: 16,
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: fonts.map((font) {
+            return ListTile(
+              title: Text(
+                font,
+                style: TextStyle(
+                  fontFamily: font,
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                ),
+              ),
+              onTap: () {
+                _changeFontFamily(font);
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(
-                color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Descartar'),
-          ),
-        ],
       ),
     );
   }
 
-  void _pickAndInsertImage() async {
-    if (!kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Inserção de imagens disponível apenas na versão web'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
+  void _showImageOptionsDialog() {
+    if (_selectedImageId.isEmpty) return;
 
-    final html.FileUploadInputElement uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = 'image/*';
-    uploadInput.click();
-
-    uploadInput.onChange.listen((e) async {
-      final files = uploadInput.files;
-      if (files != null && files.isNotEmpty) {
-        final file = files[0];
-        final reader = html.FileReader();
-
-        reader.onLoadEnd.listen((e) {
-          final dataUrl = reader.result as String;
-          final imageId = 'img-${DateTime.now().millisecondsSinceEpoch}';
-
-          final script = '''
-            (function() {
-              var editor = document.getElementById('editor-content-$_viewId');
-              if (!editor) return;
-              
-              var selection = window.getSelection();
-              var range;
-              
-              if (selection && selection.rangeCount > 0) {
-                range = selection.getRangeAt(0);
-              } else {
-                range = document.createRange();
-                range.selectNodeContents(editor);
-                range.collapse(false);
-              }
-              
-              var container = document.createElement('div');
-              container.className = 'image-container';
-              container.style.textAlign = 'center';
-              container.style.margin = '20px 0';
-              container.contentEditable = 'false';
-              
-              var img = document.createElement('img');
-              img.id = '$imageId';
-              img.src = '$dataUrl';
-              img.style.maxWidth = '100%';
-              img.style.height = 'auto';
-              img.style.cursor = 'pointer';
-              
-              var caption = document.createElement('div');
-              caption.className = 'image-caption';
-              caption.contentEditable = 'true';
-              caption.textContent = 'Figura: Descrição da imagem';
-              caption.style.fontSize = '11px';
-              caption.style.color = '#666';
-              caption.style.fontStyle = 'italic';
-              caption.style.marginTop = '8px';
-              
-              container.appendChild(img);
-              container.appendChild(caption);
-              
-              range.insertNode(container);
-              
-              range.setStartAfter(container);
-              range.collapse(true);
-              selection.removeAllRanges();
-              selection.addRange(range);
-            })();
-          ''';
-
-          _evalScript(script);
-
-          setState(() {
-            _hasChanges = true;
-          });
-        });
-
-        reader.readAsDataUrl(file);
-      }
-    });
-  }
-
-  void _resizeSelectedImage(String size) {
-    if (!kIsWeb || _selectedImageId.isEmpty) return;
-
-    String width = '100%';
-    switch (size) {
-      case 'small':
-        width = '30%';
-        break;
-      case 'medium':
-        width = '60%';
-        break;
-      case 'large':
-        width = '100%';
-        break;
-    }
-
-    final script = '''
-      (function() {
-        var img = document.getElementById('$_selectedImageId');
-        if (img) {
-          img.style.width = '$width';
-          img.style.height = 'auto';
-          img.style.maxWidth = '$width';
-        }
-      })();
-    ''';
-
-    _evalScript(script);
-
-    setState(() {
-      _hasChanges = true;
-    });
-  }
-
-  void _deleteSelectedImage() {
-    if (!kIsWeb || _selectedImageId.isEmpty) return;
-
-    final script = '''
-      (function() {
-        var img = document.getElementById('$_selectedImageId');
-        if (img && img.parentElement) {
-          img.parentElement.remove();
-        }
-      })();
-    ''';
-
-    _evalScript(script);
-
-    setState(() {
-      _selectedImageId = '';
-      _hasChanges = true;
-    });
-  }
-
-  void _applyFormatting(String command, [String? value]) {
-    if (!kIsWeb) {
-      _applyFormattingMobile(command, value);
-      return;
-    }
-
-    final script = '''
-      (function() {
-        ${value != null ? "document.execCommand('$command', false, '$value');" : "document.execCommand('$command', false, null);"}
-      })();
-    ''';
-
-    _evalScript(script);
-
-    setState(() {
-      _hasChanges = true;
-    });
-  }
-
-  void _applyFormattingMobile(String command, [String? value]) {
-    final text = _textController.text;
-    final selection = _textController.selection;
-    
-    if (!selection.isValid) return;
-    
-    final selectedText = text.substring(selection.start, selection.end);
-    String formattedText = selectedText;
-    
-    switch (command) {
-      case 'bold':
-        formattedText = '<strong>$selectedText</strong>';
-        break;
-      case 'italic':
-        formattedText = '<em>$selectedText</em>';
-        break;
-      case 'underline':
-        formattedText = '<u>$selectedText</u>';
-        break;
-      case 'insertUnorderedList':
-        formattedText = '<ul><li>$selectedText</li></ul>';
-        break;
-      case 'insertOrderedList':
-        formattedText = '<ol><li>$selectedText</li></ol>';
-        break;
-      case 'formatBlock':
-        if (value != null) {
-          formattedText = '<$value>$selectedText</$value>';
-        }
-        break;
-      case 'foreColor':
-        if (value != null) {
-          formattedText = '<span style="color: $value">$selectedText</span>';
-        }
-        break;
-      case 'fontName':
-        if (value != null) {
-          formattedText = '<span style="font-family: $value">$selectedText</span>';
-        }
-        break;
-    }
-    
-    final newText = text.replaceRange(selection.start, selection.end, formattedText);
-    _textController.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
-    );
-    
-    setState(() {
-      _hasChanges = true;
-    });
-  }
-
-  void _insertHeading(int level) {
-    _applyFormatting('formatBlock', 'h$level');
-  }
-
-  void _changeFontSize(String size) {
-    if (!kIsWeb) {
-      final selection = _textController.selection;
-      if (!selection.isValid) return;
-      
-      final text = _textController.text;
-      final selectedText = text.substring(selection.start, selection.end);
-      final formattedText = '<span style="font-size: $size">$selectedText</span>';
-      
-      final newText = text.replaceRange(selection.start, selection.end, formattedText);
-      _textController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
-      );
-      
-      setState(() => _hasChanges = true);
-      return;
-    }
-
-    final script = '''
-      (function() {
-        var selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-          var range = selection.getRangeAt(0);
-          var span = document.createElement('span');
-          span.style.fontSize = '$size';
-          try {
-            range.surroundContents(span);
-          } catch(e) {
-            console.log('Error applying font size');
-          }
-        }
-      })();
-    ''';
-
-    _evalScript(script);
-
-    setState(() {
-      _hasChanges = true;
-    });
-  }
-
-  void _changeTextColor(String color) {
-    _applyFormatting('foreColor', color);
-  }
-
-  void _changeFontFamily(String font) {
-    _applyFormatting('fontName', font);
-  }
-
-  void _insertTable() {
-    if (!kIsWeb) {
-      final tableHtml = '''
-<table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; border: 1px solid #ddd;">
-  <thead>
-    <tr>
-      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 1</th>
-      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 2</th>
-      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 3</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-    </tr>
-    <tr style="background-color: #fafafa;">
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-    </tr>
-    <tr>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
-    </tr>
-  </tbody>
-</table>
-<div style="font-size: 11px; color: #666; font-style: italic; margin-top: 5px; text-align: center;">Tabela 1: Descrição</div>
-''';
-      
-      final cursorPosition = _textController.selection.base.offset;
-      final text = _textController.text;
-      final newText = text.substring(0, cursorPosition) + tableHtml + text.substring(cursorPosition);
-      
-      _textController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: cursorPosition + tableHtml.length),
-      );
-      
-      setState(() => _hasChanges = true);
-      return;
-    }
-
-    final script = '''
-      (function() {
-        var editor = document.getElementById('editor-content-$_viewId');
-        if (!editor) return;
-        
-        var selection = window.getSelection();
-        var range;
-        
-        if (selection && selection.rangeCount > 0) {
-          range = selection.getRangeAt(0);
-        } else {
-          range = document.createRange();
-          range.selectNodeContents(editor);
-          range.collapse(false);
-        }
-        
-        var table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-        table.style.margin = '20px 0';
-        table.style.fontSize = '12px';
-        table.style.border = '1px solid #ddd';
-        
-        var thead = document.createElement('thead');
-        var tbody = document.createElement('tbody');
-        
-        var headerRow = document.createElement('tr');
-        for (var i = 0; i < 3; i++) {
-          var th = document.createElement('th');
-          th.contentEditable = 'true';
-          th.textContent = 'Coluna ' + (i + 1);
-          th.style.border = '1px solid #ddd';
-          th.style.padding = '10px';
-          th.style.backgroundColor = '#f5f5f5';
-          th.style.fontWeight = '600';
-          th.style.textAlign = 'left';
-          headerRow.appendChild(th);
-        }
-        thead.appendChild(headerRow);
-        
-        for (var r = 0; r < 3; r++) {
-          var row = document.createElement('tr');
-          if (r % 2 === 1) {
-            row.style.backgroundColor = '#fafafa';
-          }
-          for (var c = 0; c < 3; c++) {
-            var td = document.createElement('td');
-            td.contentEditable = 'true';
-            td.textContent = 'Dado';
-            td.style.border = '1px solid #ddd';
-            td.style.padding = '10px';
-            td.style.textAlign = 'left';
-            row.appendChild(td);
-          }
-          tbody.appendChild(row);
-        }
-        
-        table.appendChild(thead);
-        table.appendChild(tbody);
-        
-        var caption = document.createElement('div');
-        caption.className = 'table-caption';
-        caption.contentEditable = 'true';
-        caption.textContent = 'Tabela 1: Descrição';
-        caption.style.fontSize = '11px';
-        caption.style.color = '#666';
-        caption.style.fontStyle = 'italic';
-        caption.style.marginTop = '5px';
-        caption.style.textAlign = 'center';
-        
-        var wrapper = document.createElement('div');
-        wrapper.appendChild(table);
-        wrapper.appendChild(caption);
-        
-        range.insertNode(wrapper);
-        
-        range.setStartAfter(wrapper);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      })();
-    ''';
-
-    _evalScript(script);
-
-    setState(() {
-      _hasChanges = true;
-    });
-  }
-
-  void _insertHighlight() {
-    if (!kIsWeb) {
-      final highlightHtml = '<div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; font-style: italic;">Texto destacado importante...</div>';
-      
-      final cursorPosition = _textController.selection.base.offset;
-      final text = _textController.text;
-      final newText = text.substring(0, cursorPosition) + highlightHtml + text.substring(cursorPosition);
-      
-      _textController.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: cursorPosition + highlightHtml.length),
-      );
-      
-      setState(() => _hasChanges = true);
-      return;
-    }
-
-    final script = '''
-      (function() {
-        var editor = document.getElementById('editor-content-$_viewId');
-        if (!editor) return;
-        
-        var selection = window.getSelection();
-        var range;
-        
-        if (selection && selection.rangeCount > 0) {
-          range = selection.getRangeAt(0);
-        } else {
-          range = document.createRange();
-          range.selectNodeContents(editor);
-          range.collapse(false);
-        }
-        
-        var highlight = document.createElement('div');
-        highlight.className = 'highlight';
-        highlight.contentEditable = 'true';
-        highlight.textContent = 'Texto destacado importante...';
-        highlight.style.background = '#fff3cd';
-        highlight.style.padding = '15px';
-        highlight.style.borderLeft = '4px solid #ffc107';
-        highlight.style.margin = '20px 0';
-        highlight.style.fontStyle = 'italic';
-        
-        range.insertNode(highlight);
-        
-        range.selectNodeContents(highlight);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      })();
-    ''';
-
-    _evalScript(script);
-
-    setState(() {
-      _hasChanges = true;
-    });
-  }
-
-  void _showFontSizeDialog() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
     showDialog(
@@ -1279,7 +1232,7 @@ $bodyContent
         backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Tamanho da Fonte',
+          'Opções da Imagem',
           style: TextStyle(
             color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
             fontSize: 18,
@@ -1289,79 +1242,55 @@ $bodyContent
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildFontSizeOption('Pequeno (10px)', '10px', themeProvider),
-            _buildFontSizeOption('Normal (12px)', '12px', themeProvider),
-            _buildFontSizeOption('Médio (14px)', '14px', themeProvider),
-            _buildFontSizeOption('Grande (16px)', '16px', themeProvider),
-            _buildFontSizeOption('Muito Grande (20px)', '20px', themeProvider),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFontSizeOption(String label, String size, ThemeProvider themeProvider) {
-    return ListTile(
-      title: Text(
-        label,
-        style: TextStyle(
-          color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-        ),
-      ),
-      onTap: () {
-        _changeFontSize(size);
-        Navigator.pop(context);
-      },
-    );
-  }
-
-  void _showColorPicker() {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-
-    final colors = [
-      {'name': 'Preto', 'value': '#000000'},
-      {'name': 'Cinza Escuro', 'value': '#34495e'},
-      {'name': 'Azul', 'value': '#3498db'},
-      {'name': 'Verde', 'value': '#27ae60'},
-      {'name': 'Vermelho', 'value': '#e74c3c'},
-      {'name': 'Laranja', 'value': '#e67e22'},
-      {'name': 'Roxo', 'value': '#9b59b6'},
-      {'name': 'Amarelo', 'value': '#f39c12'},
-    ];
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Cor do Texto',
-          style: TextStyle(
-            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: colors.map((color) {
-            return GestureDetector(
-              onTap: () {
-                _changeTextColor(color['value']!);
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Color(int.parse(color['value']!.substring(1), radix: 16) + 0xFF000000),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300, width: 2),
+            ListTile(
+              leading: const Icon(Ionicons.contract_outline),
+              title: Text(
+                'Pequena (30%)',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
                 ),
               ),
-            );
-          }).toList(),
+              onTap: () {
+                _resizeSelectedImage('small');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Ionicons.resize_outline),
+              title: Text(
+                'Média (60%)',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                ),
+              ),
+              onTap: () {
+                _resizeSelectedImage('medium');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Ionicons.expand_outline),
+              title: Text(
+                'Grande (100%)',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                ),
+              ),
+              onTap: () {
+                _resizeSelectedImage('large');
+                Navigator.pop(context);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Ionicons.trash_outline, color: Colors.red),
+              title: const Text('Excluir', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                _deleteSelectedImage();
+                Navigator.pop(context);
+              },
+            ),
+          ],
         ),
       ),
     );
