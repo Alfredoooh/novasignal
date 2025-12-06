@@ -76,12 +76,11 @@ class _PreviewTabState extends State<PreviewTab> {
         ..async = true;
       html.document.head?.append(pdfjsScript);
 
-      // define worker src se disponível
       try {
         js.context['pdfjsLib']?['GlobalWorkerOptions']?['workerSrc'] =
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       } catch (e) {
-        // ignore se não conseguir (alguns contextos podem não expor)
+        // ignore
       }
     }
   }
@@ -120,9 +119,6 @@ class _PreviewTabState extends State<PreviewTab> {
     }
   }
 
-  // -----------------------
-  // Atualização: view factory com padding e alinhamento ao topo
-  // -----------------------
   void _registerPDFView(String viewId) {
     ui_web.platformViewRegistry.registerViewFactory(
       '$_previewViewType-$viewId',
@@ -132,10 +128,8 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.overflow = 'auto'
-          // garantir padding superior/inferior e box-sizing
           ..style.padding = '48px 20px'
           ..style.boxSizing = 'border-box'
-          // alinhar páginas ao topo (não ao centro) para evitar "colar" nas extremidades
           ..style.display = 'flex'
           ..style.flexDirection = 'column'
           ..style.alignItems = 'flex-start'
@@ -146,10 +140,6 @@ class _PreviewTabState extends State<PreviewTab> {
     );
   }
 
-  // -----------------------
-  // JS script para converter HTML -> imagem(s) -> PDF -> render com pdf.js
-  // (com alterações para padding e margin entre páginas)
-  // -----------------------
   Future<void> _executeHTMLtoPDF(String htmlContent, String viewId) async {
     final script = '''
     (async function() {
@@ -165,10 +155,11 @@ class _PreviewTabState extends State<PreviewTab> {
         
         const a4Width = 210;
         const a4Height = 297;
-        const renderWidth = 794;
+        const renderWidth = 794; // largura usada para renderizar o conteúdo antes de criar o PDF
         const marginMm = 20;
         const contentWidthMm = a4Width - (marginMm * 2);
         
+        // Cria container temporário para capturar com html2canvas
         const container = document.createElement('div');
         container.style.cssText = \`
           position: absolute;
@@ -187,6 +178,7 @@ class _PreviewTabState extends State<PreviewTab> {
         container.innerHTML = \`${htmlContent}\`;
         document.body.appendChild(container);
         
+        // pequena espera para imagens e fontes carregarem
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         const canvas = await html2canvas(container, {
@@ -200,6 +192,7 @@ class _PreviewTabState extends State<PreviewTab> {
         
         document.body.removeChild(container);
         
+        // gerar PDF (em memória)
         const pdf = new jsPDF({
           orientation: 'portrait',
           unit: 'mm',
@@ -234,7 +227,7 @@ class _PreviewTabState extends State<PreviewTab> {
         const pdfContainer = document.getElementById('pdf-container-$viewId');
         if (!pdfContainer) return;
         
-        // garantir padding top/bottom na área que recebe as páginas
+        // preparar container para páginas (padding e alinhamento)
         pdfContainer.innerHTML = '';
         pdfContainer.style.boxSizing = 'border-box';
         pdfContainer.style.padding = '48px 20px';
@@ -246,34 +239,46 @@ class _PreviewTabState extends State<PreviewTab> {
         const loadingTask = pdfjsLib.getDocument({ data: pdfData });
         const pdfDoc = await loadingTask.promise;
         
+        // Detecção de devicePixelRatio para render em alta densidade
+        const dpr = window.devicePixelRatio || 1;
+        
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
           const page = await pdfDoc.getPage(pageNum);
-          const scale = 1.5;
-          const viewport = page.getViewport({ scale });
+          
+          // escala base para o viewport (ajusta conforme necessário)
+          const baseScale = 1.5;
+          const actualScale = baseScale * dpr; // aumenta conforme DPR
+          const viewport = page.getViewport({ scale: actualScale });
           
           const pageContainer = document.createElement('div');
-          // dar margem superior/inferior e limitar largura para não colar nas laterais
           pageContainer.style.boxSizing = 'border-box';
           pageContainer.style.background = 'white';
           pageContainer.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
           pageContainer.style.margin = '20px 0';
           pageContainer.style.padding = '8px 0';
           pageContainer.style.width = '100%';
-          pageContainer.style.maxWidth = '794px';
+          // permitir que o container ocupe largura do parent (controlado pelo wrapper)
+          pageContainer.style.maxWidth = '100%';
           pageContainer.style.display = 'flex';
           pageContainer.style.justifyContent = 'center';
           pageContainer.style.position = 'relative';
           
           const canvas = document.createElement('canvas');
-          canvas.style.cssText = 'display: block; width: 100%; height: auto; box-sizing: border-box;';
+          // definir o tamanho do canvas em pixels reais (viewport.width já considera actualScale)
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          // mostrar o canvas com tamanho CSS correspondente (divide por dpr para manter dimensão física)
+          canvas.style.width = Math.floor(viewport.width / dpr) + 'px';
+          canvas.style.height = Math.floor(viewport.height / dpr) + 'px';
+          canvas.style.display = 'block';
+          canvas.style.boxSizing = 'border-box';
           
           const ctx = canvas.getContext('2d');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
           
           pageContainer.appendChild(canvas);
           pdfContainer.appendChild(pageContainer);
           
+          // render usando o viewport (já com actualScale)
           await page.render({
             canvasContext: ctx,
             viewport: viewport
@@ -287,7 +292,6 @@ class _PreviewTabState extends State<PreviewTab> {
     })();
     ''';
 
-    // executa o script no contexto do browser
     try {
       js.context.callMethod('eval', [script]);
     } catch (e) {
@@ -350,7 +354,6 @@ class _PreviewTabState extends State<PreviewTab> {
         const blob = window.currentPdfBlob;
         const url = URL.createObjectURL(blob);
         
-        // Criar janela de impressão
         const printWindow = window.open(url, '_blank');
         
         if (printWindow) {
@@ -359,7 +362,6 @@ class _PreviewTabState extends State<PreviewTab> {
             printWindow.print();
           };
           
-          // Limpar URL após algum tempo
           setTimeout(() => {
             URL.revokeObjectURL(url);
           }, 60000);
@@ -765,9 +767,6 @@ class _PreviewTabState extends State<PreviewTab> {
       );
     }
 
-    // -----------------------
-    // Envolvi o HtmlElementView com Padding vertical para respeitar SafeArea e dar folga.
-    // -----------------------
     return Container(
       color: themeProvider.isDarkMode ? Colors.black : Colors.white,
       child: Center(
