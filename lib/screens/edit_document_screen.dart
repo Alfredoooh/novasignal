@@ -23,14 +23,11 @@ class EditDocumentScreen extends StatefulWidget {
 }
 
 class _EditDocumentScreenState extends State<EditDocumentScreen> {
-  static const String _editorViewType = 'wysiwyg-html-editor';
+  static const String _editorViewType = 'professional-html-editor';
   late String _currentContent;
   bool _hasChanges = false;
   String? _viewId;
   String _selectedImageId = '';
-  String _currentFontSize = '12px';
-  String _currentColor = '#34495e';
-  String _currentFontFamily = 'Georgia';
 
   @override
   void initState() {
@@ -115,31 +112,22 @@ $bodyContent
           ..style.userSelect = 'text'
           ..innerHTML = _currentContent;
 
-        // Events
         editor.onInput.listen((_) {
           if (!_hasChanges) {
             setState(() => _hasChanges = true);
           }
         });
 
-        editor.onMouseUp.listen((_) {
-          _updateFormatState();
-        });
-
-        editor.onKeyUp.listen((_) {
-          _updateFormatState();
-        });
-
         editor.onClick.listen((event) {
           final target = event.target;
           if (target is html.ImageElement) {
+            event.preventDefault();
             _selectImage(target.id);
           } else {
             _deselectAllImages();
           }
         });
 
-        // CSS mantém TODOS os estilos originais
         final style = html.StyleElement()
           ..text = '''
             #editor-content-$_viewId {
@@ -147,21 +135,48 @@ $bodyContent
               overflow-wrap: break-word;
             }
             
-            #editor-content-$_viewId * {
-              /* Manter estilos inline e classes */
-            }
-            
             #editor-content-$_viewId img {
-              max-width: 100%;
-              height: auto;
               cursor: pointer;
               transition: all 0.3s ease;
+              max-width: 100%;
+              height: auto;
             }
             
             #editor-content-$_viewId img.selected {
               outline: 3px solid #007AFF;
               outline-offset: 2px;
               box-shadow: 0 4px 16px rgba(0,122,255,0.3);
+            }
+            
+            #editor-content-$_viewId img.resizable {
+              resize: both;
+              overflow: hidden;
+              border: 2px dashed #007AFF;
+              padding: 4px;
+            }
+            
+            #editor-content-$_viewId table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+              font-size: 12px;
+              border: 1px solid #ddd;
+            }
+            
+            #editor-content-$_viewId th,
+            #editor-content-$_viewId td {
+              border: 1px solid #ddd;
+              padding: 10px;
+              text-align: left;
+            }
+            
+            #editor-content-$_viewId th {
+              background-color: #f5f5f5;
+              font-weight: 600;
+            }
+            
+            #editor-content-$_viewId tr:nth-child(even) {
+              background-color: #fafafa;
             }
             
             #page-wrapper-$_viewId::-webkit-scrollbar {
@@ -176,10 +191,6 @@ $bodyContent
               background: #888;
               border-radius: 4px;
             }
-            
-            #page-wrapper-$_viewId::-webkit-scrollbar-thumb:hover {
-              background: #555;
-            }
           ''';
 
         a4Container.append(editor);
@@ -192,45 +203,6 @@ $bodyContent
     );
   }
 
-  void _updateFormatState() {
-    final script = '''
-      (function() {
-        try {
-          var selection = window.getSelection();
-          if (!selection || selection.rangeCount === 0) return '{}';
-          
-          var range = selection.getRangeAt(0);
-          var node = range.startContainer;
-          
-          if (node.nodeType === 3) node = node.parentNode;
-          
-          var computedStyle = window.getComputedStyle(node);
-          
-          return JSON.stringify({
-            fontSize: computedStyle.fontSize || '12px',
-            color: computedStyle.color || 'rgb(52, 73, 94)',
-            fontFamily: computedStyle.fontFamily || 'Georgia',
-            fontWeight: computedStyle.fontWeight || 'normal',
-            fontStyle: computedStyle.fontStyle || 'normal',
-            textDecoration: computedStyle.textDecoration || 'none'
-          });
-        } catch(e) {
-          return '{}';
-        }
-      })();
-    ''';
-
-    try {
-      final result = js.context.callMethod('eval', [script]);
-      if (result != null && result.toString().isNotEmpty) {
-        // Atualizar estado com as propriedades detectadas
-        debugPrint('Formato detectado: $result');
-      }
-    } catch (e) {
-      debugPrint('Erro ao detectar formato: $e');
-    }
-  }
-
   void _selectImage(String imageId) {
     _deselectAllImages();
     
@@ -239,6 +211,7 @@ $bodyContent
         var img = document.getElementById('$imageId');
         if (img) {
           img.classList.add('selected');
+          img.classList.add('resizable');
         }
       })();
     ''';
@@ -258,6 +231,7 @@ $bodyContent
           var images = editor.querySelectorAll('img');
           images.forEach(function(img) {
             img.classList.remove('selected');
+            img.classList.remove('resizable');
           });
         }
       })();
@@ -279,6 +253,9 @@ $bodyContent
         var images = editor.querySelectorAll('img');
         images.forEach(function(img) {
           img.classList.remove('selected');
+          img.classList.remove('resizable');
+          img.style.border = '';
+          img.style.padding = '';
         });
         
         return editor.innerHTML;
@@ -365,36 +342,50 @@ $bodyContent
           final script = '''
             (function() {
               var editor = document.getElementById('editor-content-$_viewId');
-              if (editor) {
-                var container = document.createElement('div');
-                container.className = 'image-container';
-                container.style.textAlign = 'center';
-                container.style.margin = '25px 0';
-                
-                var img = document.createElement('img');
-                img.id = '$imageId';
-                img.src = '$dataUrl';
-                img.className = 'document-image';
-                img.style.maxWidth = '100%';
-                img.style.height = 'auto';
-                img.style.borderRadius = '8px';
-                img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                
-                var caption = document.createElement('div');
-                caption.className = 'image-caption';
-                caption.contentEditable = 'true';
-                caption.textContent = 'Figura: Descrição da imagem';
-                caption.style.fontSize = '11px';
-                caption.style.color = '#666';
-                caption.style.fontStyle = 'italic';
-                caption.style.marginTop = '8px';
-                
-                container.appendChild(img);
-                container.appendChild(caption);
-                
-                editor.appendChild(container);
-                caption.focus();
+              if (!editor) return;
+              
+              var selection = window.getSelection();
+              var range;
+              
+              if (selection && selection.rangeCount > 0) {
+                range = selection.getRangeAt(0);
+              } else {
+                range = document.createRange();
+                range.selectNodeContents(editor);
+                range.collapse(false);
               }
+              
+              var container = document.createElement('div');
+              container.className = 'image-container';
+              container.style.textAlign = 'center';
+              container.style.margin = '20px 0';
+              container.contentEditable = 'false';
+              
+              var img = document.createElement('img');
+              img.id = '$imageId';
+              img.src = '$dataUrl';
+              img.style.maxWidth = '100%';
+              img.style.height = 'auto';
+              img.style.cursor = 'pointer';
+              
+              var caption = document.createElement('div');
+              caption.className = 'image-caption';
+              caption.contentEditable = 'true';
+              caption.textContent = 'Figura: Descrição da imagem';
+              caption.style.fontSize = '11px';
+              caption.style.color = '#666';
+              caption.style.fontStyle = 'italic';
+              caption.style.marginTop = '8px';
+              
+              container.appendChild(img);
+              container.appendChild(caption);
+              
+              range.insertNode(container);
+              
+              range.setStartAfter(container);
+              range.collapse(true);
+              selection.removeAllRanges();
+              selection.addRange(range);
             })();
           ''';
 
@@ -432,6 +423,7 @@ $bodyContent
         if (img) {
           img.style.width = '$width';
           img.style.height = 'auto';
+          img.style.maxWidth = '$width';
         }
       })();
     ''';
@@ -489,7 +481,11 @@ $bodyContent
           var range = selection.getRangeAt(0);
           var span = document.createElement('span');
           span.style.fontSize = '$size';
-          range.surroundContents(span);
+          try {
+            range.surroundContents(span);
+          } catch(e) {
+            console.log('Error applying font size');
+          }
         }
       })();
     ''';
@@ -513,62 +509,83 @@ $bodyContent
     final script = '''
       (function() {
         var editor = document.getElementById('editor-content-$_viewId');
-        if (editor) {
-          var table = document.createElement('table');
-          table.style.width = '100%';
-          table.style.borderCollapse = 'collapse';
-          table.style.margin = '20px 0';
-          table.style.fontSize = '11px';
-          
-          var thead = document.createElement('thead');
-          var tbody = document.createElement('tbody');
-          
-          var headerRow = document.createElement('tr');
-          for (var i = 0; i < 3; i++) {
-            var th = document.createElement('th');
-            th.contentEditable = 'true';
-            th.textContent = 'Coluna ' + (i + 1);
-            th.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            th.style.color = 'white';
-            th.style.padding = '12px';
-            th.style.textAlign = 'left';
-            th.style.fontWeight = '600';
-            headerRow.appendChild(th);
-          }
-          thead.appendChild(headerRow);
-          
-          for (var r = 0; r < 3; r++) {
-            var row = document.createElement('tr');
-            for (var c = 0; c < 3; c++) {
-              var td = document.createElement('td');
-              td.contentEditable = 'true';
-              td.textContent = 'Dado';
-              td.style.padding = '10px 12px';
-              td.style.borderBottom = '1px solid #e0e0e0';
-              row.appendChild(td);
-            }
-            if (r % 2 === 1) {
-              row.style.backgroundColor = '#fafafa';
-            }
-            tbody.appendChild(row);
-          }
-          
-          table.appendChild(thead);
-          table.appendChild(tbody);
-          
-          var caption = document.createElement('div');
-          caption.className = 'table-caption';
-          caption.contentEditable = 'true';
-          caption.textContent = 'Tabela 1: Descrição';
-          caption.style.fontSize = '11px';
-          caption.style.color = '#666';
-          caption.style.fontStyle = 'italic';
-          caption.style.marginTop = '5px';
-          caption.style.textAlign = 'center';
-          
-          editor.appendChild(table);
-          editor.appendChild(caption);
+        if (!editor) return;
+        
+        var selection = window.getSelection();
+        var range;
+        
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
         }
+        
+        var table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.margin = '20px 0';
+        table.style.fontSize = '12px';
+        table.style.border = '1px solid #ddd';
+        
+        var thead = document.createElement('thead');
+        var tbody = document.createElement('tbody');
+        
+        var headerRow = document.createElement('tr');
+        for (var i = 0; i < 3; i++) {
+          var th = document.createElement('th');
+          th.contentEditable = 'true';
+          th.textContent = 'Coluna ' + (i + 1);
+          th.style.border = '1px solid #ddd';
+          th.style.padding = '10px';
+          th.style.backgroundColor = '#f5f5f5';
+          th.style.fontWeight = '600';
+          th.style.textAlign = 'left';
+          headerRow.appendChild(th);
+        }
+        thead.appendChild(headerRow);
+        
+        for (var r = 0; r < 3; r++) {
+          var row = document.createElement('tr');
+          if (r % 2 === 1) {
+            row.style.backgroundColor = '#fafafa';
+          }
+          for (var c = 0; c < 3; c++) {
+            var td = document.createElement('td');
+            td.contentEditable = 'true';
+            td.textContent = 'Dado';
+            td.style.border = '1px solid #ddd';
+            td.style.padding = '10px';
+            td.style.textAlign = 'left';
+            row.appendChild(td);
+          }
+          tbody.appendChild(row);
+        }
+        
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        
+        var caption = document.createElement('div');
+        caption.className = 'table-caption';
+        caption.contentEditable = 'true';
+        caption.textContent = 'Tabela 1: Descrição';
+        caption.style.fontSize = '11px';
+        caption.style.color = '#666';
+        caption.style.fontStyle = 'italic';
+        caption.style.marginTop = '5px';
+        caption.style.textAlign = 'center';
+        
+        var wrapper = document.createElement('div');
+        wrapper.appendChild(table);
+        wrapper.appendChild(caption);
+        
+        range.insertNode(wrapper);
+        
+        range.setStartAfter(wrapper);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
       })();
     ''';
 
@@ -583,19 +600,34 @@ $bodyContent
     final script = '''
       (function() {
         var editor = document.getElementById('editor-content-$_viewId');
-        if (editor) {
-          var highlight = document.createElement('div');
-          highlight.className = 'highlight';
-          highlight.contentEditable = 'true';
-          highlight.textContent = 'Texto destacado importante...';
-          highlight.style.background = '#fff3cd';
-          highlight.style.padding = '15px';
-          highlight.style.borderLeft = '4px solid #ffc107';
-          highlight.style.margin = '20px 0';
-          highlight.style.fontStyle = 'italic';
-          editor.appendChild(highlight);
-          highlight.focus();
+        if (!editor) return;
+        
+        var selection = window.getSelection();
+        var range;
+        
+        if (selection && selection.rangeCount > 0) {
+          range = selection.getRangeAt(0);
+        } else {
+          range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
         }
+        
+        var highlight = document.createElement('div');
+        highlight.className = 'highlight';
+        highlight.contentEditable = 'true';
+        highlight.textContent = 'Texto destacado importante...';
+        highlight.style.background = '#fff3cd';
+        highlight.style.padding = '15px';
+        highlight.style.borderLeft = '4px solid #ffc107';
+        highlight.style.margin = '20px 0';
+        highlight.style.fontStyle = 'italic';
+        
+        range.insertNode(highlight);
+        
+        range.selectNodeContents(highlight);
+        selection.removeAllRanges();
+        selection.addRange(range);
       })();
     ''';
 
@@ -638,7 +670,12 @@ $bodyContent
 
   Widget _buildFontSizeOption(String label, String size, ThemeProvider themeProvider) {
     return ListTile(
-      title: Text(label),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+        ),
+      ),
       onTap: () {
         _changeFontSize(size);
         Navigator.pop(context);
@@ -729,7 +766,10 @@ $bodyContent
             return ListTile(
               title: Text(
                 font,
-                style: TextStyle(fontFamily: font),
+                style: TextStyle(
+                  fontFamily: font,
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                ),
               ),
               onTap: () {
                 _changeFontFamily(font);
@@ -765,7 +805,12 @@ $bodyContent
           children: [
             ListTile(
               leading: const Icon(Ionicons.contract_outline),
-              title: const Text('Pequena (30%)'),
+              title: Text(
+                'Pequena (30%)',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                ),
+              ),
               onTap: () {
                 _resizeSelectedImage('small');
                 Navigator.pop(context);
@@ -773,7 +818,12 @@ $bodyContent
             ),
             ListTile(
               leading: const Icon(Ionicons.resize_outline),
-              title: const Text('Média (60%)'),
+              title: Text(
+                'Média (60%)',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                ),
+              ),
               onTap: () {
                 _resizeSelectedImage('medium');
                 Navigator.pop(context);
@@ -781,7 +831,12 @@ $bodyContent
             ),
             ListTile(
               leading: const Icon(Ionicons.expand_outline),
-              title: const Text('Grande (100%)'),
+              title: Text(
+                'Grande (100%)',
+                style: TextStyle(
+                  color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                ),
+              ),
               onTap: () {
                 _resizeSelectedImage('large');
                 Navigator.pop(context);
@@ -861,7 +916,7 @@ $bodyContent
         ),
         body: Column(
           children: [
-            // Toolbar 1: Formatação básica
+            // Toolbar 1
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
@@ -879,59 +934,27 @@ $bodyContent
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildToolbarButton(
-                      label: 'B',
-                      onPressed: () => _applyFormatting('bold'),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('B', () => _applyFormatting('bold'), themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'I',
-                      onPressed: () => _applyFormatting('italic'),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('I', () => _applyFormatting('italic'), themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'U',
-                      onPressed: () => _applyFormatting('underline'),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('U', () => _applyFormatting('underline'), themeProvider),
                     const SizedBox(width: 8),
-                    _buildToolbarButton(
-                      label: 'Lista',
-                      onPressed: () => _applyFormatting('insertUnorderedList'),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Lista', () => _applyFormatting('insertUnorderedList'), themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'Num',
-                      onPressed: () => _applyFormatting('insertOrderedList'),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Num', () => _applyFormatting('insertOrderedList'), themeProvider),
                     const SizedBox(width: 8),
-                    _buildToolbarButton(
-                      label: 'H1',
-                      onPressed: () => _insertHeading(1),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('H1', () => _insertHeading(1), themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'H2',
-                      onPressed: () => _insertHeading(2),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('H2', () => _insertHeading(2), themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'H3',
-                      onPressed: () => _insertHeading(3),
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('H3', () => _insertHeading(3), themeProvider),
                   ],
                 ),
               ),
             ),
 
-            // Toolbar 2: Formatação avançada
+            // Toolbar 2
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
@@ -949,47 +972,23 @@ $bodyContent
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _buildToolbarButton(
-                      label: 'Tamanho',
-                      onPressed: _showFontSizeDialog,
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Tamanho', _showFontSizeDialog, themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'Cor',
-                      onPressed: _showColorPicker,
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Cor', _showColorPicker, themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'Fonte',
-                      onPressed: _showFontFamilyDialog,
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Fonte', _showFontFamilyDialog, themeProvider),
                     const SizedBox(width: 8),
-                    _buildToolbarButton(
-                      label: 'Imagem',
-                      onPressed: _pickAndInsertImage,
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Imagem', _pickAndInsertImage, themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'Tabela',
-                      onPressed: _insertTable,
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Tabela', _insertTable, themeProvider),
                     const SizedBox(width: 4),
-                    _buildToolbarButton(
-                      label: 'Destaque',
-                      onPressed: _insertHighlight,
-                      themeProvider: themeProvider,
-                    ),
+                    _buildToolbarButton('Destaque', _insertHighlight, themeProvider),
                   ],
                 ),
               ),
             ),
 
-            // Toolbar de imagem (quando selecionada)
+            // Toolbar de imagem
             if (_selectedImageId.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1011,10 +1010,10 @@ $bodyContent
                     ),
                     const SizedBox(width: 8),
                     const Text(
-                      'Imagem selecionada',
+                      'Imagem selecionada - Arraste as bordas para redimensionar',
                       style: TextStyle(
                         color: Color(0xFF007AFF),
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1051,11 +1050,11 @@ $bodyContent
     );
   }
 
-  Widget _buildToolbarButton({
-    required String label,
-    required VoidCallback onPressed,
-    required ThemeProvider themeProvider,
-  }) {
+  Widget _buildToolbarButton(
+    String label,
+    VoidCallback onPressed,
+    ThemeProvider themeProvider,
+  ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
