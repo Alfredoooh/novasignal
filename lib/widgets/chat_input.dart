@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:ionicons/ionicons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 
@@ -202,39 +203,86 @@ class _ChatInputState extends State<ChatInput> {
             children: [
               if (widget.isEditing)
                 Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E88E5).withOpacity(0.1),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: widget.isDarkMode
+                          ? [
+                              const Color(0xFF2A2A2A),
+                              const Color(0xFF1F1F1F),
+                            ]
+                          : [
+                              const Color(0xFFF8F9FA),
+                              const Color(0xFFFFFFFF),
+                            ],
+                    ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFF1E88E5).withOpacity(0.3),
+                      color: widget.isDarkMode
+                          ? Colors.white.withOpacity(0.1)
+                          : Colors.black.withOpacity(0.06),
+                      width: 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Ionicons.create_outline,
-                        size: 18,
-                        color: Color(0xFF1E88E5),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF667eea).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: SvgPicture.asset(
+                          'assets/icons/edit.svg',
+                          width: 16,
+                          height: 16,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFF667eea),
+                            BlendMode.srcIn,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      const Expanded(
+                      const SizedBox(width: 10),
+                      Expanded(
                         child: Text(
                           'Editando mensagem',
                           style: TextStyle(
-                            color: Color(0xFF1E88E5),
+                            color: widget.isDarkMode ? Colors.white : const Color(0xFF212529),
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
                           ),
                         ),
                       ),
                       GestureDetector(
                         onTap: widget.onCancelEdit,
-                        child: const Icon(
-                          Ionicons.close_outline,
-                          size: 20,
-                          color: Color(0xFF1E88E5),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: widget.isDarkMode 
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.black.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/icons/close.svg',
+                            width: 16,
+                            height: 16,
+                            colorFilter: ColorFilter.mode(
+                              widget.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                              BlendMode.srcIn,
+                            ),
+                          ),
                         ),
                       ),
                     ],
