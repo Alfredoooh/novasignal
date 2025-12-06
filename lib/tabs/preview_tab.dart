@@ -99,13 +99,15 @@ class _PreviewTabState extends State<PreviewTab> {
     registerWebViewFactory(
       'html-viewer-$viewId',
       (int id) {
-        // Adiciona zoom menor para melhor visualização
+        // Aplica zoom bem reduzido
         final htmlWithZoom = '''
           <style>
-            body {
-              zoom: 0.75 !important;
-              -moz-transform: scale(0.75);
+            html, body {
+              zoom: 0.03 !important;
+              -moz-transform: scale(0.03);
               -moz-transform-origin: 0 0;
+              margin: 0;
+              padding: 0;
             }
           </style>
           $htmlContent
@@ -637,47 +639,40 @@ class _PreviewTabState extends State<PreviewTab> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return Scaffold(
-      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
-      body: Stack(
-        children: [
-          _buildContent(themeProvider),
-          if (_hasDocument && !_isLoading)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: SafeArea(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _showOptionsModal,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+    return Stack(
+      children: [
+        _buildContent(themeProvider),
+        if (_hasDocument && !_isLoading)
+          Positioned(
+            top: 16,
+            right: 16,
+            child: SafeArea(
+              child: GestureDetector(
+                onTap: _showOptionsModal,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                      child: Icon(
-                        Ionicons.ellipsis_horizontal,
-                        color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                        size: 24,
-                      ),
-                    ),
+                    ],
+                  ),
+                  child: Icon(
+                    Ionicons.list_outline,
+                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                    size: 24,
                   ),
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
