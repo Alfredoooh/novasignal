@@ -77,7 +77,6 @@ class _PreviewTabState extends State<PreviewTab> {
         });
       }
 
-      // Timeout de segurança
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted && _isLoading) {
           setState(() {
@@ -99,51 +98,97 @@ class _PreviewTabState extends State<PreviewTab> {
     registerWebViewFactory(
       'html-viewer-$viewId',
       (int id) {
-        // Container com scroll para múltiplas páginas
+        // Container principal com scroll para navegação entre páginas
         final container = html.DivElement()
           ..id = 'html-container-$viewId'
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.overflow = 'auto'
-          ..style.padding = '20px'
-          ..style.boxSizing = 'border-box'
           ..style.display = 'flex'
           ..style.flexDirection = 'column'
           ..style.alignItems = 'center'
-          ..style.gap = '20px'
-          ..style.backgroundColor = '#e0e0e0';
+          ..style.padding = '20px'
+          ..style.boxSizing = 'border-box'
+          ..style.backgroundColor = '#e0e0e0'
+          ..style.gap = '20px';
 
-        // Iframe com zoom
-        final iframe = html.IFrameElement()
-          ..style.width = '100%'
-          ..style.border = 'none'
-          ..style.transform = 'scale(0.5)'
-          ..style.transformOrigin = 'top center'
-          ..srcdoc = htmlContent;
+        // Processar o HTML para extrair apenas o body ou usar como está
+        final processedHtml = _processHtmlContent(htmlContent);
+
+        // Criar as páginas A4 diretamente no container
+        container.setInnerHtml(
+          processedHtml,
+          treeSanitizer: html.NodeTreeSanitizer.trusted,
+        );
 
         // Salvar referência global
         js.context['currentDocumentHTML'] = htmlContent;
 
-        iframe.onLoad.listen((event) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
-        });
-
-        iframe.onError.listen((event) {
-          if (mounted) {
-            setState(() {
-              _isLoading = false;
-            });
-          }
-        });
-
-        container.append(iframe);
         return container;
       },
     );
+  }
+
+  String _processHtmlContent(String htmlContent) {
+    // Se o HTML já tem a estrutura de páginas, retornar o body
+    if (htmlContent.contains('<div class="page">')) {
+      // Extrair apenas o conteúdo do body
+      final bodyMatch = RegExp(r'<body[^>]*>(.*)</body>', dotAll: true).firstMatch(htmlContent);
+      if (bodyMatch != null) {
+        return bodyMatch.group(1)!;
+      }
+    }
+    
+    // Se não tem estrutura de páginas, criar uma página A4
+    return '''
+      <style>
+        @media print {
+          body { margin: 0; }
+          .page { margin: 0; box-shadow: none; page-break-after: always; }
+          .page:last-child { page-break-after: auto; }
+        }
+        
+        .page {
+          width: 210mm;
+          height: 297mm;
+          background: white;
+          padding: 25mm;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+          box-sizing: border-box;
+          position: relative;
+          margin-bottom: 20px;
+        }
+        
+        h1 {
+          color: #2c3e50;
+          font-size: 28px;
+          margin: 0 0 10px 0;
+          text-align: center;
+          border-bottom: 3px solid #3498db;
+          padding-bottom: 10px;
+        }
+        
+        h2 {
+          color: #34495e;
+          font-size: 20px;
+          margin: 25px 0 15px 0;
+          border-left: 4px solid #3498db;
+          padding-left: 10px;
+        }
+        
+        p {
+          text-align: justify;
+          line-height: 1.8;
+          color: #34495e;
+          margin-bottom: 15px;
+          font-size: 12px;
+          font-family: 'Georgia', serif;
+        }
+      </style>
+      <div class="page">
+        $htmlContent
+      </div>
+    ''';
   }
 
   void _downloadPDF() {
@@ -202,40 +247,36 @@ class _PreviewTabState extends State<PreviewTab> {
 
           await new Promise(resolve => setTimeout(resolve, 500));
 
-          // Renderizar canvas
-          const canvas = await html2canvas(container, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-          });
-
-          document.body.removeChild(container);
-
-          // Criar PDF
+          // Capturar cada página separadamente
+          const pages = container.querySelectorAll('.page');
           const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4',
           });
 
-          const imgData = canvas.toDataURL('image/png');
-          const imgWidth = 210;
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          const pageHeight = 297;
-          let heightLeft = imgHeight;
-          let position = 0;
+          for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            
+            const canvas = await html2canvas(page, {
+              scale: 2,
+              useCORS: true,
+              logging: false,
+              backgroundColor: '#ffffff',
+              width: 794,
+              height: 1123,
+            });
 
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-
-          while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+            const imgData = canvas.toDataURL('image/png');
+            
+            if (i > 0) {
+              pdf.addPage();
+            }
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
           }
 
+          document.body.removeChild(container);
           pdf.save('$filename');
         } catch (error) {
           console.error('Erro ao gerar PDF:', error);
@@ -283,13 +324,11 @@ class _PreviewTabState extends State<PreviewTab> {
   }
 
   void _loadLibrariesAndExecute(String script) {
-    // Verificar se bibliotecas já estão carregadas
     final checkAndExecute = '''
     (function() {
       if (window.jspdf && window.html2canvas) {
         $script
       } else {
-        // Carregar bibliotecas
         const loadScript = (src) => {
           return new Promise((resolve, reject) => {
             const script = document.createElement('script');
