@@ -5,10 +5,10 @@ import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 
-// Importações condicionais
+// Importações condicionais para Web
 import 'dart:html' as html show FileUploadInputElement, FileReader, DivElement, StyleElement, ImageElement, NodeTreeSanitizer, HtmlElement;
 import 'dart:ui_web' as ui_web show platformViewRegistry;
-import 'dart:js' as js show context;
+import 'dart:js' as js;
 
 class EditDocumentScreen extends StatefulWidget {
   final String htmlContent;
@@ -30,15 +30,37 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
   bool _hasChanges = false;
   String? _viewId;
   String _selectedImageId = '';
+  
+  // Controller para Android/iOS
+  final TextEditingController _textController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _currentContent = _extractBodyContent(widget.htmlContent);
     _viewId = 'editor-${DateTime.now().millisecondsSinceEpoch}';
+    
     if (kIsWeb) {
       _registerEditorView();
+    } else {
+      // Para Android/iOS, inicializa o controller com o conteúdo HTML
+      _textController.text = _currentContent;
+      _textController.addListener(() {
+        if (!_hasChanges) {
+          setState(() => _hasChanges = true);
+        }
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    if (!kIsWeb) {
+      _textController.dispose();
+      _focusNode.dispose();
+    }
+    super.dispose();
   }
 
   String _extractBodyContent(String html) {
@@ -210,7 +232,7 @@ $bodyContent
 
   void _selectImage(String imageId) {
     if (!kIsWeb) return;
-    
+
     _deselectAllImages();
 
     final script = '''
@@ -254,7 +276,9 @@ $bodyContent
   }
 
   String _getEditorContent() {
-    if (!kIsWeb) return _currentContent;
+    if (!kIsWeb) {
+      return _textController.text;
+    }
 
     final script = '''
       (function() {
@@ -336,7 +360,15 @@ $bodyContent
   }
 
   void _pickAndInsertImage() async {
-    if (!kIsWeb) return;
+    if (!kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Inserção de imagens disponível apenas na versão web'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     final html.FileUploadInputElement uploadInput = html.FileUploadInputElement();
     uploadInput.accept = 'image/*';
@@ -469,7 +501,10 @@ $bodyContent
   }
 
   void _applyFormatting(String command, [String? value]) {
-    if (!kIsWeb) return;
+    if (!kIsWeb) {
+      _applyFormattingMobile(command, value);
+      return;
+    }
 
     final script = '''
       (function() {
@@ -484,12 +519,81 @@ $bodyContent
     });
   }
 
+  void _applyFormattingMobile(String command, [String? value]) {
+    final text = _textController.text;
+    final selection = _textController.selection;
+    
+    if (!selection.isValid) return;
+    
+    final selectedText = text.substring(selection.start, selection.end);
+    String formattedText = selectedText;
+    
+    switch (command) {
+      case 'bold':
+        formattedText = '<strong>$selectedText</strong>';
+        break;
+      case 'italic':
+        formattedText = '<em>$selectedText</em>';
+        break;
+      case 'underline':
+        formattedText = '<u>$selectedText</u>';
+        break;
+      case 'insertUnorderedList':
+        formattedText = '<ul><li>$selectedText</li></ul>';
+        break;
+      case 'insertOrderedList':
+        formattedText = '<ol><li>$selectedText</li></ol>';
+        break;
+      case 'formatBlock':
+        if (value != null) {
+          formattedText = '<$value>$selectedText</$value>';
+        }
+        break;
+      case 'foreColor':
+        if (value != null) {
+          formattedText = '<span style="color: $value">$selectedText</span>';
+        }
+        break;
+      case 'fontName':
+        if (value != null) {
+          formattedText = '<span style="font-family: $value">$selectedText</span>';
+        }
+        break;
+    }
+    
+    final newText = text.replaceRange(selection.start, selection.end, formattedText);
+    _textController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
+    );
+    
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
   void _insertHeading(int level) {
     _applyFormatting('formatBlock', 'h$level');
   }
 
   void _changeFontSize(String size) {
-    if (!kIsWeb) return;
+    if (!kIsWeb) {
+      final selection = _textController.selection;
+      if (!selection.isValid) return;
+      
+      final text = _textController.text;
+      final selectedText = text.substring(selection.start, selection.end);
+      final formattedText = '<span style="font-size: $size">$selectedText</span>';
+      
+      final newText = text.replaceRange(selection.start, selection.end, formattedText);
+      _textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: selection.start + formattedText.length),
+      );
+      
+      setState(() => _hasChanges = true);
+      return;
+    }
 
     final script = '''
       (function() {
@@ -523,7 +627,49 @@ $bodyContent
   }
 
   void _insertTable() {
-    if (!kIsWeb) return;
+    if (!kIsWeb) {
+      final tableHtml = '''
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; border: 1px solid #ddd;">
+  <thead>
+    <tr>
+      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 1</th>
+      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 2</th>
+      <th style="border: 1px solid #ddd; padding: 10px; background-color: #f5f5f5; font-weight: 600; text-align: left;">Coluna 3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+    </tr>
+    <tr style="background-color: #fafafa;">
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+      <td style="border: 1px solid #ddd; padding: 10px; text-align: left;">Dado</td>
+    </tr>
+  </tbody>
+</table>
+<div style="font-size: 11px; color: #666; font-style: italic; margin-top: 5px; text-align: center;">Tabela 1: Descrição</div>
+''';
+      
+      final cursorPosition = _textController.selection.base.offset;
+      final text = _textController.text;
+      final newText = text.substring(0, cursorPosition) + tableHtml + text.substring(cursorPosition);
+      
+      _textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: cursorPosition + tableHtml.length),
+      );
+      
+      setState(() => _hasChanges = true);
+      return;
+    }
 
     final script = '''
       (function() {
@@ -616,7 +762,21 @@ $bodyContent
   }
 
   void _insertHighlight() {
-    if (!kIsWeb) return;
+    if (!kIsWeb) {
+      final highlightHtml = '<div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; font-style: italic;">Texto destacado importante...</div>';
+      
+      final cursorPosition = _textController.selection.base.offset;
+      final text = _textController.text;
+      final newText = text.substring(0, cursorPosition) + highlightHtml + text.substring(cursorPosition);
+      
+      _textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: cursorPosition + highlightHtml.length),
+      );
+      
+      setState(() => _hasChanges = true);
+      return;
+    }
 
     final script = '''
       (function() {
@@ -1009,8 +1169,8 @@ $bodyContent
               ),
             ),
 
-            // Toolbar de imagem
-            if (_selectedImageId.isNotEmpty)
+            // Toolbar de imagem (apenas web)
+            if (kIsWeb && _selectedImageId.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
@@ -1054,13 +1214,27 @@ $bodyContent
                       viewType: '$_editorViewType-$_viewId',
                       key: ValueKey('editor-$_viewId-${themeProvider.isDarkMode}'),
                     )
-                  : Center(
-                      child: Text(
-                        'Editor disponível apenas na web',
-                        style: TextStyle(
-                          color: themeProvider.isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF6C757D),
+                  : Container(
+                      padding: const EdgeInsets.all(20),
+                      color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : Colors.white,
+                      child: SingleChildScrollView(
+                        child: TextField(
+                          controller: _textController,
+                          focusNode: _focusNode,
+                          maxLines: null,
+                          keyboardType: TextInputType.multiline,
+                          style: TextStyle(
+                            color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                            fontSize: 14,
+                            height: 1.5,
+                          ),
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Digite o conteúdo do documento...',
+                            hintStyle: TextStyle(
+                              color: themeProvider.isDarkMode ? Colors.white38 : Colors.black38,
+                            ),
+                          ),
                         ),
                       ),
                     ),
