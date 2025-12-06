@@ -5,8 +5,9 @@ import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../screens/edit_document_screen.dart';
+import '../utils/web_utils.dart'
+    if (dart.library.html) '../utils/web_utils_web.dart';
 import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
 import 'dart:js' as js;
 
 class PreviewTab extends StatefulWidget {
@@ -95,11 +96,11 @@ class _PreviewTabState extends State<PreviewTab> {
   }
 
   void _registerHTMLView(String viewId, String htmlContent) {
-    ui_web.platformViewRegistry.registerViewFactory(
+    registerWebViewFactory(
       'html-viewer-$viewId',
       (int id) {
-        // Adiciona zoom e estilos ao HTML
-        final htmlWithStyles = '''
+        // Adiciona zoom e estilos ao HTML (igual ao DocumentViewerScreen)
+        final htmlWithZoom = '''
           <style>
             body {
               zoom: 0.95 !important;
@@ -114,7 +115,7 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.border = 'none'
-          ..srcdoc = htmlWithStyles;
+          ..srcdoc = htmlWithZoom;
 
         // Salvar referência global para download/impressão
         js.context['currentDocumentHTML'] = htmlContent;
@@ -348,7 +349,7 @@ class _PreviewTabState extends State<PreviewTab> {
       final inputTextColor = themeProvider.isDarkMode ? '#FFFFFF' : '#212529';
       final inputPlaceholderColor = themeProvider.isDarkMode ? '#ADB5BD' : '#6C757D';
 
-      ui_web.platformViewRegistry.registerViewFactory(_renameInputViewType, (int viewId) {
+      registerWebViewFactory(_renameInputViewType, (int viewId) {
         final wrapper = html.DivElement()
           ..style.width = '100%'
           ..style.height = '100%'
