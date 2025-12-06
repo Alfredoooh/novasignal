@@ -5,13 +5,14 @@ import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 
-// Web-only imports (silencia avisos para builds não-web)
- // ignore: uri_does_not_exist
- // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html show FileUploadInputElement, FileReader, DivElement, StyleElement, ImageElement, NodeTreeSanitizer, HtmlElement;
-// ignore: uri_does_not_exist
-import 'dart:ui' as ui_web show platformViewRegistry;
-import 'dart:js_util' as js_util;
+// Conditional imports: quando em web, usa dart:html / dart:ui / dart:js_util.
+// Quando não-web, usa os stubs abaixo para compilar corretamente em mobile.
+import 'edit_document_screen_web_html_stub.dart'
+    if (dart.library.html) 'dart:html' as html;
+import 'edit_document_screen_web_ui_stub.dart'
+    if (dart.library.html) 'dart:ui' as ui_web;
+import 'edit_document_screen_web_js_stub.dart'
+    if (dart.library.html) 'dart:js_util' as js_util;
 
 class EditDocumentScreen extends StatefulWidget {
   final String htmlContent;
@@ -99,18 +100,23 @@ $bodyContent
 
   void _evalScript(String script) {
     if (!kIsWeb) return;
-    js_util.callMethod(js_util.globalThis, 'eval', [script]);
+    try {
+      js_util.callMethod(js_util.globalThis, 'eval', [script]);
+    } catch (_) {}
   }
 
   dynamic _evalScriptWithReturn(String script) {
     if (!kIsWeb) return null;
-    return js_util.callMethod(js_util.globalThis, 'eval', [script]);
+    try {
+      return js_util.callMethod(js_util.globalThis, 'eval', [script]);
+    } catch (_) {
+      return null;
+    }
   }
 
   void _registerEditorView() {
     if (!kIsWeb) return;
 
-    // Em web, registrar view factory para HtmlElementView
     ui_web.platformViewRegistry.registerViewFactory(
       '$_editorViewType-$_viewId',
       (int id) {
