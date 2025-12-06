@@ -326,7 +326,48 @@ $bodyContent
         backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Cor do Texto',
+          'Descartar alterações?',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'Você tem alterações não salvas. Deseja descartar?',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white70 : const Color(0xFF6C757D),
+            fontSize: 16,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                color: themeProvider.isDarkMode ? Colors.white70 : Colors.grey,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Descartar'),
+          ),
+        ],
+      ),
+    );
+  }
           style: TextStyle(
             color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
             fontSize: 18,
