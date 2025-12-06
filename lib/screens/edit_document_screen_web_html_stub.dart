@@ -1,20 +1,9 @@
 // lib/screens/edit_document_screen_web_html_stub.dart
-// Stub mínimo para compilar em plataformas não-web.
-// Em runtime não-web estes stubs não são usados (kIsWeb evita execução).
-// Define apenas os tipos/membros usados no ficheiro principal.
+// Stub robusto para dart:html usado apenas em builds não-web.
+// Fornece membros usados no ficheiro principal (contentEditable, onInput, onClick, style.userSelect, setInnerHtml, etc).
+// Em runtime no dispositivo móvel estes stubs não são usados (kIsWeb evita execução).
 
 import 'dart:async';
-
-// Html element stubs
-class DivElement {
-  String id = '';
-  final _Style style = _Style();
-  String get innerHtml => '';
-  set innerHtml(String v) {}
-  void append(dynamic _) {}
-  // For API parity
-  void setInnerHtml(String html, {dynamic treeSanitizer}) {}
-}
 
 class _Style {
   String width = '';
@@ -31,14 +20,49 @@ class _Style {
   String flex = '';
   String justifyContent = '';
   String alignItems = '';
+  // Adicionado para corresponder ao uso .userSelect no código real
+  String userSelect = '';
+  // Permitir setProperty como no DOM
   void setProperty(String name, String value) {}
 }
 
-class DivElementWrapper extends DivElement {}
-
-class ImageElement {
+class DivElement {
   String id = '';
+  // suporte básico a contentEditable e spellcheck
+  String contentEditable = 'false';
+  bool spellcheck = false;
+
+  final _Style style = _Style();
+
+  String _innerHtml = '';
+  String get innerHtml => _innerHtml;
+  set innerHtml(String v) => _innerHtml = v;
+
+  // stream controllers para simular onInput/onClick listeners do DOM
+  final StreamController<dynamic> _onInputController = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _onClickController = StreamController<dynamic>.broadcast();
+
+  // APIs esperadas pelo teu ficheiro
+  Stream<dynamic> get onInput => _onInputController.stream;
+  Stream<dynamic> get onClick => _onClickController.stream;
+
+  // Métodos de manipulação básicos
+  void append(dynamic _) {}
+  void remove() {}
+
+  // Compatibilidade com setInnerHtml usada no código
+  void setInnerHtml(String html, {dynamic treeSanitizer}) {
+    _innerHtml = html;
+  }
+
+  // Helpers (somente para testes locais se quiseres disparar eventos)
+  void triggerInput([dynamic evt]) => _onInputController.add(evt);
+  void triggerClick([dynamic evt]) => _onClickController.add(evt);
+}
+
+class ImageElement extends DivElement {
   String src = '';
+  // id herdado de DivElement
 }
 
 class StyleElement {
@@ -51,56 +75,41 @@ class NodeTreeSanitizer {
   static final trusted = NodeTreeSanitizer();
 }
 
-class Event {
-  dynamic get target => null;
-  void preventDefault() {}
-}
-
-// Minimal contentEditable support
-class ContentEditableElement extends DivElement {
-  String contentEditable = 'false';
-  bool spellcheck = false;
-  final _Style style = _Style();
-  StreamController<dynamic>? _onInputController;
-  StreamController<dynamic>? _onClickController;
-
-  Stream<dynamic> get onInput {
-    _onInputController ??= StreamController<dynamic>.broadcast();
-    return _onInputController!.stream;
-  }
-
-  Stream<dynamic> get onClick {
-    _onClickController ??= StreamController<dynamic>.broadcast();
-    return _onClickController!.stream;
-  }
-}
-
-// File upload stubs
+// File upload / FileReader stubs usados no teu código
 class File {
   String name = '';
+  // placeholder
 }
 
 class FileUploadInputElement {
   String accept = '';
+  final StreamController<dynamic> _onChangeController = StreamController<dynamic>.broadcast();
   List<File>? _files;
-  final StreamController<dynamic> _onChange = StreamController<dynamic>.broadcast();
 
   void click() {}
   List<File>? get files => _files;
-  Stream<dynamic> get onChange => _onChange.stream;
-  // helpers (not used in non-web)
+  Stream<dynamic> get onChange => _onChangeController.stream;
+
+  // helper para testes locais
   void _setFiles(List<File> files) {
     _files = files;
-    _onChange.add(null);
+    _onChangeController.add(null);
   }
 }
 
 class FileReader {
   dynamic result;
   final StreamController<dynamic> _onLoadEnd = StreamController<dynamic>.broadcast();
+
   Stream<dynamic> get onLoadEnd => _onLoadEnd.stream;
+
   void readAsDataUrl(File file) {}
+  // helper para testes locais
+  void _triggerLoadEnd([dynamic evt]) => _onLoadEnd.add(evt);
 }
 
-// Selection event stubs used in script (only types)
-class Selection {}
+// Event e ImageElement target shim
+class Event {
+  dynamic get target => null;
+  void preventDefault() {}
+}
