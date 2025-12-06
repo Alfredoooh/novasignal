@@ -1,5 +1,6 @@
 // lib/providers/theme_provider.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
@@ -9,6 +10,33 @@ class ThemeProvider extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;
   Color get primaryColor => _primaryColor;
   Color get accentColor => _accentColor;
+
+  ThemeProvider() {
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isDarkMode = prefs.getBool('isDarkMode') ?? false;
+    notifyListeners();
+  }
+
+  Future<void> toggleTheme({bool? isDark}) async {
+    _isDarkMode = isDark ?? !_isDarkMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDarkMode', _isDarkMode);
+    notifyListeners();
+  }
+
+  void setPrimaryColor(Color color) {
+    _primaryColor = color;
+    notifyListeners();
+  }
+
+  void setAccentColor(Color color) {
+    _accentColor = color;
+    notifyListeners();
+  }
 
   ThemeData get themeData {
     return ThemeData(
@@ -38,21 +66,6 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
     );
-  }
-
-  void toggleTheme(bool isDark) {
-    _isDarkMode = isDark;
-    notifyListeners();
-  }
-
-  void setPrimaryColor(Color color) {
-    _primaryColor = color;
-    notifyListeners();
-  }
-
-  void setAccentColor(Color color) {
-    _accentColor = color;
-    notifyListeners();
   }
 }
 
