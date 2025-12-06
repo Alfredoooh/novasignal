@@ -8,7 +8,7 @@ import '../providers/theme_provider.dart';
 // Importações condicionais para Web
 import 'dart:html' as html show FileUploadInputElement, FileReader, DivElement, StyleElement, ImageElement, NodeTreeSanitizer, HtmlElement;
 import 'dart:ui_web' as ui_web show platformViewRegistry;
-import 'dart:js' as js;
+import 'dart:js' as js show context;
 
 class EditDocumentScreen extends StatefulWidget {
   final String htmlContent;
