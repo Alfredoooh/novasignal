@@ -35,9 +35,6 @@ Use **texto** para negrito (mas NUNCA mostre os ** na resposta)
 Use - ou • para listas
 Use números 1. 2. 3. para listas ordenadas
 
-PARA TABELAS:
-SEMPRE use HTML puro com <table>, NUNCA use caracteres ASCII
-
 ═══════════════════════════════════════════════════════════════════════════════
 CRIAÇÃO DE DOCUMENTOS HTML PROFISSIONAIS
 ═══════════════════════════════════════════════════════════════════════════════
@@ -49,125 +46,281 @@ QUANDO O USUÁRIO PEDIR UM DOCUMENTO:
 3. NÃO usar blocos ```html ou markdown
 4. O HTML deve ser a ÚNICA coisa na resposta
 
-TEMPLATE OBRIGATÓRIO PARA DOCUMENTOS:
+TEMPLATE OBRIGATÓRIO PARA DOCUMENTOS (ESTILO A4 MODERNO):
 
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>[Título do Documento]</title>
-<style>
-@page {
-    size: A4;
-    margin: 2cm;
-}
-body {
-    font-family: 'Times New Roman', serif;
-    font-size: 12pt;
-    line-height: 1.6;
-    color: #000;
-    background-color: #fff;
-    margin: 0;
-    padding: 0;
-}
-header {
-    text-align: center;
-    margin-bottom: 2em;
-}
-header h1 {
-    font-size: 24pt;
-    margin: 0;
-    padding: 0;
-}
-header h2 {
-    font-size: 16pt;
-    margin: 0;
-    padding: 0;
-    font-weight: normal;
-    color: #555;
-}
-main {
-    padding: 0 1cm;
-}
-section {
-    margin-bottom: 2em;
-}
-h3 {
-    font-size: 14pt;
-    margin-bottom: 0.5em;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 0.2em;
-}
-p {
-    text-align: justify;
-    margin-bottom: 1em;
-}
-ul, ol {
-    margin-bottom: 1em;
-    padding-left: 2em;
-}
-li {
-    margin-bottom: 0.5em;
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1em 0;
-}
-th, td {
-    border: 1px solid #ccc;
-    padding: 0.5em;
-    text-align: left;
-}
-th {
-    background-color: #f0f0f0;
-    font-weight: bold;
-}
-footer {
-    text-align: center;
-    font-size: 10pt;
-    color: #555;
-    position: fixed;
-    bottom: 1cm;
-    width: 100%;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[Título do Documento]</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .page { margin: 0; box-shadow: none; page-break-after: always; }
+            .page:last-child { page-break-after: auto; }
+        }
+        
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #e0e0e0;
+            font-family: 'Georgia', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            padding: 25mm;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #34495e;
+            font-size: 20px;
+            margin: 25px 0 15px 0;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        
+        h3 {
+            color: #555;
+            font-size: 16px;
+            margin: 20px 0 10px 0;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        p {
+            text-align: justify;
+            line-height: 1.8;
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        
+        .first-letter::first-letter {
+            font-size: 48px;
+            font-weight: bold;
+            float: left;
+            line-height: 40px;
+            padding-right: 8px;
+            color: #3498db;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        
+        /* ESTILOS PARA TABELAS */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 11px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        .table-caption {
+            font-size: 11px;
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        /* ESTILOS PARA IMAGENS */
+        .image-container {
+            text-align: center;
+            margin: 25px 0;
+        }
+        
+        .document-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .image-caption {
+            font-size: 11px;
+            color: #666;
+            font-style: italic;
+            margin-top: 8px;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 20mm;
+            left: 25mm;
+            right: 25mm;
+            text-align: center;
+            font-size: 10px;
+            color: #95a5a6;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 10px;
+        }
+        
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body>
-<header>
-    <h1>[Título Principal]</h1>
-    <h2>[Subtítulo]</h2>
-</header>
-<main>
-    <section>
-        <h3>[Seção 1]</h3>
-        <p>[Mínimo 3-4 parágrafos bem desenvolvidos com conteúdo relevante]</p>
-    </section>
-    [MÍNIMO 6-8 SEÇÕES COM CONTEÚDO APROFUNDADO]
-</main>
-<footer>
-    Página 1
-</footer>
+    <div class="page">
+        <h1>[Título Principal]</h1>
+        <div class="subtitle">[Subtítulo ou Descrição]</div>
+        
+        <p class="first-letter">[Primeiro parágrafo com letra capitular]</p>
+        
+        <h2>[Seção 1]</h2>
+        <p>[Conteúdo da seção com 3-5 parágrafos bem desenvolvidos]</p>
+        
+        <!-- TABELA (Usar SOMENTE quando necessário ou solicitado) -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Coluna 1</th>
+                    <th>Coluna 2</th>
+                    <th>Coluna 3</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Dado 1</td>
+                    <td>Dado 2</td>
+                    <td>Dado 3</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="table-caption">Tabela 1: Descrição da tabela</div>
+        
+        <!-- IMAGEM (Usar SOMENTE quando necessário ou solicitado) -->
+        <div class="image-container">
+            <img src="https://via.placeholder.com/600x400" alt="Descrição" class="document-image">
+            <div class="image-caption">Figura 1: Descrição da imagem</div>
+        </div>
+        
+        <div class="footer">
+            Documento gerado • Página 1
+        </div>
+    </div>
 </body>
 </html>
 
+═══════════════════════════════════════════════════════════════════════════════
+REGRAS PARA TABELAS E IMAGENS
+═══════════════════════════════════════════════════════════════════════════════
+
+TABELAS:
+✓ Usar SOMENTE quando fizer sentido (dados comparativos, listas estruturadas, estatísticas)
+✓ NÃO usar tabelas desnecessariamente apenas para decoração
+✓ Sempre incluir <thead> com cabeçalhos descritivos
+✓ Sempre adicionar legenda com .table-caption
+✓ Máximo 5-6 colunas para manter legibilidade
+✓ Dados devem ser relevantes e bem organizados
+
+QUANDO USAR TABELAS:
+- Comparação de produtos/serviços
+- Cronogramas e horários
+- Dados estatísticos
+- Preços e valores
+- Especificações técnicas
+- Resultados de pesquisas
+
+IMAGENS:
+✓ Usar SOMENTE quando solicitado pelo usuário OU quando realmente agregar valor
+✓ URLs válidas: unsplash.com, placeholder.com, picsum.photos
+✓ Sempre incluir alt text descritivo
+✓ Sempre adicionar legenda com .image-caption
+✓ Tamanho recomendado: 600x400px ou similar
+✓ Posicionar estrategicamente no documento
+
+QUANDO USAR IMAGENS:
+- Usuário solicitar explicitamente
+- Ilustrar conceitos complexos
+- Mostrar exemplos visuais
+- Infográficos e diagramas
+- Fotografias relevantes ao tema
+- Logotipos (quando apropriado)
+
+EXEMPLOS DE URLs DE IMAGENS:
+- Placeholder: https://via.placeholder.com/600x400
+- Unsplash: https://images.unsplash.com/photo-[id]?w=600
+- Picsum: https://picsum.photos/600/400
+
+═══════════════════════════════════════════════════════════════════════════════
+
 REQUISITOS OBRIGATÓRIOS PARA DOCUMENTOS:
 
-✓ MÍNIMO 6-8 seções principais
+✓ MÍNIMO 6-8 seções principais por página
 ✓ Cada seção com 3-5 parágrafos detalhados
 ✓ Total mínimo: 2000-3000 palavras
 ✓ Conteúdo profundo e técnico quando aplicável
-✓ Usar listas, tabelas e formatação quando apropriado
 ✓ Header com título e subtítulo
 ✓ Footer com numeração de página
-✓ Times New Roman 12pt
+✓ Georgia/Times New Roman
 ✓ Texto justificado
-✓ Margens de 2cm
+✓ Letra capitular no primeiro parágrafo
+✓ Usar .highlight para citações importantes
+✓ Tabelas SOMENTE quando necessário
+✓ Imagens SOMENTE quando solicitado ou relevante
 
 PALAVRAS-CHAVE PARA DOCUMENTOS:
 - "crie um documento"
-- "gere um documento"
+- "gere um documento"  
 - "faça um documento"
 - "monte um documento"
 - "crie um relatório"
@@ -182,7 +335,11 @@ PALAVRAS-CHAVE PARA DOCUMENTOS:
 - "documento sobre"
 - "relatório sobre"
 
-IMPORTANTE: Documentos devem ser EXTENSOS, DETALHADOS e PROFISSIONAIS com conteúdo real e relevante!''';
+IMPORTANTE: 
+- Documentos devem ser EXTENSOS, DETALHADOS e PROFISSIONAIS
+- Tabelas e imagens são OPCIONAIS - use com critério
+- Priorize CONTEÚDO de qualidade sobre elementos visuais
+- Use o estilo A4 moderno com sombras e formatação elegante''';
 
   static String _getNextValidApiKey() {
     if (_blockedKeys.length >= _groqApiKeys.length) {
@@ -226,7 +383,12 @@ IMPORTANTE: Documentos devem ser EXTENSOS, DETALHADOS e PROFISSIONAIS com conte�
         debugPrint('🔑 Usando API Key #$_currentKeyIndex: $keyPreview');
 
         final isDocumentRequest = _isDocumentRequest(userMessage);
+        final needsTable = _needsTable(userMessage);
+        final needsImage = _needsImage(userMessage);
+        
         debugPrint('📄 É pedido de documento? $isDocumentRequest');
+        debugPrint('📊 Precisa de tabela? $needsTable');
+        debugPrint('🖼️ Precisa de imagem? $needsImage');
 
         String systemPrompt = _systemPrompt;
         if (isDocumentRequest) {
@@ -236,13 +398,27 @@ LEMBRE-SE: O usuário pediu um DOCUMENTO HTML PROFISSIONAL. Sua resposta deve se
 - APENAS código HTML (<!DOCTYPE html> até </html>)
 - SEM texto explicativo antes ou depois
 - SEM blocos de código markdown
-- Usar o template fornecido acima com Times New Roman
+- Usar o template A4 moderno fornecido acima
 - CONTEÚDO EXTENSO: mínimo 6-8 seções principais
 - Cada seção com 3-5 parágrafos bem desenvolvidos
-- Total: 2000-3000 palavras de conteúdo real
-- Incluir header com título e subtítulo
-- Incluir footer com numeração de página
-- Texto justificado, margens 2cm, fonte 12pt
+- Total: 2000-3000 palavras de conteúdo real''';
+
+          if (needsTable) {
+            systemPrompt += '''
+- INCLUIR tabela(s) relevante(s) com dados reais e bem formatados
+- Usar o estilo de tabela do template com gradiente no cabeçalho
+- Adicionar legenda descritiva para cada tabela''';
+          }
+
+          if (needsImage) {
+            systemPrompt += '''
+- INCLUIR imagem(ns) relevante(s) usando URLs válidas
+- Usar: https://via.placeholder.com/600x400 ou https://picsum.photos/600/400
+- Adicionar legenda descritiva para cada imagem
+- Posicionar estrategicamente no documento''';
+          }
+
+          systemPrompt += '''
 
 Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo relevante e aprofundado!''';
         }
@@ -386,6 +562,45 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
 
     final lowerMessage = message.toLowerCase();
     return keywords.any((keyword) => lowerMessage.contains(keyword));
+  }
+
+  bool _needsTable(String message) {
+    final tableKeywords = [
+      'tabela',
+      'comparação',
+      'comparativo',
+      'dados',
+      'estatística',
+      'preço',
+      'valores',
+      'cronograma',
+      'horário',
+      'especificação',
+      'lista de',
+      'planilha',
+    ];
+
+    final lowerMessage = message.toLowerCase();
+    return tableKeywords.any((keyword) => lowerMessage.contains(keyword));
+  }
+
+  bool _needsImage(String message) {
+    final imageKeywords = [
+      'imagem',
+      'foto',
+      'ilustração',
+      'figura',
+      'gráfico',
+      'diagrama',
+      'infográfico',
+      'visual',
+      'com imagens',
+      'adicione imagens',
+      'inclua imagens',
+    ];
+
+    final lowerMessage = message.toLowerCase();
+    return imageKeywords.any((keyword) => lowerMessage.contains(keyword));
   }
 
   String _cleanDocumentResponse(String content) {
