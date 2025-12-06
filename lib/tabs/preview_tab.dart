@@ -155,18 +155,20 @@ class _PreviewTabState extends State<PreviewTab> {
           return;  
         }  
         
-        console.log('🚀 Iniciando conversão HTML → PDF');
+        console.log('🚀 Iniciando conversão HTML → PDF de alta qualidade');
         
         // Dimensões A4
-        const a4Width = 210;  
-        const a4Height = 297;  
+        const a4WidthMm = 210;  
+        const a4HeightMm = 297;  
         const marginMm = 25;
-        const contentWidthMm = a4Width - (marginMm * 2);
-        const contentHeightMm = a4Height - (marginMm * 2);
+        const contentWidthMm = a4WidthMm - (marginMm * 2);
+        const contentHeightMm = a4HeightMm - (marginMm * 2);
         
-        // Conversão mm para pixels (96 DPI)
-        const mmToPx = 96 / 25.4;
+        // Alta resolução (150 DPI para qualidade superior)
+        const dpi = 150;
+        const mmToPx = dpi / 25.4;
         const contentWidthPx = Math.floor(contentWidthMm * mmToPx);
+        const contentHeightPx = Math.floor(contentHeightMm * mmToPx);
           
         // Container temporário
         const container = document.createElement('div');  
@@ -178,7 +180,7 @@ class _PreviewTabState extends State<PreviewTab> {
           background: white;  
           padding: 0;
           margin: 0;
-          box-sizing: border-box;  
+          box-sizing: border-box;
         \`;  
           
         container.innerHTML = \`$htmlContent\`;  
@@ -204,45 +206,47 @@ class _PreviewTabState extends State<PreviewTab> {
           })
         );
           
-        await new Promise(resolve => setTimeout(resolve, 800));  
+        await new Promise(resolve => setTimeout(resolve, 1000));  
           
-        // Renderizar com html2canvas
-        console.log('🎨 Renderizando canvas...');
+        // Renderizar com ALTA QUALIDADE
+        console.log('🎨 Renderizando canvas em alta qualidade...');
         const canvas = await html2canvas(container, {  
-          scale: 2,  
+          scale: 3,  // Escala 3x para máxima qualidade
           useCORS: true,  
           logging: false,  
           backgroundColor: '#ffffff',  
           width: contentWidthPx,
           windowWidth: contentWidthPx,
-          allowTaint: true,
+          allowTaint: false,
           imageTimeout: 15000,
           letterRendering: true,
+          removeContainer: false,
+          foreignObjectRendering: false,
         });  
         
-        console.log('✅ Canvas:', canvas.width, 'x', canvas.height);
+        console.log('✅ Canvas renderizado:', canvas.width, 'x', canvas.height);
         document.body.removeChild(container);  
           
-        // Criar PDF
+        // Criar PDF com qualidade máxima
         const pdf = new jsPDF({  
           orientation: 'portrait',  
           unit: 'mm',  
           format: 'a4',  
-          compress: true  
+          compress: false  // Não comprimir para máxima qualidade
         });  
           
-        const imgData = canvas.toDataURL('image/jpeg', 0.92);  
+        const imgData = canvas.toDataURL('image/png');  // PNG para qualidade superior
         const imgWidthMm = contentWidthMm;
         const imgHeightMm = (canvas.height * contentWidthMm) / canvas.width;
         const pageContentHeight = contentHeightMm;
         
         console.log('📊 Dimensões:', {
-          imgWidthMm,
-          imgHeightMm,
-          pageContentHeight
+          imgWidthMm: imgWidthMm.toFixed(2),
+          imgHeightMm: imgHeightMm.toFixed(2),
+          pageContentHeight: pageContentHeight.toFixed(2)
         });
         
-        // Dividir em páginas corretamente
+        // Dividir em páginas SEM DUPLICAÇÃO
         let yOffset = 0;
         let pageNumber = 1;
         
@@ -251,50 +255,52 @@ class _PreviewTabState extends State<PreviewTab> {
             pdf.addPage();
           }
           
-          const sourceY = yOffset;
           const remainingHeight = imgHeightMm - yOffset;
           const pageHeight = Math.min(pageContentHeight, remainingHeight);
           
-          const canvasSourceY = (sourceY / imgHeightMm) * canvas.height;
-          const canvasHeight = (pageHeight / imgHeightMm) * canvas.height;
+          // Calcular região exata no canvas
+          const canvasSourceY = (yOffset / imgHeightMm) * canvas.height;
+          const canvasSourceHeight = (pageHeight / imgHeightMm) * canvas.height;
           
-          // Canvas para esta página
+          // Canvas para esta página específica
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = canvas.width;
-          pageCanvas.height = canvasHeight;
+          pageCanvas.height = Math.ceil(canvasSourceHeight);
           
-          const pageCtx = pageCanvas.getContext('2d');
+          const pageCtx = pageCanvas.getContext('2d', { alpha: false });
           pageCtx.fillStyle = '#ffffff';
           pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
           
+          // Copiar SOMENTE a região desta página
           pageCtx.drawImage(
             canvas,
-            0, canvasSourceY,
-            canvas.width, canvasHeight,
+            0, Math.floor(canvasSourceY),
+            canvas.width, Math.ceil(canvasSourceHeight),
             0, 0,
             pageCanvas.width, pageCanvas.height
           );
           
-          const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.92);
+          const pageImgData = pageCanvas.toDataURL('image/png');
           
+          // Adicionar ao PDF com margens corretas
           pdf.addImage(
             pageImgData, 
-            'JPEG', 
+            'PNG', 
             marginMm, 
             marginMm, 
             imgWidthMm, 
             pageHeight,
-            '',
-            'FAST'
+            \`page\${pageNumber}\`,
+            'SLOW'  // Qualidade máxima
           );
           
-          console.log(\`✅ Página \${pageNumber} (yOffset: \${yOffset.toFixed(2)}mm)\`);
+          console.log(\`✅ Página \${pageNumber} (offset: \${yOffset.toFixed(2)}mm, altura: \${pageHeight.toFixed(2)}mm)\`);
           
           yOffset += pageContentHeight;
           pageNumber++;
         }
         
-        console.log(\`📚 Total: \${pageNumber - 1} páginas\`);
+        console.log(\`📚 Total de páginas: \${pageNumber - 1}\`);
           
         const pdfData = pdf.output('arraybuffer');  
         const pdfBlob = new Blob([pdfData], { type: 'application/pdf' });  
@@ -304,7 +310,7 @@ class _PreviewTabState extends State<PreviewTab> {
         
         console.log('💾 PDF salvo');
           
-        // Renderizar preview
+        // Renderizar preview com qualidade
         console.log('🖼️ Renderizando preview...');
         const pdfContainer = document.getElementById('pdf-container-$viewId');  
         if (!pdfContainer) {
@@ -317,14 +323,15 @@ class _PreviewTabState extends State<PreviewTab> {
         const loadingTask = pdfjsLib.getDocument({ data: pdfData });  
         const pdfDoc = await loadingTask.promise;  
         
-        // Calcular largura baseada no container
+        // Calcular largura ideal
         const containerWidth = pdfContainer.offsetWidth;
-        const maxPageWidth = Math.min(containerWidth - 40, 800);
+        const isMobile = containerWidth < 768;
+        const maxPageWidth = isMobile ? containerWidth - 40 : Math.min(containerWidth - 80, 800);
         
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {  
           const page = await pdfDoc.getPage(pageNum);  
           
-          // Calcular escala baseada na largura disponível
+          // Escala baseada na largura
           const viewport = page.getViewport({ scale: 1.0 });
           const scale = maxPageWidth / viewport.width;
           const scaledViewport = page.getViewport({ scale });
@@ -352,13 +359,14 @@ class _PreviewTabState extends State<PreviewTab> {
             
           await page.render({  
             canvasContext: ctx,  
-            viewport: scaledViewport  
+            viewport: scaledViewport,
+            intent: 'print'  // Qualidade de impressão
           }).promise;
           
           console.log(\`✅ Página \${pageNum} renderizada\`);
         }  
         
-        console.log('🎉 Conversão concluída!');
+        console.log('🎉 Conversão concluída com ALTA QUALIDADE!');
           
       } catch (error) {  
         console.error('💥 Erro:', error);  
@@ -783,7 +791,7 @@ class _PreviewTabState extends State<PreviewTab> {
             child: SafeArea(  
               child: GestureDetector(  
                 onTap: _showOptionsModal,  
-                                  child: Container(  
+                child: Container(  
                   width: 48,  
                   height: 48,  
                   decoration: BoxDecoration(  
