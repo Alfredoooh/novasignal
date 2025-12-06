@@ -129,12 +129,12 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.width = '100%'  
           ..style.height = '100%'  
           ..style.overflow = 'auto'  
-          ..style.padding = '80px 20px 80px 20px'  
+          ..style.padding = '0'
           ..style.boxSizing = 'border-box'  
           ..style.display = 'flex'  
           ..style.flexDirection = 'column'  
           ..style.alignItems = 'center'  
-          ..style.gap = '20px';  
+          ..style.gap = '0';  
   
         return container;  
       },  
@@ -178,7 +178,6 @@ class _PreviewTabState extends State<PreviewTab> {
         container.innerHTML = \`$htmlContent\`;  
         document.body.appendChild(container);  
         
-        // Aguardar carregamento de imagens
         const images = container.querySelectorAll('img');
         await Promise.all(
           Array.from(images).map(img => {
@@ -256,7 +255,7 @@ class _PreviewTabState extends State<PreviewTab> {
           pageContainer.style.cssText = \`  
             background: white;  
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);  
-            margin: 0 auto 20px auto;  
+            margin: 20px auto;
             position: relative;  
           \`;  
             
@@ -793,7 +792,8 @@ class _PreviewTabState extends State<PreviewTab> {
     }  
   
     return Container(  
-      color: themeProvider.isDarkMode ? Colors.black : Colors.white,  
+      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: Center(  
         child: SingleChildScrollView(  
           child: SizedBox(  
