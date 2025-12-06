@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
-import 'dart:js' as js;
+
+// Importações condicionais
+import 'dart:html' as html show FileUploadInputElement, FileReader, DivElement, StyleElement, ImageElement, NodeTreeSanitizer, HtmlElement;
+import 'dart:ui_web' as ui_web show platformViewRegistry;
+import 'dart:js' as js show context;
 
 class EditDocumentScreen extends StatefulWidget {
   final String htmlContent;
@@ -42,11 +44,11 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
   String _extractBodyContent(String html) {
     final bodyStart = html.indexOf('<body');
     final bodyEnd = html.lastIndexOf('</body>');
-    
+
     if (bodyStart != -1 && bodyEnd != -1) {
       return html.substring(html.indexOf('>', bodyStart) + 1, bodyEnd);
     }
-    
+
     return html;
   }
 
@@ -54,10 +56,10 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
     final originalHtml = widget.htmlContent;
     final headStart = originalHtml.indexOf('<head>');
     final headEnd = originalHtml.indexOf('</head>');
-    
+
     if (headStart != -1 && headEnd != -1) {
       final head = originalHtml.substring(headStart, headEnd + 7);
-      
+
       return '''<!DOCTYPE html>
 <html lang="pt-BR">
 $head
@@ -66,11 +68,13 @@ $bodyContent
 </body>
 </html>''';
     }
-    
+
     return bodyContent;
   }
 
   void _registerEditorView() {
+    if (!kIsWeb) return;
+
     ui_web.platformViewRegistry.registerViewFactory(
       '$_editorViewType-$_viewId',
       (int id) {
@@ -110,7 +114,7 @@ $bodyContent
           ..style.minHeight = '247mm'
           ..style.setProperty('-webkit-user-select', 'text')
           ..style.userSelect = 'text';
-        
+
         editor.setInnerHtml(_currentContent, treeSanitizer: html.NodeTreeSanitizer.trusted);
 
         editor.onInput.listen((_) {
@@ -205,8 +209,10 @@ $bodyContent
   }
 
   void _selectImage(String imageId) {
-    _deselectAllImages();
+    if (!kIsWeb) return;
     
+    _deselectAllImages();
+
     final script = '''
       (function() {
         var img = document.getElementById('$imageId');
@@ -216,15 +222,17 @@ $bodyContent
         }
       })();
     ''';
-    
+
     js.context.callMethod('eval', [script]);
-    
+
     setState(() {
       _selectedImageId = imageId;
     });
   }
 
   void _deselectAllImages() {
+    if (!kIsWeb) return;
+
     final script = '''
       (function() {
         var editor = document.getElementById('editor-content-$_viewId');
@@ -237,15 +245,17 @@ $bodyContent
         }
       })();
     ''';
-    
+
     js.context.callMethod('eval', [script]);
-    
+
     setState(() {
       _selectedImageId = '';
     });
   }
 
   String _getEditorContent() {
+    if (!kIsWeb) return _currentContent;
+
     final script = '''
       (function() {
         var editor = document.getElementById('editor-content-$_viewId');
@@ -326,6 +336,8 @@ $bodyContent
   }
 
   void _pickAndInsertImage() async {
+    if (!kIsWeb) return;
+
     final html.FileUploadInputElement uploadInput = html.FileUploadInputElement();
     uploadInput.accept = 'image/*';
     uploadInput.click();
@@ -403,7 +415,7 @@ $bodyContent
   }
 
   void _resizeSelectedImage(String size) {
-    if (_selectedImageId.isEmpty) return;
+    if (!kIsWeb || _selectedImageId.isEmpty) return;
 
     String width = '100%';
     switch (size) {
@@ -437,7 +449,7 @@ $bodyContent
   }
 
   void _deleteSelectedImage() {
-    if (_selectedImageId.isEmpty) return;
+    if (!kIsWeb || _selectedImageId.isEmpty) return;
 
     final script = '''
       (function() {
@@ -457,6 +469,8 @@ $bodyContent
   }
 
   void _applyFormatting(String command, [String? value]) {
+    if (!kIsWeb) return;
+
     final script = '''
       (function() {
         ${value != null ? "document.execCommand('$command', false, '$value');" : "document.execCommand('$command', false, null);"}
@@ -475,6 +489,8 @@ $bodyContent
   }
 
   void _changeFontSize(String size) {
+    if (!kIsWeb) return;
+
     final script = '''
       (function() {
         var selection = window.getSelection();
@@ -507,6 +523,8 @@ $bodyContent
   }
 
   void _insertTable() {
+    if (!kIsWeb) return;
+
     final script = '''
       (function() {
         var editor = document.getElementById('editor-content-$_viewId');
@@ -598,6 +616,8 @@ $bodyContent
   }
 
   void _insertHighlight() {
+    if (!kIsWeb) return;
+
     final script = '''
       (function() {
         var editor = document.getElementById('editor-content-$_viewId');
@@ -641,7 +661,7 @@ $bodyContent
 
   void _showFontSizeDialog() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -686,7 +706,7 @@ $bodyContent
 
   void _showColorPicker() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
+
     final colors = [
       {'name': 'Preto', 'value': '#000000'},
       {'name': 'Cinza Escuro', 'value': '#34495e'},
@@ -697,7 +717,7 @@ $bodyContent
       {'name': 'Roxo', 'value': '#9b59b6'},
       {'name': 'Amarelo', 'value': '#f39c12'},
     ];
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -738,7 +758,7 @@ $bodyContent
 
   void _showFontFamilyDialog() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    
+
     final fonts = [
       'Georgia',
       'Times New Roman',
@@ -747,7 +767,7 @@ $bodyContent
       'Courier New',
       'Verdana',
     ];
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
