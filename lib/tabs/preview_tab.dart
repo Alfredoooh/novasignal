@@ -99,27 +99,29 @@ class _PreviewTabState extends State<PreviewTab> {
     registerWebViewFactory(
       'html-viewer-$viewId',
       (int id) {
-        // Aplica zoom ajustado
-        final htmlWithZoom = '''
-          <style>
-            html, body {
-              zoom: 0.24 !important;
-              -moz-transform: scale(0.24);
-              -moz-transform-origin: 0 0;
-              margin: 0;
-              padding: 0;
-            }
-          </style>
-          $htmlContent
-        ''';
-
-        final iframe = html.IFrameElement()
+        // Container com scroll para múltiplas páginas
+        final container = html.DivElement()
+          ..id = 'html-container-$viewId'
           ..style.width = '100%'
           ..style.height = '100%'
-          ..style.border = 'none'
-          ..srcdoc = htmlWithZoom;
+          ..style.overflow = 'auto'
+          ..style.padding = '20px'
+          ..style.boxSizing = 'border-box'
+          ..style.display = 'flex'
+          ..style.flexDirection = 'column'
+          ..style.alignItems = 'center'
+          ..style.gap = '20px'
+          ..style.backgroundColor = '#e0e0e0';
 
-        // Salvar referência global para download/impressão
+        // Iframe com zoom
+        final iframe = html.IFrameElement()
+          ..style.width = '100%'
+          ..style.border = 'none'
+          ..style.transform = 'scale(0.5)'
+          ..style.transformOrigin = 'top center'
+          ..srcdoc = htmlContent;
+
+        // Salvar referência global
         js.context['currentDocumentHTML'] = htmlContent;
 
         iframe.onLoad.listen((event) {
@@ -138,7 +140,8 @@ class _PreviewTabState extends State<PreviewTab> {
           }
         });
 
-        return iframe;
+        container.append(iframe);
+        return container;
       },
     );
   }
@@ -640,40 +643,46 @@ class _PreviewTabState extends State<PreviewTab> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return Stack(
-      children: [
-        _buildContent(themeProvider),
-        if (_hasDocument && !_isLoading)
-          Positioned(
-            top: 16,
-            right: 16,
-            child: SafeArea(
-              child: GestureDetector(
-                onTap: _showOptionsModal,
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Ionicons.list_outline,
-                    color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
-                    size: 24,
+    return Material(
+      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+      child: Stack(
+        children: [
+          _buildContent(themeProvider),
+          if (_hasDocument && !_isLoading)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: SafeArea(
+                child: InkWell(
+                  onTap: () {
+                    debugPrint('Botão clicado!');
+                    _showOptionsModal();
+                  },
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Ionicons.list_outline,
+                      color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
