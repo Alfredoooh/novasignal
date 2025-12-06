@@ -4,14 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../providers/theme_provider.dart';
 import '../providers/chat_provider.dart';
 import '../widgets/chat_input.dart';
 import '../models/chat_message.dart';
 import '../services/chat_service.dart';
 import '../services/message_formatter.dart';
-import 'package:ionicons/ionicons.dart';
 import 'dart:math' as math;
+import 'dart:async';
 
 // Import condicional para web
 import 'dart:js' as js show context;
@@ -35,10 +36,11 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   late AnimationController _loadingController;
   ChatMessage? _editingMessage;
   int? _editingIndex;
-  
-  // Para animação de texto
-  String _displayedText = '';
-  int _currentCharIndex = 0;
+
+  // Animação de texto
+  String _currentStreamingText = '';
+  Timer? _textAnimationTimer;
+  bool _isStreaming = false;
 
   @override
   void initState() {
@@ -51,17 +53,14 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    _textAnimationTimer?.cancel();
     _loadingController.dispose();
     _messageController.dispose();
     _focusNode.dispose();
-    _scroll_controller_dispose_safe();
-    super.dispose();
-  }
-
-  void _scroll_controller_dispose_safe() {
     try {
       _scrollController.dispose();
     } catch (_) {}
+    super.dispose();
   }
 
   void _openConversationsScreen(BuildContext context) {
@@ -92,11 +91,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       onTap: () => _focusNode.unfocus(),
       behavior: HitTestBehavior.translucent,
       child: Container(
-        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+        color: themeProvider.isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
         child: Stack(
           children: [
             Column(
               children: [
+                _buildCustomAppBar(themeProvider),
                 Expanded(
                   child: chatProvider.currentMessages.isEmpty
                       ? _buildEmptyState(themeProvider)
@@ -104,69 +104,88 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
                 ),
               ],
             ),
-            Positioned(
-              top: 16,
-              left: 16,
-              child: SafeArea(
-                child: GestureDetector(
-                  onTap: () => _openConversationsScreen(context),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Ionicons.menu_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 16,
-              right: 16,
-              child: SafeArea(
-                child: GestureDetector(
-                  onTap: () => _createNewConversationWithAnimation(context),
-                  child: Hero(
-                    tag: 'new_conversation',
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Ionicons.pencil_outline,
-                        color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
             _buildInputArea(themeProvider),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomAppBar(ThemeProvider themeProvider) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: themeProvider.isDarkMode
+              ? [
+                  const Color(0xFF2A2A2A),
+                  const Color(0xFF1A1A1A),
+                ]
+              : [
+                  Colors.white,
+                  Colors.white.withOpacity(0.9),
+                ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              _buildCircularButton(
+                'assets/icons/menu.svg',
+                () => _openConversationsScreen(context),
+                themeProvider,
+              ),
+              const Spacer(),
+              _buildCircularButton(
+                'assets/icons/plus.svg',
+                () => _createNewConversationWithAnimation(context),
+                themeProvider,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircularButton(String svgPath, VoidCallback onTap, ThemeProvider themeProvider) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(
+          child: SvgPicture.asset(
+            svgPath,
+            width: 24,
+            height: 24,
+            colorFilter: ColorFilter.mode(
+              themeProvider.isDarkMode ? Colors.white : Colors.black,
+              BlendMode.srcIn,
+            ),
+          ),
         ),
       ),
     );
@@ -196,28 +215,31 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           child: FadeTransition(
             opacity: animation,
             child: Center(
-              child: Hero(
-                tag: 'new_conversation',
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 30,
-                          spreadRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Ionicons.add_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                      size: 80,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 30,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/icons/plus.svg',
+                      width: 80,
+                      height: 80,
+                      colorFilter: ColorFilter.mode(
+                        themeProvider.isDarkMode ? Colors.white : Colors.black,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
@@ -248,23 +270,24 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   Widget _buildMessageList(ThemeProvider themeProvider, ChatProvider chatProvider) {
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 80, 16, 120),
-      itemCount: chat_provider_item_count(chatProvider),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      itemCount: chatProvider.currentMessages.length + (_isLoading ? 1 : 0),
       itemBuilder: (context, index) {
         if (_isLoading && index == chatProvider.currentMessages.length) {
           return _buildLoadingIndicator(themeProvider);
         }
+        
+        final message = chatProvider.currentMessages[index];
+        final isLastMessage = index == chatProvider.currentMessages.length - 1;
+        
         return _buildMessageBubble(
-          chatProvider.currentMessages[index],
+          message,
           themeProvider,
           index,
+          isStreaming: isLastMessage && _isStreaming,
         );
       },
     );
-  }
-
-  int chat_provider_item_count(ChatProvider chatProvider) {
-    return chatProvider.currentMessages.length + (_isLoading ? 1 : 0);
   }
 
   Widget _buildLoadingIndicator(ThemeProvider themeProvider) {
@@ -294,7 +317,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     return AnimatedBuilder(
       animation: _loadingController,
       builder: (context, child) {
-        final phase = _loading_controller_value() * 2 * math.pi;
+        final phase = _loadingController.value * 2 * math.pi;
         final offsetY = math.sin(phase + index * 0.9) * 8;
         final scale = 0.8 + (math.sin(phase + index * 0.9) + 1) * 0.1;
         return Transform.translate(
@@ -315,15 +338,12 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     );
   }
 
-  double _loading_controller_value() {
-    try {
-      return _loadingController.value;
-    } catch (_) {
-      return 0.0;
-    }
-  }
-
-  Widget _buildMessageBubble(ChatMessage message, ThemeProvider themeProvider, int index) {
+  Widget _buildMessageBubble(
+    ChatMessage message,
+    ThemeProvider themeProvider,
+    int index, {
+    bool isStreaming = false,
+  }) {
     if (message.isUser) {
       return GestureDetector(
         onTap: () => _startEditingMessage(message, index),
@@ -336,7 +356,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
             decoration: BoxDecoration(
-              color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5),
+              color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20),
@@ -366,9 +386,14 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildAiResponseContent(message.text, themeProvider),
-              const SizedBox(height: 12),
-              _buildActionButtons(message.text, themeProvider, index),
+              _buildAiResponseContent(
+                isStreaming ? _currentStreamingText : message.text,
+                themeProvider,
+              ),
+              if (!isStreaming) ...[
+                const SizedBox(height: 12),
+                _buildActionButtons(message.text, themeProvider, index),
+              ],
             ],
           ),
         ),
@@ -380,58 +405,40 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildActionButton(
-          icon: Ionicons.copy_outline,
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: messageText));
-          },
-          themeProvider: themeProvider,
-        ),
+        _buildSvgActionButton('assets/icons/document.svg', () {
+          Clipboard.setData(ClipboardData(text: messageText));
+        }, themeProvider),
         const SizedBox(width: 12),
-        _buildActionButton(
-          icon: Ionicons.share_outline,
-          onTap: () {
-            Share.share(messageText);
-          },
-          themeProvider: themeProvider,
-        ),
+        _buildSvgActionButton('assets/icons/share.svg', () {
+          Share.share(messageText);
+        }, themeProvider),
         const SizedBox(width: 12),
-        _buildActionButton(
-          icon: Ionicons.reload_outline,
-          onTap: () => _regenerateMessage(messageIndex),
-          themeProvider: themeProvider,
-        ),
+        _buildSvgActionButton('assets/icons/refresh.svg', () {
+          _regenerateMessage(messageIndex);
+        }, themeProvider),
         const SizedBox(width: 12),
-        _buildActionButton(
-          icon: Ionicons.happy_outline,
-          onTap: () {
-            // Feedback positivo
-          },
-          themeProvider: themeProvider,
-        ),
+        _buildSvgActionButton('assets/icons/heart.svg', () {
+          // Feedback positivo
+        }, themeProvider),
         const SizedBox(width: 12),
-        _buildActionButton(
-          icon: Ionicons.sad_outline,
-          onTap: () {
-            // Feedback negativo
-          },
-          themeProvider: themeProvider,
-        ),
+        _buildSvgActionButton('assets/icons/close.svg', () {
+          // Feedback negativo
+        }, themeProvider),
       ],
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    required ThemeProvider themeProvider,
-  }) {
+  Widget _buildSvgActionButton(String svgPath, VoidCallback onTap, ThemeProvider themeProvider) {
     return GestureDetector(
       onTap: onTap,
-      child: Icon(
-        icon,
-        size: 20,
-        color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+      child: SvgPicture.asset(
+        svgPath,
+        width: 20,
+        height: 20,
+        colorFilter: ColorFilter.mode(
+          themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+          BlendMode.srcIn,
+        ),
       ),
     );
   }
@@ -472,16 +479,99 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       return _buildDocumentInline(text, themeProvider);
     }
 
+    // Detecta se é uma resposta importante para criar card especial
+    if (_shouldCreateSpecialCard(text)) {
+      return _buildSpecialCard(text, themeProvider);
+    }
+
     return MessageFormatter.buildFormattedText(text, themeProvider);
   }
 
+  bool _shouldCreateSpecialCard(String text) {
+    // Critérios para card especial
+    final hasTitle = text.startsWith('# ') || text.contains('\n# ');
+    final hasMultipleSections = text.split('\n##').length > 2;
+    final isLong = text.length > 500;
+    
+    return (hasTitle && hasMultipleSections) || isLong;
+  }
+
+  Widget _buildSpecialCard(String text, ThemeProvider themeProvider) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: themeProvider.isDarkMode
+              ? [
+                  const Color(0xFF2A2A2A),
+                  const Color(0xFF1F1F1F),
+                ]
+              : [
+                  const Color(0xFFF8F9FA),
+                  const Color(0xFFFFFFFF),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: themeProvider.isDarkMode
+              ? Colors.white.withOpacity(0.1)
+              : Colors.black.withOpacity(0.05),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF667eea).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.lightbulb_outline,
+                  color: const Color(0xFF667eea),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Resposta Detalhada',
+                  style: TextStyle(
+                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          MessageFormatter.buildFormattedText(text, themeProvider),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDocumentInline(String text, ThemeProvider themeProvider) {
-    final htmlContent = _chat_service_extract_html_safe(text);
+    final htmlContent = _chatService.extractHtmlFromResponse(text);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+        color: themeProvider.isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -508,24 +598,20 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Icon(
-                Ionicons.download_outline,
-                size: 22,
-                color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+              child: SvgPicture.asset(
+                'assets/icons/download.svg',
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                  themeProvider.isDarkMode ? Colors.white : Colors.black,
+                  BlendMode.srcIn,
+                ),
               ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _chat_service_extract_html_safe(String raw) {
-    try {
-      return _chatService.extractHtmlFromResponse(raw);
-    } catch (_) {
-      return raw;
-    }
   }
 
   void _downloadHtmlAsPdf(String htmlContent) {
@@ -692,8 +778,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 
     try {
       final conversationHistory = chatProvider.buildMessageHistory();
-      
-      // Limita o histórico para evitar erro de token (mantém últimas 20 mensagens)
       final limitedHistory = conversationHistory.length > 20 
           ? conversationHistory.sublist(conversationHistory.length - 20)
           : conversationHistory;
@@ -701,10 +785,17 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       final aiResponse = await _chatService.sendMessage(text, limitedHistory);
 
       if (mounted) {
+        // Adiciona mensagem vazia primeiro
+        chatProvider.addMessage(ChatMessage(text: '', isUser: false));
+        
         setState(() {
-          chatProvider.addMessage(ChatMessage(text: aiResponse, isUser: false));
           _isLoading = false;
+          _isStreaming = true;
+          _currentStreamingText = '';
         });
+
+        // Anima o texto frase por frase
+        await _animateText(aiResponse, chatProvider);
 
         if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
           final htmlContent = _chatService.extractHtmlFromResponse(aiResponse);
@@ -722,11 +813,43 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
             isUser: false,
           ));
           _isLoading = false;
+          _isStreaming = false;
         });
       }
     }
 
     _scrollToBottom();
+  }
+
+  Future<void> _animateText(String fullText, ChatProvider chatProvider) async {
+    final words = fullText.split(' ');
+    _currentStreamingText = '';
+
+    for (int i = 0; i < words.length; i++) {
+      if (!mounted || !_isStreaming) break;
+
+      setState(() {
+        _currentStreamingText += (i == 0 ? '' : ' ') + words[i];
+      });
+
+      // Atualiza a mensagem final
+      if (chatProvider.currentMessages.isNotEmpty && 
+          !chatProvider.currentMessages.last.isUser) {
+        chatProvider.currentMessages.last = ChatMessage(
+          text: _currentStreamingText,
+          isUser: false,
+        );
+      }
+
+      _scrollToBottom();
+      await Future.delayed(const Duration(milliseconds: 30));
+    }
+
+    if (mounted) {
+      setState(() {
+        _isStreaming = false;
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -742,7 +865,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 }
 
-// Tela de conversas
+// Tela de conversas (continua igual...)
 class _ConversationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -750,7 +873,7 @@ class _ConversationsScreen extends StatelessWidget {
     final chatProvider = Provider.of<ChatProvider>(context);
 
     return Scaffold(
-      backgroundColor: themeProvider.isDarkMode ? Colors.black : Colors.white,
+      backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -758,10 +881,14 @@ class _ConversationsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(
-                    Ionicons.chatbubbles_outline,
-                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                    size: 24,
+                  SvgPicture.asset(
+                    'assets/icons/menu.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(
+                      themeProvider.isDarkMode ? Colors.white : Colors.black,
+                      BlendMode.srcIn,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -775,9 +902,14 @@ class _ConversationsScreen extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(
-                      Ionicons.close_outline,
-                      color: themeProvider.isDarkMode ? Colors.white : Colors.black,
+                    icon: SvgPicture.asset(
+                      'assets/icons/close.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(
+                        themeProvider.isDarkMode ? Colors.white : Colors.black,
+                        BlendMode.srcIn,
+                      ),
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -794,10 +926,14 @@ class _ConversationsScreen extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Ionicons.file_tray_outline,
-                            size: 48,
-                            color: themeProvider.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
+                          SvgPicture.asset(
+                            'assets/icons/inbox.svg',
+                            width: 48,
+                            height: 48,
+                            colorFilter: ColorFilter.mode(
+                              themeProvider.isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -821,7 +957,7 @@ class _ConversationsScreen extends StatelessWidget {
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? (themeProvider.isDarkMode ? const Color(0xFF1C2128) : const Color(0xFFF5F5F5))
+                                ? (themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : const Color(0xFFF5F5F5))
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -837,10 +973,16 @@ class _ConversationsScreen extends StatelessWidget {
                                 color: themeProvider.isDarkMode ? const Color(0xFF0D1117) : const Color(0xFFE9ECEF),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(
-                                Ionicons.chatbubble_outline,
-                                size: 18,
-                                color: themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                              child: Center(
+                                child: SvgPicture.asset(
+                                  'assets/icons/document.svg',
+                                  width: 18,
+                                  height: 18,
+                                  colorFilter: ColorFilter.mode(
+                                    themeProvider.isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
                               ),
                             ),
                             title: Text(
@@ -862,11 +1004,11 @@ class _ConversationsScreen extends StatelessWidget {
                             ),
                             trailing: PopupMenuButton<String>(
                               icon: Icon(
-                                Ionicons.ellipsis_horizontal,
+                                Icons.more_horiz,
                                 color: themeProvider.isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                                 size: 20,
                               ),
-                              color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                              color: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -875,10 +1017,14 @@ class _ConversationsScreen extends StatelessWidget {
                                   value: 'delete',
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        Ionicons.trash_outline,
-                                        size: 18,
-                                        color: Colors.red.shade400,
+                                      SvgPicture.asset(
+                                        'assets/icons/close.svg',
+                                        width: 18,
+                                        height: 18,
+                                        colorFilter: ColorFilter.mode(
+                                          Colors.red.shade400,
+                                          BlendMode.srcIn,
+                                        ),
                                       ),
                                       const SizedBox(width: 12),
                                       Text(
@@ -932,7 +1078,7 @@ class _ConversationsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF2A2A2A) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Excluir conversa',
