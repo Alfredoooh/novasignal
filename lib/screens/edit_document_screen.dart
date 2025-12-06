@@ -23,11 +23,14 @@ class EditDocumentScreen extends StatefulWidget {
 }
 
 class _EditDocumentScreenState extends State<EditDocumentScreen> {
-  static const String _editorViewType = 'advanced-html-editor';
+  static const String _editorViewType = 'wysiwyg-html-editor';
   late String _currentContent;
   bool _hasChanges = false;
   String? _viewId;
   String _selectedImageId = '';
+  String _currentFontSize = '12px';
+  String _currentColor = '#34495e';
+  String _currentFontFamily = 'Georgia';
 
   @override
   void initState() {
@@ -40,21 +43,17 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
   }
 
   String _extractBodyContent(String html) {
-    // Extrair apenas o conteúdo do body, mantendo os estilos inline
     final bodyStart = html.indexOf('<body');
     final bodyEnd = html.lastIndexOf('</body>');
     
     if (bodyStart != -1 && bodyEnd != -1) {
-      final bodyTag = html.substring(bodyStart, html.indexOf('>', bodyStart) + 1);
-      final content = html.substring(html.indexOf('>', bodyStart) + 1, bodyEnd);
-      return content;
+      return html.substring(html.indexOf('>', bodyStart) + 1, bodyEnd);
     }
     
     return html;
   }
 
   String _rebuildFullHtml(String bodyContent) {
-    // Reconstruir o HTML completo mantendo o estilo original
     final originalHtml = widget.htmlContent;
     final headStart = originalHtml.indexOf('<head>');
     final headEnd = originalHtml.indexOf('</head>');
@@ -79,7 +78,7 @@ $bodyContent
       '$_editorViewType-$_viewId',
       (int id) {
         final container = html.DivElement()
-          ..id = 'editor-container-$_viewId'
+          ..id = 'editor-wrapper-$_viewId'
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.display = 'flex'
@@ -87,7 +86,6 @@ $bodyContent
           ..style.overflow = 'hidden'
           ..style.backgroundColor = '#e0e0e0';
 
-        // Wrapper para simular página A4
         final pageWrapper = html.DivElement()
           ..id = 'page-wrapper-$_viewId'
           ..style.flex = '1'
@@ -97,7 +95,6 @@ $bodyContent
           ..style.justifyContent = 'center'
           ..style.alignItems = 'flex-start';
 
-        // Container A4
         final a4Container = html.DivElement()
           ..id = 'a4-page-$_viewId'
           ..style.width = '210mm'
@@ -108,30 +105,31 @@ $bodyContent
           ..style.boxSizing = 'border-box'
           ..style.margin = '0';
 
-        // Editor contenteditable
         final editor = html.DivElement()
           ..id = 'editor-content-$_viewId'
           ..contentEditable = 'true'
           ..spellcheck = false
           ..style.outline = 'none'
           ..style.minHeight = '247mm'
-          ..style.fontFamily = 'Georgia, "Times New Roman", serif'
-          ..style.fontSize = '12px'
-          ..style.lineHeight = '1.8'
-          ..style.color = '#34495e'
-          ..style.textAlign = 'justify'
           ..style.setProperty('-webkit-user-select', 'text')
           ..style.userSelect = 'text'
-          ..innerHtml = _currentContent;
+          ..innerHTML = _currentContent;
 
-        // Event listeners
+        // Events
         editor.onInput.listen((_) {
           if (!_hasChanges) {
             setState(() => _hasChanges = true);
           }
         });
 
-        // Listener para seleção de imagens
+        editor.onMouseUp.listen((_) {
+          _updateFormatState();
+        });
+
+        editor.onKeyUp.listen((_) {
+          _updateFormatState();
+        });
+
         editor.onClick.listen((event) {
           final target = event.target;
           if (target is html.ImageElement) {
@@ -141,142 +139,21 @@ $bodyContent
           }
         });
 
-        // Estilos CSS avançados
+        // CSS mantém TODOS os estilos originais
         final style = html.StyleElement()
           ..text = '''
-            /* Reset e base */
-            #editor-content-$_viewId * {
-              margin: 0;
-              padding: 0;
-            }
-            
             #editor-content-$_viewId {
               word-wrap: break-word;
               overflow-wrap: break-word;
             }
             
-            /* Títulos */
-            #editor-content-$_viewId h1 {
-              color: #2c3e50;
-              font-size: 28px;
-              margin: 0 0 10px 0;
-              text-align: center;
-              border-bottom: 3px solid #3498db;
-              padding-bottom: 10px;
-            }
-            
-            #editor-content-$_viewId h2 {
-              color: #34495e;
-              font-size: 20px;
-              margin: 25px 0 15px 0;
-              border-left: 4px solid #3498db;
-              padding-left: 10px;
-            }
-            
-            #editor-content-$_viewId h3 {
-              color: #555;
-              font-size: 16px;
-              margin: 20px 0 10px 0;
-            }
-            
-            /* Subtítulos */
-            #editor-content-$_viewId .subtitle {
-              text-align: center;
-              color: #7f8c8d;
-              font-style: italic;
-              margin-bottom: 30px;
-              font-size: 14px;
-            }
-            
-            /* Parágrafos */
-            #editor-content-$_viewId p {
-              text-align: justify;
-              line-height: 1.8;
-              color: #34495e;
-              margin-bottom: 15px;
-              font-size: 12px;
-            }
-            
-            /* Primeira letra grande */
-            #editor-content-$_viewId .first-letter::first-letter {
-              font-size: 48px;
-              font-weight: bold;
-              float: left;
-              line-height: 40px;
-              padding-right: 8px;
-              color: #3498db;
-            }
-            
-            /* Destaques */
-            #editor-content-$_viewId .highlight {
-              background: #fff3cd;
-              padding: 15px;
-              border-left: 4px solid #ffc107;
-              margin: 20px 0;
-              font-style: italic;
-            }
-            
-            /* Listas */
-            #editor-content-$_viewId ul,
-            #editor-content-$_viewId ol {
-              margin: 15px 0;
-              padding-left: 30px;
-            }
-            
-            #editor-content-$_viewId li {
-              margin-bottom: 8px;
-              line-height: 1.6;
-            }
-            
-            /* Tabelas */
-            #editor-content-$_viewId table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 20px 0;
-              font-size: 11px;
-            }
-            
-            #editor-content-$_viewId th {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              color: white;
-              padding: 12px;
-              text-align: left;
-              font-weight: 600;
-            }
-            
-            #editor-content-$_viewId td {
-              padding: 10px 12px;
-              border-bottom: 1px solid #e0e0e0;
-            }
-            
-            #editor-content-$_viewId tr:hover {
-              background-color: #f5f5f5;
-            }
-            
-            #editor-content-$_viewId tr:nth-child(even) {
-              background-color: #fafafa;
-            }
-            
-            #editor-content-$_viewId .table-caption {
-              font-size: 11px;
-              color: #666;
-              font-style: italic;
-              margin-top: 5px;
-              text-align: center;
-            }
-            
-            /* Imagens */
-            #editor-content-$_viewId .image-container {
-              text-align: center;
-              margin: 25px 0;
-              position: relative;
+            #editor-content-$_viewId * {
+              /* Manter estilos inline e classes */
             }
             
             #editor-content-$_viewId img {
               max-width: 100%;
               height: auto;
-              border-radius: 8px;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
               cursor: pointer;
               transition: all 0.3s ease;
             }
@@ -287,43 +164,6 @@ $bodyContent
               box-shadow: 0 4px 16px rgba(0,122,255,0.3);
             }
             
-            #editor-content-$_viewId img:hover {
-              box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            }
-            
-            #editor-content-$_viewId .image-caption {
-              font-size: 11px;
-              color: #666;
-              font-style: italic;
-              margin-top: 8px;
-            }
-            
-            /* Footer */
-            #editor-content-$_viewId .footer {
-              text-align: center;
-              font-size: 10px;
-              color: #95a5a6;
-              border-top: 1px solid #ecf0f1;
-              padding-top: 10px;
-              margin-top: 30px;
-            }
-            
-            /* Formatação de texto */
-            #editor-content-$_viewId strong,
-            #editor-content-$_viewId b {
-              font-weight: 700;
-            }
-            
-            #editor-content-$_viewId em,
-            #editor-content-$_viewId i {
-              font-style: italic;
-            }
-            
-            #editor-content-$_viewId u {
-              text-decoration: underline;
-            }
-            
-            /* Scrollbar personalizada */
             #page-wrapper-$_viewId::-webkit-scrollbar {
               width: 8px;
             }
@@ -350,6 +190,45 @@ $bodyContent
         return container;
       },
     );
+  }
+
+  void _updateFormatState() {
+    final script = '''
+      (function() {
+        try {
+          var selection = window.getSelection();
+          if (!selection || selection.rangeCount === 0) return '{}';
+          
+          var range = selection.getRangeAt(0);
+          var node = range.startContainer;
+          
+          if (node.nodeType === 3) node = node.parentNode;
+          
+          var computedStyle = window.getComputedStyle(node);
+          
+          return JSON.stringify({
+            fontSize: computedStyle.fontSize || '12px',
+            color: computedStyle.color || 'rgb(52, 73, 94)',
+            fontFamily: computedStyle.fontFamily || 'Georgia',
+            fontWeight: computedStyle.fontWeight || 'normal',
+            fontStyle: computedStyle.fontStyle || 'normal',
+            textDecoration: computedStyle.textDecoration || 'none'
+          });
+        } catch(e) {
+          return '{}';
+        }
+      })();
+    ''';
+
+    try {
+      final result = js.context.callMethod('eval', [script]);
+      if (result != null && result.toString().isNotEmpty) {
+        // Atualizar estado com as propriedades detectadas
+        debugPrint('Formato detectado: $result');
+      }
+    } catch (e) {
+      debugPrint('Erro ao detectar formato: $e');
+    }
   }
 
   void _selectImage(String imageId) {
@@ -397,7 +276,6 @@ $bodyContent
         var editor = document.getElementById('editor-content-$_viewId');
         if (!editor) return '';
         
-        // Limpar classes de seleção antes de retornar
         var images = editor.querySelectorAll('img');
         images.forEach(function(img) {
           img.classList.remove('selected');
@@ -490,23 +368,31 @@ $bodyContent
               if (editor) {
                 var container = document.createElement('div');
                 container.className = 'image-container';
+                container.style.textAlign = 'center';
+                container.style.margin = '25px 0';
                 
                 var img = document.createElement('img');
                 img.id = '$imageId';
                 img.src = '$dataUrl';
                 img.className = 'document-image';
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                img.style.borderRadius = '8px';
+                img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
                 
                 var caption = document.createElement('div');
                 caption.className = 'image-caption';
                 caption.contentEditable = 'true';
                 caption.textContent = 'Figura: Descrição da imagem';
+                caption.style.fontSize = '11px';
+                caption.style.color = '#666';
+                caption.style.fontStyle = 'italic';
+                caption.style.marginTop = '8px';
                 
                 container.appendChild(img);
                 container.appendChild(caption);
                 
                 editor.appendChild(container);
-                
-                // Focar na legenda
                 caption.focus();
               }
             })();
@@ -595,12 +481,45 @@ $bodyContent
     _applyFormatting('formatBlock', 'h$level');
   }
 
+  void _changeFontSize(String size) {
+    final script = '''
+      (function() {
+        var selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+          var range = selection.getRangeAt(0);
+          var span = document.createElement('span');
+          span.style.fontSize = '$size';
+          range.surroundContents(span);
+        }
+      })();
+    ''';
+
+    js.context.callMethod('eval', [script]);
+
+    setState(() {
+      _hasChanges = true;
+    });
+  }
+
+  void _changeTextColor(String color) {
+    _applyFormatting('foreColor', color);
+  }
+
+  void _changeFontFamily(String font) {
+    _applyFormatting('fontName', font);
+  }
+
   void _insertTable() {
     final script = '''
       (function() {
         var editor = document.getElementById('editor-content-$_viewId');
         if (editor) {
           var table = document.createElement('table');
+          table.style.width = '100%';
+          table.style.borderCollapse = 'collapse';
+          table.style.margin = '20px 0';
+          table.style.fontSize = '11px';
+          
           var thead = document.createElement('thead');
           var tbody = document.createElement('tbody');
           
@@ -609,6 +528,11 @@ $bodyContent
             var th = document.createElement('th');
             th.contentEditable = 'true';
             th.textContent = 'Coluna ' + (i + 1);
+            th.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            th.style.color = 'white';
+            th.style.padding = '12px';
+            th.style.textAlign = 'left';
+            th.style.fontWeight = '600';
             headerRow.appendChild(th);
           }
           thead.appendChild(headerRow);
@@ -619,7 +543,12 @@ $bodyContent
               var td = document.createElement('td');
               td.contentEditable = 'true';
               td.textContent = 'Dado';
+              td.style.padding = '10px 12px';
+              td.style.borderBottom = '1px solid #e0e0e0';
               row.appendChild(td);
+            }
+            if (r % 2 === 1) {
+              row.style.backgroundColor = '#fafafa';
             }
             tbody.appendChild(row);
           }
@@ -631,6 +560,11 @@ $bodyContent
           caption.className = 'table-caption';
           caption.contentEditable = 'true';
           caption.textContent = 'Tabela 1: Descrição';
+          caption.style.fontSize = '11px';
+          caption.style.color = '#666';
+          caption.style.fontStyle = 'italic';
+          caption.style.marginTop = '5px';
+          caption.style.textAlign = 'center';
           
           editor.appendChild(table);
           editor.appendChild(caption);
@@ -654,6 +588,11 @@ $bodyContent
           highlight.className = 'highlight';
           highlight.contentEditable = 'true';
           highlight.textContent = 'Texto destacado importante...';
+          highlight.style.background = '#fff3cd';
+          highlight.style.padding = '15px';
+          highlight.style.borderLeft = '4px solid #ffc107';
+          highlight.style.margin = '20px 0';
+          highlight.style.fontStyle = 'italic';
           editor.appendChild(highlight);
           highlight.focus();
         }
@@ -667,19 +606,140 @@ $bodyContent
     });
   }
 
-  void _setTextAlignment(String alignment) {
-    final commands = {
-      'left': 'justifyLeft',
-      'center': 'justifyCenter',
-      'right': 'justifyRight',
-      'justify': 'justifyFull',
-    };
-
-    _applyFormatting(commands[alignment]!);
+  void _showFontSizeDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Tamanho da Fonte',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildFontSizeOption('Pequeno (10px)', '10px', themeProvider),
+            _buildFontSizeOption('Normal (12px)', '12px', themeProvider),
+            _buildFontSizeOption('Médio (14px)', '14px', themeProvider),
+            _buildFontSizeOption('Grande (16px)', '16px', themeProvider),
+            _buildFontSizeOption('Muito Grande (20px)', '20px', themeProvider),
+          ],
+        ),
+      ),
+    );
   }
 
-  void _changeFontSize(String size) {
-    _applyFormatting('fontSize', size);
+  Widget _buildFontSizeOption(String label, String size, ThemeProvider themeProvider) {
+    return ListTile(
+      title: Text(label),
+      onTap: () {
+        _changeFontSize(size);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _showColorPicker() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    final colors = [
+      {'name': 'Preto', 'value': '#000000'},
+      {'name': 'Cinza Escuro', 'value': '#34495e'},
+      {'name': 'Azul', 'value': '#3498db'},
+      {'name': 'Verde', 'value': '#27ae60'},
+      {'name': 'Vermelho', 'value': '#e74c3c'},
+      {'name': 'Laranja', 'value': '#e67e22'},
+      {'name': 'Roxo', 'value': '#9b59b6'},
+      {'name': 'Amarelo', 'value': '#f39c12'},
+    ];
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Cor do Texto',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: colors.map((color) {
+            return GestureDetector(
+              onTap: () {
+                _changeTextColor(color['value']!);
+                Navigator.pop(context);
+              },
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Color(int.parse(color['value']!.substring(1), radix: 16) + 0xFF000000),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300, width: 2),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  void _showFontFamilyDialog() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    final fonts = [
+      'Georgia',
+      'Times New Roman',
+      'Arial',
+      'Helvetica',
+      'Courier New',
+      'Verdana',
+    ];
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Fonte',
+          style: TextStyle(
+            color: themeProvider.isDarkMode ? Colors.white : const Color(0xFF212529),
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: fonts.map((font) {
+            return ListTile(
+              title: Text(
+                font,
+                style: TextStyle(fontFamily: font),
+              ),
+              onTap: () {
+                _changeFontFamily(font);
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 
   void _showImageOptionsDialog() {
@@ -801,7 +861,7 @@ $bodyContent
         ),
         body: Column(
           children: [
-            // Toolbar principal
+            // Toolbar 1: Formatação básica
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
@@ -820,77 +880,106 @@ $bodyContent
                 child: Row(
                   children: [
                     _buildToolbarButton(
-                      icon: Ionicons.text_outline,
                       label: 'B',
                       onPressed: () => _applyFormatting('bold'),
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 4),
                     _buildToolbarButton(
-                      icon: Ionicons.text_outline,
                       label: 'I',
                       onPressed: () => _applyFormatting('italic'),
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 4),
                     _buildToolbarButton(
-                      icon: Ionicons.text_outline,
                       label: 'U',
                       onPressed: () => _applyFormatting('underline'),
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 8),
                     _buildToolbarButton(
-                      icon: Ionicons.list_outline,
                       label: 'Lista',
                       onPressed: () => _applyFormatting('insertUnorderedList'),
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 4),
                     _buildToolbarButton(
-                      icon: Ionicons.list_outline,
                       label: 'Num',
                       onPressed: () => _applyFormatting('insertOrderedList'),
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 8),
                     _buildToolbarButton(
-                      icon: Ionicons.text_outline,
                       label: 'H1',
                       onPressed: () => _insertHeading(1),
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 4),
                     _buildToolbarButton(
-                      icon: Ionicons.text_outline,
                       label: 'H2',
                       onPressed: () => _insertHeading(2),
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 4),
                     _buildToolbarButton(
-                      icon: Ionicons.text_outline,
                       label: 'H3',
                       onPressed: () => _insertHeading(3),
                       themeProvider: themeProvider,
                     ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Toolbar 2: Formatação avançada
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: themeProvider.isDarkMode
+                        ? const Color(0xFF2D333B)
+                        : const Color(0xFFDEE2E6),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildToolbarButton(
+                      label: 'Tamanho',
+                      onPressed: _showFontSizeDialog,
+                      themeProvider: themeProvider,
+                    ),
+                    const SizedBox(width: 4),
+                    _buildToolbarButton(
+                      label: 'Cor',
+                      onPressed: _showColorPicker,
+                      themeProvider: themeProvider,
+                    ),
+                    const SizedBox(width: 4),
+                    _buildToolbarButton(
+                      label: 'Fonte',
+                      onPressed: _showFontFamilyDialog,
+                      themeProvider: themeProvider,
+                    ),
                     const SizedBox(width: 8),
                     _buildToolbarButton(
-                      icon: Ionicons.image_outline,
                       label: 'Imagem',
                       onPressed: _pickAndInsertImage,
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 4),
                     _buildToolbarButton(
-                      icon: Ionicons.grid_outline,
                       label: 'Tabela',
                       onPressed: _insertTable,
                       themeProvider: themeProvider,
                     ),
                     const SizedBox(width: 4),
                     _buildToolbarButton(
-                      icon: Ionicons.bookmark_outline,
                       label: 'Destaque',
                       onPressed: _insertHighlight,
                       themeProvider: themeProvider,
@@ -900,7 +989,7 @@ $bodyContent
               ),
             ),
 
-            // Toolbar de imagem (aparece quando imagem selecionada)
+            // Toolbar de imagem (quando selecionada)
             if (_selectedImageId.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -915,16 +1004,16 @@ $bodyContent
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Ionicons.image,
                       size: 18,
-                      color: const Color(0xFF007AFF),
+                      color: Color(0xFF007AFF),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       'Imagem selecionada',
                       style: TextStyle(
-                        color: const Color(0xFF007AFF),
+                        color: Color(0xFF007AFF),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -963,7 +1052,6 @@ $bodyContent
   }
 
   Widget _buildToolbarButton({
-    required IconData icon,
     required String label,
     required VoidCallback onPressed,
     required ThemeProvider themeProvider,
