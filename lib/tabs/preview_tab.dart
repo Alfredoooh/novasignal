@@ -99,12 +99,12 @@ class _PreviewTabState extends State<PreviewTab> {
     registerWebViewFactory(
       'html-viewer-$viewId',
       (int id) {
-        // Aplica zoom bem reduzido
+        // Aplica zoom ajustado
         final htmlWithZoom = '''
           <style>
             html, body {
-              zoom: 0.03 !important;
-              -moz-transform: scale(0.03);
+              zoom: 0.24 !important;
+              -moz-transform: scale(0.24);
               -moz-transform-origin: 0 0;
               margin: 0;
               padding: 0;
@@ -497,9 +497,10 @@ class _PreviewTabState extends State<PreviewTab> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+          color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
