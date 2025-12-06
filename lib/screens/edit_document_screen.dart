@@ -109,8 +109,9 @@ $bodyContent
           ..style.outline = 'none'
           ..style.minHeight = '247mm'
           ..style.setProperty('-webkit-user-select', 'text')
-          ..style.userSelect = 'text'
-          ..innerHTML = _currentContent;
+          ..style.userSelect = 'text';
+        
+        editor.setInnerHtml(_currentContent, treeSanitizer: html.NodeTreeSanitizer.trusted);
 
         editor.onInput.listen((_) {
           if (!_hasChanges) {
