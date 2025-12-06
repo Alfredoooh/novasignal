@@ -21,7 +21,7 @@ class _PreviewTabState extends State<PreviewTab> {
   static const String _previewViewType = 'pdf-preview-viewer';
   static const String _renameInputViewType = 'rename-input-field';
   static bool _renameViewRegistered = false;
-  
+
   bool _isConverting = false;
   bool _hasDocument = false;
   String? _pdfViewId;
@@ -42,8 +42,8 @@ class _PreviewTabState extends State<PreviewTab> {
   @override
   void didUpdateWidget(PreviewTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.htmlContent != oldWidget.htmlContent && 
-        widget.htmlContent != null && 
+    if (widget.htmlContent != oldWidget.htmlContent &&
+        widget.htmlContent != null &&
         widget.htmlContent!.isNotEmpty &&
         widget.htmlContent != _lastProcessedContent) {
       _lastProcessedContent = widget.htmlContent;
@@ -76,8 +76,13 @@ class _PreviewTabState extends State<PreviewTab> {
         ..async = true;
       html.document.head?.append(pdfjsScript);
 
-      js.context['pdfjsLib']?['GlobalWorkerOptions']?['workerSrc'] = 
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      // define worker src se disponível
+      try {
+        js.context['pdfjsLib']?['GlobalWorkerOptions']?['workerSrc'] =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      } catch (e) {
+        // ignore se não conseguir (alguns contextos podem não expor)
+      }
     }
   }
 
@@ -115,6 +120,9 @@ class _PreviewTabState extends State<PreviewTab> {
     }
   }
 
+  // -----------------------
+  // Atualização: view factory com padding e alinhamento ao topo
+  // -----------------------
   void _registerPDFView(String viewId) {
     ui_web.platformViewRegistry.registerViewFactory(
       '$_previewViewType-$viewId',
@@ -124,11 +132,13 @@ class _PreviewTabState extends State<PreviewTab> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.overflow = 'auto'
-          ..style.padding = '40px 20px'
+          // garantir padding superior/inferior e box-sizing
+          ..style.padding = '48px 20px'
           ..style.boxSizing = 'border-box'
+          // alinhar páginas ao topo (não ao centro) para evitar "colar" nas extremidades
           ..style.display = 'flex'
           ..style.flexDirection = 'column'
-          ..style.alignItems = 'center'
+          ..style.alignItems = 'flex-start'
           ..style.gap = '20px';
 
         return container;
@@ -136,6 +146,10 @@ class _PreviewTabState extends State<PreviewTab> {
     );
   }
 
+  // -----------------------
+  // JS script para converter HTML -> imagem(s) -> PDF -> render com pdf.js
+  // (com alterações para padding e margin entre páginas)
+  // -----------------------
   Future<void> _executeHTMLtoPDF(String htmlContent, String viewId) async {
     final script = '''
     (async function() {
@@ -160,7 +174,7 @@ class _PreviewTabState extends State<PreviewTab> {
           position: absolute;
           left: -99999px;
           top: 0;
-          width: \${renderWidth}px;
+          width: \\\${renderWidth}px;
           background: white;
           padding: 60px;
           box-sizing: border-box;
@@ -170,7 +184,7 @@ class _PreviewTabState extends State<PreviewTab> {
           color: #000000;
         \`;
         
-        container.innerHTML = \`$htmlContent\`;
+        container.innerHTML = \`${htmlContent}\`;
         document.body.appendChild(container);
         
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -220,7 +234,14 @@ class _PreviewTabState extends State<PreviewTab> {
         const pdfContainer = document.getElementById('pdf-container-$viewId');
         if (!pdfContainer) return;
         
+        // garantir padding top/bottom na área que recebe as páginas
         pdfContainer.innerHTML = '';
+        pdfContainer.style.boxSizing = 'border-box';
+        pdfContainer.style.padding = '48px 20px';
+        pdfContainer.style.display = 'flex';
+        pdfContainer.style.flexDirection = 'column';
+        pdfContainer.style.alignItems = 'center';
+        pdfContainer.style.gap = '20px';
         
         const loadingTask = pdfjsLib.getDocument({ data: pdfData });
         const pdfDoc = await loadingTask.promise;
@@ -231,15 +252,20 @@ class _PreviewTabState extends State<PreviewTab> {
           const viewport = page.getViewport({ scale });
           
           const pageContainer = document.createElement('div');
-          pageContainer.style.cssText = \`
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            margin: 0 auto 20px auto;
-            position: relative;
-          \`;
+          // dar margem superior/inferior e limitar largura para não colar nas laterais
+          pageContainer.style.boxSizing = 'border-box';
+          pageContainer.style.background = 'white';
+          pageContainer.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+          pageContainer.style.margin = '20px 0';
+          pageContainer.style.padding = '8px 0';
+          pageContainer.style.width = '100%';
+          pageContainer.style.maxWidth = '794px';
+          pageContainer.style.display = 'flex';
+          pageContainer.style.justifyContent = 'center';
+          pageContainer.style.position = 'relative';
           
           const canvas = document.createElement('canvas');
-          canvas.style.cssText = 'display: block; width: 100%; height: auto;';
+          canvas.style.cssText = 'display: block; width: 100%; height: auto; box-sizing: border-box;';
           
           const ctx = canvas.getContext('2d');
           canvas.width = viewport.width;
@@ -261,7 +287,12 @@ class _PreviewTabState extends State<PreviewTab> {
     })();
     ''';
 
-    js.context.callMethod('eval', [script]);
+    // executa o script no contexto do browser
+    try {
+      js.context.callMethod('eval', [script]);
+    } catch (e) {
+      debugPrint('Erro ao executar script JS: $e');
+    }
   }
 
   void _downloadPDF() {
@@ -439,8 +470,8 @@ class _PreviewTabState extends State<PreviewTab> {
                       color: themeProvider.isDarkMode ? Colors.white54 : Colors.grey,
                     ),
                     filled: true,
-                    fillColor: themeProvider.isDarkMode 
-                        ? const Color(0xFF2D333B) 
+                    fillColor: themeProvider.isDarkMode
+                        ? const Color(0xFF2D333B)
                         : const Color(0xFFF1F3F5),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -472,8 +503,8 @@ class _PreviewTabState extends State<PreviewTab> {
                 });
               } else {
                 setState(() {
-                  _documentName = _nameController.text.trim().isEmpty 
-                      ? 'Documento sem título' 
+                  _documentName = _nameController.text.trim().isEmpty
+                      ? 'Documento sem título'
                       : _nameController.text.trim();
                 });
               }
@@ -703,16 +734,16 @@ class _PreviewTabState extends State<PreviewTab> {
               Icon(
                 Ionicons.document_text_outline,
                 size: 64,
-                color: themeProvider.isDarkMode 
-                    ? Colors.grey.shade700 
+                color: themeProvider.isDarkMode
+                    ? Colors.grey.shade700
                     : Colors.grey.shade300,
               ),
               const SizedBox(height: 16),
               Text(
                 'Nenhum documento gerado ainda',
                 style: TextStyle(
-                  color: themeProvider.isDarkMode 
-                      ? Colors.grey.shade600 
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade600
                       : Colors.grey.shade400,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -722,8 +753,8 @@ class _PreviewTabState extends State<PreviewTab> {
               Text(
                 'Gere um documento no chat para visualizar',
                 style: TextStyle(
-                  color: themeProvider.isDarkMode 
-                      ? Colors.grey.shade600 
+                  color: themeProvider.isDarkMode
+                      ? Colors.grey.shade600
                       : Colors.grey.shade400,
                   fontSize: 14,
                 ),
@@ -734,14 +765,20 @@ class _PreviewTabState extends State<PreviewTab> {
       );
     }
 
+    // -----------------------
+    // Envolvi o HtmlElementView com Padding vertical para respeitar SafeArea e dar folga.
+    // -----------------------
     return Container(
       color: themeProvider.isDarkMode ? Colors.black : Colors.white,
       child: Center(
         child: SingleChildScrollView(
-          child: SizedBox(
-            width: double.infinity,
-            child: HtmlElementView(
-              viewType: '$_previewViewType-$_pdfViewId',
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: HtmlElementView(
+                viewType: '$_previewViewType-$_pdfViewId',
+              ),
             ),
           ),
         ),
@@ -753,7 +790,7 @@ class _PreviewTabState extends State<PreviewTab> {
   void dispose() {
     _nameController.dispose();
     js.context.callMethod('eval', [
-      'delete window.currentPdfBlob; delete window.currentPdfData;'
+      'try { delete window.currentPdfBlob; delete window.currentPdfData; } catch(e) {}'
     ]);
     super.dispose();
   }
