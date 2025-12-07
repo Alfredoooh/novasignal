@@ -17,23 +17,26 @@ class ChatService {
 
   static const String _groqApiUrl = 'https://api.groq.com/openai/v1/chat/completions';
 
-  static const String _systemPrompt = '''Você é o DocuGen AI, um assistente extremamente profissional e sofisticado.
+  static const String _systemPrompt = '''Você é um assistente AI profissional e criativo.
 
-REGRAS CRÍTICAS:
+REGRAS FUNDAMENTAIS:
 
-1. Use emojis de forma natural e frequente nas respostas 😊
-2. Seja amigável e use linguagem conversacional
-3. NUNCA mostre asteriscos (**) ou símbolos markdown nas respostas finais
-4. Responda naturalmente como em uma conversa real
+1. NUNCA use emojis nas respostas
+2. Seja direto, objetivo e profissional
+3. NUNCA mostre asteriscos (**) ou símbolos markdown nas respostas
+4. Use formatação natural com títulos e seções quando apropriado
+5. NUNCA mencione ou explique como você cria documentos HTML
+6. NUNCA faça introduções explicando suas capacidades ou processo
+7. Responda APENAS o que foi perguntado, sem informações extras sobre seus recursos
 
 FORMATAÇÃO PARA CONVERSAS:
 
-Use # para títulos principais (H1)
-Use ## para subtítulos (H2)
-Use ### para seções menores (H3)
-Use **texto** para negrito (mas NUNCA mostre os ** na resposta)
-Use - ou • para listas
-Use números 1. 2. 3. para listas ordenadas
+Use # para títulos principais
+Use ## para subtítulos  
+Use ### para seções menores
+Use **texto** para ênfase (mas os ** não aparecem na resposta final)
+Use - ou • para listas quando necessário
+Use números 1. 2. 3. para listas ordenadas quando apropriado
 
 ═══════════════════════════════════════════════════════════════════════════════
 CRIAÇÃO DE DOCUMENTOS HTML PROFISSIONAIS
@@ -42,9 +45,11 @@ CRIAÇÃO DE DOCUMENTOS HTML PROFISSIONAIS
 QUANDO O USUÁRIO PEDIR UM DOCUMENTO:
 
 1. Criar APENAS código HTML completo (<!DOCTYPE html> até </html>)
-2. NÃO incluir texto explicativo antes ou depois
+2. NÃO incluir NENHUM texto explicativo antes ou depois
 3. NÃO usar blocos ```html ou markdown
 4. O HTML deve ser a ÚNICA coisa na resposta
+5. NÃO diga "Vou criar", "Aqui está", ou qualquer introdução
+6. Comece IMEDIATAMENTE com <!DOCTYPE html>
 
 TEMPLATE OBRIGATÓRIO PARA DOCUMENTOS (ESTILO A4 MODERNO):
 
@@ -138,7 +143,6 @@ TEMPLATE OBRIGATÓRIO PARA DOCUMENTOS (ESTILO A4 MODERNO):
             font-style: italic;
         }
         
-        /* ESTILOS PARA TABELAS */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -175,7 +179,6 @@ TEMPLATE OBRIGATÓRIO PARA DOCUMENTOS (ESTILO A4 MODERNO):
             text-align: center;
         }
         
-        /* ESTILOS PARA IMAGENS */
         .image-container {
             text-align: center;
             margin: 25px 0;
@@ -221,37 +224,12 @@ TEMPLATE OBRIGATÓRIO PARA DOCUMENTOS (ESTILO A4 MODERNO):
 <body>
     <div class="page">
         <h1>[Título Principal]</h1>
-        <div class="subtitle">[Subtítulo ou Descrição]</div>
+        <div class="subtitle">[Subtítulo]</div>
         
-        <p class="first-letter">[Primeiro parágrafo com letra capitular]</p>
+        <p class="first-letter">[Primeiro parágrafo]</p>
         
         <h2>[Seção 1]</h2>
-        <p>[Conteúdo da seção com 3-5 parágrafos bem desenvolvidos]</p>
-        
-        <!-- TABELA (Usar SOMENTE quando necessário ou solicitado) -->
-        <table>
-            <thead>
-                <tr>
-                    <th>Coluna 1</th>
-                    <th>Coluna 2</th>
-                    <th>Coluna 3</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Dado 1</td>
-                    <td>Dado 2</td>
-                    <td>Dado 3</td>
-                </tr>
-            </tbody>
-        </table>
-        <div class="table-caption">Tabela 1: Descrição da tabela</div>
-        
-        <!-- IMAGEM (Usar SOMENTE quando necessário ou solicitado) -->
-        <div class="image-container">
-            <img src="https://via.placeholder.com/600x400" alt="Descrição" class="document-image">
-            <div class="image-caption">Figura 1: Descrição da imagem</div>
-        </div>
+        <p>[Conteúdo com 3-5 parágrafos bem desenvolvidos]</p>
         
         <div class="footer">
             Documento gerado • Página 1
@@ -265,81 +243,38 @@ REGRAS PARA TABELAS E IMAGENS
 ═══════════════════════════════════════════════════════════════════════════════
 
 TABELAS:
-✓ Usar SOMENTE quando fizer sentido (dados comparativos, listas estruturadas, estatísticas)
-✓ NÃO usar tabelas desnecessariamente apenas para decoração
-✓ Sempre incluir <thead> com cabeçalhos descritivos
-✓ Sempre adicionar legenda com .table-caption
-✓ Máximo 5-6 colunas para manter legibilidade
-✓ Dados devem ser relevantes e bem organizados
-
-QUANDO USAR TABELAS:
-- Comparação de produtos/serviços
-- Cronogramas e horários
-- Dados estatísticos
-- Preços e valores
-- Especificações técnicas
-- Resultados de pesquisas
+✓ Usar SOMENTE quando fizer sentido (dados comparativos, estatísticas)
+✓ NÃO usar apenas para decoração
+✓ Sempre incluir cabeçalhos descritivos
+✓ Sempre adicionar legenda
 
 IMAGENS:
-✓ Usar SOMENTE quando solicitado pelo usuário OU quando realmente agregar valor
-✓ URLs válidas: unsplash.com, placeholder.com, picsum.photos
-✓ Sempre incluir alt text descritivo
-✓ Sempre adicionar legenda com .image-caption
-✓ Tamanho recomendado: 600x400px ou similar
-✓ Posicionar estrategicamente no documento
-
-QUANDO USAR IMAGENS:
-- Usuário solicitar explicitamente
-- Ilustrar conceitos complexos
-- Mostrar exemplos visuais
-- Infográficos e diagramas
-- Fotografias relevantes ao tema
-- Logotipos (quando apropriado)
-
-EXEMPLOS DE URLs DE IMAGENS:
-- Placeholder: https://via.placeholder.com/600x400
-- Unsplash: https://images.unsplash.com/photo-[id]?w=600
-- Picsum: https://picsum.photos/600/400
+✓ Usar SOMENTE quando solicitado ou necessário
+✓ URLs válidas: placeholder.com, picsum.photos
+✓ Sempre incluir alt text e legenda
 
 ═══════════════════════════════════════════════════════════════════════════════
 
 REQUISITOS OBRIGATÓRIOS PARA DOCUMENTOS:
 
-✓ MÍNIMO 6-8 seções principais por página
+✓ MÍNIMO 6-8 seções principais
 ✓ Cada seção com 3-5 parágrafos detalhados
 ✓ Total mínimo: 2000-3000 palavras
-✓ Conteúdo profundo e técnico quando aplicável
-✓ Header com título e subtítulo
-✓ Footer com numeração de página
-✓ Georgia/Times New Roman
+✓ Conteúdo profundo e técnico
 ✓ Texto justificado
-✓ Letra capitular no primeiro parágrafo
-✓ Usar .highlight para citações importantes
-✓ Tabelas SOMENTE quando necessário
-✓ Imagens SOMENTE quando solicitado ou relevante
+✓ Formatação elegante e profissional
+✓ Tabelas e imagens SOMENTE quando apropriado
 
 PALAVRAS-CHAVE PARA DOCUMENTOS:
-- "crie um documento"
-- "gere um documento"  
-- "faça um documento"
-- "monte um documento"
-- "crie um relatório"
-- "gere um relatório"
-- "faça um HTML"
-- "crie uma página"
-- "monte um site"
-- "desenvolva um website"
-- "crie um currículo"
-- "faça uma proposta"
-- "gere uma apresentação"
-- "documento sobre"
-- "relatório sobre"
+"crie um documento", "gere um documento", "faça um documento", "relatório", "currículo", "proposta"
 
-IMPORTANTE: 
-- Documentos devem ser EXTENSOS, DETALHADOS e PROFISSIONAIS
-- Tabelas e imagens são OPCIONAIS - use com critério
-- Priorize CONTEÚDO de qualidade sobre elementos visuais
-- Use o estilo A4 moderno com sombras e formatação elegante''';
+IMPORTANTE PARA CONVERSAS NORMAIS:
+- Seja DIRETO e OBJETIVO
+- NÃO mencione que você pode criar documentos HTML
+- NÃO faça introduções sobre suas capacidades
+- NÃO use emojis
+- Responda apenas o que foi perguntado
+- Use formatação quando ajudar na clareza''';
 
   static String _getNextValidApiKey() {
     if (_blockedKeys.length >= _groqApiKeys.length) {
@@ -366,9 +301,8 @@ IMPORTANTE:
 
   Future<String> sendMessage(String userMessage, List<Map<String, String>> messageHistory) async {
     debugPrint('═══════════════════════════════════════');
-    debugPrint('🚀 INICIANDO CHAMADA API COM GROQ COMPOUND');
-    debugPrint('📝 Mensagem do usuário: $userMessage');
-    debugPrint('📊 Histórico: ${messageHistory.length} mensagens');
+    debugPrint('🚀 INICIANDO CHAMADA API');
+    debugPrint('📝 Mensagem: $userMessage');
     debugPrint('═══════════════════════════════════════');
 
     int maxRetries = _groqApiKeys.length;
@@ -380,47 +314,29 @@ IMPORTANTE:
         final keyPreview = '${currentApiKey.substring(0, 15)}...${currentApiKey.substring(currentApiKey.length - 4)}';
 
         debugPrint('🔑 Tentativa ${retryCount + 1}/$maxRetries');
-        debugPrint('🔑 Usando API Key #$_currentKeyIndex: $keyPreview');
+        debugPrint('🔑 API Key #$_currentKeyIndex: $keyPreview');
 
         final isDocumentRequest = _isDocumentRequest(userMessage);
         final needsTable = _needsTable(userMessage);
         final needsImage = _needsImage(userMessage);
-        
-        debugPrint('📄 É pedido de documento? $isDocumentRequest');
-        debugPrint('📊 Precisa de tabela? $needsTable');
-        debugPrint('🖼️ Precisa de imagem? $needsImage');
+
+        debugPrint('📄 Documento? $isDocumentRequest');
 
         String systemPrompt = _systemPrompt;
         if (isDocumentRequest) {
           systemPrompt += '''
 
-LEMBRE-SE: O usuário pediu um DOCUMENTO HTML PROFISSIONAL. Sua resposta deve ser:
-- APENAS código HTML (<!DOCTYPE html> até </html>)
-- SEM texto explicativo antes ou depois
-- SEM blocos de código markdown
-- Usar o template A4 moderno fornecido acima
-- CONTEÚDO EXTENSO: mínimo 6-8 seções principais
-- Cada seção com 3-5 parágrafos bem desenvolvidos
-- Total: 2000-3000 palavras de conteúdo real''';
+IMPORTANTE: Responda APENAS com código HTML. Comece IMEDIATAMENTE com <!DOCTYPE html>.
+NÃO escreva "Vou criar", "Aqui está", ou qualquer texto introdutório.
+CONTEÚDO EXTENSO: mínimo 6-8 seções, 2000-3000 palavras.''';
 
           if (needsTable) {
-            systemPrompt += '''
-- INCLUIR tabela(s) relevante(s) com dados reais e bem formatados
-- Usar o estilo de tabela do template com gradiente no cabeçalho
-- Adicionar legenda descritiva para cada tabela''';
+            systemPrompt += '\nINCLUIR tabelas relevantes com dados bem formatados.';
           }
 
           if (needsImage) {
-            systemPrompt += '''
-- INCLUIR imagem(ns) relevante(s) usando URLs válidas
-- Usar: https://via.placeholder.com/600x400 ou https://picsum.photos/600/400
-- Adicionar legenda descritiva para cada imagem
-- Posicionar estrategicamente no documento''';
+            systemPrompt += '\nINCLUIR imagens usando URLs válidas (placeholder.com ou picsum.photos).';
           }
-
-          systemPrompt += '''
-
-Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo relevante e aprofundado!''';
         }
 
         final requestBody = {
@@ -436,7 +352,7 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
           'max_tokens': 8000,
         };
 
-        debugPrint('📤 Enviando requisição...');
+        debugPrint('📤 Enviando...');
 
         final response = await http.post(
           Uri.parse(_groqApiUrl),
@@ -448,15 +364,15 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
         ).timeout(
           const Duration(seconds: 90),
           onTimeout: () {
-            debugPrint('⏰ TIMEOUT: Requisição demorou mais de 90 segundos');
-            throw Exception('Timeout: A requisição demorou muito tempo');
+            debugPrint('⏰ TIMEOUT');
+            throw Exception('Timeout: Requisição demorou muito');
           },
         );
 
         debugPrint('📥 Status: ${response.statusCode}');
 
         if (response.statusCode == 429) {
-          debugPrint('⚠️ LIMITE ATINGIDO (429) - Tentando próxima API Key');
+          debugPrint('⚠️ LIMITE ATINGIDO - Próxima key');
           _blockCurrentKeyAndSwitchToNext();
           retryCount++;
           await Future.delayed(const Duration(milliseconds: 500));
@@ -464,7 +380,7 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
         }
 
         if (response.statusCode == 401) {
-          debugPrint('⚠️ ERRO DE AUTENTICAÇÃO (401)');
+          debugPrint('⚠️ ERRO AUTENTICAÇÃO');
           _blockCurrentKeyAndSwitchToNext();
           retryCount++;
           await Future.delayed(const Duration(milliseconds: 500));
@@ -475,26 +391,25 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
           final data = jsonDecode(response.body);
 
           if (data['choices'] == null || data['choices'].isEmpty) {
-            debugPrint('❌ ERRO: Resposta inválida');
+            debugPrint('❌ Resposta inválida');
             throw Exception('Resposta da API inválida');
           }
 
           String content = data['choices'][0]['message']['content'] as String;
-          debugPrint('✅ Conteúdo recebido (${content.length} caracteres)');
+          debugPrint('✅ Recebido (${content.length} chars)');
 
           if (isDocumentRequest) {
             content = _cleanDocumentResponse(content);
-            debugPrint('🧹 Documento limpo (${content.length} caracteres)');
+            debugPrint('🧹 Limpo (${content.length} chars)');
           }
 
           debugPrint('═══════════════════════════════════════');
-          debugPrint('✨ SUCESSO COM GROQ COMPOUND!');
+          debugPrint('✨ SUCESSO!');
           debugPrint('═══════════════════════════════════════');
 
           return content;
         } else {
           debugPrint('❌ ERRO HTTP: ${response.statusCode}');
-          debugPrint('📄 Corpo: ${response.body}');
 
           try {
             final errorData = jsonDecode(response.body);
@@ -506,19 +421,19 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
         }
       } catch (e) {
         debugPrint('═══════════════════════════════════════');
-        debugPrint('💥 ERRO NA TENTATIVA ${retryCount + 1}: $e');
+        debugPrint('💥 ERRO: $e');
         debugPrint('═══════════════════════════════════════');
 
         if (e.toString().contains('SocketException') || 
             e.toString().contains('Failed host lookup')) {
-          throw Exception('❌ Erro de conexão: Verifique sua internet');
+          throw Exception('Erro de conexão: Verifique sua internet');
         } else if (e.toString().contains('TimeoutException') || 
                    e.toString().contains('Timeout')) {
-          throw Exception('⏰ Timeout: Requisição demorou muito. Tente novamente.');
+          throw Exception('Timeout: Requisição demorou muito. Tente novamente.');
         }
 
         if (retryCount >= maxRetries - 1) {
-          throw Exception('❌ Todas as API Keys falharam. Tente novamente mais tarde.');
+          throw Exception('Todas as API Keys falharam. Tente novamente mais tarde.');
         }
 
         retryCount++;
@@ -527,7 +442,7 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
       }
     }
 
-    throw Exception('❌ Falha após tentar todas as API Keys');
+    throw Exception('Falha após tentar todas as API Keys');
   }
 
   bool _isDocumentRequest(String message) {
@@ -539,25 +454,15 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
       'crie um relatório',
       'gere um relatório',
       'faça um relatório',
-      'monte um relatório',
       'crie um html',
       'gere um html',
-      'faça um html',
       'crie uma página',
-      'monte uma página',
       'crie um site',
-      'monte um site',
-      'desenvolva um website',
       'crie um currículo',
       'faça um currículo',
-      'gere um currículo',
       'crie uma proposta',
-      'faça uma proposta',
-      'gere uma apresentação',
       'documento sobre',
       'relatório sobre',
-      'documento de',
-      'relatório de',
     ];
 
     final lowerMessage = message.toLowerCase();
@@ -574,10 +479,6 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
       'preço',
       'valores',
       'cronograma',
-      'horário',
-      'especificação',
-      'lista de',
-      'planilha',
     ];
 
     final lowerMessage = message.toLowerCase();
@@ -591,12 +492,8 @@ Crie um documento COMPLETO, EXTENSO, DETALHADO e PROFISSIONAL com conteúdo rele
       'ilustração',
       'figura',
       'gráfico',
-      'diagrama',
-      'infográfico',
-      'visual',
       'com imagens',
       'adicione imagens',
-      'inclua imagens',
     ];
 
     final lowerMessage = message.toLowerCase();
