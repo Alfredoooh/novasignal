@@ -1,6 +1,6 @@
-// lib/screens/edit_document_screen_web_js_stub.dart
-// Stub mínimo para dart:js_util funcionalidades usadas (quando não-web).
-
+// Stub para dart:js_util (mobile)
 dynamic get globalThis => null;
 
-dynamic callMethod(dynamic target, String method, List args) => null;
+dynamic callMethod(dynamic object, String method, List<dynamic> args) {
+  return null;
+}
