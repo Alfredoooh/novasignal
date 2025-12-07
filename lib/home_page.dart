@@ -252,14 +252,30 @@ class _SettingsModal extends StatefulWidget {
   State<_SettingsModal> createState() => _SettingsModalState();
 }
 
-class _SettingsModalState extends State<_SettingsModal> {
+class _SettingsModalState extends State<_SettingsModal> with SingleTickerProviderStateMixin {
   bool _isThemeExpanded = false;
   late String _selectedLanguage;
+  late AnimationController _expandController;
+  late Animation<double> _expandAnimation;
 
   @override
   void initState() {
     super.initState();
     _selectedLanguage = widget.selectedLanguage;
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _expandController,
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _expandController.dispose();
+    super.dispose();
   }
 
   void _showLanguageScreen() {
@@ -380,8 +396,8 @@ class _SettingsModalState extends State<_SettingsModal> {
     required ThemeProvider themeProvider,
   }) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOutCubic,
       decoration: BoxDecoration(
         color: themeProvider.isDarkMode ? const Color(0xFF1C2128) : Colors.white,
         borderRadius: BorderRadius.vertical(
@@ -424,7 +440,8 @@ class _SettingsModalState extends State<_SettingsModal> {
               ),
             ),
             trailing: AnimatedRotation(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOutCubic,
               turns: _isThemeExpanded ? 0.5 : 0,
               child: Icon(
                 Ionicons.chevron_down,
@@ -435,28 +452,31 @@ class _SettingsModalState extends State<_SettingsModal> {
             onTap: () {
               setState(() {
                 _isThemeExpanded = !_isThemeExpanded;
+                if (_isThemeExpanded) {
+                  _expandController.forward();
+                } else {
+                  _expandController.reverse();
+                }
               });
             },
           ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: _isThemeExpanded
-                ? Column(
-                    children: [
-                      Divider(
-                        height: 1,
-                        color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
-                      ),
-                      _buildThemeOption('Claro', !themeProvider.isDarkMode, themeProvider),
-                      Divider(
-                        height: 1,
-                        color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
-                      ),
-                      _buildThemeOption('Escuro', themeProvider.isDarkMode, themeProvider),
-                    ],
-                  )
-                : const SizedBox.shrink(),
+          SizeTransition(
+            sizeFactor: _expandAnimation,
+            axisAlignment: -1.0,
+            child: Column(
+              children: [
+                Divider(
+                  height: 1,
+                  color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
+                ),
+                _buildThemeOption('Claro', !themeProvider.isDarkMode, themeProvider),
+                Divider(
+                  height: 1,
+                  color: themeProvider.isDarkMode ? const Color(0xFF2D333B) : const Color(0xFFE9ECEF),
+                ),
+                _buildThemeOption('Escuro', themeProvider.isDarkMode, themeProvider),
+              ],
+            ),
           ),
         ],
       ),
@@ -482,8 +502,11 @@ class _SettingsModalState extends State<_SettingsModal> {
             )
           : null,
       onTap: () {
-        themeProvider.toggleTheme(title == 'Escuro');
-        setState(() {});
+        if ((title == 'Escuro' && !themeProvider.isDarkMode) ||
+            (title == 'Claro' && themeProvider.isDarkMode)) {
+          themeProvider.toggleTheme();
+          setState(() {});
+        }
       },
     );
   }
