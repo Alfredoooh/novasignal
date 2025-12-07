@@ -5,25 +5,30 @@ import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';  
 import '../providers/theme_provider.dart';  
 import '../screens/edit_document_screen.dart';
-import 'dart:html' as html;  
-import 'dart:ui_web' as ui_web;  
-import 'dart:js' as js;  
-  
+
+// Conditional imports corrigidos
+import 'preview_tab_web_stub.dart'
+    if (dart.library.html) 'dart:html' as html;
+import 'preview_tab_ui_web_stub.dart'
+    if (dart.library.html) 'dart:ui_web' as ui_web;
+import 'preview_tab_js_stub.dart'
+    if (dart.library.html) 'dart:js_util' as js_util;
+
 class PreviewTab extends StatefulWidget {  
   final String? htmlContent;  
   final Function(String)? onContentUpdated;
-  
+
   const PreviewTab({Key? key, this.htmlContent, this.onContentUpdated}) : super(key: key);  
-  
+
   @override  
   State<PreviewTab> createState() => _PreviewTabState();  
 }  
-  
+
 class _PreviewTabState extends State<PreviewTab> {  
   static const String _previewViewType = 'pdf-preview-viewer';  
   static const String _renameInputViewType = 'rename-input-field';  
   static bool _renameViewRegistered = false;  
-  
+
   bool _isConverting = false;  
   bool _hasDocument = false;  
   String? _pdfViewId;  
@@ -31,18 +36,20 @@ class _PreviewTabState extends State<PreviewTab> {
   final TextEditingController _nameController = TextEditingController();  
   String? _lastProcessedContent;  
   String? _currentHtmlContent;
-  html.InputElement? _htmlRenameInput;  
-  
+  dynamic _htmlRenameInput;  
+
   @override  
   void initState() {  
     super.initState();  
-    _initializePDFLibraries();  
+    if (kIsWeb) {
+      _initializePDFLibraries();  
+    }
     if (widget.htmlContent != null && widget.htmlContent!.isNotEmpty) {  
       _currentHtmlContent = widget.htmlContent;
       _convertAndRenderPDF(widget.htmlContent!);  
     }  
   }  
-  
+
   @override  
   void didUpdateWidget(PreviewTab oldWidget) {  
     super.didUpdateWidget(oldWidget);  
@@ -55,54 +62,87 @@ class _PreviewTabState extends State<PreviewTab> {
       _convertAndRenderPDF(widget.htmlContent!);  
     }  
   }  
-  
-  void _initializePDFLibraries() {  
-    final script1 = html.document.querySelector('script[src*="jspdf"]');  
-    final script2 = html.document.querySelector('script[src*="html2canvas"]');  
-    final script3 = html.document.querySelector('script[src*="pdf.js"]');  
-  
-    if (script1 == null) {  
-      final jspdfScript = html.ScriptElement()  
-        ..src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'  
-        ..async = true;  
-      html.document.head?.append(jspdfScript);  
-    }  
-  
-    if (script2 == null) {  
-      final html2canvasScript = html.ScriptElement()  
-        ..src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'  
-        ..async = true;  
-      html.document.head?.append(html2canvasScript);  
-    }  
-  
-    if (script3 == null) {  
-      final pdfjsScript = html.ScriptElement()  
-        ..src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'  
-        ..async = true;  
-      html.document.head?.append(pdfjsScript);  
-  
-      js.context['pdfjsLib']?['GlobalWorkerOptions']?['workerSrc'] =   
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';  
-    }  
-  }  
-  
+
+  void _initializePDFLibraries() {
+    if (!kIsWeb) return;
+
+    try {
+      final doc = js_util.getProperty(js_util.globalThis, 'document');
+      final head = js_util.getProperty(doc, 'head');
+      
+      // Verificar se scripts já existem
+      final hasJsPDF = js_util.callMethod(doc, 'querySelector', ['script[src*="jspdf"]']) != null;
+      final hasHtml2Canvas = js_util.callMethod(doc, 'querySelector', ['script[src*="html2canvas"]']) != null;
+      final hasPdfJs = js_util.callMethod(doc, 'querySelector', ['script[src*="pdf.js"]']) != null;
+
+      if (!hasJsPDF) {
+        final script = js_util.callMethod(doc, 'createElement', ['script']);
+        js_util.setProperty(script, 'src', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        js_util.setProperty(script, 'async', true);
+        js_util.callMethod(head, 'appendChild', [script]);
+      }
+
+      if (!hasHtml2Canvas) {
+        final script = js_util.callMethod(doc, 'createElement', ['script']);
+        js_util.setProperty(script, 'src', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        js_util.setProperty(script, 'async', true);
+        js_util.callMethod(head, 'appendChild', [script]);
+      }
+
+      if (!hasPdfJs) {
+        final script = js_util.callMethod(doc, 'createElement', ['script']);
+        js_util.setProperty(script, 'src', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+        js_util.setProperty(script, 'async', true);
+        js_util.callMethod(head, 'appendChild', [script]);
+
+        // Configurar worker
+        _evalScript('''
+          if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          }
+        ''');
+      }
+    } catch (e) {
+      debugPrint('Erro ao inicializar bibliotecas PDF: $e');
+    }
+  }
+
+  void _evalScript(String script) {
+    if (!kIsWeb) return;
+    try {
+      js_util.callMethod(js_util.globalThis, 'eval', [script]);
+    } catch (e) {
+      debugPrint('Erro ao executar script: $e');
+    }
+  }
+
+  dynamic _evalScriptWithReturn(String script) {
+    if (!kIsWeb) return null;
+    try {
+      return js_util.callMethod(js_util.globalThis, 'eval', [script]);
+    } catch (e) {
+      debugPrint('Erro ao executar script: $e');
+      return null;
+    }
+  }
+
   Future<void> _convertAndRenderPDF(String htmlContent) async {  
     if (!mounted) return;  
-  
+
     setState(() {  
       _isConverting = true;  
       _hasDocument = false;  
     });  
-  
+
     try {  
       await Future.delayed(const Duration(milliseconds: 500));  
-  
+
       final viewId = 'pdf-preview-${DateTime.now().millisecondsSinceEpoch}';  
-  
+
       _registerPDFView(viewId);  
-  
+
       await _executeHTMLtoPDF(htmlContent, viewId);  
-  
+
       if (mounted) {  
         setState(() {  
           _hasDocument = true;  
@@ -119,29 +159,39 @@ class _PreviewTabState extends State<PreviewTab> {
       }  
     }  
   }  
-  
-  void _registerPDFView(String viewId) {  
-    ui_web.platformViewRegistry.registerViewFactory(  
-      '$_previewViewType-$viewId',  
-      (int id) {  
-        final container = html.DivElement()  
-          ..id = 'pdf-container-$viewId'  
-          ..style.width = '100%'  
-          ..style.height = '100%'  
-          ..style.overflow = 'auto'  
-          ..style.padding = '20px'  
-          ..style.boxSizing = 'border-box'  
-          ..style.display = 'flex'  
-          ..style.flexDirection = 'column'  
-          ..style.alignItems = 'center'  
-          ..style.gap = '20px'
-          ..style.backgroundColor = '#e0e0e0';  
-  
-        return container;  
-      },  
-    );  
+
+  void _registerPDFView(String viewId) {
+    if (!kIsWeb) return;
+
+    try {
+      ui_web.platformViewRegistry.registerViewFactory(  
+        '$_previewViewType-$viewId',  
+        (int id) {
+          final doc = js_util.getProperty(js_util.globalThis, 'document');
+          final container = js_util.callMethod(doc, 'createElement', ['div']);
+          
+          js_util.setProperty(container, 'id', 'pdf-container-$viewId');
+          
+          final style = js_util.getProperty(container, 'style');
+          js_util.setProperty(style, 'width', '100%');
+          js_util.setProperty(style, 'height', '100%');
+          js_util.setProperty(style, 'overflow', 'auto');
+          js_util.setProperty(style, 'padding', '20px');
+          js_util.setProperty(style, 'boxSizing', 'border-box');
+          js_util.setProperty(style, 'display', 'flex');
+          js_util.setProperty(style, 'flexDirection', 'column');
+          js_util.setProperty(style, 'alignItems', 'center');
+          js_util.setProperty(style, 'gap', '20px');
+          js_util.setProperty(style, 'backgroundColor', '#e0e0e0');
+
+          return container;  
+        },  
+      );
+    } catch (e) {
+      debugPrint('Erro ao registrar view PDF: $e');
+    }
   }  
-  
+
   Future<void> _executeHTMLtoPDF(String htmlContent, String viewId) async {  
     final script = '''  
     (async function() {  
@@ -157,20 +207,17 @@ class _PreviewTabState extends State<PreviewTab> {
         
         console.log('🚀 Iniciando conversão HTML → PDF de alta qualidade');
         
-        // Dimensões A4
         const a4WidthMm = 210;  
         const a4HeightMm = 297;  
         const marginMm = 25;
         const contentWidthMm = a4WidthMm - (marginMm * 2);
         const contentHeightMm = a4HeightMm - (marginMm * 2);
         
-        // Alta resolução (150 DPI para qualidade superior)
         const dpi = 150;
         const mmToPx = dpi / 25.4;
         const contentWidthPx = Math.floor(contentWidthMm * mmToPx);
         const contentHeightPx = Math.floor(contentHeightMm * mmToPx);
           
-        // Container temporário
         const container = document.createElement('div');  
         container.style.cssText = \`  
           position: absolute;  
@@ -186,7 +233,6 @@ class _PreviewTabState extends State<PreviewTab> {
         container.innerHTML = \`$htmlContent\`;  
         document.body.appendChild(container);
         
-        // Aguardar imagens
         console.log('⏳ Aguardando imagens...');
         const images = container.querySelectorAll('img');
         await Promise.all(
@@ -208,10 +254,9 @@ class _PreviewTabState extends State<PreviewTab> {
           
         await new Promise(resolve => setTimeout(resolve, 1000));  
           
-        // Renderizar com ALTA QUALIDADE
         console.log('🎨 Renderizando canvas em alta qualidade...');
         const canvas = await html2canvas(container, {  
-          scale: 3,  // Escala 3x para máxima qualidade
+          scale: 3,
           useCORS: true,  
           logging: false,  
           backgroundColor: '#ffffff',  
@@ -227,15 +272,14 @@ class _PreviewTabState extends State<PreviewTab> {
         console.log('✅ Canvas renderizado:', canvas.width, 'x', canvas.height);
         document.body.removeChild(container);  
           
-        // Criar PDF com qualidade máxima
         const pdf = new jsPDF({  
           orientation: 'portrait',  
           unit: 'mm',  
           format: 'a4',  
-          compress: false  // Não comprimir para máxima qualidade
+          compress: false
         });  
           
-        const imgData = canvas.toDataURL('image/png');  // PNG para qualidade superior
+        const imgData = canvas.toDataURL('image/png');
         const imgWidthMm = contentWidthMm;
         const imgHeightMm = (canvas.height * contentWidthMm) / canvas.width;
         const pageContentHeight = contentHeightMm;
@@ -246,7 +290,6 @@ class _PreviewTabState extends State<PreviewTab> {
           pageContentHeight: pageContentHeight.toFixed(2)
         });
         
-        // Dividir em páginas SEM DUPLICAÇÃO
         let yOffset = 0;
         let pageNumber = 1;
         
@@ -258,11 +301,9 @@ class _PreviewTabState extends State<PreviewTab> {
           const remainingHeight = imgHeightMm - yOffset;
           const pageHeight = Math.min(pageContentHeight, remainingHeight);
           
-          // Calcular região exata no canvas
           const canvasSourceY = (yOffset / imgHeightMm) * canvas.height;
           const canvasSourceHeight = (pageHeight / imgHeightMm) * canvas.height;
           
-          // Canvas para esta página específica
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = canvas.width;
           pageCanvas.height = Math.ceil(canvasSourceHeight);
@@ -271,7 +312,6 @@ class _PreviewTabState extends State<PreviewTab> {
           pageCtx.fillStyle = '#ffffff';
           pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
           
-          // Copiar SOMENTE a região desta página
           pageCtx.drawImage(
             canvas,
             0, Math.floor(canvasSourceY),
@@ -282,7 +322,6 @@ class _PreviewTabState extends State<PreviewTab> {
           
           const pageImgData = pageCanvas.toDataURL('image/png');
           
-          // Adicionar ao PDF com margens corretas
           pdf.addImage(
             pageImgData, 
             'PNG', 
@@ -291,7 +330,7 @@ class _PreviewTabState extends State<PreviewTab> {
             imgWidthMm, 
             pageHeight,
             \`page\${pageNumber}\`,
-            'SLOW'  // Qualidade máxima
+            'SLOW'
           );
           
           console.log(\`✅ Página \${pageNumber} (offset: \${yOffset.toFixed(2)}mm, altura: \${pageHeight.toFixed(2)}mm)\`);
@@ -310,7 +349,6 @@ class _PreviewTabState extends State<PreviewTab> {
         
         console.log('💾 PDF salvo');
           
-        // Renderizar preview com qualidade
         console.log('🖼️ Renderizando preview...');
         const pdfContainer = document.getElementById('pdf-container-$viewId');  
         if (!pdfContainer) {
@@ -323,7 +361,6 @@ class _PreviewTabState extends State<PreviewTab> {
         const loadingTask = pdfjsLib.getDocument({ data: pdfData });  
         const pdfDoc = await loadingTask.promise;  
         
-        // Calcular largura ideal
         const containerWidth = pdfContainer.offsetWidth;
         const isMobile = containerWidth < 768;
         const maxPageWidth = isMobile ? containerWidth - 40 : Math.min(containerWidth - 80, 800);
@@ -331,7 +368,6 @@ class _PreviewTabState extends State<PreviewTab> {
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {  
           const page = await pdfDoc.getPage(pageNum);  
           
-          // Escala baseada na largura
           const viewport = page.getViewport({ scale: 1.0 });
           const scale = maxPageWidth / viewport.width;
           const scaledViewport = page.getViewport({ scale });
@@ -360,7 +396,7 @@ class _PreviewTabState extends State<PreviewTab> {
           await page.render({  
             canvasContext: ctx,  
             viewport: scaledViewport,
-            intent: 'print'  // Qualidade de impressão
+            intent: 'print'
           }).promise;
           
           console.log(\`✅ Página \${pageNum} renderizada\`);
@@ -374,19 +410,19 @@ class _PreviewTabState extends State<PreviewTab> {
       }  
     })();  
     ''';  
-  
-    js.context.callMethod('eval', [script]);  
+
+    _evalScript(script);  
   }  
-  
+
   void _downloadPDF() {  
     try {  
       final sanitizedName = _documentName  
           .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')  
           .replaceAll(' ', '_');  
-  
+
       final timestamp = DateTime.now().millisecondsSinceEpoch;  
       final filename = '${sanitizedName}_$timestamp.pdf';  
-  
+
       final script = '''  
       (function() {  
         try {  
@@ -414,13 +450,13 @@ class _PreviewTabState extends State<PreviewTab> {
         }  
       })();  
       ''';  
-  
-      js.context.callMethod('eval', [script]);  
+
+      _evalScript(script);  
     } catch (e) {  
       debugPrint('Erro ao baixar PDF: $e');  
     }  
   }  
-  
+
   void _printPDF() {  
     final script = '''  
     (function() {  
@@ -452,8 +488,8 @@ class _PreviewTabState extends State<PreviewTab> {
       }  
     })();  
     ''';  
-  
-    js.context.callMethod('eval', [script]);  
+
+    _evalScript(script);  
   }  
 
   void _editDocument() async {
@@ -482,69 +518,74 @@ class _PreviewTabState extends State<PreviewTab> {
       _convertAndRenderPDF(result);
     }
   }
-  
+
   void _registerRenameInputView() {  
-    if (_renameViewRegistered) return;  
-  
+    if (_renameViewRegistered || !kIsWeb) return;  
+
     try {  
       final themeProvider = Provider.of<ThemeProvider>(context, listen: false);  
       final inputBgColor = themeProvider.isDarkMode ? '#2D333B' : '#F1F3F5';  
       final inputTextColor = themeProvider.isDarkMode ? '#FFFFFF' : '#212529';  
       final inputPlaceholderColor = themeProvider.isDarkMode ? '#ADB5BD' : '#6C757D';  
-  
-      ui_web.platformViewRegistry.registerViewFactory(_renameInputViewType, (int viewId) {  
-        final wrapper = html.DivElement()  
-          ..style.width = '100%'  
-          ..style.height = '100%'  
-          ..style.display = 'flex'  
-          ..style.alignItems = 'center';  
-  
-        _htmlRenameInput = html.InputElement()  
-          ..id = 'renameInput-$viewId'  
-          ..type = 'text'  
-          ..value = _documentName  
-          ..placeholder = 'Nome do documento'  
-          ..setAttribute('autocomplete', 'off')  
-          ..setAttribute('spellcheck', 'false')  
-          ..style.flex = '1'  
-          ..style.padding = '12px 16px'  
-          ..style.border = 'none'  
-          ..style.borderRadius = '8px'  
-          ..style.fontSize = '16px'  
-          ..style.outline = 'none'  
-          ..style.backgroundColor = inputBgColor  
-          ..style.color = inputTextColor  
-          ..style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'  
-          ..style.transition = 'background-color 0.3s'  
-          ..style.setProperty('-webkit-user-select', 'text')  
-          ..style.userSelect = 'text';  
-  
-        final style = html.StyleElement()  
-          ..text = '''  
-            #renameInput-$viewId::placeholder { color: $inputPlaceholderColor; }  
-            #renameInput-$viewId:focus { box-shadow: none !important; outline: none !important; }  
-          ''';  
-  
-        wrapper.append(style);  
-        wrapper.append(_htmlRenameInput!);  
-  
+
+      ui_web.platformViewRegistry.registerViewFactory(_renameInputViewType, (int viewId) {
+        final doc = js_util.getProperty(js_util.globalThis, 'document');
+        
+        final wrapper = js_util.callMethod(doc, 'createElement', ['div']);
+        final wrapperStyle = js_util.getProperty(wrapper, 'style');
+        js_util.setProperty(wrapperStyle, 'width', '100%');
+        js_util.setProperty(wrapperStyle, 'height', '100%');
+        js_util.setProperty(wrapperStyle, 'display', 'flex');
+        js_util.setProperty(wrapperStyle, 'alignItems', 'center');
+
+        _htmlRenameInput = js_util.callMethod(doc, 'createElement', ['input']);
+        js_util.setProperty(_htmlRenameInput, 'id', 'renameInput-$viewId');
+        js_util.setProperty(_htmlRenameInput, 'type', 'text');
+        js_util.setProperty(_htmlRenameInput, 'value', _documentName);
+        js_util.setProperty(_htmlRenameInput, 'placeholder', 'Nome do documento');
+        js_util.callMethod(_htmlRenameInput, 'setAttribute', ['autocomplete', 'off']);
+        js_util.callMethod(_htmlRenameInput, 'setAttribute', ['spellcheck', 'false']);
+        
+        final inputStyle = js_util.getProperty(_htmlRenameInput, 'style');
+        js_util.setProperty(inputStyle, 'flex', '1');
+        js_util.setProperty(inputStyle, 'padding', '12px 16px');
+        js_util.setProperty(inputStyle, 'border', 'none');
+        js_util.setProperty(inputStyle, 'borderRadius', '8px');
+        js_util.setProperty(inputStyle, 'fontSize', '16px');
+        js_util.setProperty(inputStyle, 'outline', 'none');
+        js_util.setProperty(inputStyle, 'backgroundColor', inputBgColor);
+        js_util.setProperty(inputStyle, 'color', inputTextColor);
+        js_util.setProperty(inputStyle, 'fontFamily', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif');
+        js_util.setProperty(inputStyle, 'transition', 'background-color 0.3s');
+        js_util.callMethod(inputStyle, 'setProperty', ['-webkit-user-select', 'text']);
+        js_util.setProperty(inputStyle, 'userSelect', 'text');
+
+        final style = js_util.callMethod(doc, 'createElement', ['style']);
+        js_util.setProperty(style, 'textContent', '''  
+          #renameInput-$viewId::placeholder { color: $inputPlaceholderColor; }  
+          #renameInput-$viewId:focus { box-shadow: none !important; outline: none !important; }  
+        ''');
+
+        js_util.callMethod(wrapper, 'appendChild', [style]);
+        js_util.callMethod(wrapper, 'appendChild', [_htmlRenameInput]);
+
         return wrapper;  
       });  
-  
+
       _renameViewRegistered = true;  
     } catch (e) {  
       debugPrint('Error registering rename input view: $e');  
     }  
   }  
-  
+
   void _showRenameDialog() {  
     _nameController.text = _documentName;  
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);  
-  
+
     if (kIsWeb) {  
       _registerRenameInputView();  
     }  
-  
+
     showDialog(  
       context: context,  
       builder: (context) => AlertDialog(  
@@ -604,11 +645,15 @@ class _PreviewTabState extends State<PreviewTab> {
           ),  
           ElevatedButton(  
             onPressed: () {  
-              if (kIsWeb) {  
-                final newName = _htmlRenameInput?.value?.trim() ?? '';  
-                setState(() {  
-                  _documentName = newName.isEmpty ? 'Documento sem título' : newName;  
-                });  
+              if (kIsWeb && _htmlRenameInput != null) {
+                try {
+                  final newName = js_util.getProperty(_htmlRenameInput, 'value')?.toString().trim() ?? '';
+                  setState(() {  
+                    _documentName = newName.isEmpty ? 'Documento sem título' : newName;  
+                  });
+                } catch (e) {
+                  debugPrint('Erro ao obter valor do input: $e');
+                }
               } else {  
                 setState(() {  
                   _documentName = _nameController.text.trim().isEmpty   
@@ -631,10 +676,10 @@ class _PreviewTabState extends State<PreviewTab> {
       ),  
     );  
   }  
-  
+
   void _showOptionsModal() {  
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);  
-  
+
     showModalBottomSheet(  
       context: context,  
       backgroundColor: Colors.transparent,  
@@ -716,7 +761,7 @@ class _PreviewTabState extends State<PreviewTab> {
       ),  
     );  
   }  
-  
+
   Widget _buildModalOption({  
     required IconData icon,  
     required String title,  
@@ -775,15 +820,15 @@ class _PreviewTabState extends State<PreviewTab> {
       ),  
     );  
   }  
-  
+
   @override  
   Widget build(BuildContext context) {  
     final themeProvider = Provider.of<ThemeProvider>(context);  
-  
+
     return Stack(  
       children: [  
         _buildContent(themeProvider),  
-  
+
         if (_hasDocument && !_isConverting)  
           Positioned(  
             top: 16,  
@@ -817,7 +862,7 @@ class _PreviewTabState extends State<PreviewTab> {
       ],  
     );  
   }  
-  
+
   Widget _buildContent(ThemeProvider themeProvider) {  
     if (_isConverting) {  
       return Container(  
@@ -842,7 +887,7 @@ class _PreviewTabState extends State<PreviewTab> {
         ),  
       );  
     }  
-  
+
     if (!_hasDocument) {  
       return Container(  
         color: themeProvider.isDarkMode ? Colors.black : Colors.white,  
@@ -883,28 +928,32 @@ class _PreviewTabState extends State<PreviewTab> {
         ),  
       );  
     }  
-  
+
     return Container(  
       color: themeProvider.isDarkMode ? Colors.black : Colors.white,  
       child: Center(  
         child: SingleChildScrollView(  
           child: SizedBox(  
             width: double.infinity,  
-            child: HtmlElementView(  
-              viewType: '$_previewViewType-$_pdfViewId',  
-            ),  
+            child: kIsWeb
+                ? HtmlElementView(  
+                    viewType: '$_previewViewType-$_pdfViewId',  
+                  )
+                : const Center(
+                    child: Text('Preview disponível apenas na web'),
+                  ),
           ),  
         ),  
       ),  
     );  
   }  
-  
+
   @override  
   void dispose() {  
-    _nameController.dispose();  
-    js.context.callMethod('eval', [  
-      'delete window.currentPdfBlob; delete window.currentPdfData;'  
-    ]);  
+    _nameController.dispose();
+    if (kIsWeb) {
+      _evalScript('delete window.currentPdfBlob; delete window.currentPdfData;');
+    }
     super.dispose();  
   }  
 }
