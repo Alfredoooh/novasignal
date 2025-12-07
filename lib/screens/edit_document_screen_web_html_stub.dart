@@ -1,7 +1,5 @@
 // lib/screens/edit_document_screen_web_html_stub.dart
 // Stub robusto para dart:html usado apenas em builds não-web.
-// Fornece membros usados no ficheiro principal (contentEditable, onInput, onClick, style.userSelect, setInnerHtml, etc).
-// Em runtime no dispositivo móvel estes stubs não são usados (kIsWeb evita execução).
 
 import 'dart:async';
 
@@ -20,18 +18,30 @@ class _Style {
   String flex = '';
   String justifyContent = '';
   String alignItems = '';
-  // Adicionado para corresponder ao uso .userSelect no código real
   String userSelect = '';
-  String outline = '';
-  // Permitir setProperty como no DOM
+  String outline = ''; // ← ADICIONADO
+  String border = '';
+  String fontSize = '';
+  String color = '';
+  String fontStyle = '';
+  String fontWeight = '';
+  String textAlign = '';
+  String borderCollapse = '';
+  String borderLeft = '';
+  String background = '';
+  String marginTop = '';
+  String cursor = '';
+  String transition = '';
+  String maxWidth = '';
+  
   void setProperty(String name, String value) {}
 }
 
 class DivElement {
   String id = '';
-  // suporte básico a contentEditable e spellcheck
   String contentEditable = 'false';
   bool spellcheck = false;
+  String className = '';
 
   final _Style style = _Style();
 
@@ -39,31 +49,30 @@ class DivElement {
   String get innerHtml => _innerHtml;
   set innerHtml(String v) => _innerHtml = v;
 
-  // stream controllers para simular onInput/onClick listeners do DOM
   final StreamController<dynamic> _onInputController = StreamController<dynamic>.broadcast();
-  final StreamController<dynamic> _onClickController = StreamController<dynamic>.broadcast();
+  final StreamController<Event> _onClickController = StreamController<Event>.broadcast();
 
-  // APIs esperadas pelo teu ficheiro
   Stream<dynamic> get onInput => _onInputController.stream;
-  Stream<dynamic> get onClick => _onClickController.stream;
+  Stream<Event> get onClick => _onClickController.stream;
 
-  // Métodos de manipulação básicos
   void append(dynamic _) {}
   void remove() {}
 
-  // Compatibilidade com setInnerHtml usada no código
   void setInnerHtml(String html, {dynamic treeSanitizer}) {
     _innerHtml = html;
   }
 
-  // Helpers (somente para testes locais se quiseres disparar eventos)
-  void triggerInput([dynamic evt]) => _onInputController.add(evt);
-  void triggerClick([dynamic evt]) => _onClickController.add(evt);
+  List<ImageElement> querySelectorAll(String selector) => [];
 }
 
 class ImageElement extends DivElement {
   String src = '';
-  // id herdado de DivElement
+  final classList = _ClassList();
+}
+
+class _ClassList {
+  void add(String className) {}
+  void remove(String className) {}
 }
 
 class StyleElement {
@@ -76,10 +85,8 @@ class NodeTreeSanitizer {
   static final trusted = NodeTreeSanitizer();
 }
 
-// File upload / FileReader stubs usados no teu código
 class File {
   String name = '';
-  // placeholder
 }
 
 class FileUploadInputElement {
@@ -90,12 +97,6 @@ class FileUploadInputElement {
   void click() {}
   List<File>? get files => _files;
   Stream<dynamic> get onChange => _onChangeController.stream;
-
-  // helper para testes locais
-  void _setFiles(List<File> files) {
-    _files = files;
-    _onChangeController.add(null);
-  }
 }
 
 class FileReader {
@@ -105,12 +106,10 @@ class FileReader {
   Stream<dynamic> get onLoadEnd => _onLoadEnd.stream;
 
   void readAsDataUrl(File file) {}
-  // helper para testes locais
-  void _triggerLoadEnd([dynamic evt]) => _onLoadEnd.add(evt);
 }
 
-// Event e ImageElement target shim
 class Event {
   dynamic get target => null;
   void preventDefault() {}
+  String get key => '';
 }
