@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import 'dart:html' as html show DivElement, InputElement, StyleElement;
+import 'dart:ui_web' as ui_web show platformViewRegistry;
 
 class ChatInput extends StatefulWidget {
   final TextEditingController messageController;
