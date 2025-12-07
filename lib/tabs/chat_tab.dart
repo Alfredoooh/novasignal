@@ -14,8 +14,9 @@ import '../services/message_formatter.dart';
 import 'dart:math' as math;
 import 'dart:async';
 
-// Import condicional para web
-import 'dart:js' as js show context;
+// Conditional imports corrigidos
+import 'chat_tab_js_stub.dart'
+    if (dart.library.html) 'dart:js_util' as js_util;
 
 class ChatTab extends StatefulWidget {
   final Function(String htmlContent)? onDocumentGenerated;
@@ -276,10 +277,10 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         if (_isLoading && index == chatProvider.currentMessages.length) {
           return _buildLoadingIndicator(themeProvider);
         }
-        
+
         final message = chatProvider.currentMessages[index];
         final isLastMessage = index == chatProvider.currentMessages.length - 1;
-        
+
         return _buildMessageBubble(
           message,
           themeProvider,
@@ -492,7 +493,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
     final hasTitle = text.startsWith('# ') || text.contains('\n# ');
     final hasMultipleSections = text.split('\n##').length > 2;
     final isLong = text.length > 500;
-    
+
     return (hasTitle && hasMultipleSections) || isLong;
   }
 
@@ -710,7 +711,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
 ''';
 
     try {
-      js.context.callMethod('eval', [script]);
+      js_util.callMethod(js_util.globalThis, 'eval', [script]);
     } catch (e) {
       debugPrint('Erro ao executar script de download: $e');
     }
@@ -787,7 +788,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       if (mounted) {
         // Adiciona mensagem vazia primeiro
         chatProvider.addMessage(ChatMessage(text: '', isUser: false));
-        
+
         setState(() {
           _isLoading = false;
           _isStreaming = true;
