@@ -19,7 +19,7 @@ class _Style {
   String justifyContent = '';
   String alignItems = '';
   String userSelect = '';
-  String outline = ''; // ← ADICIONADO
+  String outline = '';
   String border = '';
   String fontSize = '';
   String color = '';
@@ -33,7 +33,7 @@ class _Style {
   String cursor = '';
   String transition = '';
   String maxWidth = '';
-  
+
   void setProperty(String name, String value) {}
 }
 
