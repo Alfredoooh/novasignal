@@ -14,7 +14,6 @@ import '../services/message_formatter.dart';
 import 'dart:math' as math;
 import 'dart:async';
 
-// Conditional imports corrigidos
 import 'chat_tab_js_stub.dart'
     if (dart.library.html) 'dart:js_util' as js_util;
 
@@ -38,7 +37,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   ChatMessage? _editingMessage;
   int? _editingIndex;
 
-  // Animação de texto
   String _currentStreamingText = '';
   Timer? _textAnimationTimer;
   bool _isStreaming = false;
@@ -480,90 +478,7 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       return _buildDocumentInline(text, themeProvider);
     }
 
-    // Detecta se é uma resposta importante para criar card especial
-    if (_shouldCreateSpecialCard(text)) {
-      return _buildSpecialCard(text, themeProvider);
-    }
-
     return MessageFormatter.buildFormattedText(text, themeProvider);
-  }
-
-  bool _shouldCreateSpecialCard(String text) {
-    // Critérios para card especial
-    final hasTitle = text.startsWith('# ') || text.contains('\n# ');
-    final hasMultipleSections = text.split('\n##').length > 2;
-    final isLong = text.length > 500;
-
-    return (hasTitle && hasMultipleSections) || isLong;
-  }
-
-  Widget _buildSpecialCard(String text, ThemeProvider themeProvider) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: themeProvider.isDarkMode
-              ? [
-                  const Color(0xFF2A2A2A),
-                  const Color(0xFF1F1F1F),
-                ]
-              : [
-                  const Color(0xFFF8F9FA),
-                  const Color(0xFFFFFFFF),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: themeProvider.isDarkMode
-              ? Colors.white.withOpacity(0.1)
-              : Colors.black.withOpacity(0.05),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF667eea).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.lightbulb_outline,
-                  color: const Color(0xFF667eea),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Resposta Detalhada',
-                  style: TextStyle(
-                    color: themeProvider.isDarkMode ? Colors.white : Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          MessageFormatter.buildFormattedText(text, themeProvider),
-        ],
-      ),
-    );
   }
 
   Widget _buildDocumentInline(String text, ThemeProvider themeProvider) {
@@ -786,7 +701,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
       final aiResponse = await _chatService.sendMessage(text, limitedHistory);
 
       if (mounted) {
-        // Adiciona mensagem vazia primeiro
         chatProvider.addMessage(ChatMessage(text: '', isUser: false));
 
         setState(() {
@@ -795,7 +709,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
           _currentStreamingText = '';
         });
 
-        // Anima o texto frase por frase
         await _animateText(aiResponse, chatProvider);
 
         if (aiResponse.contains('<!DOCTYPE html>') || aiResponse.contains('<html')) {
@@ -833,7 +746,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
         _currentStreamingText += (i == 0 ? '' : ' ') + words[i];
       });
 
-      // Atualiza a mensagem final
       if (chatProvider.currentMessages.isNotEmpty && 
           !chatProvider.currentMessages.last.isUser) {
         chatProvider.currentMessages.last = ChatMessage(
@@ -866,7 +778,6 @@ class _ChatTabState extends State<ChatTab> with SingleTickerProviderStateMixin {
   }
 }
 
-// Tela de conversas (continua igual...)
 class _ConversationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
