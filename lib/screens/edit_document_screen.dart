@@ -5,12 +5,11 @@ import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 
-// Conditional imports: quando em web, usa dart:html / dart:ui / dart:js_util.
-// Quando não-web, usa os stubs abaixo para compilar corretamente em mobile.
+// Conditional imports corrigidos
 import 'edit_document_screen_web_html_stub.dart'
     if (dart.library.html) 'dart:html' as html;
 import 'edit_document_screen_web_ui_stub.dart'
-    if (dart.library.html) 'dart:ui' as ui_web;
+    if (dart.library.html) 'dart:ui_web' as ui_web;
 import 'edit_document_screen_web_js_stub.dart'
     if (dart.library.html) 'dart:js_util' as js_util;
 
@@ -48,7 +47,6 @@ class _EditDocumentScreenState extends State<EditDocumentScreen> {
     if (kIsWeb) {
       _registerEditorView();
     } else {
-      // Para Android/iOS, inicializa o controller com o conteúdo HTML
       _textController.text = _currentContent;
       _textController.addListener(() {
         if (!_hasChanges) {
