@@ -22,6 +22,7 @@ class _Style {
   String alignItems = '';
   // Adicionado para corresponder ao uso .userSelect no código real
   String userSelect = '';
+  String outline = '';
   // Permitir setProperty como no DOM
   void setProperty(String name, String value) {}
 }
