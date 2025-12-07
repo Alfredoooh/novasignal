@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:ionicons/ionicons.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'chat_input_web_stub.dart'
+
+// Conditional imports corrigidos
+import 'chat_input_web_html_stub.dart'
     if (dart.library.html) 'dart:html' as html;
-import 'chat_input_ui_stub.dart'
+import 'chat_input_web_ui_stub.dart'
     if (dart.library.html) 'dart:ui_web' as ui_web;
 
 class ChatInput extends StatefulWidget {
