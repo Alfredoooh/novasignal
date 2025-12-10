@@ -43,6 +43,7 @@ class DocuGenApp extends StatelessWidget {
 }*/
 
 
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -307,9 +308,9 @@ class _MainScreenState extends State<MainScreen> {
                         .toList();
                     
                     return LeagueCard(
-                      leagueName: league['name'],
-                      leagueCountry: league['country'],
-                      leagueLogo: league['logo'],
+                      leagueName: league['name'] ?? '',
+                      leagueCountry: league['country'] ?? '',
+                      leagueLogo: league['logo'] ?? '',
                       matches: leagueMatches,
                       onLeagueTap: () => _showLeagueDialog(league),
                       onMatchTap: (match) => _showMatchDetails(match),
@@ -453,13 +454,13 @@ class _MainScreenState extends State<MainScreen> {
                       leagueCountry: league['country_name'] ?? '',
                       leagueLogo: league['league_logo'] ?? '',
                       onTap: () => _showLeagueDialog({
-                        'id': league['league_id'],
-                        'name': league['league_name'],
-                        'country': league['country_name'],
-                        'logo': league['league_logo'],
+                        'id': league['league_id']?.toString() ?? '',
+                        'name': league['league_name']?.toString() ?? '',
+                        'country': league['country_name']?.toString() ?? '',
+                        'logo': league['league_logo']?.toString() ?? '',
                       }),
                     );
-                  }).toList(),
+                  }).toList().cast<Widget>(),
                 ),
               );
             },
@@ -1024,7 +1025,7 @@ class LeagueCard extends StatelessWidget {
           ...matches.map((match) => MatchTile(
                 match: match,
                 onTap: () => onMatchTap(match),
-              )),
+              )).toList(),
         ],
       ),
     );
@@ -1252,7 +1253,7 @@ class StandingsCard extends StatelessWidget {
                     SizedBox(width: 40, child: Text(team['overall_league_PTS']?.toString() ?? '0', textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
                   ],
                 ),
-              )),
+              )).toList(),
         ],
       ),
     );
