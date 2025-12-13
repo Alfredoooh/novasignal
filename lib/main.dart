@@ -1157,7 +1157,7 @@ class _PesquisarPageState extends State<PesquisarPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '\( {jogo['league_name'] ?? ''} • \){jogo['country_name'] ?? ''}',
+                  '${jogo['league_name'] ?? ''} • ${jogo['country_name'] ?? ''}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -1485,6 +1485,117 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> {
           },
         ),
       ],
+    );
+  }
+  Widget _buildMatchWidget(dynamic jogo, BuildContext context, AppState appState) {
+    final status = jogo['match_status'] ?? '';
+    Color badgeColor;
+    String badgeText = formatarStatus(status);
+    if (status.contains('Finished') || status == 'FT' || status == 'AET') {
+      badgeColor = Theme.of(context).colorScheme.tertiary;
+    } else if (status.contains("'") || status == 'HT' || status == 'LIVE') {
+      badgeColor = Theme.of(context).colorScheme.error;
+    } else {
+      badgeColor = Theme.of(context).colorScheme.secondary;
+    }
+
+    return InkWell(
+      onTap: () {
+        appState.setJogoDetalhes(jogo['match_id'], '${jogo['match_hometeam_name']} vs ${jogo['match_awayteam_name']}');
+        appState.navegarPara('jogo-detalhes');
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Symbols.schedule_rounded, size: 12, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(jogo['match_time'] ?? '--:--', style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: badgeColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          jogo['team_home_badge'] ?? 'https://via.placeholder.com/40x40?text=⚽',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => Image.network('https://via.placeholder.com/40x40?text=⚽', width: 40, height: 40),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          jogo['match_hometeam_name'] ?? 'Unknown',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          jogo['match_awayteam_name'] ?? 'Unknown',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          jogo['team_away_badge'] ?? 'https://via.placeholder.com/40x40?text=⚽',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => Image.network('https://via.placeholder.com/40x40?text=⚽', width: 40, height: 40),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
