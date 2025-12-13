@@ -42,14 +42,15 @@ class DocuGenApp extends StatelessWidget {
   }
 }*/
 
-// Complete Flutter code for the app
+// PARTE 1 DE 3 - Football Live App (Completo com correções)
+// Linhas 1-700
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'package:intl/intl.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart'; // Note: This package might need to be 'material_symbols_icons'
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -646,6 +647,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+// PARTE 2 DE 3 - Football Live App (Completo com correções)
+// Linhas 701-1400
+// Cole a PARTE 1 ANTES deste código
 
 class JogosPage extends StatefulWidget {
   const JogosPage({super.key});
@@ -845,7 +849,7 @@ class _JogosPageState extends State<JogosPage> {
                 ),
               ),
               const Divider(height: 1, thickness: 1),
-              ...ligaData['jogos'].map((jogo) => _buildMatchWidget(jogo, context, appState)).toList(),
+              ...ligaData['jogos'].map((jogo) => _buildMatchWidget(jogo, context, appState, ligaData)).toList(),
             ],
           ),
         );
@@ -853,7 +857,7 @@ class _JogosPageState extends State<JogosPage> {
     );
   }
 
-  Widget _buildMatchWidget(dynamic jogo, BuildContext context, AppState appState) {
+  Widget _buildMatchWidget(dynamic jogo, BuildContext context, AppState appState, dynamic ligaData) {
     final status = jogo['match_status'] ?? '';
     Color badgeColor;
     String badgeText = formatarStatus(status);
@@ -929,7 +933,7 @@ class _JogosPageState extends State<JogosPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
-                        '\( {jogo['match_hometeam_score'] ?? '-'} : \){jogo['match_awayteam_score'] ?? '-'}',
+                        '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -1137,7 +1141,7 @@ class _PesquisarPageState extends State<PesquisarPage> {
                         ],
                       ),
                     ),
-                    Text('${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                    Text('${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
                     Expanded(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -1285,6 +1289,9 @@ class _LigasPageState extends State<LigasPage> {
     );
   }
 }
+// PARTE 3 DE 3 - Football Live App (Completo com correções)
+// Linhas 1401-2100 (Final)
+// Cole a PARTE 1 e PARTE 2 ANTES deste código
 
 class LigaDetalhesPage extends StatefulWidget {
   final String ligaId;
@@ -1422,7 +1429,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> {
                                           errorBuilder: (context, error, stackTrace) => Image.network('https://via.placeholder.com/28x28?text=⚽', width: 28, height: 28),
                                         ),
                                         const SizedBox(width: 10),
-                                        Text(equipa['team_name'] ?? 'Unknown'),
+                                        Expanded(child: Text(equipa['team_name'] ?? 'Unknown', overflow: TextOverflow.ellipsis)),
                                       ],
                                     ),
                                   ),
@@ -1487,6 +1494,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> {
       ],
     );
   }
+  
   Widget _buildMatchWidget(dynamic jogo, BuildContext context, AppState appState) {
     final status = jogo['match_status'] ?? '';
     Color badgeColor;
@@ -2193,4 +2201,4 @@ String escapeHtml(String? texto) {
   return texto.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
 
-// This completes the code with all pages, functionalities, navigation, live updates via timer, and matching UI/animations from HTML.
+// FIM DO CÓDIGO - PARTE 3/3
