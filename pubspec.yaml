@@ -19,6 +19,7 @@ dependencies:
 
   # Nova dependência obrigatória para extração de cor
   palette_generator: any
+  material_symbols_icons: any
 
   dio: any
   open_file: any
