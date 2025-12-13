@@ -1566,7 +1566,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> {
                       child: Column(
                         children: [
                           Text(
-                            '\( {jogo['match_hometeam_score'] ?? '0'} : \){jogo['match_awayteam_score'] ?? '0'}',
+                            '${jogo['match_hometeam_score'] ?? '0'} : ${jogo['match_awayteam_score'] ?? '0'}',
                             style: TextStyle(fontSize: 48, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary),
                             textAlign: TextAlign.center,
                           ),
