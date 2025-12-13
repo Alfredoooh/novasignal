@@ -869,7 +869,7 @@ class _JogosPageState extends State<JogosPage> {
       children: [
         InkWell(
           onTap: () {
-            appState.setJogoDetalhes(jogo['match_id'], '\( {jogo['match_hometeam_name']} vs \){jogo['match_awayteam_name']}');
+            appState.setJogoDetalhes(jogo['match_id'], '${jogo['match_hometeam_name']} vs ${jogo['match_awayteam_name']}');
             appState.navegarPara('jogo-detalhes');
           },
           child: Padding(
@@ -1090,7 +1090,7 @@ class _PesquisarPageState extends State<PesquisarPage> {
       children: [
         InkWell(
           onTap: () {
-            appState.setJogoDetalhes(jogo['match_id'], '\( {jogo['match_hometeam_name']} vs \){jogo['match_awayteam_name']}');
+            appState.setJogoDetalhes(jogo['match_id'], '${jogo['match_hometeam_name']} vs ${jogo['match_awayteam_name']}');
             appState.navegarPara('jogo-detalhes');
           },
           child: Padding(
@@ -1137,7 +1137,7 @@ class _PesquisarPageState extends State<PesquisarPage> {
                         ],
                       ),
                     ),
-                    Text('\( {jogo['match_hometeam_score'] ?? '-'} : \){jogo['match_awayteam_score'] ?? '-'}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                    Text('${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
                     Expanded(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -1583,7 +1583,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '\( {jogo['league_name'] ?? ''} • \){jogo['match_date'] ?? ''} ${jogo['match_time'] ?? ''}',
+                            '${jogo['league_name'] ?? ''} • ${jogo['match_date'] ?? ''} ${jogo['match_time'] ?? ''}',
                             style: Theme.of(context).textTheme.bodySmall,
                             textAlign: TextAlign.center,
                           ),
@@ -1677,8 +1677,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> {
             ),
             Card(
               child: Column(
-                children: jogo['cards']..sort((a, b) => (int.tryParse(a['time']) ?? 0) - (int.tryParse(b['time']) ?? 0)),
-                children: jogo['cards'].map<Widget>((cartao) => _buildCardRow(cartao, jogo, context)).toList(),
+                children: (jogo['cards']..sort((a, b) => (int.tryParse(a['time']) ?? 0) - (int.tryParse(b['time']) ?? 0))).map<Widget>((cartao) => _buildCardRow(cartao, jogo, context)).toList(),
               ),
             ),
           ],
@@ -1701,16 +1700,14 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> {
                       padding: const EdgeInsets.all(16),
                       child: Text(jogo['match_hometeam_name'] ?? 'Home', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     ),
-                    ...jogo['substitutions']['home']..sort((a, b) => (int.tryParse(a['time']) ?? 0) - (int.tryParse(b['time']) ?? 0)),
-                    ...jogo['substitutions']['home'].map<Widget>((sub) => _buildSubRow(sub, context)).toList(),
+                    ...(jogo['substitutions']['home']..sort((a, b) => (int.tryParse(a['time']) ?? 0) - (int.tryParse(b['time']) ?? 0))).map<Widget>((sub) => _buildSubRow(sub, context)).toList(),
                   ],
                   if (jogo['substitutions']['away'] != null && jogo['substitutions']['away'].isNotEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(jogo['match_awayteam_name'] ?? 'Away', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     ),
-                    ...jogo['substitutions']['away']..sort((a, b) => (int.tryParse(a['time']) ?? 0) - (int.tryParse(b['time']) ?? 0)),
-                    ...jogo['substitutions']['away'].map<Widget>((sub) => _buildSubRow(sub, context)).toList(),
+                    ...(jogo['substitutions']['away']..sort((a, b) => (int.tryParse(a['time']) ?? 0) - (int.tryParse(b['time']) ?? 0))).map<Widget>((sub) => _buildSubRow(sub, context)).toList(),
                   ],
                 ],
               ),
@@ -1934,7 +1931,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(player['player'] ?? 'Unknown', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                Text('\( {player['lineup_position'] ?? 'Jogador'} • \){player['lineup_number'] ?? 'N/A'}', style: Theme.of(context).textTheme.bodySmall),
+                Text('${player['lineup_position'] ?? 'Jogador'} • ${player['lineup_number'] ?? 'N/A'}', style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
