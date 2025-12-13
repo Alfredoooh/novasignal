@@ -42,9 +42,6 @@ class DocuGenApp extends StatelessWidget {
   }
 }*/
 
-// PARTE 1 DE 3 - Football Live App (Completo com correções)
-// Linhas 1-700
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -98,7 +95,7 @@ class MyApp extends StatelessWidget {
                 surfaceTintColor: Colors.transparent,
                 systemOverlayStyle: SystemUiOverlayStyle.dark,
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 color: const Color(0xFFFFFFFF),
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -139,7 +136,7 @@ class MyApp extends StatelessWidget {
                 surfaceTintColor: Colors.transparent,
                 systemOverlayStyle: SystemUiOverlayStyle.light,
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 color: const Color(0xFF1E1E1E),
                 elevation: 0.5,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -647,9 +644,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-// PARTE 2 DE 3 - Football Live App (Completo com correções)
-// Linhas 701-1400
-// Cole a PARTE 1 ANTES deste código
+
+// CONTINUA NA PARTE 2...
 
 class JogosPage extends StatefulWidget {
   const JogosPage({super.key});
