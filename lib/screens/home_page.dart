@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> {
           },
           child: Scaffold(
             key: _scaffoldKey,
-            extendBodyBehindAppBar: true,
+            extendBodyBehindAppBar: false,
             extendBody: true,
             appBar: _buildAppBar(context, appState),
             body: AnimatedSwitcher(
