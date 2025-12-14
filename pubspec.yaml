@@ -16,6 +16,7 @@ dependencies:
   flutter_staggered_grid_view: any
   intl: ^0.18.1
   flutter_html: any
+  dynamic_color: any
 
   # Nova dependência obrigatória para extração de cor
   palette_generator: any
