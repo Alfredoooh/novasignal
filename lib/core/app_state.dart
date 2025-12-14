@@ -31,6 +31,37 @@ class AppState with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<List<dynamic>> pesquisarJogos(String termo) async {
+    final termoLower = termo.toLowerCase();
+    final cacheKey = 'search_$termoLower';
+    if (jogosCache.containsKey(cacheKey)) {
+      return jogosCache[cacheKey]!;
+    }
+
+    final hoje = DateTime.now();
+    final seteDiasAtras = hoje.subtract(const Duration(days: 7));
+    final seteDiasFrente = hoje.add(const Duration(days: 7));
+    final from = DateFormat('yyyy-MM-dd').format(seteDiasAtras);
+    final to = DateFormat('yyyy-MM-dd').format(seteDiasFrente);
+
+    final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$apiKey';
+    final response = await http.get(Uri.parse(url));
+    
+    if (response.statusCode == 200) {
+      final dados = json.decode(response.body);
+      final resultados = dados.where((jogo) {
+        final home = (jogo['match_hometeam_name'] ?? '').toLowerCase();
+        final away = (jogo['match_awayteam_name'] ?? '').toLowerCase();
+        final league = (jogo['league_name'] ?? '').toLowerCase();
+        return home.contains(termoLower) || away.contains(termoLower) || league.contains(termoLower);
+      }).toList();
+      
+      jogosCache[cacheKey] = resultados;
+      return resultados;
+    }
+    return [];
+  }
+
   void navegarPara(String pagina) {
     historicoPaginas.add(paginaAtual);
     paginaAtual = pagina;
