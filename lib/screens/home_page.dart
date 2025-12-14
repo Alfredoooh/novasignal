@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import 'home_tab.dart';
+import 'search_page.dart';
 import 'jogos_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
@@ -30,6 +32,7 @@ class _HomePageState extends State<HomePage> {
           },
           child: Scaffold(
             key: _scaffoldKey,
+            extendBody: true,
             appBar: _buildAppBar(context, appState),
             body: _buildPage(appState.paginaAtual, appState),
             bottomNavigationBar: _buildBottomNav(appState),
@@ -41,6 +44,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   PreferredSizeWidget? _buildAppBar(BuildContext context, AppState appState) {
+    if (appState.paginaAtual == 'search') {
+      return null; // SearchPage tem seu próprio AppBar
+    }
+
     String title = '';
     Widget? leading;
     List<Widget>? actions;
@@ -104,6 +111,8 @@ class _HomePageState extends State<HomePage> {
     switch (pagina) {
       case 'home':
         return const HomeTab(key: ValueKey('home'));
+      case 'search':
+        return const SearchPage(key: ValueKey('search'));
       case 'jogos':
         return const JogosPage(key: ValueKey('jogos'));
       case 'jogo-detalhes':
@@ -120,36 +129,47 @@ class _HomePageState extends State<HomePage> {
       return const SizedBox.shrink();
     }
 
-    int currentIndex = ['home', 'jogos'].indexOf(appState.tabAtual);
+    int currentIndex = ['home', 'search', 'jogos'].indexOf(appState.tabAtual);
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.3),
-            width: 0.5,
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            border: Border(
+              top: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                width: 0.5,
+              ),
+            ),
           ),
-        ),
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            children: [
-              _buildNavItem(
-                icon: Symbols.home_rounded,
-                label: 'Home',
-                isSelected: currentIndex == 0,
-                onTap: () => appState.mudarTab('home'),
+          child: SafeArea(
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                children: [
+                  _buildNavItem(
+                    icon: Symbols.home_rounded,
+                    label: 'Home',
+                    isSelected: currentIndex == 0,
+                    onTap: () => appState.mudarTab('home'),
+                  ),
+                  _buildNavItem(
+                    icon: Symbols.search_rounded,
+                    label: 'Pesquisar',
+                    isSelected: currentIndex == 1,
+                    onTap: () => appState.mudarTab('search'),
+                  ),
+                  _buildNavItem(
+                    icon: Symbols.sports_soccer_rounded,
+                    label: 'Jogos',
+                    isSelected: currentIndex == 2,
+                    onTap: () => appState.mudarTab('jogos'),
+                  ),
+                ],
               ),
-              _buildNavItem(
-                icon: Symbols.sports_soccer_rounded,
-                label: 'Jogos',
-                isSelected: currentIndex == 1,
-                onTap: () => appState.mudarTab('jogos'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
