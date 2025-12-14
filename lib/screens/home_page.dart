@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
+import 'home_tab.dart';
 import 'jogos_page.dart';
-import 'pesquisar_page.dart';
-//import 'ligas_page.dart';
-import 'liga_detalhes_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
 
@@ -32,16 +30,8 @@ class _HomePageState extends State<HomePage> {
           },
           child: Scaffold(
             key: _scaffoldKey,
-            appBar: _buildTopBar(context, appState),
-            body: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              switchInCurve: Curves.easeInOut,
-              switchOutCurve: Curves.easeInOut,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child: _buildPage(appState.paginaAtual, appState),
-            ),
+            appBar: _buildAppBar(context, appState),
+            body: _buildPage(appState.paginaAtual, appState),
             bottomNavigationBar: _buildBottomNav(appState),
             drawer: _buildDrawer(context, appState),
           ),
@@ -50,13 +40,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  PreferredSizeWidget? _buildTopBar(BuildContext context, AppState appState) {
-    Widget? leading;
+  PreferredSizeWidget? _buildAppBar(BuildContext context, AppState appState) {
     String title = '';
+    Widget? leading;
     List<Widget>? actions;
-    bool showLeading = true;
 
     switch (appState.paginaAtual) {
+      case 'home':
+        leading = IconButton(
+          icon: const Icon(Symbols.menu_rounded),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        );
+        title = 'Destaques';
+        break;
       case 'jogos':
         leading = IconButton(
           icon: const Icon(Symbols.menu_rounded),
@@ -80,24 +76,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ];
         break;
-      case 'pesquisar':
-        showLeading = false;
-        title = 'Pesquisar';
-        break;
-      case 'ligas':
-        leading = IconButton(
-          icon: const Icon(Symbols.menu_rounded),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        );
-        title = 'Ligas';
-        break;
-      case 'liga-detalhes':
-        leading = IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded),
-          onPressed: appState.voltarPagina,
-        );
-        title = appState.ligaDetalhesTitulo;
-        break;
       case 'jogo-detalhes':
         leading = IconButton(
           icon: const Icon(Symbols.arrow_back_rounded),
@@ -115,32 +93,19 @@ class _HomePageState extends State<HomePage> {
     }
 
     return AppBar(
-      leading: showLeading ? leading : null,
-      automaticallyImplyLeading: showLeading,
-      title: Text(title, style: Theme.of(context).textTheme.headlineMedium),
+      leading: leading,
+      title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
       actions: actions,
       centerTitle: false,
-      elevation: 0,
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(0.5),
-        child: Container(
-          color: Theme.of(context).dividerColor.withOpacity(0.3),
-          height: 0.5,
-        ),
-      ),
     );
   }
 
   Widget _buildPage(String pagina, AppState appState) {
     switch (pagina) {
+      case 'home':
+        return const HomeTab(key: ValueKey('home'));
       case 'jogos':
         return const JogosPage(key: ValueKey('jogos'));
-      case 'pesquisar':
-        return const PesquisarPage(key: ValueKey('pesquisar'));
-      case 'ligas':
-        return const LigasPage(key: ValueKey('ligas'));
-      case 'liga-detalhes':
-        return LigaDetalhesPage(key: const ValueKey('liga-detalhes'), ligaId: appState.ligaDetalhesId);
       case 'jogo-detalhes':
         return JogoDetalhesPage(key: const ValueKey('jogo-detalhes'), jogoId: appState.jogoDetalhesId);
       case 'configuracoes':
@@ -151,11 +116,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNav(AppState appState) {
-    if (['liga-detalhes', 'jogo-detalhes', 'configuracoes'].contains(appState.paginaAtual)) {
+    if (['jogo-detalhes', 'configuracoes'].contains(appState.paginaAtual)) {
       return const SizedBox.shrink();
     }
 
-    int currentIndex = ['jogos', 'pesquisar', 'ligas'].indexOf(appState.tabAtual);
+    int currentIndex = ['home', 'jogos'].indexOf(appState.tabAtual);
     
     return Container(
       decoration: BoxDecoration(
@@ -171,25 +136,18 @@ class _HomePageState extends State<HomePage> {
         child: SizedBox(
           height: 60,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
+              _buildNavItem(
+                icon: Symbols.home_rounded,
+                label: 'Home',
+                isSelected: currentIndex == 0,
+                onTap: () => appState.mudarTab('home'),
+              ),
               _buildNavItem(
                 icon: Symbols.sports_soccer_rounded,
                 label: 'Jogos',
-                isSelected: currentIndex == 0,
-                onTap: () => appState.mudarTab('jogos'),
-              ),
-              _buildNavItem(
-                icon: Symbols.search_rounded,
-                label: 'Pesquisar',
                 isSelected: currentIndex == 1,
-                onTap: () => appState.mudarTab('pesquisar'),
-              ),
-              _buildNavItem(
-                icon: Symbols.emoji_events_rounded,
-                label: 'Ligas',
-                isSelected: currentIndex == 2,
-                onTap: () => appState.mudarTab('ligas'),
+                onTap: () => appState.mudarTab('jogos'),
               ),
             ],
           ),
@@ -236,23 +194,25 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildDrawer(BuildContext context, AppState appState) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          DrawerHeader(
+          Container(
+            height: 160,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
                   Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primaryContainer,
+                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
+            padding: const EdgeInsets.all(20),
+            alignment: Alignment.bottomLeft,
             child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Football Live',
@@ -273,26 +233,32 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          ListTile(
-            leading: Icon(Symbols.settings_rounded, color: Theme.of(context).colorScheme.primary),
-            title: const Text('Configurações'),
-            onTap: () {
-              Navigator.pop(context);
-              appState.navegarPara('configuracoes');
-            },
-          ),
-          ListTile(
-            leading: Icon(Symbols.info_rounded, color: Theme.of(context).colorScheme.primary),
-            title: const Text('Sobre o App'),
-            onTap: () {
-              Navigator.pop(context);
-              showAboutDialog(
-                context: context,
-                applicationName: 'Football Live',
-                applicationVersion: '1.2.0',
-                applicationIcon: const Icon(Symbols.sports_soccer_rounded, size: 48),
-              );
-            },
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                ListTile(
+                  leading: Icon(Symbols.settings_rounded, color: Theme.of(context).colorScheme.primary),
+                  title: const Text('Configurações'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    appState.navegarPara('configuracoes');
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Symbols.info_rounded, color: Theme.of(context).colorScheme.primary),
+                  title: const Text('Sobre'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    showAboutDialog(
+                      context: context,
+                      applicationName: 'Football Live',
+                      applicationVersion: '1.0.0',
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
