@@ -74,7 +74,7 @@ class _HomeTabState extends State<HomeTab> {
         }
 
         final jogos = snapshot.data!;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -150,8 +150,8 @@ class _HomeTabState extends State<HomeTab> {
   Widget _buildFeaturedCard(dynamic jogo, bool isActive) {
     final appState = context.read<AppState>();
     final status = jogo['match_status'] ?? '';
-    final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
-    
+    final isLive = status.contains('LIVE') || status.contains('HT');
+
     return GestureDetector(
       onTap: () {
         appState.setJogoDetalhes(jogo['match_id'], '');
@@ -210,9 +210,12 @@ class _HomeTabState extends State<HomeTab> {
                     ],
                   ),
                 ),
-                Text(
-                  jogo['league_name'] ?? '',
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                Flexible(
+                  child: Text(
+                    jogo['league_name'] ?? '',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -223,7 +226,7 @@ class _HomeTabState extends State<HomeTab> {
                   child: Column(
                     children: [
                       Image.network(
-                        jogo['team_home_badge'] ?? 'https://via.placeholder.com/48',
+                        jogo['team_home_badge'] ?? '',
                         width: 48,
                         height: 48,
                         errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 48, color: Colors.white),
@@ -254,7 +257,7 @@ class _HomeTabState extends State<HomeTab> {
                   child: Column(
                     children: [
                       Image.network(
-                        jogo['team_away_badge'] ?? 'https://via.placeholder.com/48',
+                        jogo['team_away_badge'] ?? '',
                         width: 48,
                         height: 48,
                         errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 48, color: Colors.white),
@@ -281,7 +284,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget _buildMatchListItem(dynamic jogo) {
     final appState = context.read<AppState>();
     final status = jogo['match_status'] ?? '';
-    
+
     return InkWell(
       onTap: () {
         appState.setJogoDetalhes(jogo['match_id'], '');
