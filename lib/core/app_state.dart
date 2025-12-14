@@ -19,12 +19,32 @@ class AppState with ChangeNotifier {
   String ligaDetalhesTitulo = '';
   List<dynamic> todasLigas = [];
 
-  // API football-data.org
-  static const String apiKey = '81e164bfa4364ff783bc397c30f39627';
-  static const String apiBase = 'https://api.football-data.org/v4';
+  // Multiple API keys for fallback
+  static const List<String> apiKeys = [
+    '9aa85892f684f5b1f85a721e6d625df4be9065447047e065f42c211658c7cd7d',
+    '5fbf446f332cdcb25ae37e36e1d7edeb55f7a47c7b30f34a8fe23da37f8d6ac0',
+  ];
+  int _currentApiKeyIndex = 0;
+  static const String apiBase = 'https://apiv3.apifootball.com';
+
+  // Top clubs for featured matches
+  final List<String> topClubs = [
+    'Manchester United', 'Manchester City', 'Liverpool', 'Chelsea', 'Arsenal',
+    'Real Madrid', 'Barcelona', 'Atletico Madrid',
+    'Bayern Munich', 'Borussia Dortmund',
+    'Juventus', 'Inter', 'AC Milan',
+    'PSG', 'Lyon', 'Marseille',
+  ];
 
   AppState() {
     _carregarConfiguracoes();
+  }
+
+  String get _currentApiKey => apiKeys[_currentApiKeyIndex];
+
+  void _rotateApiKey() {
+    _currentApiKeyIndex = (_currentApiKeyIndex + 1) % apiKeys.length;
+    debugPrint('Rotating to API key index: $_currentApiKeyIndex');
   }
 
   void mudarTab(String tab) {
@@ -102,9 +122,30 @@ class AppState with ChangeNotifier {
     }
   }
 
-  Map<String, String> get _headers => {
-    'X-Auth-Token': apiKey,
-  };
+  Future<dynamic> _makeRequest(String url, {int retryCount = 0}) async {
+    try {
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 429 || response.statusCode == 403) {
+        // Rate limit or forbidden, try next API key
+        if (retryCount < apiKeys.length - 1) {
+          _rotateApiKey();
+          return await _makeRequest(url.replaceAll(apiKeys[retryCount], _currentApiKey), retryCount: retryCount + 1);
+        }
+      }
+      throw Exception('Erro ${response.statusCode}');
+    } catch (e) {
+      if (retryCount < apiKeys.length - 1) {
+        _rotateApiKey();
+        return await _makeRequest(url.replaceAll(apiKeys[retryCount], _currentApiKey), retryCount: retryCount + 1);
+      }
+      rethrow;
+    }
+  }
 
   Future<List<dynamic>> carregarJogosDoDia(DateTime data) async {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
@@ -116,35 +157,22 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      final url = '$apiBase/matches?date=$dataStr';
+      final url = '$apiBase/?action=get_events&from=$dataStr&to=$dataStr&APIkey=$_currentApiKey';
       debugPrint('Buscando jogos: $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: _headers,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw Exception('Timeout ao buscar jogos'),
-      );
+      final dados = await _makeRequest(url);
 
-      debugPrint('Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final dados = json.decode(response.body);
-
-        if (dados['matches'] != null && dados['matches'] is List) {
-          final jogos = (dados['matches'] as List).map((item) => _converterJogo(item)).toList();
-          debugPrint('Encontrados ${jogos.length} jogos');
-          cache[cacheKey] = jogos;
-          return jogos;
-        }
-
-        debugPrint('Formato inesperado de resposta');
-        return [];
-      } else {
-        debugPrint('Erro HTTP: ${response.statusCode}');
-        throw Exception('Erro ${response.statusCode}');
+      if (dados is Map && dados.containsKey('error')) {
+        throw Exception(dados['error']);
       }
+
+      if (dados is List) {
+        debugPrint('Encontrados ${dados.length} jogos');
+        cache[cacheKey] = dados;
+        return dados;
+      }
+
+      return [];
     } catch (e) {
       debugPrint('Erro ao carregar jogos: $e');
       rethrow;
@@ -153,8 +181,12 @@ class AppState with ChangeNotifier {
 
   Future<List<dynamic>> carregarJogosDestaque(List<String> topTeams) async {
     final hoje = DateTime.now();
-    final dataStr = DateFormat('yyyy-MM-dd').format(hoje);
-    final cacheKey = 'destaque_$dataStr';
+    final doisDiasAtras = hoje.subtract(const Duration(days: 2));
+    final cincoDiasFrente = hoje.add(const Duration(days: 3));
+    final from = DateFormat('yyyy-MM-dd').format(doisDiasAtras);
+    final to = DateFormat('yyyy-MM-dd').format(cincoDiasFrente);
+
+    final cacheKey = 'destaque_$from\_$to';
 
     if (cache.containsKey(cacheKey)) {
       debugPrint('Usando cache para destaques');
@@ -162,39 +194,41 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      // Buscar jogos das principais ligas
-      final ligas = ['PL', 'PD', 'BL1', 'SA', 'FL1', 'CL']; // Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions
-      List<dynamic> todosJogos = [];
+      final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$_currentApiKey';
+      debugPrint('Buscando destaques: $url');
 
-      for (var ligaCode in ligas) {
-        final url = '$apiBase/competitions/$ligaCode/matches?status=SCHEDULED,LIVE,IN_PLAY,PAUSED,FINISHED';
-        try {
-          final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-            const Duration(seconds: 10),
+      final dados = await _makeRequest(url);
+
+      if (dados is List) {
+        final jogosFiltrados = dados.where((jogo) {
+          final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
+          final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
+          return topClubs.any((team) => 
+            home.contains(team.toLowerCase()) || 
+            away.contains(team.toLowerCase())
           );
+        }).toList();
 
-          if (response.statusCode == 200) {
-            final dados = json.decode(response.body);
-            if (dados['matches'] != null && dados['matches'] is List) {
-              final matches = dados['matches'] as List;
-              // Pegar apenas jogos de hoje ou próximos 2 dias
-              final jogosRecentes = matches.where((match) {
-                final utcDate = DateTime.parse(match['utcDate']);
-                final diff = utcDate.difference(hoje).inDays;
-                return diff >= -1 && diff <= 2;
-              }).take(3);
-              todosJogos.addAll(jogosRecentes.map((item) => _converterJogo(item)));
-            }
-          }
-        } catch (e) {
-          debugPrint('Erro ao buscar liga $ligaCode: $e');
-          continue;
-        }
+        // Sort by status priority (live > scheduled > finished)
+        jogosFiltrados.sort((a, b) {
+          final aStatus = a['match_status'] ?? '';
+          final bStatus = b['match_status'] ?? '';
+          
+          final aIsLive = aStatus.contains("'") || aStatus == 'HT' || aStatus == 'LIVE';
+          final bIsLive = bStatus.contains("'") || bStatus == 'HT' || bStatus == 'LIVE';
+          
+          if (aIsLive && !bIsLive) return -1;
+          if (!aIsLive && bIsLive) return 1;
+          
+          return 0;
+        });
+
+        final limitedJogos = jogosFiltrados.take(10).toList();
+        debugPrint('Encontrados ${limitedJogos.length} jogos em destaque');
+        cache[cacheKey] = limitedJogos;
+        return limitedJogos;
       }
-
-      debugPrint('Encontrados ${todosJogos.length} jogos em destaque');
-      cache[cacheKey] = todosJogos;
-      return todosJogos;
+      return [];
     } catch (e) {
       debugPrint('Erro ao carregar destaques: $e');
       return [];
@@ -203,43 +237,31 @@ class AppState with ChangeNotifier {
 
   Future<List<dynamic>> pesquisarJogos(String termo) async {
     final termoLower = termo.toLowerCase();
-    final cacheKey = 'search_$termoLower';
-
-    if (cache.containsKey(cacheKey)) {
-      debugPrint('Usando cache para pesquisa');
-      return cache[cacheKey] as List<dynamic>;
-    }
-
+    
     try {
       final hoje = DateTime.now();
-      final dataInicio = DateFormat('yyyy-MM-dd').format(hoje.subtract(const Duration(days: 3)));
-      final dataFim = DateFormat('yyyy-MM-dd').format(hoje.add(const Duration(days: 7)));
-      final url = '$apiBase/matches?dateFrom=$dataInicio&dateTo=$dataFim';
-      
-      final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-        const Duration(seconds: 10),
-      );
+      final seteDiasAtras = hoje.subtract(const Duration(days: 7));
+      final seteDiasFrente = hoje.add(const Duration(days: 7));
+      final from = DateFormat('yyyy-MM-dd').format(seteDiasAtras);
+      final to = DateFormat('yyyy-MM-dd').format(seteDiasFrente);
 
-      if (response.statusCode == 200) {
-        final dados = json.decode(response.body);
+      final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$_currentApiKey';
+      debugPrint('Pesquisando: $url');
 
-        if (dados['matches'] != null && dados['matches'] is List) {
-          final jogos = (dados['matches'] as List).map((item) => _converterJogo(item)).toList();
-          final resultados = jogos.where((jogo) {
-            final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
-            final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
-            final league = (jogo['league_name'] ?? '').toString().toLowerCase();
-            return home.contains(termoLower) || away.contains(termoLower) || league.contains(termoLower);
-          }).toList();
+      final dados = await _makeRequest(url);
 
-          debugPrint('Encontrados ${resultados.length} resultados');
-          cache[cacheKey] = resultados;
-          return resultados;
-        }
-        return [];
-      } else {
-        throw Exception('Erro ${response.statusCode}');
+      if (dados is List) {
+        final resultados = dados.where((jogo) {
+          final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
+          final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
+          final league = (jogo['league_name'] ?? '').toString().toLowerCase();
+          return home.contains(termoLower) || away.contains(termoLower) || league.contains(termoLower);
+        }).toList();
+
+        debugPrint('Encontrados ${resultados.length} resultados');
+        return resultados;
       }
+      return [];
     } catch (e) {
       debugPrint('Erro na pesquisa: $e');
       return [];
@@ -255,21 +277,16 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      final url = '$apiBase/matches/$jogoId';
+      final url = '$apiBase/?action=get_events&match_id=$jogoId&APIkey=$_currentApiKey';
       debugPrint('Buscando detalhes: $url');
 
-      final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-        const Duration(seconds: 10),
-      );
+      final dados = await _makeRequest(url);
 
-      if (response.statusCode == 200) {
-        final dados = json.decode(response.body);
-        final jogo = _converterJogoDetalhado(dados);
-        cache[cacheKey] = jogo;
-        return jogo;
-      } else {
-        throw Exception('Erro ${response.statusCode}');
+      if (dados is List && dados.isNotEmpty) {
+        cache[cacheKey] = dados[0];
+        return dados[0];
       }
+      return null;
     } catch (e) {
       debugPrint('Erro ao carregar detalhes: $e');
       rethrow;
@@ -286,24 +303,13 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      final url = '$apiBase/competitions';
-      final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-        const Duration(seconds: 10),
-      );
+      final url = '$apiBase/?action=get_leagues&APIkey=$_currentApiKey';
+      final dados = await _makeRequest(url);
 
-      if (response.statusCode == 200) {
-        final dados = json.decode(response.body);
-        if (dados['competitions'] != null && dados['competitions'] is List) {
-          todasLigas = (dados['competitions'] as List).map((item) => {
-            'league_id': item['id'].toString(),
-            'league_name': item['name'],
-            'league_logo': item['emblem'] ?? '',
-            'country_name': item['area']['name'],
-            'league_code': item['code'],
-          }).toList();
-          cache[cacheKey] = todasLigas;
-          return todasLigas;
-        }
+      if (dados is List) {
+        todasLigas = dados;
+        cache[cacheKey] = todasLigas;
+        return todasLigas;
       }
       return [];
     } catch (e) {
@@ -320,25 +326,12 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      final url = '$apiBase/competitions/$ligaId/standings';
-      final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-        const Duration(seconds: 10),
-      );
+      final url = '$apiBase/?action=get_standings&league_id=$ligaId&APIkey=$_currentApiKey';
+      final dados = await _makeRequest(url);
 
-      if (response.statusCode == 200) {
-        final dados = json.decode(response.body);
-        if (dados['standings'] != null && dados['standings'] is List && dados['standings'].isNotEmpty) {
-          final standings = dados['standings'][0]['table'] as List;
-          final classificacao = standings.map((item) => {
-            'overall_league_position': item['position'].toString(),
-            'team_name': item['team']['name'],
-            'team_badge': item['team']['crest'] ?? '',
-            'overall_league_payed': item['playedGames'],
-            'overall_league_PTS': item['points'],
-          }).toList();
-          cache[cacheKey] = classificacao;
-          return classificacao;
-        }
+      if (dados is List) {
+        cache[cacheKey] = dados;
+        return dados;
       }
       return [];
     } catch (e) {
@@ -355,90 +348,23 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      final url = '$apiBase/competitions/$ligaId/matches?status=FINISHED';
-      final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-        const Duration(seconds: 10),
-      );
+      final hoje = DateTime.now();
+      final trintaDiasAtras = hoje.subtract(const Duration(days: 30));
+      final from = DateFormat('yyyy-MM-dd').format(trintaDiasAtras);
+      final to = DateFormat('yyyy-MM-dd').format(hoje);
+      
+      final url = '$apiBase/?action=get_events&league_id=$ligaId&from=$from&to=$to&APIkey=$_currentApiKey';
+      final dados = await _makeRequest(url);
 
-      if (response.statusCode == 200) {
-        final dados = json.decode(response.body);
-        if (dados['matches'] != null && dados['matches'] is List) {
-          final jogos = (dados['matches'] as List).take(15).map((item) => _converterJogo(item)).toList();
-          cache[cacheKey] = jogos;
-          return jogos;
-        }
+      if (dados is List) {
+        final jogos = dados.take(15).toList();
+        cache[cacheKey] = jogos;
+        return jogos;
       }
       return [];
     } catch (e) {
       debugPrint('Erro ao carregar jogos da liga: $e');
       return [];
-    }
-  }
-
-  Map<String, dynamic> _converterJogo(dynamic item) {
-    final homeTeam = item['homeTeam'];
-    final awayTeam = item['awayTeam'];
-    final score = item['score'];
-    final competition = item['competition'];
-    final utcDate = DateTime.parse(item['utcDate']);
-    final localDate = utcDate.toLocal();
-
-    return {
-      'match_id': item['id'].toString(),
-      'match_date': DateFormat('dd/MM/yyyy').format(localDate),
-      'match_time': DateFormat('HH:mm').format(localDate),
-      'match_status': _converterStatus(item['status']),
-      'match_hometeam_name': homeTeam['name'],
-      'match_awayteam_name': awayTeam['name'],
-      'match_hometeam_score': score['fullTime']['home']?.toString() ?? '-',
-      'match_awayteam_score': score['fullTime']['away']?.toString() ?? '-',
-      'team_home_badge': homeTeam['crest'] ?? '',
-      'team_away_badge': awayTeam['crest'] ?? '',
-      'league_name': competition['name'],
-      'league_id': competition['id'].toString(),
-      'goalscorer': [],
-      'cards': [],
-      'statistics': [],
-    };
-  }
-
-  Map<String, dynamic> _converterJogoDetalhado(dynamic item) {
-    final jogo = _converterJogo(item);
-    
-    // Adicionar gols se disponível
-    if (item['goals'] != null && item['goals'] is List) {
-      jogo['goalscorer'] = (item['goals'] as List).map((goal) => {
-        'time': goal['minute']?.toString() ?? '?',
-        'home_scorer': goal['team']['id'] == item['homeTeam']['id'] ? goal['scorer']['name'] : null,
-        'away_scorer': goal['team']['id'] == item['awayTeam']['id'] ? goal['scorer']['name'] : null,
-      }).toList();
-    }
-
-    // Adicionar cartões se disponível
-    if (item['bookings'] != null && item['bookings'] is List) {
-      jogo['cards'] = (item['bookings'] as List).map((card) => {
-        'time': card['minute']?.toString() ?? '?',
-        'card': card['card'] == 'YELLOW_CARD' ? 'yellow card' : 'red card',
-        'home_fault': card['team']['id'] == item['homeTeam']['id'] ? card['player']['name'] : null,
-        'away_fault': card['team']['id'] == item['awayTeam']['id'] ? card['player']['name'] : null,
-      }).toList();
-    }
-
-    return jogo;
-  }
-
-  String _converterStatus(String status) {
-    switch (status) {
-      case 'SCHEDULED': return 'Agendado';
-      case 'TIMED': return 'Agendado';
-      case 'IN_PLAY': return 'LIVE';
-      case 'PAUSED': return 'HT';
-      case 'FINISHED': return 'Terminado';
-      case 'POSTPONED': return 'Adiado';
-      case 'CANCELLED': return 'Cancelado';
-      case 'SUSPENDED': return 'Suspenso';
-      case 'AWARDED': return 'Decidido';
-      default: return status;
     }
   }
 }
