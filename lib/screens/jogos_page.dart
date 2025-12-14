@@ -15,8 +15,8 @@ class _JogosPageState extends State<JogosPage> {
   Future<List<dynamic>>? _futureJogos;
 
   final List<String> _topLeagues = [
-    'La Liga',
     'Premier League',
+    'La Liga',
     'Serie A',
     'Bundesliga',
     'Ligue 1',
@@ -30,15 +30,23 @@ class _JogosPageState extends State<JogosPage> {
     _loadJogos();
   }
 
+  @override
+  void didUpdateWidget(JogosPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _loadJogos();
+  }
+
   void _loadJogos() {
     final appState = context.read<AppState>();
-    _futureJogos = appState.carregarJogosDoDia(appState.dataSelecionada);
+    setState(() {
+      _futureJogos = appState.carregarJogosDoDia(appState.dataSelecionada);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    
+
     return Column(
       children: [
         Container(
@@ -79,15 +87,52 @@ class _JogosPageState extends State<JogosPage> {
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError || !snapshot.hasData) {
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Symbols.error_rounded,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.error.withOpacity(0.5),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Erro ao carregar jogos'),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${snapshot.error}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              } else if (!snapshot.hasData) {
                 return const Center(child: Text('Erro ao carregar jogos'));
               }
 
               final jogos = snapshot.data!;
               final jogosFiltrados = _filtrarJogos(jogos, appState.filtroJogos);
-              
+
               if (jogosFiltrados.isEmpty) {
-                return const Center(child: Text('Nenhum jogo disponível'));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Symbols.sports_soccer_rounded,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Nenhum jogo disponível'),
+                    ],
+                  ),
+                );
               }
 
               return _buildJogosList(jogosFiltrados);
@@ -138,12 +183,12 @@ class _JogosPageState extends State<JogosPage> {
       case 'direto':
         return jogos.where((j) {
           final status = j['match_status'] ?? '';
-          return status.contains("'") || status == 'HT' || status == 'LIVE';
+          return status.contains('LIVE') || status.contains('HT');
         }).toList();
       case 'terminados':
         return jogos.where((j) {
           final status = j['match_status'] ?? '';
-          return status.contains('Finished') || status == 'FT' || status == 'AET';
+          return status.contains('Terminado') || status == 'FT';
         }).toList();
       default:
         return jogos;
@@ -208,7 +253,7 @@ class _JogosPageState extends State<JogosPage> {
                 ),
               ),
               Container(height: 0.5, color: Theme.of(context).dividerColor.withOpacity(0.2)),
-              ...jogosLiga.map((jogo) => _buildMatchItem(jogo)).toList(),
+              ...jogosLiga.map((jogo) => _buildMatchItem(jogo)),
             ],
           ),
         );
@@ -219,7 +264,7 @@ class _JogosPageState extends State<JogosPage> {
   Widget _buildMatchItem(dynamic jogo) {
     final appState = context.read<AppState>();
     final status = jogo['match_status'] ?? '';
-    final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
+    final isLive = status.contains('LIVE') || status.contains('HT');
 
     return InkWell(
       onTap: () {
