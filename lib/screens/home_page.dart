@@ -32,9 +32,20 @@ class _HomePageState extends State<HomePage> {
           },
           child: Scaffold(
             key: _scaffoldKey,
+            extendBodyBehindAppBar: true,
             extendBody: true,
             appBar: _buildAppBar(context, appState),
-            body: _buildPage(appState.paginaAtual, appState),
+            body: PageTransitionSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+                return FadeThroughTransition(
+                  animation: primaryAnimation,
+                  secondaryAnimation: secondaryAnimation,
+                  child: child,
+                );
+              },
+              child: _buildPage(appState.paginaAtual, appState),
+            ),
             bottomNavigationBar: _buildBottomNav(appState),
             drawer: _buildDrawer(context, appState),
           ),
@@ -45,7 +56,7 @@ class _HomePageState extends State<HomePage> {
 
   PreferredSizeWidget? _buildAppBar(BuildContext context, AppState appState) {
     if (appState.paginaAtual == 'search') {
-      return null; // SearchPage tem seu próprio AppBar
+      return null;
     }
 
     String title = '';
@@ -84,16 +95,16 @@ class _HomePageState extends State<HomePage> {
         ];
         break;
       case 'jogo-detalhes':
-        leading = IconButton(
+        leading: IconButton(
           icon: const Icon(Symbols.arrow_back_rounded),
-          onPressed: appState.voltarPagina,
+          onPressed: () => Navigator.of(context).pop(),
         );
         title = 'Detalhes';
         break;
       case 'configuracoes':
         leading = IconButton(
           icon: const Icon(Symbols.arrow_back_rounded),
-          onPressed: appState.voltarPagina,
+          onPressed: () => Navigator.of(context).pop(),
         );
         title = 'Configurações';
         break;
@@ -104,6 +115,7 @@ class _HomePageState extends State<HomePage> {
       title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
       actions: actions,
       centerTitle: false,
+      backgroundColor: Colors.transparent,
     );
   }
 
@@ -145,68 +157,33 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           child: SafeArea(
-            child: SizedBox(
-              height: 60,
-              child: Row(
-                children: [
-                  _buildNavItem(
-                    icon: Symbols.home_rounded,
-                    label: 'Home',
-                    isSelected: currentIndex == 0,
-                    onTap: () => appState.mudarTab('home'),
-                  ),
-                  _buildNavItem(
-                    icon: Symbols.search_rounded,
-                    label: 'Pesquisar',
-                    isSelected: currentIndex == 1,
-                    onTap: () => appState.mudarTab('search'),
-                  ),
-                  _buildNavItem(
-                    icon: Symbols.sports_soccer_rounded,
-                    label: 'Jogos',
-                    isSelected: currentIndex == 2,
-                    onTap: () => appState.mudarTab('jogos'),
-                  ),
-                ],
-              ),
+            child: NavigationBar(
+              selectedIndex: currentIndex,
+              onDestinationSelected: (index) {
+                appState.mudarTab(['home', 'search', 'jogos'][index]);
+              },
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              indicatorColor: Theme.of(context).colorScheme.secondaryContainer,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Symbols.home_rounded),
+                  selectedIcon: Icon(Symbols.home_rounded, fill: 1),
+                  label: 'Home',
+                ),
+                NavigationDestination(
+                  icon: Icon(Symbols.search_rounded),
+                  selectedIcon: Icon(Symbols.search_rounded, fill: 1),
+                  label: 'Pesquisar',
+                ),
+                NavigationDestination(
+                  icon: Icon(Symbols.sports_soccer_rounded),
+                  selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
+                  label: 'Jogos',
+                ),
+              ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -217,7 +194,7 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         children: [
           Container(
-            height: 160,
+            height: 180,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -228,7 +205,12 @@ class _HomePageState extends State<HomePage> {
                 end: Alignment.bottomRight,
               ),
             ),
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 20,
+              left: 20,
+              right: 20,
+              bottom: 20,
+            ),
             alignment: Alignment.bottomLeft,
             child: const Column(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -262,7 +244,9 @@ class _HomePageState extends State<HomePage> {
                   title: const Text('Configurações'),
                   onTap: () {
                     Navigator.pop(context);
-                    appState.navegarPara('configuracoes');
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ConfiguracoesPage()),
+                    );
                   },
                 ),
                 ListTile(
@@ -282,6 +266,64 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Transição FadeThrough nativa do Material Design
+class FadeThroughTransition extends StatelessWidget {
+  const FadeThroughTransition({
+    super.key,
+    required this.animation,
+    required this.secondaryAnimation,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Animation<double> secondaryAnimation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DualTransitionBuilder(
+      animation: animation,
+      forwardBuilder: (context, animation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+      reverseBuilder: (context, animation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class PageTransitionSwitcher extends StatelessWidget {
+  const PageTransitionSwitcher({
+    super.key,
+    required this.child,
+    required this.duration,
+    required this.transitionBuilder,
+  });
+
+  final Widget child;
+  final Duration duration;
+  final Widget Function(Widget, Animation<double>, Animation<double>) transitionBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: duration,
+      transitionBuilder: (child, animation) {
+        return transitionBuilder(child, animation, const AlwaysStoppedAnimation(0));
+      },
+      child: child,
     );
   }
 }
