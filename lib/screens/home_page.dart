@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import 'jogos_page.dart';
 import 'pesquisar_page.dart';
-import 'ligas_page.dart';
+//import 'ligas_page.dart';
 import 'liga_detalhes_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
