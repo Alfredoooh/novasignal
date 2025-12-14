@@ -13,7 +13,7 @@ class AppState with ChangeNotifier {
   bool temaEscuro = false;
   bool notificacoesAtivas = true;
 
-  Map<String, List<dynamic>> jogosCache = {};
+  Map<String, dynamic> cache = {};
   String jogoDetalhesId = '';
 
   static const String apiKey = '9aa85892f684f5b1f85a721e6d625df4be9065447047e065f42c211658c7cd7d';
@@ -29,37 +29,6 @@ class AppState with ChangeNotifier {
     paginaAtual = tab;
     historicoPaginas = [];
     notifyListeners();
-  }
-
-  Future<List<dynamic>> pesquisarJogos(String termo) async {
-    final termoLower = termo.toLowerCase();
-    final cacheKey = 'search_$termoLower';
-    if (jogosCache.containsKey(cacheKey)) {
-      return jogosCache[cacheKey]!;
-    }
-
-    final hoje = DateTime.now();
-    final seteDiasAtras = hoje.subtract(const Duration(days: 7));
-    final seteDiasFrente = hoje.add(const Duration(days: 7));
-    final from = DateFormat('yyyy-MM-dd').format(seteDiasAtras);
-    final to = DateFormat('yyyy-MM-dd').format(seteDiasFrente);
-
-    final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$apiKey';
-    final response = await http.get(Uri.parse(url));
-    
-    if (response.statusCode == 200) {
-      final dados = json.decode(response.body);
-      final resultados = dados.where((jogo) {
-        final home = (jogo['match_hometeam_name'] ?? '').toLowerCase();
-        final away = (jogo['match_awayteam_name'] ?? '').toLowerCase();
-        final league = (jogo['league_name'] ?? '').toLowerCase();
-        return home.contains(termoLower) || away.contains(termoLower) || league.contains(termoLower);
-      }).toList();
-      
-      jogosCache[cacheKey] = resultados;
-      return resultados;
-    }
-    return [];
   }
 
   void navegarPara(String pagina) {
@@ -104,32 +73,70 @@ class AppState with ChangeNotifier {
   }
 
   Future<void> _carregarConfiguracoes() async {
-    final prefs = await SharedPreferences.getInstance();
-    temaEscuro = prefs.getBool('temaEscuro') ?? false;
-    notificacoesAtivas = prefs.getBool('notificacoesAtivas') ?? true;
-    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      temaEscuro = prefs.getBool('temaEscuro') ?? false;
+      notificacoesAtivas = prefs.getBool('notificacoesAtivas') ?? true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erro ao carregar configurações: $e');
+    }
   }
 
   Future<void> _salvarConfiguracoes() async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('temaEscuro', temaEscuro);
-    prefs.setBool('notificacoesAtivas', notificacoesAtivas);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('temaEscuro', temaEscuro);
+      await prefs.setBool('notificacoesAtivas', notificacoesAtivas);
+    } catch (e) {
+      debugPrint('Erro ao salvar configurações: $e');
+    }
   }
 
   Future<List<dynamic>> carregarJogosDoDia(DateTime data) async {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
     final cacheKey = 'jogos_$dataStr';
-    if (jogosCache.containsKey(cacheKey)) {
-      return jogosCache[cacheKey]!;
+    
+    if (cache.containsKey(cacheKey)) {
+      debugPrint('Usando cache para $cacheKey');
+      return cache[cacheKey] as List<dynamic>;
     }
-    final url = '$apiBase/?action=get_events&from=$dataStr&to=$dataStr&APIkey=$apiKey';
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final dados = json.decode(response.body);
-      jogosCache[cacheKey] = dados;
-      return dados;
+
+    try {
+      final url = '$apiBase/?action=get_events&from=$dataStr&to=$dataStr&APIkey=$apiKey';
+      debugPrint('Buscando jogos: $url');
+      
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Timeout ao buscar jogos'),
+      );
+
+      debugPrint('Status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final dados = json.decode(response.body);
+        
+        if (dados is Map && dados.containsKey('error')) {
+          debugPrint('Erro da API: ${dados['error']}');
+          throw Exception(dados['error']);
+        }
+        
+        if (dados is List) {
+          debugPrint('Encontrados ${dados.length} jogos');
+          cache[cacheKey] = dados;
+          return dados;
+        }
+        
+        debugPrint('Formato inesperado de resposta');
+        return [];
+      } else {
+        debugPrint('Erro HTTP: ${response.statusCode}');
+        throw Exception('Erro ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Erro ao carregar jogos: $e');
+      rethrow;
     }
-    return [];
   }
 
   Future<List<dynamic>> carregarJogosDestaque(List<String> topTeams) async {
@@ -140,48 +147,141 @@ class AppState with ChangeNotifier {
     final to = DateFormat('yyyy-MM-dd').format(cincoDiasFrente);
     
     final cacheKey = 'destaque_$from\_$to';
-    if (jogosCache.containsKey(cacheKey)) {
-      return jogosCache[cacheKey]!;
-    }
-
-    final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$apiKey';
-    final response = await http.get(Uri.parse(url));
     
-    if (response.statusCode == 200) {
-      final dados = json.decode(response.body);
-      
-      // Filtrar jogos de times grandes
-      final jogosFiltrados = dados.where((jogo) {
-        final home = jogo['match_hometeam_name'] ?? '';
-        final away = jogo['match_awayteam_name'] ?? '';
-        return topTeams.any((team) => home.contains(team) || away.contains(team));
-      }).toList();
-
-      // Ordenar: Real Madrid primeiro, depois outros
-      jogosFiltrados.sort((a, b) {
-        final aHasRealMadrid = (a['match_hometeam_name'] ?? '').contains('Real Madrid') ||
-                               (a['match_awayteam_name'] ?? '').contains('Real Madrid');
-        final bHasRealMadrid = (b['match_hometeam_name'] ?? '').contains('Real Madrid') ||
-                               (b['match_awayteam_name'] ?? '').contains('Real Madrid');
-        
-        if (aHasRealMadrid && !bHasRealMadrid) return -1;
-        if (!aHasRealMadrid && bHasRealMadrid) return 1;
-        return 0;
-      });
-
-      jogosCache[cacheKey] = jogosFiltrados;
-      return jogosFiltrados;
+    if (cache.containsKey(cacheKey)) {
+      debugPrint('Usando cache para destaques');
+      return cache[cacheKey] as List<dynamic>;
     }
-    return [];
+
+    try {
+      final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$apiKey';
+      debugPrint('Buscando destaques: $url');
+      
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Timeout ao buscar destaques'),
+      );
+
+      if (response.statusCode == 200) {
+        final dados = json.decode(response.body);
+        
+        if (dados is List) {
+          final jogosFiltrados = dados.where((jogo) {
+            final home = (jogo['match_hometeam_name'] ?? '').toString();
+            final away = (jogo['match_awayteam_name'] ?? '').toString();
+            return topTeams.any((team) => 
+              home.toLowerCase().contains(team.toLowerCase()) || 
+              away.toLowerCase().contains(team.toLowerCase())
+            );
+          }).toList();
+
+          jogosFiltrados.sort((a, b) {
+            final aHasRealMadrid = 
+              (a['match_hometeam_name'] ?? '').toString().toLowerCase().contains('real madrid') ||
+              (a['match_awayteam_name'] ?? '').toString().toLowerCase().contains('real madrid');
+            final bHasRealMadrid = 
+              (b['match_hometeam_name'] ?? '').toString().toLowerCase().contains('real madrid') ||
+              (b['match_awayteam_name'] ?? '').toString().toLowerCase().contains('real madrid');
+            
+            if (aHasRealMadrid && !bHasRealMadrid) return -1;
+            if (!aHasRealMadrid && bHasRealMadrid) return 1;
+            return 0;
+          });
+
+          debugPrint('Encontrados ${jogosFiltrados.length} jogos em destaque');
+          cache[cacheKey] = jogosFiltrados;
+          return jogosFiltrados;
+        }
+        return [];
+      } else {
+        throw Exception('Erro ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Erro ao carregar destaques: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> pesquisarJogos(String termo) async {
+    final termoLower = termo.toLowerCase();
+    final cacheKey = 'search_$termoLower';
+    
+    if (cache.containsKey(cacheKey)) {
+      debugPrint('Usando cache para pesquisa');
+      return cache[cacheKey] as List<dynamic>;
+    }
+
+    try {
+      final hoje = DateTime.now();
+      final seteDiasAtras = hoje.subtract(const Duration(days: 7));
+      final seteDiasFrente = hoje.add(const Duration(days: 7));
+      final from = DateFormat('yyyy-MM-dd').format(seteDiasAtras);
+      final to = DateFormat('yyyy-MM-dd').format(seteDiasFrente);
+
+      final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$apiKey';
+      debugPrint('Pesquisando: $url');
+      
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Timeout na pesquisa'),
+      );
+      
+      if (response.statusCode == 200) {
+        final dados = json.decode(response.body);
+        
+        if (dados is List) {
+          final resultados = dados.where((jogo) {
+            final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
+            final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
+            final league = (jogo['league_name'] ?? '').toString().toLowerCase();
+            return home.contains(termoLower) || away.contains(termoLower) || league.contains(termoLower);
+          }).toList();
+          
+          debugPrint('Encontrados ${resultados.length} resultados');
+          cache[cacheKey] = resultados;
+          return resultados;
+        }
+        return [];
+      } else {
+        throw Exception('Erro ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Erro na pesquisa: $e');
+      rethrow;
+    }
   }
 
   Future<dynamic> carregarJogoDetalhes(String jogoId) async {
-    final url = '$apiBase/?action=get_events&match_id=$jogoId&APIkey=$apiKey';
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final dados = json.decode(response.body);
-      return dados.isNotEmpty ? dados[0] : null;
+    final cacheKey = 'detalhes_$jogoId';
+    
+    if (cache.containsKey(cacheKey)) {
+      debugPrint('Usando cache para detalhes');
+      return cache[cacheKey];
     }
-    return null;
+
+    try {
+      final url = '$apiBase/?action=get_events&match_id=$jogoId&APIkey=$apiKey';
+      debugPrint('Buscando detalhes: $url');
+      
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Timeout ao buscar detalhes'),
+      );
+      
+      if (response.statusCode == 200) {
+        final dados = json.decode(response.body);
+        
+        if (dados is List && dados.isNotEmpty) {
+          cache[cacheKey] = dados[0];
+          return dados[0];
+        }
+        return null;
+      } else {
+        throw Exception('Erro ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Erro ao carregar detalhes: $e');
+      rethrow;
+    }
   }
 }
