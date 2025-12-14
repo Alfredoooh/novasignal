@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'core/app_state.dart';
 import 'screens/home_page.dart';
 
@@ -26,68 +27,61 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AppState(),
-      child: Consumer<AppState>(
-        builder: (context, appState, child) {
-          return MaterialApp(
-            title: 'Football Live',
-            themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
-            theme: _buildLightTheme(),
-            darkTheme: _buildDarkTheme(),
-            home: const HomePage(),
-            debugShowCheckedModeBanner: false,
+      child: DynamicColorBuilder(
+        builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+          return Consumer<AppState>(
+            builder: (context, appState, child) {
+              ColorScheme lightColorScheme;
+              ColorScheme darkColorScheme;
+
+              if (lightDynamic != null && darkDynamic != null) {
+                // Usar cores dinâmicas do sistema
+                lightColorScheme = lightDynamic.harmonized();
+                darkColorScheme = darkDynamic.harmonized();
+              } else {
+                // Fallback para cores padrão
+                lightColorScheme = ColorScheme.fromSeed(
+                  seedColor: const Color(0xFF007AFF),
+                  brightness: Brightness.light,
+                );
+                darkColorScheme = ColorScheme.fromSeed(
+                  seedColor: const Color(0xFF0A84FF),
+                  brightness: Brightness.dark,
+                );
+              }
+
+              return MaterialApp(
+                title: 'Football Live',
+                themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
+                theme: ThemeData(
+                  useMaterial3: true,
+                  colorScheme: lightColorScheme,
+                  scaffoldBackgroundColor: lightColorScheme.surface,
+                  appBarTheme: AppBarTheme(
+                    backgroundColor: lightColorScheme.surface,
+                    elevation: 0,
+                    foregroundColor: lightColorScheme.onSurface,
+                    systemOverlayStyle: SystemUiOverlayStyle.dark,
+                  ),
+                ),
+                darkTheme: ThemeData(
+                  useMaterial3: true,
+                  colorScheme: darkColorScheme,
+                  scaffoldBackgroundColor: darkColorScheme.surface,
+                  appBarTheme: AppBarTheme(
+                    backgroundColor: darkColorScheme.surface,
+                    elevation: 0,
+                    foregroundColor: darkColorScheme.onSurface,
+                    systemOverlayStyle: SystemUiOverlayStyle.light,
+                  ),
+                ),
+                home: const HomePage(),
+                debugShowCheckedModeBanner: false,
+              );
+            },
           );
         },
       ),
-    );
-  }
-
-  ThemeData _buildLightTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: const ColorScheme.light(
-        primary: Color(0xFF007AFF),
-        surface: Color(0xFFFFFFFF),
-        onSurface: Color(0xFF000000),
-        onSurfaceVariant: Color(0xFF8E8E93),
-        outline: Color(0xFFE5E5EA),
-        background: Color(0xFFF2F2F7),
-        error: Color(0xFFFF3B30),
-        tertiary: Color(0xFF34C759),
-      ),
-      scaffoldBackgroundColor: const Color(0xFFF2F2F7),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFFFFFFFF),
-        elevation: 0,
-        foregroundColor: Color(0xFF000000),
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-      ),
-      dividerColor: const Color(0xFFE5E5EA),
-    );
-  }
-
-  ThemeData _buildDarkTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: const ColorScheme.dark(
-        primary: Color(0xFF0A84FF),
-        surface: Color(0xFF1C1C1E),
-        onSurface: Color(0xFFFFFFFF),
-        onSurfaceVariant: Color(0xFF8E8E93),
-        outline: Color(0xFF38383A),
-        background: Color(0xFF000000),
-        error: Color(0xFFFF453A),
-        tertiary: Color(0xFF32D74B),
-      ),
-      scaffoldBackgroundColor: const Color(0xFF000000),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1C1C1E),
-        elevation: 0,
-        foregroundColor: Color(0xFFFFFFFF),
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-      ),
-      dividerColor: const Color(0xFF38383A),
     );
   }
 }
