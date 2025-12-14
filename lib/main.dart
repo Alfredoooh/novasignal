@@ -10,6 +10,8 @@ void main() async {
   
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
@@ -35,11 +37,9 @@ class MyApp extends StatelessWidget {
               ColorScheme darkColorScheme;
 
               if (lightDynamic != null && darkDynamic != null) {
-                // Usar cores dinâmicas do sistema
                 lightColorScheme = lightDynamic.harmonized();
                 darkColorScheme = darkDynamic.harmonized();
               } else {
-                // Fallback para cores padrão
                 lightColorScheme = ColorScheme.fromSeed(
                   seedColor: const Color(0xFF007AFF),
                   brightness: Brightness.light,
@@ -50,6 +50,17 @@ class MyApp extends StatelessWidget {
                 );
               }
 
+              // Atualizar status bar baseado no tema
+              final isDark = appState.temaEscuro;
+              SystemChrome.setSystemUIOverlayStyle(
+                SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+                  systemNavigationBarColor: Colors.transparent,
+                  systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+                ),
+              );
+
               return MaterialApp(
                 title: 'Football Live',
                 themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
@@ -58,7 +69,7 @@ class MyApp extends StatelessWidget {
                   colorScheme: lightColorScheme,
                   scaffoldBackgroundColor: lightColorScheme.surface,
                   appBarTheme: AppBarTheme(
-                    backgroundColor: lightColorScheme.surface,
+                    backgroundColor: Colors.transparent,
                     elevation: 0,
                     foregroundColor: lightColorScheme.onSurface,
                     systemOverlayStyle: SystemUiOverlayStyle.dark,
@@ -69,7 +80,7 @@ class MyApp extends StatelessWidget {
                   colorScheme: darkColorScheme,
                   scaffoldBackgroundColor: darkColorScheme.surface,
                   appBarTheme: AppBarTheme(
-                    backgroundColor: darkColorScheme.surface,
+                    backgroundColor: Colors.transparent,
                     elevation: 0,
                     foregroundColor: darkColorScheme.onSurface,
                     systemOverlayStyle: SystemUiOverlayStyle.light,
