@@ -13,24 +13,11 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
   Future<List<dynamic>>? _searchResults;
-  bool _isSearching = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(() {
-      setState(() {
-        _isSearching = _focusNode.hasFocus || _searchController.text.isNotEmpty;
-      });
-    });
-  }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _focusNode.dispose();
     super.dispose();
   }
 
@@ -49,42 +36,56 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 64,
-        automaticallyImplyLeading: false,
-        title: SearchBar(
-          controller: _searchController,
-          focusNode: _focusNode,
-          hintText: 'Pesquisar times ou ligas',
-          leading: const Padding(
-            padding: EdgeInsets.only(left: 8),
-            child: Icon(Symbols.search_rounded),
-          ),
-          trailing: [
-            if (_searchController.text.isNotEmpty)
-              IconButton(
-                icon: const Icon(Symbols.close_rounded),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    _searchResults = null;
-                  });
-                },
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SearchBar(
+                controller: _searchController,
+                hintText: 'Pesquisar times ou ligas',
+                leading: const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(Symbols.search_rounded),
+                ),
+                trailing: [
+                  if (_searchController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Symbols.close_rounded),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchResults = null;
+                        });
+                      },
+                    ),
+                ],
+                onChanged: _performSearch,
+                elevation: const MaterialStatePropertyAll(1),
+                backgroundColor: MaterialStatePropertyAll(
+                  Theme.of(context).colorScheme.surfaceContainerHigh,
+                ),
+                side: MaterialStatePropertyAll(
+                  BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                    width: 1,
+                  ),
+                ),
+                shape: MaterialStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                padding: const MaterialStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 16),
+                ),
               ),
-          ],
-          onChanged: _performSearch,
-          elevation: const MaterialStatePropertyAll(0),
-          backgroundColor: MaterialStatePropertyAll(
-            Theme.of(context).colorScheme.surfaceContainerHigh,
-          ),
-          shape: MaterialStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
             ),
-          ),
+            Expanded(child: _buildBody()),
+          ],
         ),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -139,7 +140,9 @@ class _SearchPageState extends State<SearchPage> {
                   color: Theme.of(context).colorScheme.error.withOpacity(0.5),
                 ),
                 const SizedBox(height: 16),
-                const Text('Erro ao pesquisar'),
+                Text('Erro ao pesquisar', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                const SizedBox(height: 8),
+                Text('${snapshot.error}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
               ],
             ),
           );
@@ -188,12 +191,22 @@ class _SearchPageState extends State<SearchPage> {
     return InkWell(
       onTap: () {
         appState.setJogoDetalhes(jogo['match_id'], '');
-        appState.navegarPara('jogo-detalhes');
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => JogoDetalhesPage(jogoId: jogo['match_id']),
+          ),
+        );
       },
       child: Container(
-        color: Theme.of(context).colorScheme.surface,
         padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.only(bottom: 1),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              width: 0.5,
+            ),
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -256,7 +269,14 @@ class _SearchPageState extends State<SearchPage> {
                         jogo['team_home_badge'] ?? '',
                         width: 32,
                         height: 32,
-                        errorBuilder: (_, __, ___) => Container(width: 32, height: 32),
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -297,7 +317,14 @@ class _SearchPageState extends State<SearchPage> {
                         jogo['team_away_badge'] ?? '',
                         width: 32,
                         height: 32,
-                        errorBuilder: (_, __, ___) => Container(width: 32, height: 32),
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
                     ],
                   ),
