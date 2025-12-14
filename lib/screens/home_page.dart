@@ -25,7 +25,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context, appState, child) {
         return PopScope(
           canPop: appState.historicoPaginas.isEmpty,
-          onPopInvoked: (didPop) {
+          onPopInvokedWithResult: (didPop, result) {
             if (!didPop && appState.historicoPaginas.isNotEmpty) {
               appState.voltarPagina();
             }
@@ -35,12 +35,13 @@ class _HomePageState extends State<HomePage> {
             extendBodyBehindAppBar: true,
             extendBody: true,
             appBar: _buildAppBar(context, appState),
-            body: PageTransitionSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-                return FadeThroughTransition(
-                  animation: primaryAnimation,
-                  secondaryAnimation: secondaryAnimation,
+            body: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeInOut,
+              switchOutCurve: Curves.easeInOut,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
                   child: child,
                 );
               },
@@ -95,9 +96,9 @@ class _HomePageState extends State<HomePage> {
         ];
         break;
       case 'jogo-detalhes':
-        leading: IconButton(
+        leading = IconButton(
           icon: const Icon(Symbols.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => appState.voltarPagina(),
         );
         title = 'Detalhes';
         break;
@@ -142,7 +143,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     int currentIndex = ['home', 'search', 'jogos'].indexOf(appState.tabAtual);
-    
+
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -266,64 +267,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// Transição FadeThrough nativa do Material Design
-class FadeThroughTransition extends StatelessWidget {
-  const FadeThroughTransition({
-    super.key,
-    required this.animation,
-    required this.secondaryAnimation,
-    required this.child,
-  });
-
-  final Animation<double> animation;
-  final Animation<double> secondaryAnimation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return DualTransitionBuilder(
-      animation: animation,
-      forwardBuilder: (context, animation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
-      reverseBuilder: (context, animation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
-      child: child,
-    );
-  }
-}
-
-class PageTransitionSwitcher extends StatelessWidget {
-  const PageTransitionSwitcher({
-    super.key,
-    required this.child,
-    required this.duration,
-    required this.transitionBuilder,
-  });
-
-  final Widget child;
-  final Duration duration;
-  final Widget Function(Widget, Animation<double>, Animation<double>) transitionBuilder;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: duration,
-      transitionBuilder: (child, animation) {
-        return transitionBuilder(child, animation, const AlwaysStoppedAnimation(0));
-      },
-      child: child,
     );
   }
 }
