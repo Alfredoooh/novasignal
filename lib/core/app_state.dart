@@ -240,4 +240,35 @@ class AppState with ChangeNotifier {
       throw Exception('Failed to search');
     }
   }
+
+  Future<List<dynamic>> executarPesquisaClube(String clube) async {
+    final clubeLower = clube.toLowerCase();
+    final cacheKey = 'clube_$clubeLower';
+    if (pesquisasCache.containsKey(cacheKey)) {
+      return pesquisasCache[cacheKey]!;
+    }
+    
+    // Buscar jogos dos últimos 60 dias e próximos 60 dias
+    final hoje = DateTime.now();
+    final sessentaDiasAtras = hoje.subtract(const Duration(days: 60));
+    final sessentaDiasFrente = hoje.add(const Duration(days: 60));
+    final from = DateFormat('yyyy-MM-dd').format(sessentaDiasAtras);
+    final to = DateFormat('yyyy-MM-dd').format(sessentaDiasFrente);
+    
+    final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$apiKey';
+    final response = await http.get(Uri.parse(url));
+    
+    if (response.statusCode == 200) {
+      final dados = json.decode(response.body);
+      final resultados = dados.where((jogo) {
+        final hometeam = (jogo['match_hometeam_name'] ?? '').toLowerCase().contains(clubeLower);
+        final awayteam = (jogo['match_awayteam_name'] ?? '').toLowerCase().contains(clubeLower);
+        return hometeam || awayteam;
+      }).toList();
+      pesquisasCache[cacheKey] = resultados;
+      return resultados;
+    } else {
+      throw Exception('Failed to search club');
+    }
+  }
 }
