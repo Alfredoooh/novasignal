@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import 'jogo_detalhes_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
