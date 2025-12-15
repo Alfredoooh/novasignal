@@ -12,33 +12,22 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
-  final PageController _pageController = PageController(viewportFraction: 0.9);
+  final PageController _pageController = PageController(viewportFraction: 0.92);
   int _currentPage = 0;
   Future<List<dynamic>>? _futureJogos;
-
-  final List<String> _topTeams = [
-    'Real Madrid',
-    'Barcelona',
-    'Manchester City',
-    'Bayern Munich',
-    'Liverpool',
-    'Juventus',
-    'PSG',
-    'Chelsea',
-    'Manchester United',
-    'Arsenal',
-  ];
 
   @override
   void initState() {
     super.initState();
     _loadTopMatches();
     _pageController.addListener(() {
-      int next = _pageController.page!.round();
-      if (_currentPage != next) {
-        setState(() {
-          _currentPage = next;
-        });
+      if (_pageController.page != null) {
+        int next = _pageController.page!.round();
+        if (_currentPage != next) {
+          setState(() {
+            _currentPage = next;
+          });
+        }
       }
     });
   }
@@ -50,7 +39,17 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _loadTopMatches() {
-    _futureJogos = context.read<AppState>().carregarJogosDestaque(_topTeams);
+    final appState = context.read<AppState>();
+    _futureJogos = appState.carregarJogosDestaque(appState.topClubs);
+  }
+
+  void _showMatchModal(dynamic jogo) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildMatchModal(jogo),
+    );
   }
 
   @override
@@ -68,6 +67,12 @@ class _HomeTabState extends State<HomeTab> {
                 Icon(Symbols.sports_soccer_rounded, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3)),
                 const SizedBox(height: 16),
                 const Text('Nenhum jogo em destaque no momento'),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _loadTopMatches,
+                  icon: const Icon(Symbols.refresh_rounded),
+                  label: const Text('Recarregar'),
+                ),
               ],
             ),
           );
@@ -75,105 +80,95 @@ class _HomeTabState extends State<HomeTab> {
 
         final jogos = snapshot.data!;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 16),
-              child: Text(
-                'Jogos em Destaque',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Jogos em Destaque',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                ),
               ),
-            ),
-            SizedBox(
-              height: 180,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: jogos.length,
-                itemBuilder: (context, index) {
-                  final jogo = jogos[index];
-                  final isActive = index == _currentPage;
-                  return AnimatedScale(
-                    scale: isActive ? 1.0 : 0.92,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    child: _buildFeaturedCard(jogo, isActive),
-                  );
-                },
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: jogos.length,
+                  itemBuilder: (context, index) {
+                    return _buildFeaturedCard(jogos[index]);
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  jogos.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: _currentPage == index ? 20 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(3),
+              const SizedBox(height: 16),
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(
+                    jogos.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentPage == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentPage == index
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Próximos Jogos',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+              const SizedBox(height: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Próximos Jogos',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: jogos.length,
-                itemBuilder: (context, index) {
-                  return _buildMatchListItem(jogos[index]);
-                },
-              ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              _buildMatchesList(jogos),
+              const SizedBox(height: 80),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildFeaturedCard(dynamic jogo, bool isActive) {
-    final appState = context.read<AppState>();
+  Widget _buildFeaturedCard(dynamic jogo) {
     final status = jogo['match_status'] ?? '';
-    final isLive = status.contains('LIVE') || status.contains('HT');
+    final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
 
     return GestureDetector(
       onTap: () {
+        final appState = context.read<AppState>();
         appState.setJogoDetalhes(jogo['match_id'], '');
         appState.navegarPara('jogo-detalhes');
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withOpacity(0.7),
+              Theme.of(context).colorScheme.primary.withOpacity(0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -185,9 +180,9 @@ class _HomeTabState extends State<HomeTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withOpacity(0.25),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -197,7 +192,7 @@ class _HomeTabState extends State<HomeTab> {
                           width: 6,
                           height: 6,
                           decoration: const BoxDecoration(
-                            color: Colors.red,
+                            color: Colors.white,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -205,7 +200,7 @@ class _HomeTabState extends State<HomeTab> {
                       ],
                       Text(
                         formatarStatus(status),
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
@@ -213,7 +208,7 @@ class _HomeTabState extends State<HomeTab> {
                 Flexible(
                   child: Text(
                     jogo['league_name'] ?? '',
-                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -243,12 +238,12 @@ class _HomeTabState extends State<HomeTab> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '${jogo['match_hometeam_score'] ?? '0'} : ${jogo['match_awayteam_score'] ?? '0'}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 32,
+                      fontSize: 36,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -281,30 +276,51 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildMatchListItem(dynamic jogo) {
-    final appState = context.read<AppState>();
+  Widget _buildMatchesList(List<dynamic> jogos) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: jogos.take(8).map((jogo) => _buildMatchListItem(jogo, jogos.indexOf(jogo) == jogos.length - 1 || jogos.indexOf(jogo) == 7)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMatchListItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
 
     return InkWell(
-      onTap: () {
-        appState.setJogoDetalhes(jogo['match_id'], '');
-        appState.navegarPara('jogo-detalhes');
-      },
+      onTap: () => _showMatchModal(jogo),
+      borderRadius: BorderRadius.vertical(
+        top: jogos.indexOf(jogo) == 0 ? const Radius.circular(16) : Radius.zero,
+        bottom: isLast ? const Radius.circular(16) : Radius.zero,
+      ),
       child: Container(
-        color: Theme.of(context).colorScheme.surface,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        margin: const EdgeInsets.only(bottom: 1),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: !isLast ? Border(
+            bottom: BorderSide(
+              color: Theme.of(context).dividerColor.withOpacity(0.1),
+              width: 0.5,
+            ),
+          ) : null,
+        ),
         child: Row(
           children: [
             Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   jogo['match_time'] ?? '',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   formatarStatus(status),
-                  style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(fontSize: 10, color: getStatusColor(status, context), fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -315,17 +331,19 @@ class _HomeTabState extends State<HomeTab> {
                   Row(
                     children: [
                       Image.network(jogo['team_home_badge'] ?? '', width: 24, height: 24, errorBuilder: (_, __, ___) => Container(width: 24, height: 24)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(jogo['match_hometeam_name'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(jogo['match_hometeam_name'] ?? '', style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
                       Text(jogo['match_hometeam_score'] ?? '-', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Image.network(jogo['team_away_badge'] ?? '', width: 24, height: 24, errorBuilder: (_, __, ___) => Container(width: 24, height: 24)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(jogo['match_awayteam_name'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(jogo['match_awayteam_name'] ?? '', style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis)),
                       Text(jogo['match_awayteam_score'] ?? '-', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                     ],
                   ),
@@ -337,4 +355,167 @@ class _HomeTabState extends State<HomeTab> {
       ),
     );
   }
+
+  Widget _buildMatchModal(dynamic jogo) {
+    final status = jogo['match_status'] ?? '';
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    jogo['league_name'] ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: getStatusColor(status, context).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    formatarStatus(status),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: getStatusColor(status, context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Image.network(
+                            jogo['team_home_badge'] ?? '',
+                            width: 64,
+                            height: 64,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Icons.shield,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            jogo['match_hometeam_name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          Text(
+                            '${jogo['match_hometeam_score'] ?? '0'} : ${jogo['match_awayteam_score'] ?? '0'}',
+                            style: TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.w900,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${jogo['match_date']} • ${jogo['match_time']}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Image.network(
+                            jogo['team_away_badge'] ?? '',
+                            width: 64,
+                            height: 64,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Icons.shield,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            jogo['match_awayteam_name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      final appState = context.read<AppState>();
+                      appState.setJogoDetalhes(jogo['match_id'], '');
+                      appState.navegarPara('jogo-detalhes');
+                    },
+                    icon: const Icon(Symbols.info_rounded),
+                    label: const Text('Ver Detalhes Completos'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<dynamic> get jogos => [];
 }
