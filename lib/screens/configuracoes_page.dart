@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'dart:math' show cos, sin;
 import '../core/app_state.dart';
 
 class ConfiguracoesPage extends StatelessWidget {
@@ -157,12 +158,12 @@ class _AnimatedCheckboxState extends State<AnimatedCheckbox> with TickerProvider
   @override
   void initState() {
     super.initState();
-    
+
     _checkController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _splashController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -293,7 +294,7 @@ class _CheckboxPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round;
 
       final path = Path();
-      
+
       // Desenhar check mark
       final startX = size.width * 0.25;
       final startY = size.height * 0.5;
@@ -303,7 +304,7 @@ class _CheckboxPainter extends CustomPainter {
       final endY = size.height * 0.32;
 
       path.moveTo(startX, startY);
-      
+
       if (checkProgress < 0.5) {
         final progress = checkProgress * 2;
         path.lineTo(
@@ -344,7 +345,7 @@ class _SplashPainter extends CustomPainter {
     if (progress == 0) return;
 
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // Calcular opacidade baseada no progresso
     double opacity;
     if (progress < 0.4) {
@@ -360,19 +361,19 @@ class _SplashPainter extends CustomPainter {
     // Desenhar 6 círculos ao redor (efeito splash)
     final angle = 60.0;
     final maxDistance = 18.0 * progress;
-    
+
     for (int i = 0; i < 6; i++) {
       final rad = (angle * i) * (3.14159 / 180);
       final x = center.dx + maxDistance * cos(rad);
       final y = center.dy + maxDistance * sin(rad);
-      
+
       double circleSize;
       if (progress < 0.4) {
         circleSize = 4 * (progress / 0.4);
       } else {
         circleSize = 4 * (1 - ((progress - 0.4) / 0.6));
       }
-      
+
       canvas.drawCircle(Offset(x, y), circleSize, paint);
     }
   }
@@ -382,6 +383,3 @@ class _SplashPainter extends CustomPainter {
     return oldDelegate.progress != progress;
   }
 }
-
-// Import necessário para cos
-import 'dart:math' show cos;
