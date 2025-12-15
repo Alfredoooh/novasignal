@@ -91,22 +91,38 @@ class MyApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
+      // MODALS E BOTTOM SHEETS MAIS CLAROS
+      dialogTheme: DialogThemeData(
+        backgroundColor: surfaceContainerHighColor,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surfaceContainerHighColor,
+        modalBackgroundColor: surfaceContainerHighColor,
+        elevation: 8,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+      ),
     );
   }
 
-  // TEMA AMOLED - PRETO PURO
+  // TEMA AMOLED - PRETO PURO MAS MODALS MAIS CLAROS
   ThemeData _buildAmoledTheme() {
     const pureBlack = Color(0xFF000000);
     const almostBlack = Color(0xFF0A0A0A);
     const darkGray = Color(0xFF151515);
     const mediumGray = Color(0xFF1A1A1A);
+    const modalGray = Color(0xFF252525); // Mais claro para modals
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF1976D2),
         brightness: Brightness.dark,
-        // PRETO PURO para AMOLED
         surface: almostBlack,
         background: pureBlack,
         surfaceContainerLowest: pureBlack,
@@ -114,11 +130,9 @@ class MyApp extends StatelessWidget {
         surfaceContainer: darkGray,
         surfaceContainerHigh: mediumGray,
         surfaceContainerHighest: const Color(0xFF202020),
-        // Texto com alto contraste
         onSurface: const Color(0xFFFFFFFF),
         onSurfaceVariant: const Color(0xFFB0B0B0),
         onBackground: const Color(0xFFFFFFFF),
-        // Bordas sutis
         outline: const Color(0xFF2A2A2A),
         outlineVariant: const Color(0xFF1A1A1A),
         shadow: pureBlack,
@@ -147,17 +161,19 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      dialogTheme: const DialogThemeData(
-        backgroundColor: darkGray,
-        elevation: 3,
-        shape: RoundedRectangleBorder(
+      // MODALS E BOTTOM SHEETS MAIS CLAROS MESMO NO AMOLED
+      dialogTheme: DialogThemeData(
+        backgroundColor: modalGray,
+        elevation: 8,
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(28)),
         ),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: darkGray,
-        modalBackgroundColor: darkGray,
-        shape: RoundedRectangleBorder(
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: modalGray,
+        modalBackgroundColor: modalGray,
+        elevation: 8,
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
