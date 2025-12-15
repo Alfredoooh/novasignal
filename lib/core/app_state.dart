@@ -41,7 +41,7 @@ class AppState with ChangeNotifier {
     '5fbf446f332cdcb25ae37e36e1d7edeb55f7a47c7b30f34a8fe23da37f8d6ac0',
   ];
   int _currentApiKeyIndex = 0;
-  static const String apiBase = 'https://apifootball.com/api';
+  static const String apiBase = 'https://apiv3.apifootball.com';
 
   // Cache de duração por tipo de requisição (em minutos)
   static const int _cacheDurationJogos = 2; // 2 minutos para jogos
