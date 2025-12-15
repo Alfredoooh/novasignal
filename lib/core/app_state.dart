@@ -10,16 +10,16 @@ class AppState with ChangeNotifier {
   bool _temaEscuro = false;
   bool _temaAmoled = false;
   bool _notificacoesAtivas = true;
-  
+
   // Estado de navegação
   String tabAtual = 'home';
   String paginaAtual = 'home';
   List<String> historicoPaginas = [];
-  
+
   // Estado de filtros e seleções
   String filtroJogos = 'hoje';
   DateTime dataSelecionada = DateTime.now();
-  
+
   // Cache com expiração
   final Map<String, _CacheEntry> _cache = {};
   String jogoDetalhesId = '';
@@ -41,7 +41,7 @@ class AppState with ChangeNotifier {
     '5fbf446f332cdcb25ae37e36e1d7edeb55f7a47c7b30f34a8fe23da37f8d6ac0',
   ];
   int _currentApiKeyIndex = 0;
-  static const String apiBase = 'https://apiv3.apifootball.com';
+  static const String apiBase = 'https://apifootball.com/api';
 
   // Cache de duração por tipo de requisição (em minutos)
   static const int _cacheDurationJogos = 2; // 2 minutos para jogos
@@ -87,7 +87,7 @@ class AppState with ChangeNotifier {
   }
 
   // ========== MÉTODOS DE PREFERÊNCIAS ==========
-  
+
   Future<void> _carregarPreferencias() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -122,7 +122,7 @@ class AppState with ChangeNotifier {
   }
 
   // ========== MÉTODOS DE NAVEGAÇÃO ==========
-  
+
   void mudarTab(String tab) {
     if (tabAtual == tab) return;
     tabAtual = tab;
@@ -147,7 +147,7 @@ class AppState with ChangeNotifier {
   }
 
   // ========== MÉTODOS DE FILTROS ==========
-  
+
   void filtrarJogos(String filtro) {
     filtroJogos = filtro;
     notifyListeners();
@@ -168,7 +168,7 @@ class AppState with ChangeNotifier {
   }
 
   // ========== MÉTODOS DE API OTIMIZADOS ==========
-  
+
   // Verifica cache com expiração
   dynamic _getFromCache(String key) {
     final entry = _cache[key];
@@ -294,7 +294,7 @@ class AppState with ChangeNotifier {
         final jogosFiltrados = dados.where((jogo) {
           final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
           final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
-          
+
           for (var team in topClubs) {
             final teamLower = team.toLowerCase();
             if (home.contains(teamLower) || away.contains(teamLower)) {
@@ -308,10 +308,10 @@ class AppState with ChangeNotifier {
         jogosFiltrados.sort((a, b) {
           final aStatus = a['match_status'] ?? '';
           final bStatus = b['match_status'] ?? '';
-          
+
           final aIsLive = aStatus.contains("'") || aStatus == 'HT' || aStatus == 'LIVE';
           final bIsLive = bStatus.contains("'") || bStatus == 'HT' || bStatus == 'LIVE';
-          
+
           if (aIsLive && !bIsLive) return -1;
           if (!aIsLive && bIsLive) return 1;
           return 0;
@@ -335,7 +335,7 @@ class AppState with ChangeNotifier {
 
     final cached = _getFromCache(cacheKey);
     if (cached != null) return cached as List<dynamic>;
-    
+
     try {
       final hoje = DateTime.now();
       final seteDiasAtras = hoje.subtract(const Duration(days: 7));
@@ -404,7 +404,7 @@ class AppState with ChangeNotifier {
     try {
       final url = '$apiBase/?action=get_leagues&APIkey=$_currentApiKey';
       debugPrint('🚀 Buscando ligas...');
-      
+
       final dados = await _makeRequest(url);
 
       if (dados is List) {
@@ -452,7 +452,7 @@ class AppState with ChangeNotifier {
       final trintaDiasAtras = hoje.subtract(const Duration(days: 30));
       final from = DateFormat('yyyy-MM-dd').format(trintaDiasAtras);
       final to = DateFormat('yyyy-MM-dd').format(hoje);
-      
+
       final url = '$apiBase/?action=get_events&league_id=$ligaId&from=$from&to=$to&APIkey=$_currentApiKey';
       final dados = await _makeRequest(url);
 
