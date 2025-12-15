@@ -32,16 +32,50 @@ class MyApp extends StatelessWidget {
   }
 
   ThemeData _buildLightTheme() {
+    const pureWhite = Color(0xFFFFFFFF);
+    
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: const Color(0xFF1976D2),
         brightness: Brightness.light,
+        surface: pureWhite,
+        background: pureWhite,
+        surfaceContainerLowest: pureWhite,
+        surfaceContainerLow: const Color(0xFFFAFAFA),
+        surfaceContainer: const Color(0xFFF5F5F5),
+        surfaceContainerHigh: const Color(0xFFF0F0F0),
+        surfaceContainerHighest: const Color(0xFFEBEBEB),
       ),
-      scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+      scaffoldBackgroundColor: pureWhite,
+      cardColor: pureWhite,
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
+        backgroundColor: pureWhite,
+      ),
+      cardTheme: CardThemeData(
+        color: pureWhite,
+        elevation: 1,
+        shadowColor: Colors.black.withOpacity(0.05),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: pureWhite,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: pureWhite,
+        modalBackgroundColor: pureWhite,
+        elevation: 8,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
       ),
     );
   }
@@ -91,7 +125,7 @@ class MyApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      // MODALS E BOTTOM SHEETS MAIS CLAROS
+      // MODAIS E BOTTOM SHEETS MAIS CLAROS
       dialogTheme: DialogThemeData(
         backgroundColor: surfaceContainerHighColor,
         elevation: 8,
