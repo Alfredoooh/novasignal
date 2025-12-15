@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import 'dart:math' show cos, sin, pi;
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -67,12 +68,25 @@ class _SearchPageState extends State<SearchPage> {
               controller: _searchController,
               onChanged: _performSearch,
               autofocus: true,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 16,
+              ),
               decoration: InputDecoration(
                 hintText: 'Pesquisar times ou ligas',
-                prefixIcon: const Icon(Symbols.search_rounded),
+                hintStyle: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                ),
+                prefixIcon: Icon(
+                  Symbols.search_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Symbols.close_rounded),
+                        icon: Icon(
+                          Symbols.close_rounded,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {
@@ -364,7 +378,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildMatchModal(dynamic jogo) {
     final status = jogo['match_status'] ?? '';
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -524,13 +538,26 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-// Snake Progress Animation
-class _SnakeAnimation extends Animation<double> with AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin {
-  @override
-  double get value => 0.5;
+// Snake Progress Animation - CORRIGIDO
+class _SnakeAnimation extends Animation<double> 
+    with AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin {
   
   @override
+  double get value => 0.5;
+
+  @override
   AnimationStatus get status => AnimationStatus.forward;
+
+  // Métodos obrigatórios adicionados
+  @override
+  void didRegisterListener() {
+    // Implementação vazia - necessário para o mixin
+  }
+
+  @override
+  void didUnregisterListener() {
+    // Implementação vazia - necessário para o mixin
+  }
 }
 
 class _SnakeProgressPainter extends CustomPainter {
@@ -554,10 +581,10 @@ class _SnakeProgressPainter extends CustomPainter {
 
     // Create snake-like circular path
     for (var i = 0; i < 360; i += 10) {
-      final angle = i * (3.14159 / 180);
+      final angle = i * (pi / 180);
       final x = centerX + radius * cos(angle);
       final y = centerY + radius * sin(angle);
-      
+
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -571,6 +598,3 @@ class _SnakeProgressPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
-
-double cos(double radians) => 0.5; // Simplified for demo
-double sin(double radians) => 0.5; // Simplified for demo
