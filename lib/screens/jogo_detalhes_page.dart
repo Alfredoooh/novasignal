@@ -15,7 +15,8 @@ class JogoDetalhesPage extends StatefulWidget {
 }
 
 class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProviderStateMixin {
-  Future<dynamic>? _futureJogo;
+  Map<String, dynamic>? _jogo;
+  bool _isLoading = true;
   late AnimationController _loadingController;
   final DraggableScrollableController _scrollController = DraggableScrollableController();
 
@@ -26,7 +27,25 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     )..repeat();
-    _futureJogo = context.read<AppState>().carregarJogoDetalhes(widget.jogoId);
+    _carregarDados();
+  }
+
+  Future<void> _carregarDados() async {
+    try {
+      final dados = await context.read<AppState>().carregarJogoDetalhes(widget.jogoId);
+      if (mounted) {
+        setState(() {
+          _jogo = dados;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -38,331 +57,353 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      body: FutureBuilder<dynamic>(
-        future: _futureJogo,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: AnimatedBuilder(
-                  animation: _loadingController,
-                  builder: (context, child) {
-                    return CustomPaint(
-                      painter: _ExpressiveProgressPainter(
-                        progress: _loadingController.value,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
-          } else if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Symbols.error_rounded,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.error.withOpacity(0.5),
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.background,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Symbols.arrow_back_rounded),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text('Detalhes'),
+        ),
+        body: Center(
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: AnimatedBuilder(
+              animation: _loadingController,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: _ExpressiveProgressPainter(
+                    progress: _loadingController.value,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 16),
-                  const Text('Erro ao carregar detalhes'),
-                ],
-              ),
-            );
-          }
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
 
-          final jogo = snapshot.data!;
-          return _buildDetalhes(jogo);
-        },
-      ),
-    );
-  }
-
-  Widget _buildDetalhes(dynamic jogo) {
-    final status = jogo['match_status'] ?? '';
-    final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
-
-    return Stack(
-      children: [
-        // Header fixo
-        Container(
-          height: 280,
-          color: Theme.of(context).colorScheme.surface,
-          padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
+    if (_jogo == null) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.background,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Symbols.arrow_back_rounded),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text('Detalhes'),
+        ),
+        body: Center(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                jogo['league_name'] ?? '',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+              Icon(
+                Symbols.error_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.error.withOpacity(0.5),
               ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Time Casa
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Image.network(
-                          jogo['team_home_badge'] ?? '',
-                          width: 64,
-                          height: 64,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.shield,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          jogo['match_hometeam_name'] ?? '',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Placar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        Text(
-                          '${jogo['match_hometeam_score'] ?? '0'} - ${jogo['match_awayteam_score'] ?? '0'}',
-                          style: TextStyle(
-                            fontSize: 44,
-                            fontWeight: FontWeight.w900,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isLive 
-                                ? getStatusColor(status, context).withOpacity(0.15)
-                                : Theme.of(context).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isLive) ...[
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: getStatusColor(status, context),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                              ],
-                              Text(
-                                formatarStatus(status),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: isLive 
-                                      ? getStatusColor(status, context)
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Time Visitante
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Image.network(
-                          jogo['team_away_badge'] ?? '',
-                          width: 64,
-                          height: 64,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.shield,
-                            size: 64,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          jogo['match_awayteam_name'] ?? '',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '${jogo['match_date']} • ${jogo['match_time']}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
+              const SizedBox(height: 16),
+              const Text('Erro ao carregar detalhes'),
             ],
           ),
         ),
+      );
+    }
 
-        // Modal draggable com conteúdo
-        DraggableScrollableSheet(
-          controller: _scrollController,
-          initialChildSize: 0.65,
-          minChildSize: 0.65,
-          maxChildSize: 1.0,
-          snap: true,
-          snapSizes: const [0.65, 1.0],
-          builder: (context, scrollController) {
-            return Container(
+    return _buildDetalhes(_jogo!);
+  }
+
+  Widget _buildDetalhes(Map<String, dynamic> jogo) {
+    final status = jogo['match_status'] ?? '';
+    final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Symbols.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Detalhes'),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
+      body: Stack(
+        children: [
+          // Header fixo com informações do jogo
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
+                children: [
+                  Text(
+                    jogo['league_name'] ?? '',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Time Casa
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Image.network(
+                              jogo['team_home_badge'] ?? '',
+                              width: 64,
+                              height: 64,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.shield,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              jogo['match_hometeam_name'] ?? '',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Placar
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            Text(
+                              '${jogo['match_hometeam_score'] ?? '0'} - ${jogo['match_awayteam_score'] ?? '0'}',
+                              style: TextStyle(
+                                fontSize: 44,
+                                fontWeight: FontWeight.w900,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isLive 
+                                    ? getStatusColor(status, context).withOpacity(0.15)
+                                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isLive) ...[
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: getStatusColor(status, context),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                  ],
+                                  Text(
+                                    formatarStatus(status),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: isLive 
+                                          ? getStatusColor(status, context)
+                                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Time Visitante
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Image.network(
+                              jogo['team_away_badge'] ?? '',
+                              width: 64,
+                              height: 64,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.shield,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              jogo['match_awayteam_name'] ?? '',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${jogo['match_date']} • ${jogo['match_time']}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Modal draggable com conteúdo
+          DraggableScrollableSheet(
+            controller: _scrollController,
+            initialChildSize: 0.55,
+            minChildSize: 0.55,
+            maxChildSize: 0.95,
+            snap: true,
+            snapSizes: const [0.55, 0.95],
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.background,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Handle do drag
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    // Conteúdo scrollável
+                    Expanded(
+                      child: ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.only(bottom: 100),
+                        children: [
+                          // Gols
+                          if (jogo['goalscorer'] != null && jogo['goalscorer'].isNotEmpty) ...[
+                            _buildGoalsSection(jogo),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Cartões
+                          if (jogo['cards'] != null && jogo['cards'].isNotEmpty) ...[
+                            _buildCardsSection(jogo),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Substituições
+                          if (jogo['substitutions'] != null && jogo['substitutions'].isNotEmpty) ...[
+                            _buildSubstitutionsSection(jogo),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Estatísticas
+                          if (jogo['statistics'] != null && jogo['statistics'].isNotEmpty) ...[
+                            _buildStatisticsSection(jogo),
+                            const SizedBox(height: 16),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          // Bottom bar fixo
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.background,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),
                 ],
               ),
-              child: Column(
-                children: [
-                  // Handle do drag
-                  Container(
-                    margin: const EdgeInsets.symmetric(vertical: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(2),
+              child: SafeArea(
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Navegação para odds
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  // Conteúdo scrollável
-                  Expanded(
-                    child: ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.only(bottom: 100),
-                      children: [
-                        // Gols
-                        if (jogo['goalscorer'] != null && jogo['goalscorer'].isNotEmpty) ...[
-                          _buildGoalsSection(jogo),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Cartões
-                        if (jogo['cards'] != null && jogo['cards'].isNotEmpty) ...[
-                          _buildCardsSection(jogo),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Substituições
-                        if (jogo['substitutions'] != null && jogo['substitutions'].isNotEmpty) ...[
-                          _buildSubstitutionsSection(jogo),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Estatísticas
-                        if (jogo['statistics'] != null && jogo['statistics'].isNotEmpty) ...[
-                          _buildStatisticsSection(jogo),
-                          const SizedBox(height: 16),
-                        ],
-                      ],
-                    ),
+                  child: const Text(
+                    'Começar Aposta',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
-                ],
-              ),
-            );
-          },
-        ),
-
-        // Bottom bar fixo
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => OddsSelectionPage(jogoId: widget.jogoId),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Começar Aposta',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildGoalsSection(dynamic jogo) {
     final allGoals = <Map<String, dynamic>>[];
-    
+
     for (var gol in jogo['goalscorer']) {
       allGoals.add({
         'time': int.tryParse(gol['time']?.toString() ?? '0') ?? 0,
         'scorer': gol['home_scorer'] ?? gol['away_scorer'] ?? '',
         'assist': gol['home_assist'] ?? gol['away_assist'] ?? '',
-        'isHome': gol['home_scorer'] != null,
+        'isHome': gol['home_scorer'] != null && gol['home_scorer'].toString().isNotEmpty,
       });
     }
-    
-    // Ordenar por minuto crescente
+
     allGoals.sort((a, b) => a['time'].compareTo(b['time']));
 
     return Container(
@@ -402,7 +443,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       child: Row(
         children: [
           if (isHome) ...[
-            // Time casa: nome à esquerda
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -423,7 +463,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
             ),
             const SizedBox(width: 12),
           ],
-          // Minuto centralizado
           Container(
             width: 60,
             alignment: Alignment.center,
@@ -445,7 +484,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           ),
           if (!isHome) ...[
             const SizedBox(width: 12),
-            // Time visitante: nome à direita
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -474,16 +512,16 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   Widget _buildCardsSection(dynamic jogo) {
     final allCards = <Map<String, dynamic>>[];
-    
+
     for (var card in jogo['cards']) {
       allCards.add({
         'time': int.tryParse(card['time']?.toString() ?? '0') ?? 0,
         'player': card['home_fault'] ?? card['away_fault'] ?? '',
-        'isHome': card['home_fault'] != null,
+        'isHome': card['home_fault'] != null && card['home_fault'].toString().isNotEmpty,
         'isYellow': card['card'] == 'yellow card',
       });
     }
-    
+
     allCards.sort((a, b) => a['time'].compareTo(b['time']));
 
     return Container(
@@ -572,15 +610,15 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   Widget _buildSubstitutionsSection(dynamic jogo) {
     final allSubs = <Map<String, dynamic>>[];
-    
+
     for (var sub in jogo['substitutions']) {
       allSubs.add({
         'time': int.tryParse(sub['time']?.toString() ?? '0') ?? 0,
         'substitution': sub['substitution'] ?? '',
-        'isHome': sub['home_scorer'] != null,
+        'isHome': sub['home_scorer'] != null && sub['home_scorer'].toString().isNotEmpty,
       });
     }
-    
+
     allSubs.sort((a, b) => a['time'].compareTo(b['time']));
 
     return Container(
@@ -1019,23 +1057,4 @@ class _PieChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PieChartPainter oldDelegate) => true;
-}
-
-// Página de seleção de odds (placeholder)
-class OddsSelectionPage extends StatelessWidget {
-  final String jogoId;
-
-  const OddsSelectionPage({super.key, required this.jogoId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Selecionar Odds'),
-      ),
-      body: const Center(
-        child: Text('Tela de Odds em construção'),
-      ),
-    );
-  }
 }
