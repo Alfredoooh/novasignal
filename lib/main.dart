@@ -107,7 +107,7 @@ class MyApp extends StatelessWidget {
         }),
       ),
       // Cards e containers
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -119,7 +119,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       // Dialogs
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: surfaceContainerColor,
         elevation: 3,
         shape: RoundedRectangleBorder(
