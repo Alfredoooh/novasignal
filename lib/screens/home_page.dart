@@ -32,24 +32,14 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
-        return PopScope(
-          canPop: appState.historicoPaginas.isEmpty,
-          onPopInvokedWithResult: (didPop, result) {
-            if (!didPop && appState.historicoPaginas.isNotEmpty) {
-              appState.voltarPagina();
-            }
-          },
-          child: Scaffold(
-            key: _scaffoldKey,
-            extendBody: true,
-            appBar: _buildAppBar(context, appState),
-            body: SafeArea(
-              top: false,
-              child: _buildBody(appState),
-            ),
-            bottomNavigationBar: _buildBottomNav(appState),
-            drawer: _buildDrawer(context, appState),
-          ),
+        return Scaffold(
+          key: _scaffoldKey,
+          extendBody: true,
+          extendBodyBehindAppBar: true,
+          appBar: _buildAppBar(context, appState),
+          body: _buildBody(appState),
+          bottomNavigationBar: _buildBottomNav(appState),
+          drawer: _buildDrawer(context, appState),
         );
       },
     );
@@ -119,33 +109,20 @@ class _HomePageState extends State<HomePage> {
         );
         title = 'Caixa de Entrada';
         break;
-      case 'jogo-detalhes':
-        leading = IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded),
-          onPressed: () => appState.voltarPagina(),
-        );
-        title = 'Detalhes';
-        break;
-      case 'configuracoes':
-        leading = IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        );
-        title = 'Configurações';
-        break;
     }
 
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
       child: ClipRRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: AppBar(
             leading: leading,
             title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             actions: actions,
             centerTitle: false,
-            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.65),
+            surfaceTintColor: Colors.transparent,
             elevation: 0,
           ),
         ),
@@ -154,57 +131,46 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBody(AppState appState) {
-    // Para páginas especiais, usa navegação direta
-    if (['jogo-detalhes', 'configuracoes'].contains(appState.paginaAtual)) {
-      return _buildPage(appState.paginaAtual, appState);
-    }
-
-    // Para tabs principais, usa PageView SEM animação
-    return PageView(
-      controller: _pageController,
-      physics: const NeverScrollableScrollPhysics(), // Desativa swipe entre abas
-      children: const [
-        HomeTab(),
-        JogosPage(),
-        AtividadesPage(),
-        InboxPage(),
-      ],
+    return SafeArea(
+      top: true,
+      bottom: false,
+      child: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        onPageChanged: (index) {
+          final tabs = ['home', 'jogos', 'atividades', 'inbox'];
+          if (index < tabs.length) {
+            appState.mudarTab(tabs[index]);
+          }
+        },
+        children: const [
+          HomeTab(),
+          JogosPage(),
+          AtividadesPage(),
+          InboxPage(),
+        ],
+      ),
     );
   }
 
-  Widget _buildPage(String pagina, AppState appState) {
-    switch (pagina) {
-      case 'jogo-detalhes':
-        return JogoDetalhesPage(jogoId: appState.jogoDetalhesId);
-      case 'configuracoes':
-        return const ConfiguracoesPage();
-      default:
-        return const SizedBox();
-    }
-  }
-
   Widget _buildBottomNav(AppState appState) {
-    if (['jogo-detalhes', 'configuracoes', 'search'].contains(appState.paginaAtual)) {
-      return const SizedBox.shrink();
-    }
-
     int currentIndex = ['home', 'jogos', 'atividades', 'inbox'].indexOf(appState.tabAtual);
+    if (currentIndex == -1) currentIndex = 0;
 
-    // Sincronizar PageView com NavigationBar SEM animação
-    if (_pageController.hasClients) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_pageController.hasClients && _pageController.page?.round() != currentIndex) {
-          _pageController.jumpToPage(currentIndex); // jumpToPage = sem animação
-        }
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_pageController.hasClients && 
+          _pageController.page != null && 
+          _pageController.page!.round() != currentIndex) {
+        _pageController.jumpToPage(currentIndex);
+      }
+    });
 
     return ClipRRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.65),
             border: Border(
               top: BorderSide(
                 color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -213,13 +179,16 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           child: SafeArea(
+            top: false,
             child: NavigationBar(
               selectedIndex: currentIndex,
               onDestinationSelected: (index) {
-                appState.mudarTab(['home', 'jogos', 'atividades', 'inbox'][index]);
+                final tabs = ['home', 'jogos', 'atividades', 'inbox'];
+                appState.mudarTab(tabs[index]);
               },
               backgroundColor: Colors.transparent,
               elevation: 0,
+              surfaceTintColor: Colors.transparent,
               indicatorColor: Theme.of(context).colorScheme.primaryContainer,
               destinations: const [
                 NavigationDestination(
