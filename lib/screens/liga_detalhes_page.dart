@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import 'dart:math' show cos, sin, pi;
 
 // ==================== LIGAS PAGE ====================
 class LigasPage extends StatefulWidget {
@@ -12,13 +14,24 @@ class LigasPage extends StatefulWidget {
   State<LigasPage> createState() => _LigasPageState();
 }
 
-class _LigasPageState extends State<LigasPage> {
+class _LigasPageState extends State<LigasPage> with SingleTickerProviderStateMixin {
   Future<List<dynamic>>? _futureLigas;
+  late AnimationController _loadingController;
 
   @override
   void initState() {
     super.initState();
+    _loadingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
     _futureLigas = context.read<AppState>().carregarLigas();
+  }
+
+  @override
+  void dispose() {
+    _loadingController.dispose();
+    super.dispose();
   }
 
   @override
@@ -27,7 +40,23 @@ class _LigasPageState extends State<LigasPage> {
       future: _futureLigas,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: AnimatedBuilder(
+                animation: _loadingController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: _ExpressiveProgressPainter(
+                      progress: _loadingController.value,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
         } else if (snapshot.hasError) {
           return Center(
             child: Column(
@@ -48,7 +77,7 @@ class _LigasPageState extends State<LigasPage> {
             ligasPorPais[pais]!.add(liga);
           }
           final sortedPaises = ligasPorPais.keys.toList()..sort();
-          
+
           return ListView.builder(
             padding: EdgeInsets.zero,
             itemCount: sortedPaises.length,
@@ -87,11 +116,17 @@ class _LigasPageState extends State<LigasPage> {
   }
 
   Widget _buildLeagueItem(dynamic liga, BuildContext context) {
-    final appState = context.read<AppState>();
     return InkWell(
       onTap: () {
-        appState.setLigaDetalhes(liga['league_id'], liga['league_name']);
-        appState.navegarPara('liga-detalhes');
+        // Navega para LigaDetalhesPage
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => LigaDetalhesPage(
+              ligaId: liga['league_id'],
+              ligaData: liga,
+            ),
+          ),
+        );
       },
       child: Column(
         children: [
@@ -99,18 +134,26 @@ class _LigasPageState extends State<LigasPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
+                // Logo oficial da liga da API
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: Image.network(
-                    liga['league_logo'] ?? 'https://via.placeholder.com/36',
+                    liga['league_logo'] ?? '',
                     width: 36,
                     height: 36,
                     fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => Container(
                       width: 36,
                       height: 36,
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      child: Icon(Symbols.emoji_events_rounded, size: 20, color: Theme.of(context).colorScheme.primary),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Symbols.emoji_events_rounded,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -136,111 +179,144 @@ class _LigasPageState extends State<LigasPage> {
 // ==================== LIGA DETALHES PAGE ====================
 class LigaDetalhesPage extends StatefulWidget {
   final String ligaId;
+  final dynamic ligaData;
 
-  const LigaDetalhesPage({super.key, required this.ligaId});
+  const LigaDetalhesPage({
+    super.key,
+    required this.ligaId,
+    required this.ligaData,
+  });
 
   @override
   State<LigaDetalhesPage> createState() => _LigaDetalhesPageState();
 }
 
-class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerProviderStateMixin {
+class _LigaDetalhesPageState extends State<LigaDetalhesPage> with TickerProviderStateMixin {
   Future<List<dynamic>>? _futureClassificacao;
   Future<List<dynamic>>? _futureJogos;
-  dynamic _liga;
   late TabController _tabController;
+  late AnimationController _loadingController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
     _loadData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _loadingController.dispose();
     super.dispose();
   }
 
   void _loadData() {
     final appState = context.read<AppState>();
-    _liga = appState.todasLigas.firstWhere((l) => l['league_id'] == widget.ligaId, orElse: () => null);
     _futureClassificacao = appState.carregarClassificacao(widget.ligaId);
     _futureJogos = appState.carregarUltimosJogosLiga(widget.ligaId);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_liga == null) {
-      return const Center(child: Text('Liga não encontrada'));
-    }
-
-    return Column(
-      children: [
-        // Header
-        Container(
-          color: Theme.of(context).colorScheme.surface,
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  _liga['league_logo'] ?? 'https://via.placeholder.com/56',
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Container(
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.background,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Symbols.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          widget.ligaData['league_name'] ?? 'Liga',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+      ),
+      body: Column(
+        children: [
+          // Header com logo da liga
+          Container(
+            color: Theme.of(context).colorScheme.surface,
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    widget.ligaData['league_logo'] ?? '',
                     width: 56,
                     height: 56,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    child: Icon(Symbols.emoji_events_rounded, size: 32, color: Theme.of(context).colorScheme.primary),
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Symbols.emoji_events_rounded,
+                        size: 32,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_liga['league_name'] ?? 'Unknown', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    Text(_liga['country_name'] ?? 'Unknown', style: Theme.of(context).textTheme.bodySmall),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.ligaData['league_name'] ?? 'Unknown',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        widget.ligaData['country_name'] ?? 'Unknown',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        
-        // Tabs
-        Container(
-          color: Theme.of(context).colorScheme.surface,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            indicatorWeight: 3,
-            labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            tabs: const [
-              Tab(text: 'Classificação'),
-              Tab(text: 'Últimos Jogos'),
-            ],
+
+          // Tabs
+          Container(
+            color: Theme.of(context).colorScheme.surface,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Theme.of(context).colorScheme.primary,
+              unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              tabs: const [
+                Tab(text: 'Classificação'),
+                Tab(text: 'Últimos Jogos'),
+              ],
+            ),
           ),
-        ),
-        Container(height: 0.5, color: Theme.of(context).dividerColor.withOpacity(0.3)),
-        
-        // Tab Content
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildClassificacaoTab(),
-              _buildJogosTab(),
-            ],
+          Container(height: 0.5, color: Theme.of(context).dividerColor.withOpacity(0.3)),
+
+          // Tab Content
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildClassificacaoTab(),
+                _buildJogosTab(),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -249,7 +325,23 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
       future: _futureClassificacao,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: AnimatedBuilder(
+                animation: _loadingController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: _ExpressiveProgressPainter(
+                      progress: _loadingController.value,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
         } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
             child: Column(
@@ -295,10 +387,17 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                   ),
                   const SizedBox(width: 12),
                   Image.network(
-                    equipa['team_badge'] ?? 'https://via.placeholder.com/28',
+                    equipa['team_badge'] ?? '',
                     width: 28,
                     height: 28,
-                    errorBuilder: (_, __, ___) => Container(width: 28, height: 28, color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -324,7 +423,23 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
       future: _futureJogos,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: AnimatedBuilder(
+                animation: _loadingController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    painter: _ExpressiveProgressPainter(
+                      progress: _loadingController.value,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
         } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
             child: Column(
@@ -367,6 +482,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
       onTap: () {
         appState.setJogoDetalhes(jogo['match_id'], '');
         appState.navegarPara('jogo-detalhes');
+        Navigator.of(context).pop(); // Volta para home onde o estado irá mudar
       },
       child: Container(
         color: Theme.of(context).colorScheme.surface,
@@ -396,7 +512,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                 Expanded(
                   child: Row(
                     children: [
-                      Image.network(jogo['team_home_badge'] ?? 'https://via.placeholder.com/32', width: 32, height: 32, errorBuilder: (_, __, ___) => Container(width: 32, height: 32, color: Colors.grey[300])),
+                      Image.network(jogo['team_home_badge'] ?? '', width: 32, height: 32, errorBuilder: (_, __, ___) => Container(width: 32, height: 32)),
                       const SizedBox(width: 10),
                       Expanded(child: Text(jogo['match_hometeam_name'] ?? 'Home', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                     ],
@@ -412,7 +528,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                     children: [
                       Expanded(child: Text(jogo['match_awayteam_name'] ?? 'Away', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis, textAlign: TextAlign.right)),
                       const SizedBox(width: 10),
-                      Image.network(jogo['team_away_badge'] ?? 'https://via.placeholder.com/32', width: 32, height: 32, errorBuilder: (_, __, ___) => Container(width: 32, height: 32, color: Colors.grey[300])),
+                      Image.network(jogo['team_away_badge'] ?? '', width: 32, height: 32, errorBuilder: (_, __, ___) => Container(width: 32, height: 32)),
                     ],
                   ),
                 ),
@@ -422,5 +538,80 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
         ),
       ),
     );
+  }
+}
+
+// Material Design 3 Expressive Progress Indicator
+class _ExpressiveProgressPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  _ExpressiveProgressPainter({
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 4;
+
+    final path = Path();
+    final phase = (progress * 3) % 3;
+    
+    double startAngle = -pi / 2 + (progress * 2 * pi);
+    double sweepAngle;
+    
+    if (phase < 1) {
+      sweepAngle = phase * pi * 1.5;
+    } else if (phase < 2) {
+      sweepAngle = pi * 1.5;
+      startAngle += (phase - 1) * pi * 2;
+    } else {
+      sweepAngle = (3 - phase) * pi * 1.5;
+      startAngle += pi * 2;
+    }
+
+    final segments = 60;
+    for (var i = 0; i <= segments; i++) {
+      final t = i / segments;
+      final angle = startAngle + (sweepAngle * t);
+      final wave = sin(angle * 3 + progress * pi * 4) * 2;
+      final r = radius + wave;
+      
+      final x = center.dx + r * cos(angle);
+      final y = center.dy + r * sin(angle);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    paint.shader = SweepGradient(
+      colors: [
+        color.withOpacity(0.2),
+        color,
+        color,
+        color.withOpacity(0.2),
+      ],
+      stops: const [0.0, 0.3, 0.7, 1.0],
+      transform: GradientRotation(startAngle),
+    ).createShader(rect);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_ExpressiveProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }
