@@ -6,8 +6,6 @@ import '../core/app_state.dart';
 import 'home_tab.dart';
 import 'search_page.dart';
 import 'jogos_page.dart';
-import 'atividades_page.dart';
-import 'inbox_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
 
@@ -41,7 +39,6 @@ class _HomePageState extends State<HomePage> {
           },
           child: Scaffold(
             key: _scaffoldKey,
-            extendBodyBehindAppBar: true,
             extendBody: true,
             appBar: _buildAppBar(context, appState),
             body: _buildBody(appState),
@@ -103,33 +100,12 @@ class _HomePageState extends State<HomePage> {
           ),
         ];
         break;
-      case 'atividades':
-        leading = IconButton(
-          icon: const Icon(Symbols.menu_rounded),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        );
-        title = 'Atividades';
-        break;
-      case 'inbox':
-        leading = IconButton(
-          icon: const Icon(Symbols.menu_rounded),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        );
-        title = 'Caixa de Entrada';
-        break;
       case 'jogo-detalhes':
         leading = IconButton(
           icon: const Icon(Symbols.arrow_back_rounded),
           onPressed: () => appState.voltarPagina(),
         );
         title = 'Detalhes';
-        break;
-      case 'configuracoes':
-        leading = IconButton(
-          icon: const Icon(Symbols.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        );
-        title = 'Configurações';
         break;
     }
 
@@ -143,7 +119,7 @@ class _HomePageState extends State<HomePage> {
             title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             actions: actions,
             centerTitle: false,
-            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
             elevation: 0,
           ),
         ),
@@ -152,52 +128,35 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBody(AppState appState) {
-    // Para páginas especiais, usa navegação direta
-    if (['jogo-detalhes', 'configuracoes'].contains(appState.paginaAtual)) {
-      return _buildPage(appState.paginaAtual, appState);
+    // Para jogo-detalhes, usa navegação direta
+    if (appState.paginaAtual == 'jogo-detalhes') {
+      return JogoDetalhesPage(jogoId: appState.jogoDetalhesId);
     }
 
-    // Para tabs principais, usa PageView com navegação nativa horizontal
+    // Para tabs principais, usa PageView SEM animação
     return PageView(
       controller: _pageController,
-      physics: const PageScrollPhysics(), // Scroll nativo iOS/Android
+      physics: const NeverScrollableScrollPhysics(), // SEM scroll/animação
       onPageChanged: (index) {
-        appState.mudarTab(['home', 'jogos', 'atividades', 'inbox'][index]);
+        appState.mudarTab(['home', 'jogos'][index]);
       },
       children: const [
         HomeTab(),
         JogosPage(),
-        AtividadesPage(),
-        InboxPage(),
       ],
     );
   }
 
-  Widget _buildPage(String pagina, AppState appState) {
-    switch (pagina) {
-      case 'jogo-detalhes':
-        return JogoDetalhesPage(jogoId: appState.jogoDetalhesId);
-      case 'configuracoes':
-        return const ConfiguracoesPage();
-      default:
-        return const SizedBox();
-    }
-  }
-
   Widget _buildBottomNav(AppState appState) {
-    if (['jogo-detalhes', 'configuracoes', 'search'].contains(appState.paginaAtual)) {
+    if (['jogo-detalhes', 'search'].contains(appState.paginaAtual)) {
       return const SizedBox.shrink();
     }
 
-    int currentIndex = ['home', 'jogos', 'atividades', 'inbox'].indexOf(appState.tabAtual);
+    int currentIndex = ['home', 'jogos'].indexOf(appState.tabAtual);
 
-    // Sincronizar PageView com NavigationBar
+    // Sincronizar PageView com NavigationBar SEM animação
     if (_pageController.hasClients && _pageController.page?.round() != currentIndex) {
-      _pageController.animateToPage(
-        currentIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOutCubic,
-      );
+      _pageController.jumpToPage(currentIndex); // jumpToPage = SEM animação
     }
 
     return ClipRRect(
@@ -205,7 +164,7 @@ class _HomePageState extends State<HomePage> {
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
             border: Border(
               top: BorderSide(
                 color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -217,7 +176,7 @@ class _HomePageState extends State<HomePage> {
             child: NavigationBar(
               selectedIndex: currentIndex,
               onDestinationSelected: (index) {
-                appState.mudarTab(['home', 'jogos', 'atividades', 'inbox'][index]);
+                appState.mudarTab(['home', 'jogos'][index]);
               },
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -232,16 +191,6 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Symbols.sports_soccer_rounded),
                   selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
                   label: 'Jogos',
-                ),
-                NavigationDestination(
-                  icon: Icon(Symbols.notifications_rounded),
-                  selectedIcon: Icon(Symbols.notifications_rounded, fill: 1),
-                  label: 'Atividades',
-                ),
-                NavigationDestination(
-                  icon: Icon(Symbols.inbox_rounded),
-                  selectedIcon: Icon(Symbols.inbox_rounded, fill: 1),
-                  label: 'Inbox',
                 ),
               ],
             ),
