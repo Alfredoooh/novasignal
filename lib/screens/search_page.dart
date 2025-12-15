@@ -12,14 +12,25 @@ class SearchPage extends StatefulWidget {
   State<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchPageState extends State<SearchPage> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   Future<List<dynamic>>? _searchResults;
   bool _isSearching = false;
+  late AnimationController _loadingController;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _loadingController.dispose();
     super.dispose();
   }
 
@@ -218,13 +229,18 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildSnakeProgressIndicator() {
     return SizedBox(
-      width: 60,
-      height: 60,
-      child: CustomPaint(
-        painter: _SnakeProgressPainter(
-          animation: _SnakeAnimation(),
-          color: Theme.of(context).colorScheme.primary,
-        ),
+      width: 48,
+      height: 48,
+      child: AnimatedBuilder(
+        animation: _loadingController,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _ExpressiveProgressPainter(
+              progress: _loadingController.value,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          );
+        },
       ),
     );
   }
@@ -538,52 +554,62 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-// Snake Progress Animation - CORRIGIDO
-class _SnakeAnimation extends Animation<double> 
-    with AnimationLocalListenersMixin, AnimationLocalStatusListenersMixin {
-  
-  @override
-  double get value => 0.5;
-
-  @override
-  AnimationStatus get status => AnimationStatus.forward;
-
-  // Métodos obrigatórios adicionados
-  @override
-  void didRegisterListener() {
-    // Implementação vazia - necessário para o mixin
-  }
-
-  @override
-  void didUnregisterListener() {
-    // Implementação vazia - necessário para o mixin
-  }
-}
-
-class _SnakeProgressPainter extends CustomPainter {
-  final Animation<double> animation;
+// Material Design 3 Expressive Progress Indicator
+class _ExpressiveProgressPainter extends CustomPainter {
+  final double progress;
   final Color color;
 
-  _SnakeProgressPainter({required this.animation, required this.color});
+  _ExpressiveProgressPainter({
+    required this.progress,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 4
+      ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    final path = Path();
-    final centerX = size.width / 2;
-    final centerY = size.height / 2;
+    final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 4;
 
-    // Create snake-like circular path
-    for (var i = 0; i < 360; i += 10) {
-      final angle = i * (pi / 180);
-      final x = centerX + radius * cos(angle);
-      final y = centerY + radius * sin(angle);
+    // Criar o efeito de cobra dinâmica do Material Design 3
+    final path = Path();
+    
+    // Animação em 3 fases para criar o efeito orgânico
+    final phase = (progress * 3) % 3;
+    
+    // Calcular ângulos de início e fim com movimento fluido
+    double startAngle = -pi / 2 + (progress * 2 * pi);
+    double sweepAngle;
+    
+    if (phase < 1) {
+      // Fase 1: Crescimento
+      sweepAngle = phase * pi * 1.5;
+    } else if (phase < 2) {
+      // Fase 2: Movimento completo
+      sweepAngle = pi * 1.5;
+      startAngle += (phase - 1) * pi * 2;
+    } else {
+      // Fase 3: Encolhimento
+      sweepAngle = (3 - phase) * pi * 1.5;
+      startAngle += pi * 2;
+    }
+
+    // Adicionar variação orgânica (efeito de ondulação)
+    final segments = 60;
+    for (var i = 0; i <= segments; i++) {
+      final t = i / segments;
+      final angle = startAngle + (sweepAngle * t);
+      
+      // Variação de raio para criar efeito ondulado
+      final wave = sin(angle * 3 + progress * pi * 4) * 2;
+      final r = radius + wave;
+      
+      final x = center.dx + r * cos(angle);
+      final y = center.dy + r * sin(angle);
 
       if (i == 0) {
         path.moveTo(x, y);
@@ -592,9 +618,24 @@ class _SnakeProgressPainter extends CustomPainter {
       }
     }
 
+    // Gradiente para dar profundidade
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    paint.shader = SweepGradient(
+      colors: [
+        color.withOpacity(0.2),
+        color,
+        color,
+        color.withOpacity(0.2),
+      ],
+      stops: const [0.0, 0.3, 0.7, 1.0],
+      transform: GradientRotation(startAngle),
+    ).createShader(rect);
+
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(_ExpressiveProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
 }
