@@ -18,22 +18,13 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
-  late AnimationController _animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-  }
+  final PageController _pageController = PageController();
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -50,30 +41,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           },
           child: Scaffold(
             key: _scaffoldKey,
-            extendBodyBehindAppBar: false,
+            extendBodyBehindAppBar: true,
             extendBody: true,
             appBar: _buildAppBar(context, appState),
-            body: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 350),
-              switchInCurve: Curves.easeInOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.02, 0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeInOutCubic,
-                    )),
-                    child: child,
-                  ),
-                );
-              },
-              child: _buildPage(appState.paginaAtual, appState),
-            ),
+            body: _buildBody(appState),
             bottomNavigationBar: _buildBottomNav(appState),
             drawer: _buildDrawer(context, appState),
           ),
@@ -102,23 +73,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           IconButton(
             icon: const Icon(Symbols.search_rounded),
             onPressed: () => Navigator.of(context).push(
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => const SearchPage(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.02),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeInOutCubic,
-                      )),
-                      child: child,
-                    ),
-                  );
-                },
+              MaterialPageRoute(
+                builder: (context) => const SearchPage(),
               ),
             ),
           ),
@@ -195,20 +151,34 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
+  Widget _buildBody(AppState appState) {
+    // Para páginas especiais, usa navegação direta
+    if (['jogo-detalhes', 'configuracoes'].contains(appState.paginaAtual)) {
+      return _buildPage(appState.paginaAtual, appState);
+    }
+
+    // Para tabs principais, usa PageView com navegação nativa horizontal
+    return PageView(
+      controller: _pageController,
+      physics: const PageScrollPhysics(), // Scroll nativo iOS/Android
+      onPageChanged: (index) {
+        appState.mudarTab(['home', 'jogos', 'atividades', 'inbox'][index]);
+      },
+      children: const [
+        HomeTab(),
+        JogosPage(),
+        AtividadesPage(),
+        InboxPage(),
+      ],
+    );
+  }
+
   Widget _buildPage(String pagina, AppState appState) {
     switch (pagina) {
-      case 'home':
-        return const HomeTab(key: ValueKey('home'));
-      case 'jogos':
-        return const JogosPage(key: ValueKey('jogos'));
-      case 'atividades':
-        return const AtividadesPage(key: ValueKey('atividades'));
-      case 'inbox':
-        return const InboxPage(key: ValueKey('inbox'));
       case 'jogo-detalhes':
-        return JogoDetalhesPage(key: const ValueKey('jogo-detalhes'), jogoId: appState.jogoDetalhesId);
+        return JogoDetalhesPage(jogoId: appState.jogoDetalhesId);
       case 'configuracoes':
-        return const ConfiguracoesPage(key: ValueKey('configuracoes'));
+        return const ConfiguracoesPage();
       default:
         return const SizedBox();
     }
@@ -221,12 +191,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     int currentIndex = ['home', 'jogos', 'atividades', 'inbox'].indexOf(appState.tabAtual);
 
+    // Sincronizar PageView com NavigationBar
+    if (_pageController.hasClients && _pageController.page?.round() != currentIndex) {
+      _pageController.animateToPage(
+        currentIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
             border: Border(
               top: BorderSide(
                 color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -276,46 +255,50 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     return Drawer(
       child: Column(
         children: [
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 20,
+                  left: 20,
+                  right: 20,
+                  bottom: 20,
+                ),
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Football Live',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Acompanhe seu futebol favorito',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 20,
-              left: 20,
-              right: 20,
-              bottom: 20,
-            ),
-            alignment: Alignment.bottomLeft,
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Football Live',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Acompanhe seu futebol favorito',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
             ),
           ),
           Expanded(
@@ -328,23 +311,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.of(context).push(
-                      PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) => const ConfiguracoesPage(),
-                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0.02, 0),
-                                end: Offset.zero,
-                              ).animate(CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeInOutCubic,
-                              )),
-                              child: child,
-                            ),
-                          );
-                        },
+                      MaterialPageRoute(
+                        builder: (context) => const ConfiguracoesPage(),
                       ),
                     );
                   },
