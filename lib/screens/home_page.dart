@@ -41,10 +41,12 @@ class _HomePageState extends State<HomePage> {
           },
           child: Scaffold(
             key: _scaffoldKey,
-            extendBodyBehindAppBar: true,
             extendBody: true,
             appBar: _buildAppBar(context, appState),
-            body: _buildBody(appState),
+            body: SafeArea(
+              top: false,
+              child: _buildBody(appState),
+            ),
             bottomNavigationBar: _buildBottomNav(appState),
             drawer: _buildDrawer(context, appState),
           ),
@@ -157,13 +159,10 @@ class _HomePageState extends State<HomePage> {
       return _buildPage(appState.paginaAtual, appState);
     }
 
-    // Para tabs principais, usa PageView com navegação nativa horizontal
+    // Para tabs principais, usa PageView SEM animação
     return PageView(
       controller: _pageController,
-      physics: const PageScrollPhysics(), // Scroll nativo iOS/Android
-      onPageChanged: (index) {
-        appState.mudarTab(['home', 'jogos', 'atividades', 'inbox'][index]);
-      },
+      physics: const NeverScrollableScrollPhysics(), // Desativa swipe entre abas
       children: const [
         HomeTab(),
         JogosPage(),
@@ -191,13 +190,13 @@ class _HomePageState extends State<HomePage> {
 
     int currentIndex = ['home', 'jogos', 'atividades', 'inbox'].indexOf(appState.tabAtual);
 
-    // Sincronizar PageView com NavigationBar
-    if (_pageController.hasClients && _pageController.page?.round() != currentIndex) {
-      _pageController.animateToPage(
-        currentIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOutCubic,
-      );
+    // Sincronizar PageView com NavigationBar SEM animação
+    if (_pageController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients && _pageController.page?.round() != currentIndex) {
+          _pageController.jumpToPage(currentIndex); // jumpToPage = sem animação
+        }
+      });
     }
 
     return ClipRRect(
