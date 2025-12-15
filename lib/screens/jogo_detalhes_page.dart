@@ -14,9 +14,10 @@ class JogoDetalhesPage extends StatefulWidget {
   State<JogoDetalhesPage> createState() => _JogoDetalhesPageState();
 }
 
-class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerProviderStateMixin {
+class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProviderStateMixin {
   Future<dynamic>? _futureJogo;
   late AnimationController _loadingController;
+  final DraggableScrollableController _scrollController = DraggableScrollableController();
 
   @override
   void initState() {
@@ -31,6 +32,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
   @override
   void dispose() {
     _loadingController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -87,174 +89,261 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
     final status = jogo['match_status'] ?? '';
     final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
 
-    return CustomScrollView(
-      slivers: [
-        // Header limpo sem gradient
-        SliverToBoxAdapter(
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
-            color: Theme.of(context).colorScheme.surface,
-            child: Column(
-              children: [
-                Text(
-                  jogo['league_name'] ?? '',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return Stack(
+      children: [
+        // Header fixo
+        Container(
+          height: 280,
+          color: Theme.of(context).colorScheme.surface,
+          padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
+          child: Column(
+            children: [
+              Text(
+                jogo['league_name'] ?? '',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // Time Casa
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Image.network(
-                            jogo['team_home_badge'] ?? '',
-                            width: 64,
-                            height: 64,
-                            errorBuilder: (_, __, ___) => Icon(
-                              Icons.shield,
-                              size: 64,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Time Casa
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Image.network(
+                          jogo['team_home_badge'] ?? '',
+                          width: 64,
+                          height: 64,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.shield,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            jogo['match_hometeam_name'] ?? '',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          jogo['match_hometeam_name'] ?? '',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
-                        ],
-                      ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
+                      ],
                     ),
-                    // Placar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          Text(
-                            '${jogo['match_hometeam_score'] ?? '0'} - ${jogo['match_awayteam_score'] ?? '0'}',
-                            style: TextStyle(
-                              fontSize: 44,
-                              fontWeight: FontWeight.w900,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                  ),
+                  // Placar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${jogo['match_hometeam_score'] ?? '0'} - ${jogo['match_awayteam_score'] ?? '0'}',
+                          style: TextStyle(
+                            fontSize: 44,
+                            fontWeight: FontWeight.w900,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isLive 
-                                  ? getStatusColor(status, context).withOpacity(0.15)
-                                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (isLive) ...[
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: getStatusColor(status, context),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                Text(
-                                  formatarStatus(status),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: isLive 
-                                        ? getStatusColor(status, context)
-                                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isLive 
+                                ? getStatusColor(status, context).withOpacity(0.15)
+                                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isLive) ...[
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: getStatusColor(status, context),
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
+                                const SizedBox(width: 6),
                               ],
-                            ),
+                              Text(
+                                formatarStatus(status),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isLive 
+                                      ? getStatusColor(status, context)
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    // Time Visitante
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Image.network(
-                            jogo['team_away_badge'] ?? '',
-                            width: 64,
-                            height: 64,
-                            errorBuilder: (_, __, ___) => Icon(
-                              Icons.shield,
-                              size: 64,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            jogo['match_awayteam_name'] ?? '',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '${jogo['match_date']} • ${jogo['match_time']}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
+                  // Time Visitante
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Image.network(
+                          jogo['team_away_badge'] ?? '',
+                          width: 64,
+                          height: 64,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.shield,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          jogo['match_awayteam_name'] ?? '',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${jogo['match_date']} • ${jogo['match_time']}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
 
-        // Conteúdo
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              // Gols separados por time
-              if (jogo['goalscorer'] != null && jogo['goalscorer'].isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _buildGoalsSection(jogo),
-              ],
+        // Modal draggable com conteúdo
+        DraggableScrollableSheet(
+          controller: _scrollController,
+          initialChildSize: 0.65,
+          minChildSize: 0.65,
+          maxChildSize: 1.0,
+          snap: true,
+          snapSizes: const [0.65, 1.0],
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.background,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Handle do drag
+                  Container(
+                    margin: const EdgeInsets.symmetric(vertical: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // Conteúdo scrollável
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.only(bottom: 100),
+                      children: [
+                        // Gols
+                        if (jogo['goalscorer'] != null && jogo['goalscorer'].isNotEmpty) ...[
+                          _buildGoalsSection(jogo),
+                          const SizedBox(height: 16),
+                        ],
 
-              // Cartões separados por time
-              if (jogo['cards'] != null && jogo['cards'].isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _buildCardsSection(jogo),
-              ],
+                        // Cartões
+                        if (jogo['cards'] != null && jogo['cards'].isNotEmpty) ...[
+                          _buildCardsSection(jogo),
+                          const SizedBox(height: 16),
+                        ],
 
-              // Estatísticas melhoradas
-              if (jogo['statistics'] != null && jogo['statistics'].isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _buildStatisticsSection(jogo),
-              ],
+                        // Substituições
+                        if (jogo['substitutions'] != null && jogo['substitutions'].isNotEmpty) ...[
+                          _buildSubstitutionsSection(jogo),
+                          const SizedBox(height: 16),
+                        ],
 
-              const SizedBox(height: 80),
-            ],
+                        // Estatísticas
+                        if (jogo['statistics'] != null && jogo['statistics'].isNotEmpty) ...[
+                          _buildStatisticsSection(jogo),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        // Bottom bar fixo
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OddsSelectionPage(jogoId: widget.jogoId),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Começar Aposta',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -262,16 +351,19 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
   }
 
   Widget _buildGoalsSection(dynamic jogo) {
-    final homeGoals = <Map<String, dynamic>>[];
-    final awayGoals = <Map<String, dynamic>>[];
-
+    final allGoals = <Map<String, dynamic>>[];
+    
     for (var gol in jogo['goalscorer']) {
-      if (gol['home_scorer'] != null) {
-        homeGoals.add(gol);
-      } else if (gol['away_scorer'] != null) {
-        awayGoals.add(gol);
-      }
+      allGoals.add({
+        'time': int.tryParse(gol['time']?.toString() ?? '0') ?? 0,
+        'scorer': gol['home_scorer'] ?? gol['away_scorer'] ?? '',
+        'assist': gol['home_assist'] ?? gol['away_assist'] ?? '',
+        'isHome': gol['home_scorer'] != null,
+      });
     }
+    
+    // Ordenar por minuto crescente
+    allGoals.sort((a, b) => a['time'].compareTo(b['time']));
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -292,39 +384,25 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
               ],
             ),
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Gols Casa
-              Expanded(
-                child: Column(
-                  children: homeGoals.map((gol) => _buildGoalItem(gol, true, jogo)).toList(),
-                ),
-              ),
-              Container(width: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
-              // Gols Visitante
-              Expanded(
-                child: Column(
-                  children: awayGoals.map((gol) => _buildGoalItem(gol, false, jogo)).toList(),
-                ),
-              ),
-            ],
-          ),
+          ...allGoals.map((gol) => _buildTimelineGoalItem(gol)).toList(),
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Widget _buildGoalItem(Map<String, dynamic> gol, bool isHome, dynamic jogo) {
-    final scorer = isHome ? (gol['home_scorer'] ?? '') : (gol['away_scorer'] ?? '');
-    final assist = isHome ? (gol['home_assist'] ?? '') : (gol['away_assist'] ?? '');
-    final time = gol['time'] ?? '';
+  Widget _buildTimelineGoalItem(Map<String, dynamic> gol) {
+    final isHome = gol['isHome'] as bool;
+    final time = gol['time'] as int;
+    final scorer = gol['scorer'] as String;
+    final assist = gol['assist'] as String;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           if (isHome) ...[
+            // Time casa: nome à esquerda
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,52 +410,42 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
                   Text(
                     scorer,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                   if (assist.isNotEmpty)
                     Text(
                       assist,
                       style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$time\'',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+            const SizedBox(width: 12),
+          ],
+          // Minuto centralizado
+          Container(
+            width: 60,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isHome 
+                  ? const Color(0xFF1E88E5).withOpacity(0.15)
+                  : const Color(0xFF43A047).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$time\'',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isHome ? const Color(0xFF1E88E5) : const Color(0xFF43A047),
               ),
             ),
-          ] else ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.tertiaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$time\'',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.tertiary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
+          ),
+          if (!isHome) ...[
+            const SizedBox(width: 12),
+            // Time visitante: nome à direita
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -385,8 +453,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
                   Text(
                     scorer,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                     textAlign: TextAlign.right,
                   ),
                   if (assist.isNotEmpty)
@@ -394,7 +461,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
                       assist,
                       style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
                     ),
                 ],
@@ -407,16 +473,18 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
   }
 
   Widget _buildCardsSection(dynamic jogo) {
-    final homeCards = <Map<String, dynamic>>[];
-    final awayCards = <Map<String, dynamic>>[];
-
+    final allCards = <Map<String, dynamic>>[];
+    
     for (var card in jogo['cards']) {
-      if (card['home_fault'] != null) {
-        homeCards.add(card);
-      } else if (card['away_fault'] != null) {
-        awayCards.add(card);
-      }
+      allCards.add({
+        'time': int.tryParse(card['time']?.toString() ?? '0') ?? 0,
+        'player': card['home_fault'] ?? card['away_fault'] ?? '',
+        'isHome': card['home_fault'] != null,
+        'isYellow': card['card'] == 'yellow card',
+      });
     }
+    
+    allCards.sort((a, b) => a['time'].compareTo(b['time']));
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -437,34 +505,21 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
               ],
             ),
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  children: homeCards.map((card) => _buildCardItem(card, true)).toList(),
-                ),
-              ),
-              Container(width: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
-              Expanded(
-                child: Column(
-                  children: awayCards.map((card) => _buildCardItem(card, false)).toList(),
-                ),
-              ),
-            ],
-          ),
+          ...allCards.map((card) => _buildTimelineCardItem(card)).toList(),
+          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  Widget _buildCardItem(Map<String, dynamic> card, bool isHome) {
-    final isYellow = card['card'] == 'yellow card';
-    final player = isHome ? (card['home_fault'] ?? '') : (card['away_fault'] ?? '');
-    final time = card['time'] ?? '';
+  Widget _buildTimelineCardItem(Map<String, dynamic> card) {
+    final isHome = card['isHome'] as bool;
+    final time = card['time'] as int;
+    final player = card['player'] as String;
+    final isYellow = card['isYellow'] as bool;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           if (isHome) ...[
@@ -472,45 +527,133 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
               child: Text(
                 player,
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
             ),
-            const SizedBox(width: 8),
-            Container(
-              width: 20,
-              height: 28,
-              decoration: BoxDecoration(
-                color: isYellow ? const Color(0xFFFFD700) : const Color(0xFFDC143C),
-                borderRadius: BorderRadius.circular(3),
-              ),
+            const SizedBox(width: 12),
+          ],
+          Container(
+            width: 60,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 18,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: isYellow ? const Color(0xFFFFD700) : const Color(0xFFDC143C),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$time\'',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
-            const SizedBox(width: 6),
-            Text(
-              '$time\'',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ] else ...[
-            Text(
-              '$time\'',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              width: 20,
-              height: 28,
-              decoration: BoxDecoration(
-                color: isYellow ? const Color(0xFFFFD700) : const Color(0xFFDC143C),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-            const SizedBox(width: 8),
+          ),
+          if (!isHome) ...[
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 player,
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubstitutionsSection(dynamic jogo) {
+    final allSubs = <Map<String, dynamic>>[];
+    
+    for (var sub in jogo['substitutions']) {
+      allSubs.add({
+        'time': int.tryParse(sub['time']?.toString() ?? '0') ?? 0,
+        'substitution': sub['substitution'] ?? '',
+        'isHome': sub['home_scorer'] != null,
+      });
+    }
+    
+    allSubs.sort((a, b) => a['time'].compareTo(b['time']));
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Symbols.swap_horiz_rounded, size: 20, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text('Substituições', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+          ...allSubs.map((sub) => _buildTimelineSubItem(sub)).toList(),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineSubItem(Map<String, dynamic> sub) {
+    final isHome = sub['isHome'] as bool;
+    final time = sub['time'] as int;
+    final substitution = sub['substitution'] as String;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          if (isHome) ...[
+            Expanded(
+              child: Text(
+                substitution,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                maxLines: 2,
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Container(
+            width: 60,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Symbols.swap_horiz_rounded,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$time\'',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          if (!isHome) ...[
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                substitution,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                maxLines: 2,
                 textAlign: TextAlign.right,
               ),
             ),
@@ -522,7 +665,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
 
   Widget _buildStatisticsSection(dynamic jogo) {
     final stats = jogo['statistics'] as List;
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -547,14 +690,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
             child: Column(
               children: stats.map<Widget>((stat) {
                 final type = stat['type'] ?? '';
-                
-                // Usar pizza chart para posse de bola
                 if (type.toLowerCase().contains('posse') || type.toLowerCase().contains('ball possession')) {
                   return _buildPossessionStat(stat);
                 }
-                
-                // Usar barras para outras estatísticas
-                return _buildBarStat(stat);
+                return _buildAnimatedBarStat(stat);
               }).toList(),
             ),
           ),
@@ -567,7 +706,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
   Widget _buildPossessionStat(Map<String, dynamic> stat) {
     final home = double.tryParse(stat['home']?.toString().replaceAll('%', '') ?? '0') ?? 0;
     final away = double.tryParse(stat['away']?.toString().replaceAll('%', '') ?? '0') ?? 0;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -582,13 +721,13 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 120,
+            height: 80,
             child: CustomPaint(
               painter: _PieChartPainter(
                 homeValue: home,
                 awayValue: away,
-                homeColor: Theme.of(context).colorScheme.primary,
-                awayColor: Theme.of(context).colorScheme.tertiary,
+                homeColor: const Color(0xFF1E88E5),
+                awayColor: const Color(0xFF43A047),
               ),
               child: Center(
                 child: Column(
@@ -596,18 +735,19 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
                   children: [
                     Text(
                       '${home.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: const TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Color(0xFF1E88E5),
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       '${away.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: const TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.tertiary,
+                        color: Color(0xFF43A047),
                       ),
                     ),
                   ],
@@ -620,79 +760,135 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with SingleTickerPr
     );
   }
 
-  Widget _buildBarStat(Map<String, dynamic> stat) {
+  Widget _buildAnimatedBarStat(Map<String, dynamic> stat) {
     final home = double.tryParse(stat['home']?.toString() ?? '0') ?? 0;
     final away = double.tryParse(stat['away']?.toString() ?? '0') ?? 0;
     final total = home + away > 0 ? home + away : 1;
     final homePercent = home / total;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${home.toInt()}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              Text(
-                stat['type'] ?? '',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                '${away.toInt()}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.tertiary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: (homePercent * 100).toInt().clamp(1, 100),
-                  child: Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(4)),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: ((1 - homePercent) * 100).toInt().clamp(1, 100),
-                  child: Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.tertiary,
-                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return _AnimatedStatBar(
+      home: home,
+      away: away,
+      homePercent: homePercent,
+      type: stat['type'] ?? '',
     );
   }
 }
 
-// Material Design 3 Expressive Progress Indicator
+class _AnimatedStatBar extends StatefulWidget {
+  final double home;
+  final double away;
+  final double homePercent;
+  final String type;
+
+  const _AnimatedStatBar({
+    required this.home,
+    required this.away,
+    required this.homePercent,
+    required this.type,
+  });
+
+  @override
+  State<_AnimatedStatBar> createState() => _AnimatedStatBarState();
+}
+
+class _AnimatedStatBarState extends State<_AnimatedStatBar> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${widget.home.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E88E5),
+                    ),
+                  ),
+                  Text(
+                    widget.type,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Text(
+                    '${widget.away.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF43A047),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: ((widget.homePercent * _animation.value) * 100).toInt().clamp(1, 100),
+                      child: Container(
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1E88E5),
+                          borderRadius: BorderRadius.horizontal(left: Radius.circular(4)),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: (((1 - widget.homePercent) * _animation.value) * 100).toInt().clamp(1, 100),
+                      child: Container(
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF43A047),
+                          borderRadius: BorderRadius.horizontal(right: Radius.circular(4)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _ExpressiveProgressPainter extends CustomPainter {
   final double progress;
   final Color color;
@@ -715,10 +911,10 @@ class _ExpressiveProgressPainter extends CustomPainter {
 
     final path = Path();
     final phase = (progress * 3) % 3;
-    
+
     double startAngle = -pi / 2 + (progress * 2 * pi);
     double sweepAngle;
-    
+
     if (phase < 1) {
       sweepAngle = phase * pi * 1.5;
     } else if (phase < 2) {
@@ -735,7 +931,7 @@ class _ExpressiveProgressPainter extends CustomPainter {
       final angle = startAngle + (sweepAngle * t);
       final wave = sin(angle * 3 + progress * pi * 4) * 2;
       final r = radius + wave;
-      
+
       final x = center.dx + r * cos(angle);
       final y = center.dy + r * sin(angle);
 
@@ -767,7 +963,6 @@ class _ExpressiveProgressPainter extends CustomPainter {
   }
 }
 
-// Pie Chart Painter para estatísticas
 class _PieChartPainter extends CustomPainter {
   final double homeValue;
   final double awayValue;
@@ -786,16 +981,15 @@ class _PieChartPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final total = homeValue + awayValue;
-    
+
     if (total == 0) return;
-    
+
     final homeSweep = (homeValue / total) * 2 * pi;
-    
-    // Home slice
+
     final homePaint = Paint()
       ..color = homeColor
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -pi / 2,
@@ -803,12 +997,11 @@ class _PieChartPainter extends CustomPainter {
       true,
       homePaint,
     );
-    
-    // Away slice
+
     final awayPaint = Paint()
       ..color = awayColor
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -pi / 2 + homeSweep,
@@ -816,15 +1009,33 @@ class _PieChartPainter extends CustomPainter {
       true,
       awayPaint,
     );
-    
-    // Center circle
+
     final centerPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
-    
-    canvas.drawCircle(center, radius * 0.6, centerPaint);
+
+    canvas.drawCircle(center, radius * 0.65, centerPaint);
   }
 
   @override
   bool shouldRepaint(_PieChartPainter oldDelegate) => true;
+}
+
+// Página de seleção de odds (placeholder)
+class OddsSelectionPage extends StatelessWidget {
+  final String jogoId;
+
+  const OddsSelectionPage({super.key, required this.jogoId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Selecionar Odds'),
+      ),
+      body: const Center(
+        child: Text('Tela de Odds em construção'),
+      ),
+    );
+  }
 }
