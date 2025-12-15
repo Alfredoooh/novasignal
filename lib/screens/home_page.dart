@@ -6,6 +6,8 @@ import '../core/app_state.dart';
 import 'home_tab.dart';
 import 'search_page.dart';
 import 'jogos_page.dart';
+import 'atividades_page.dart';
+import 'inbox_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
 
@@ -18,6 +20,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +34,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context, appState, child) {
         return PopScope(
           canPop: appState.historicoPaginas.isEmpty,
-          onPopInvoked: (didPop) {
+          onPopInvokedWithResult: (didPop, result) {
             if (!didPop && appState.historicoPaginas.isNotEmpty) {
               appState.voltarPagina();
             }
@@ -35,17 +44,7 @@ class _HomePageState extends State<HomePage> {
             extendBodyBehindAppBar: true,
             extendBody: true,
             appBar: _buildAppBar(context, appState),
-            body: PageTransitionSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-                return FadeThroughTransition(
-                  animation: primaryAnimation,
-                  secondaryAnimation: secondaryAnimation,
-                  child: child,
-                );
-              },
-              child: _buildPage(appState.paginaAtual, appState),
-            ),
+            body: _buildBody(appState),
             bottomNavigationBar: _buildBottomNav(appState),
             drawer: _buildDrawer(context, appState),
           ),
@@ -69,7 +68,17 @@ class _HomePageState extends State<HomePage> {
           icon: const Icon(Symbols.menu_rounded),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         );
-        title = 'Destaques';
+        title = 'Football Live';
+        actions = [
+          IconButton(
+            icon: const Icon(Symbols.search_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const SearchPage(),
+              ),
+            ),
+          ),
+        ];
         break;
       case 'jogos':
         leading = IconButton(
@@ -94,56 +103,112 @@ class _HomePageState extends State<HomePage> {
           ),
         ];
         break;
+      case 'atividades':
+        leading = IconButton(
+          icon: const Icon(Symbols.menu_rounded),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        );
+        title = 'Atividades';
+        break;
+      case 'inbox':
+        leading = IconButton(
+          icon: const Icon(Symbols.menu_rounded),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        );
+        title = 'Caixa de Entrada';
+        break;
       case 'jogo-detalhes':
+        leading = IconButton(
+          icon: const Icon(Symbols.arrow_back_rounded),
+          onPressed: () => appState.voltarPagina(),
+        );
+        title = 'Detalhes';
+        break;
+      case 'configuracoes':
         leading = IconButton(
           icon: const Icon(Symbols.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(),
         );
-        title = 'Detalhes';
+        title = 'Configurações';
         break;
-None
     }
 
-    return AppBar(
-      leading: leading,
-      title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-      actions: actions,
-      centerTitle: false,
-      backgroundColor: Colors.transparent,
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: ClipRRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: AppBar(
+            leading: leading,
+            title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+            actions: actions,
+            centerTitle: false,
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            elevation: 0,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(AppState appState) {
+    // Para páginas especiais, usa navegação direta
+    if (['jogo-detalhes', 'configuracoes'].contains(appState.paginaAtual)) {
+      return _buildPage(appState.paginaAtual, appState);
+    }
+
+    // Para tabs principais, usa PageView com navegação nativa horizontal
+    return PageView(
+      controller: _pageController,
+      physics: const PageScrollPhysics(), // Scroll nativo iOS/Android
+      onPageChanged: (index) {
+        appState.mudarTab(['home', 'jogos', 'atividades', 'inbox'][index]);
+      },
+      children: const [
+        HomeTab(),
+        JogosPage(),
+        AtividadesPage(),
+        InboxPage(),
+      ],
     );
   }
 
   Widget _buildPage(String pagina, AppState appState) {
     switch (pagina) {
-      case 'home':
-        return const HomeTab(key: ValueKey('home'));
-      case 'search':
-        return const SearchPage(key: ValueKey('search'));
-      case 'jogos':
-        return const JogosPage(key: ValueKey('jogos'));
       case 'jogo-detalhes':
-        return JogoDetalhesPage(key: const ValueKey('jogo-detalhes'), jogoId: appState.jogoDetalhesId);
+        return JogoDetalhesPage(jogoId: appState.jogoDetalhesId);
+      case 'configuracoes':
+        return const ConfiguracoesPage();
       default:
         return const SizedBox();
     }
   }
 
   Widget _buildBottomNav(AppState appState) {
-    if (['jogo-detalhes'].contains(appState.paginaAtual)) {
+    if (['jogo-detalhes', 'configuracoes', 'search'].contains(appState.paginaAtual)) {
       return const SizedBox.shrink();
     }
 
-    int currentIndex = ['home', 'search', 'jogos'].indexOf(appState.tabAtual);
-    
+    int currentIndex = ['home', 'jogos', 'atividades', 'inbox'].indexOf(appState.tabAtual);
+
+    // Sincronizar PageView com NavigationBar
+    if (_pageController.hasClients && _pageController.page?.round() != currentIndex) {
+      _pageController.animateToPage(
+        currentIndex,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+
     return ClipRRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
             border: Border(
               top: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
                 width: 0.5,
               ),
             ),
@@ -152,11 +217,11 @@ None
             child: NavigationBar(
               selectedIndex: currentIndex,
               onDestinationSelected: (index) {
-                appState.mudarTab(['home', 'search', 'jogos'][index]);
+                appState.mudarTab(['home', 'jogos', 'atividades', 'inbox'][index]);
               },
               backgroundColor: Colors.transparent,
               elevation: 0,
-              indicatorColor: Theme.of(context).colorScheme.secondaryContainer,
+              indicatorColor: Theme.of(context).colorScheme.primaryContainer,
               destinations: const [
                 NavigationDestination(
                   icon: Icon(Symbols.home_rounded),
@@ -164,14 +229,19 @@ None
                   label: 'Home',
                 ),
                 NavigationDestination(
-                  icon: Icon(Symbols.search_rounded),
-                  selectedIcon: Icon(Symbols.search_rounded, fill: 1),
-                  label: 'Pesquisar',
-                ),
-                NavigationDestination(
                   icon: Icon(Symbols.sports_soccer_rounded),
                   selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
                   label: 'Jogos',
+                ),
+                NavigationDestination(
+                  icon: Icon(Symbols.notifications_rounded),
+                  selectedIcon: Icon(Symbols.notifications_rounded, fill: 1),
+                  label: 'Atividades',
+                ),
+                NavigationDestination(
+                  icon: Icon(Symbols.inbox_rounded),
+                  selectedIcon: Icon(Symbols.inbox_rounded, fill: 1),
+                  label: 'Inbox',
                 ),
               ],
             ),
@@ -185,46 +255,50 @@ None
     return Drawer(
       child: Column(
         children: [
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          ClipRRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 20,
+                  left: 20,
+                  right: 20,
+                  bottom: 20,
+                ),
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Football Live',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Acompanhe seu futebol favorito',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 20,
-              left: 20,
-              right: 20,
-              bottom: 20,
-            ),
-            alignment: Alignment.bottomLeft,
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Football Live',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Acompanhe seu futebol favorito',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
             ),
           ),
           Expanded(
@@ -237,7 +311,9 @@ None
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ConfiguracoesPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const ConfiguracoesPage(),
+                      ),
                     );
                   },
                 ),
@@ -258,64 +334,6 @@ None
           ),
         ],
       ),
-    );
-  }
-}
-
-// Transição FadeThrough nativa do Material Design
-class FadeThroughTransition extends StatelessWidget {
-  const FadeThroughTransition({
-    super.key,
-    required this.animation,
-    required this.secondaryAnimation,
-    required this.child,
-  });
-
-  final Animation<double> animation;
-  final Animation<double> secondaryAnimation;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return DualTransitionBuilder(
-      animation: animation,
-      forwardBuilder: (context, animation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
-      reverseBuilder: (context, animation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-      },
-      child: child,
-    );
-  }
-}
-
-class PageTransitionSwitcher extends StatelessWidget {
-  const PageTransitionSwitcher({
-    super.key,
-    required this.child,
-    required this.duration,
-    required this.transitionBuilder,
-  });
-
-  final Widget child;
-  final Duration duration;
-  final Widget Function(Widget, Animation<double>, Animation<double>) transitionBuilder;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: duration,
-      transitionBuilder: (child, animation) {
-        return transitionBuilder(child, animation, const AlwaysStoppedAnimation(0));
-      },
-      child: child,
     );
   }
 }
