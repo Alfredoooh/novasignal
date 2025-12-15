@@ -86,7 +86,7 @@ class MyApp extends StatelessWidget {
                     systemOverlayStyle: SystemUiOverlayStyle.light,
                   ),
                 ),
-                home: const HomePage(),
+                home: HomePage(),
                 debugShowCheckedModeBanner: false,
               );
             },
