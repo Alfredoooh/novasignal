@@ -17,6 +17,7 @@ class LigasPage extends StatefulWidget {
 class _LigasPageState extends State<LigasPage> with SingleTickerProviderStateMixin {
   Future<List<dynamic>>? _futureLigas;
   late AnimationController _loadingController;
+  final Set<String> _expandedCountries = {};
 
   @override
   void initState() {
@@ -84,26 +85,60 @@ class _LigasPageState extends State<LigasPage> with SingleTickerProviderStateMix
             itemBuilder: (context, index) {
               final pais = sortedPaises[index];
               final ligasDoPais = ligasPorPais[pais]!;
+              final isExpanded = _expandedCountries.contains(pais);
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      children: [
-                        Icon(Symbols.location_on_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(pais, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                      ],
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        if (isExpanded) {
+                          _expandedCountries.remove(pais);
+                        } else {
+                          _expandedCountries.add(pais);
+                        }
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Row(
+                        children: [
+                          Icon(Symbols.location_on_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(pais, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                          ),
+                          Text(
+                            '${ligasDoPais.length}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          AnimatedRotation(
+                            turns: isExpanded ? 0.25 : 0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Icon(
+                              Symbols.chevron_right_rounded,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  Container(
-                    color: Theme.of(context).colorScheme.surface,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Column(
-                      children: ligasDoPais.map((liga) => _buildLeagueItem(liga, context)).toList(),
+                  if (isExpanded)
+                    Container(
+                      color: Theme.of(context).colorScheme.surface,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        children: ligasDoPais.map((liga) => _buildLeagueItem(liga, context)).toList(),
+                      ),
                     ),
-                  ),
                 ],
               );
             },
@@ -118,7 +153,6 @@ class _LigasPageState extends State<LigasPage> with SingleTickerProviderStateMix
   Widget _buildLeagueItem(dynamic liga, BuildContext context) {
     return InkWell(
       onTap: () {
-        // Navega para LigaDetalhesPage
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => LigaDetalhesPage(
@@ -134,7 +168,6 @@ class _LigasPageState extends State<LigasPage> with SingleTickerProviderStateMix
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                // Logo oficial da liga da API
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: Image.network(
@@ -239,7 +272,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with TickerProvider
       ),
       body: Column(
         children: [
-          // Header com logo da liga
           Container(
             color: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.all(20),
@@ -286,8 +318,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with TickerProvider
               ],
             ),
           ),
-
-          // Tabs
           Container(
             color: Theme.of(context).colorScheme.surface,
             child: TabBar(
@@ -304,8 +334,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with TickerProvider
             ),
           ),
           Container(height: 0.5, color: Theme.of(context).dividerColor.withOpacity(0.3)),
-
-          // Tab Content
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -482,7 +510,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with TickerProvider
       onTap: () {
         appState.setJogoDetalhes(jogo['match_id'], '');
         appState.navegarPara('jogo-detalhes');
-        Navigator.of(context).pop(); // Volta para home onde o estado irá mudar
+        Navigator.of(context).pop();
       },
       child: Container(
         color: Theme.of(context).colorScheme.surface,
@@ -564,10 +592,10 @@ class _ExpressiveProgressPainter extends CustomPainter {
 
     final path = Path();
     final phase = (progress * 3) % 3;
-    
+
     double startAngle = -pi / 2 + (progress * 2 * pi);
     double sweepAngle;
-    
+
     if (phase < 1) {
       sweepAngle = phase * pi * 1.5;
     } else if (phase < 2) {
@@ -584,7 +612,7 @@ class _ExpressiveProgressPainter extends CustomPainter {
       final angle = startAngle + (sweepAngle * t);
       final wave = sin(angle * 3 + progress * pi * 4) * 2;
       final r = radius + wave;
-      
+
       final x = center.dx + r * cos(angle);
       final y = center.dy + r * sin(angle);
 
