@@ -7,12 +7,16 @@ import 'jogo_detalhes_page.dart';
 
 class LigaDetalhesPage extends StatefulWidget {
   final String ligaId;
-  final Map<String, dynamic> ligaData;
+  final Map<String, dynamic>? ligaData;
+  final String? ligaNome;
+  final String? ligaLogo;
 
   const LigaDetalhesPage({
     super.key,
     required this.ligaId,
-    required this.ligaData,
+    this.ligaData,
+    this.ligaNome,
+    this.ligaLogo,
   });
 
   @override
@@ -65,6 +69,13 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    // monta ligaData a partir do map recebido ou dos parâmetros soltos (compatibilidade)
+    final ligaData = widget.ligaData ??
+        {
+          'league_name': widget.ligaNome ?? 'Liga',
+          'league_logo': widget.ligaLogo ?? '',
+        };
+
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -79,7 +90,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
               ),
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(
-                  widget.ligaData['league_name'] ?? 'Liga',
+                  ligaData['league_name'] ?? 'Liga',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 centerTitle: false,
@@ -96,9 +107,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                     ),
                   ),
                   child: Center(
-                    child: widget.ligaData['league_logo'] != null && widget.ligaData['league_logo'].toString().isNotEmpty
+                    child: ligaData['league_logo'] != null && ligaData['league_logo'].toString().isNotEmpty
                         ? Image.network(
-                            widget.ligaData['league_logo'],
+                            ligaData['league_logo'],
                             width: 80,
                             height: 80,
                             errorBuilder: (_, __, ___) => Icon(
