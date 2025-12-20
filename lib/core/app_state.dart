@@ -27,7 +27,7 @@ class AppState with ChangeNotifier {
   String ligaDetalhesTitulo = '';
   List<dynamic> todasLigas = [];
 
-  // HTTP Client reutilizável (mais rápido que criar novo a cada request)
+  // HTTP Client reutilizável
   final http.Client _httpClient = http.Client();
 
   // Getters para configurações
@@ -35,19 +35,14 @@ class AppState with ChangeNotifier {
   bool get temaAmoled => _temaAmoled;
   bool get notificacoesAtivas => _notificacoesAtivas;
 
-  // Configuração da API
-  static const List<String> apiKeys = [
-    '9aa85892f684f5b1f85a721e6d625df4be9065447047e065f42c211658c7cd7d',
-    '5fbf446f332cdcb25ae37e36e1d7edeb55f7a47c7b30f34a8fe23da37f8d6ac0',
-  ];
-  int _currentApiKeyIndex = 0;
-  static const String apiBase = 'https://apiv3.apifootball.com';
-
+  // ========== CLOUDFLARE API CONFIGURATION ==========
+  static const String cloudflareBase = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
+  
   // Cache de duração por tipo de requisição (em minutos)
-  static const int _cacheDurationJogos = 2; // 2 minutos para jogos
-  static const int _cacheDurationDetalhes = 1; // 1 minuto para detalhes
-  static const int _cacheDurationLigas = 60; // 60 minutos para ligas
-  static const int _cacheDurationClassificacao = 30; // 30 minutos
+  static const int _cacheDurationJogos = 2;
+  static const int _cacheDurationDetalhes = 1;
+  static const int _cacheDurationLigas = 60;
+  static const int _cacheDurationClassificacao = 30;
 
   // Top clubs para jogos em destaque
   final List<String> topClubs = [
@@ -58,19 +53,12 @@ class AppState with ChangeNotifier {
     'PSG', 'Lyon', 'Marseille',
   ];
 
-  // Map para controlar requisições em andamento (evita duplicatas)
+  // Map para controlar requisições em andamento
   final Map<String, Future<dynamic>> _pendingRequests = {};
 
   AppState() {
     _carregarPreferencias();
     _startCacheCleanup();
-  }
-
-  String get _currentApiKey => apiKeys[_currentApiKeyIndex];
-
-  void _rotateApiKey() {
-    _currentApiKeyIndex = (_currentApiKeyIndex + 1) % apiKeys.length;
-    debugPrint('Rotating to API key index: $_currentApiKeyIndex');
   }
 
   // Timer para limpar cache expirado automaticamente
@@ -167,9 +155,8 @@ class AppState with ChangeNotifier {
     ligaDetalhesTitulo = titulo;
   }
 
-  // ========== MÉTODOS DE API OTIMIZADOS ==========
+  // ========== MÉTODOS DE CACHE ==========
 
-  // Verifica cache com expiração
   dynamic _getFromCache(String key) {
     final entry = _cache[key];
     if (entry != null && !entry.isExpired(DateTime.now())) {
@@ -190,108 +177,102 @@ class AppState with ChangeNotifier {
     );
   }
 
-  Future<dynamic> _makeRequest(String url, {int retryCount = 0}) async {
-    // Verifica se já existe uma requisição em andamento para esta URL
-    if (_pendingRequests.containsKey(url)) {
+  // ========== MÉTODOS DE API CLOUDFLARE ==========
+
+  Future<dynamic> _makeCloudflareRequest(String endpoint) async {
+    // Verifica se já existe uma requisição em andamento
+    if (_pendingRequests.containsKey(endpoint)) {
       debugPrint('⏳ Requisição já em andamento, aguardando...');
-      return await _pendingRequests[url]!;
+      return await _pendingRequests[endpoint]!;
     }
 
     // Cria a requisição e armazena como pendente
-    final requestFuture = _executeRequest(url, retryCount);
-    _pendingRequests[url] = requestFuture;
+    final requestFuture = _executeCloudflareRequest(endpoint);
+    _pendingRequests[endpoint] = requestFuture;
 
     try {
       final result = await requestFuture;
       return result;
     } finally {
-      // Remove da lista de pendentes quando completar
-      _pendingRequests.remove(url);
+      _pendingRequests.remove(endpoint);
     }
   }
 
-  Future<dynamic> _executeRequest(String url, int retryCount) async {
+  Future<dynamic> _executeCloudflareRequest(String endpoint) async {
     try {
+      final url = '$cloudflareBase$endpoint';
+      debugPrint('🚀 Cloudflare Request: $url');
+
       final response = await _httpClient.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 5), // Reduzido de 10 para 5 segundos
+        const Duration(seconds: 10),
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else if (response.statusCode == 429 || response.statusCode == 403) {
-        if (retryCount < apiKeys.length - 1) {
-          _rotateApiKey();
-          return await _makeRequest(
-            url.replaceAll(apiKeys[retryCount], _currentApiKey), 
-            retryCount: retryCount + 1
-          );
+        final data = json.decode(response.body);
+        
+        // Verifica se há erro na resposta
+        if (data is Map && data.containsKey('error')) {
+          throw Exception(data['error']);
         }
+        
+        return data;
+      } else {
+        throw Exception('HTTP ${response.statusCode}');
       }
-      throw Exception('Erro ${response.statusCode}');
     } catch (e) {
-      if (retryCount < apiKeys.length - 1) {
-        _rotateApiKey();
-        return await _makeRequest(
-          url.replaceAll(apiKeys[retryCount], _currentApiKey), 
-          retryCount: retryCount + 1
-        );
-      }
+      debugPrint('✗ Erro na requisição Cloudflare: $e');
       rethrow;
     }
   }
+
+  // ========== MÉTODOS PRINCIPAIS ==========
 
   Future<List<dynamic>> carregarJogosDoDia(DateTime data) async {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
     final cacheKey = 'jogos_$dataStr';
 
-    // Verifica cache primeiro
     final cached = _getFromCache(cacheKey);
     if (cached != null) return cached as List<dynamic>;
 
     try {
-      final url = '$apiBase/?action=get_events&from=$dataStr&to=$dataStr&APIkey=$_currentApiKey';
-      debugPrint('🚀 Buscando jogos: $dataStr');
+      // Busca todos os jogos do Cloudflare
+      final response = await _makeCloudflareRequest('/api/matches');
+      
+      if (response is Map && response.containsKey('matches')) {
+        final todosJogos = response['matches'] as List<dynamic>;
+        
+        // Filtra por data
+        final jogosDoDia = todosJogos.where((jogo) {
+          final matchDate = jogo['match_date'] ?? '';
+          return matchDate == dataStr;
+        }).toList();
 
-      final dados = await _makeRequest(url);
-
-      if (dados is Map && dados.containsKey('error')) {
-        throw Exception(dados['error']);
-      }
-
-      if (dados is List) {
-        debugPrint('✓ ${dados.length} jogos encontrados');
-        _saveToCache(cacheKey, dados, _cacheDurationJogos);
-        return dados;
+        debugPrint('✓ ${jogosDoDia.length} jogos encontrados para $dataStr');
+        _saveToCache(cacheKey, jogosDoDia, _cacheDurationJogos);
+        return jogosDoDia;
       }
 
       return [];
     } catch (e) {
       debugPrint('✗ Erro ao carregar jogos: $e');
-      rethrow;
+      return [];
     }
   }
 
   Future<List<dynamic>> carregarJogosDestaque(List<String> topTeams) async {
-    final hoje = DateTime.now();
-    final doisDiasAtras = hoje.subtract(const Duration(days: 2));
-    final cincoDiasFrente = hoje.add(const Duration(days: 3));
-    final from = DateFormat('yyyy-MM-dd').format(doisDiasAtras);
-    final to = DateFormat('yyyy-MM-dd').format(cincoDiasFrente);
-
-    final cacheKey = 'destaque_$from\_$to';
+    final cacheKey = 'destaque_jogos';
 
     final cached = _getFromCache(cacheKey);
     if (cached != null) return cached as List<dynamic>;
 
     try {
-      final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$_currentApiKey';
-      debugPrint('🚀 Buscando destaques...');
-
-      final dados = await _makeRequest(url);
-
-      if (dados is List) {
-        // Filtro otimizado
-        final jogosFiltrados = dados.where((jogo) {
+      final response = await _makeCloudflareRequest('/api/matches');
+      
+      if (response is Map && response.containsKey('matches')) {
+        final todosJogos = response['matches'] as List<dynamic>;
+        
+        // Filtra jogos com times populares
+        final jogosFiltrados = todosJogos.where((jogo) {
           final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
           final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
 
@@ -337,19 +318,12 @@ class AppState with ChangeNotifier {
     if (cached != null) return cached as List<dynamic>;
 
     try {
-      final hoje = DateTime.now();
-      final seteDiasAtras = hoje.subtract(const Duration(days: 7));
-      final seteDiasFrente = hoje.add(const Duration(days: 7));
-      final from = DateFormat('yyyy-MM-dd').format(seteDiasAtras);
-      final to = DateFormat('yyyy-MM-dd').format(seteDiasFrente);
-
-      final url = '$apiBase/?action=get_events&from=$from&to=$to&APIkey=$_currentApiKey';
-      debugPrint('🔍 Pesquisando: $termo');
-
-      final dados = await _makeRequest(url);
-
-      if (dados is List) {
-        final resultados = dados.where((jogo) {
+      final response = await _makeCloudflareRequest('/api/matches');
+      
+      if (response is Map && response.containsKey('matches')) {
+        final todosJogos = response['matches'] as List<dynamic>;
+        
+        final resultados = todosJogos.where((jogo) {
           final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
           final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
           final league = (jogo['league_name'] ?? '').toString().toLowerCase();
@@ -358,7 +332,7 @@ class AppState with ChangeNotifier {
                  league.contains(termoLower);
         }).toList();
 
-        debugPrint('✓ ${resultados.length} resultados');
+        debugPrint('✓ ${resultados.length} resultados para "$termo"');
         _saveToCache(cacheKey, resultados, _cacheDurationJogos);
         return resultados;
       }
@@ -376,19 +350,20 @@ class AppState with ChangeNotifier {
     if (cached != null) return cached;
 
     try {
-      final url = '$apiBase/?action=get_events&match_id=$jogoId&APIkey=$_currentApiKey';
-      debugPrint('🚀 Buscando detalhes: $jogoId');
-
-      final dados = await _makeRequest(url);
-
-      if (dados is List && dados.isNotEmpty) {
-        _saveToCache(cacheKey, dados[0], _cacheDurationDetalhes);
-        return dados[0];
+      final response = await _makeCloudflareRequest('/api/matches/$jogoId');
+      
+      if (response != null && response is! Map) {
+        _saveToCache(cacheKey, response, _cacheDurationDetalhes);
+        return response;
+      } else if (response is Map && !response.containsKey('error')) {
+        _saveToCache(cacheKey, response, _cacheDurationDetalhes);
+        return response;
       }
+      
       return null;
     } catch (e) {
       debugPrint('✗ Erro ao carregar detalhes: $e');
-      rethrow;
+      return null;
     }
   }
 
@@ -402,13 +377,29 @@ class AppState with ChangeNotifier {
     }
 
     try {
-      final url = '$apiBase/?action=get_leagues&APIkey=$_currentApiKey';
-      debugPrint('🚀 Buscando ligas...');
-
-      final dados = await _makeRequest(url);
-
-      if (dados is List) {
-        todasLigas = dados;
+      final response = await _makeCloudflareRequest('/api/matches');
+      
+      if (response is Map && response.containsKey('matches')) {
+        final todosJogos = response['matches'] as List<dynamic>;
+        
+        // Extrai ligas únicas dos jogos
+        final ligasMap = <String, Map<String, dynamic>>{};
+        
+        for (var jogo in todosJogos) {
+          final ligaId = jogo['league_id']?.toString();
+          final ligaNome = jogo['league_name'];
+          
+          if (ligaId != null && ligaNome != null && !ligasMap.containsKey(ligaId)) {
+            ligasMap[ligaId] = {
+              'league_id': ligaId,
+              'league_name': ligaNome,
+              'country_name': jogo['country_name'] ?? '',
+              'league_logo': jogo['league_logo'] ?? '',
+            };
+          }
+        }
+        
+        todasLigas = ligasMap.values.toList();
         _saveToCache(cacheKey, todasLigas, _cacheDurationLigas);
         debugPrint('✓ ${todasLigas.length} ligas carregadas');
         return todasLigas;
@@ -427,13 +418,14 @@ class AppState with ChangeNotifier {
     if (cached != null) return cached as List<dynamic>;
 
     try {
-      final url = '$apiBase/?action=get_standings&league_id=$ligaId&APIkey=$_currentApiKey';
-      final dados = await _makeRequest(url);
-
-      if (dados is List) {
-        _saveToCache(cacheKey, dados, _cacheDurationClassificacao);
-        return dados;
-      }
+      // Busca jogos da liga e calcula classificação manualmente
+      final jogosLiga = await carregarJogosPorLiga(ligaId);
+      
+      // Aqui você pode implementar lógica para calcular classificação
+      // baseado nos resultados dos jogos, ou retornar vazio se não tiver
+      // essa funcionalidade no Cloudflare
+      
+      _saveToCache(cacheKey, [], _cacheDurationClassificacao);
       return [];
     } catch (e) {
       debugPrint('✗ Erro ao carregar classificação: $e');
@@ -441,23 +433,18 @@ class AppState with ChangeNotifier {
     }
   }
 
-  Future<List<dynamic>> carregarUltimosJogosLiga(String ligaId) async {
+  Future<List<dynamic>> carregarJogosPorLiga(String ligaId) async {
     final cacheKey = 'jogos_liga_$ligaId';
 
     final cached = _getFromCache(cacheKey);
     if (cached != null) return cached as List<dynamic>;
 
     try {
-      final hoje = DateTime.now();
-      final trintaDiasAtras = hoje.subtract(const Duration(days: 30));
-      final from = DateFormat('yyyy-MM-dd').format(trintaDiasAtras);
-      final to = DateFormat('yyyy-MM-dd').format(hoje);
-
-      final url = '$apiBase/?action=get_events&league_id=$ligaId&from=$from&to=$to&APIkey=$_currentApiKey';
-      final dados = await _makeRequest(url);
-
-      if (dados is List) {
-        final jogos = dados.take(15).toList();
+      final response = await _makeCloudflareRequest('/api/matches/league?league_id=$ligaId');
+      
+      if (response is Map && response.containsKey('matches')) {
+        final jogos = response['matches'] as List<dynamic>;
+        debugPrint('✓ ${jogos.length} jogos da liga $ligaId');
         _saveToCache(cacheKey, jogos, _cacheDurationJogos);
         return jogos;
       }
@@ -468,7 +455,11 @@ class AppState with ChangeNotifier {
     }
   }
 
-  // Pré-carregar dados em paralelo para páginas específicas
+  Future<List<dynamic>> carregarUltimosJogosLiga(String ligaId) async {
+    return carregarJogosPorLiga(ligaId);
+  }
+
+  // Pré-carregar dados em paralelo
   Future<void> precarregarDadosHome() async {
     debugPrint('🔥 Pré-carregando dados da Home...');
     await Future.wait([
@@ -478,7 +469,7 @@ class AppState with ChangeNotifier {
     debugPrint('✓ Dados da Home pré-carregados');
   }
 
-  // Limpar cache manualmente se necessário
+  // Limpar cache manualmente
   void limparCache() {
     _cache.clear();
     debugPrint('🗑️ Cache limpo manualmente');
