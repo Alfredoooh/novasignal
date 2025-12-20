@@ -18,7 +18,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   Map<String, dynamic>? _jogo;
   bool _isLoading = true;
   late AnimationController _loadingController;
-  final DraggableScrollableController _scrollController = DraggableScrollableController();
 
   @override
   void initState() {
@@ -51,7 +50,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   @override
   void dispose() {
     _loadingController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -280,7 +278,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
           // Modal draggable com conteúdo
           DraggableScrollableSheet(
-            controller: _scrollController,
             initialChildSize: 0.55,
             minChildSize: 0.55,
             maxChildSize: 0.95,
@@ -318,25 +315,25 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                         padding: const EdgeInsets.only(bottom: 100),
                         children: [
                           // Gols
-                          if (jogo['goalscorer'] != null && jogo['goalscorer'].isNotEmpty) ...[
+                          if (jogo['goalscorer'] != null && (jogo['goalscorer'] as List).isNotEmpty) ...[
                             _buildGoalsSection(jogo),
                             const SizedBox(height: 16),
                           ],
 
                           // Cartões
-                          if (jogo['cards'] != null && jogo['cards'].isNotEmpty) ...[
+                          if (jogo['cards'] != null && (jogo['cards'] as List).isNotEmpty) ...[
                             _buildCardsSection(jogo),
                             const SizedBox(height: 16),
                           ],
 
                           // Substituições
-                          if (jogo['substitutions'] != null && jogo['substitutions'].isNotEmpty) ...[
+                          if (jogo['substitutions'] != null && (jogo['substitutions'] as List).isNotEmpty) ...[
                             _buildSubstitutionsSection(jogo),
                             const SizedBox(height: 16),
                           ],
 
                           // Estatísticas
-                          if (jogo['statistics'] != null && jogo['statistics'].isNotEmpty) ...[
+                          if (jogo['statistics'] != null && (jogo['statistics'] as List).isNotEmpty) ...[
                             _buildStatisticsSection(jogo),
                             const SizedBox(height: 16),
                           ],
@@ -393,9 +390,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildGoalsSection(dynamic jogo) {
+    final goalscorer = jogo['goalscorer'] as List;
     final allGoals = <Map<String, dynamic>>[];
 
-    for (var gol in jogo['goalscorer']) {
+    for (var gol in goalscorer) {
       allGoals.add({
         'time': int.tryParse(gol['time']?.toString() ?? '0') ?? 0,
         'scorer': gol['home_scorer'] ?? gol['away_scorer'] ?? '',
@@ -425,7 +423,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               ],
             ),
           ),
-          ...allGoals.map((gol) => _buildTimelineGoalItem(gol)).toList(),
+          ...allGoals.map((gol) => _buildTimelineGoalItem(gol)),
           const SizedBox(height: 8),
         ],
       ),
@@ -511,9 +509,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildCardsSection(dynamic jogo) {
+    final cards = jogo['cards'] as List;
     final allCards = <Map<String, dynamic>>[];
 
-    for (var card in jogo['cards']) {
+    for (var card in cards) {
       allCards.add({
         'time': int.tryParse(card['time']?.toString() ?? '0') ?? 0,
         'player': card['home_fault'] ?? card['away_fault'] ?? '',
@@ -543,7 +542,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               ],
             ),
           ),
-          ...allCards.map((card) => _buildTimelineCardItem(card)).toList(),
+          ...allCards.map((card) => _buildTimelineCardItem(card)),
           const SizedBox(height: 8),
         ],
       ),
@@ -609,9 +608,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildSubstitutionsSection(dynamic jogo) {
+    final substitutions = jogo['substitutions'] as List;
     final allSubs = <Map<String, dynamic>>[];
 
-    for (var sub in jogo['substitutions']) {
+    for (var sub in substitutions) {
       allSubs.add({
         'time': int.tryParse(sub['time']?.toString() ?? '0') ?? 0,
         'substitution': sub['substitution'] ?? '',
@@ -640,7 +640,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               ],
             ),
           ),
-          ...allSubs.map((sub) => _buildTimelineSubItem(sub)).toList(),
+          ...allSubs.map((sub) => _buildTimelineSubItem(sub)),
           const SizedBox(height: 8),
         ],
       ),
@@ -766,6 +766,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                 awayValue: away,
                 homeColor: const Color(0xFF1E88E5),
                 awayColor: const Color(0xFF43A047),
+                backgroundColor: Theme.of(context).colorScheme.background,
               ),
               child: Center(
                 child: Column(
@@ -1006,12 +1007,14 @@ class _PieChartPainter extends CustomPainter {
   final double awayValue;
   final Color homeColor;
   final Color awayColor;
+  final Color backgroundColor;
 
   _PieChartPainter({
     required this.homeValue,
     required this.awayValue,
     required this.homeColor,
     required this.awayColor,
+    required this.backgroundColor,
   });
 
   @override
@@ -1049,7 +1052,7 @@ class _PieChartPainter extends CustomPainter {
     );
 
     final centerPaint = Paint()
-      ..color = Colors.white
+      ..color = backgroundColor
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(center, radius * 0.65, centerPaint);
