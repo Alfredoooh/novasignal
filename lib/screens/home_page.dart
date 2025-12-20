@@ -63,12 +63,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           builder: (context, child) {
             final slideValue = _drawerAnimation.value * 0.6;
             final scaleValue = 1 - (_drawerAnimation.value * 0.15);
-            
+
             return Stack(
               children: [
                 // Drawer personalizado
                 _buildCustomDrawer(context, appState),
-                
+
                 // Conteúdo principal com animação
                 Transform(
                   transform: Matrix4.identity()
@@ -317,10 +317,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           }
         },
         children: [
-          const HomeTab(),
-          const JogosPage(),
-          const AtividadesPage(),
-          const InboxPage(),
+          HomeTab(),
+          JogosPage(),
+          AtividadesPage(),
+          InboxPage(),
         ],
       ),
     );
