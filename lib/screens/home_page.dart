@@ -35,12 +35,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       duration: const Duration(milliseconds: 250),
     );
 
-    // scale reduz um pouco a tela principal quando o drawer abre
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.94).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    // slide desloca a view principal para a direita (0.65 fraction of width)
     _slideAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: const Offset(0.65, 0.0),
@@ -49,7 +47,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
 
     _animationController.addListener(() {
-      // simple rebuild to reflect animation values
       setState(() {});
     });
 
@@ -91,26 +88,42 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               color: Theme.of(context).colorScheme.surface,
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 20),
+                  padding: const EdgeInsets.only(left: 20, top: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 60),
-                      Text(
-                        'Football Live',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Acompanhe seu futebol favorito',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Football Live',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Acompanhe seu futebol favorito',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Symbols.chevron_left_rounded),
+                            onPressed: _toggleDrawer,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 40),
                       _buildDrawerItem(
@@ -142,7 +155,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       const SizedBox(height: 20),
                       const Divider(),
                       const SizedBox(height: 8),
-                      // exemplos de navegação rápida (opcional)
                       _buildDrawerItem(
                         icon: Symbols.home_rounded,
                         title: 'Home',
@@ -167,12 +179,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               ),
             ),
 
-            // --- Conteúdo principal com animação (slide + scale + borda) ---
+            // --- Conteúdo principal com animação ---
             GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: _isDrawerOpen ? _toggleDrawer : null,
               onHorizontalDragUpdate: (details) {
-                // dx positivo -> abrir; dx negativo -> fechar
                 final width = MediaQuery.of(context).size.width;
                 final delta = details.delta.dx / width;
                 _animationController.value += delta;
@@ -191,15 +202,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   scale: _scaleAnimation.value,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(_animationController.value * 20),
-                    child: AbsorbPointer(
-                      absorbing: _isDrawerOpen,
+                    child: IgnorePointer(
+                      ignoring: _isDrawerOpen,
                       child: Scaffold(
                         extendBody: true,
                         extendBodyBehindAppBar: true,
                         appBar: _buildAppBar(context, appState),
                         body: _buildBody(appState),
                         bottomNavigationBar: _buildBottomNav(appState),
-                        // drawer removed: controlamos abertura manualmente
                         drawer: null,
                         drawerEnableOpenDragGesture: false,
                       ),
@@ -258,7 +268,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     List<Widget>? actions;
 
     final menuButton = IconButton(
-      icon: Icon(_isDrawerOpen ? Icons.arrow_back_ios_new : Symbols.menu_rounded),
+      icon: Icon(_isDrawerOpen ? Symbols.chevron_left_rounded : Symbols.menu_rounded),
       onPressed: _toggleDrawer,
     );
 
