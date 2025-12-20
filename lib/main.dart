@@ -35,28 +35,71 @@ class MyApp extends StatelessWidget {
 
   ThemeData _buildLightTheme(bool usarCorDinamica) {
     const pureWhite = Color(0xFFFFFFFF);
-    // Vermelho Deriv: #FF444F
     const derivRed = Color(0xFFFF444F);
+    const lightGray = Color(0xFFFAFAFA);
+    const mediumGray = Color(0xFFF5F5F5);
 
+    if (usarCorDinamica) {
+      return ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1976D2),
+          brightness: Brightness.light,
+          surface: pureWhite,
+          background: pureWhite,
+        ),
+        scaffoldBackgroundColor: pureWhite,
+        cardColor: pureWhite,
+        appBarTheme: const AppBarTheme(
+          centerTitle: false,
+          elevation: 0,
+          backgroundColor: pureWhite,
+        ),
+        cardTheme: CardThemeData(
+          color: pureWhite,
+          elevation: 1,
+          shadowColor: Colors.black.withOpacity(0.05),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+
+    // Tema sem cor dinâmica - cores próprias do app
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: usarCorDinamica ? const Color(0xFF1976D2) : derivRed,
-        brightness: Brightness.light,
-        surface: pureWhite,
-        background: pureWhite,
-        surfaceContainerLowest: pureWhite,
-        surfaceContainerLow: const Color(0xFFFAFAFA),
-        surfaceContainer: const Color(0xFFF5F5F5),
-        surfaceContainerHigh: const Color(0xFFF0F0F0),
-        surfaceContainerHighest: const Color(0xFFEBEBEB),
-      ),
+      brightness: Brightness.light,
+      primaryColor: derivRed,
       scaffoldBackgroundColor: pureWhite,
       cardColor: pureWhite,
+      dividerColor: const Color(0xFFE0E0E0),
+      colorScheme: const ColorScheme.light(
+        primary: derivRed,
+        onPrimary: pureWhite,
+        secondary: derivRed,
+        onSecondary: pureWhite,
+        surface: pureWhite,
+        onSurface: Color(0xFF1A1A1A),
+        background: pureWhite,
+        onBackground: Color(0xFF1A1A1A),
+        error: Color(0xFFD32F2F),
+        onError: pureWhite,
+        surfaceContainerLowest: pureWhite,
+        surfaceContainerLow: lightGray,
+        surfaceContainer: mediumGray,
+        surfaceContainerHigh: Color(0xFFF0F0F0),
+        surfaceContainerHighest: Color(0xFFEBEBEB),
+        onSurfaceVariant: Color(0xFF666666),
+        outline: Color(0xFFE0E0E0),
+        outlineVariant: Color(0xFFF0F0F0),
+      ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
         backgroundColor: pureWhite,
+        foregroundColor: Color(0xFF1A1A1A),
+        iconTheme: IconThemeData(color: Color(0xFF1A1A1A)),
       ),
       cardTheme: CardThemeData(
         color: pureWhite,
@@ -81,61 +124,90 @@ class MyApp extends StatelessWidget {
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return derivRed;
+          return const Color(0xFFBDBDBD);
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return derivRed.withOpacity(0.5);
+          return const Color(0xFFE0E0E0);
+        }),
+      ),
     );
   }
 
   ThemeData _buildDarkTheme(bool usarCorDinamica, bool profundo) {
+    const derivRed = Color(0xFFFF444F);
+    
     // Tema normal escuro
     const surfaceColor = Color(0xFF1E1E1E);
     const backgroundColor = Color(0xFF161616);
-    const surfaceContainerColor = Color(0xFF282828);
-    const surfaceContainerHighColor = Color(0xFF323232);
-
+    
     // Tema escuro profundo
     const surfaceColorDeep = Color(0xFF0D0D0D);
     const backgroundColorDeep = Color(0xFF000000);
-    const surfaceContainerColorDeep = Color(0xFF1A1A1A);
-    const surfaceContainerHighColorDeep = Color(0xFF242424);
-
-    // Vermelho Deriv
-    const derivRed = Color(0xFFFF444F);
 
     final surface = profundo ? surfaceColorDeep : surfaceColor;
     final background = profundo ? backgroundColorDeep : backgroundColor;
-    final surfaceContainer = profundo ? surfaceContainerColorDeep : surfaceContainerColor;
-    final surfaceContainerHigh = profundo ? surfaceContainerHighColorDeep : surfaceContainerHighColor;
 
+    if (usarCorDinamica) {
+      return ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1976D2),
+          brightness: Brightness.dark,
+          surface: surface,
+          background: background,
+        ),
+        scaffoldBackgroundColor: background,
+        cardColor: surface,
+        appBarTheme: AppBarTheme(
+          centerTitle: false,
+          elevation: 0,
+          backgroundColor: surface.withOpacity(0.7),
+        ),
+      );
+    }
+
+    // Tema sem cor dinâmica - cores próprias do app
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: usarCorDinamica ? const Color(0xFF1976D2) : derivRed,
-        brightness: Brightness.dark,
-        surface: surface,
-        background: background,
-        surfaceContainerLowest: profundo ? const Color(0xFF050505) : const Color(0xFF141414),
-        surfaceContainerLow: profundo ? const Color(0xFF0A0A0A) : const Color(0xFF1A1A1A),
-        surfaceContainer: surfaceContainer,
-        surfaceContainerHigh: surfaceContainerHigh,
-        surfaceContainerHighest: profundo ? const Color(0xFF2E2E2E) : const Color(0xFF3C3C3C),
-        onSurface: const Color(0xFFE4E4E4),
-        onSurfaceVariant: const Color(0xFFB8B8B8),
-        onBackground: const Color(0xFFE4E4E4),
-        outline: profundo ? const Color(0xFF3A3A3A) : const Color(0xFF4A4A4A),
-        outlineVariant: profundo ? const Color(0xFF242424) : const Color(0xFF323232),
-        shadow: Colors.black.withOpacity(0.5),
-      ),
+      brightness: Brightness.dark,
+      primaryColor: derivRed,
       scaffoldBackgroundColor: background,
       cardColor: surface,
       dividerColor: profundo ? const Color(0xFF1A1A1A) : const Color(0xFF2A2A2A),
+      colorScheme: ColorScheme.dark(
+        primary: derivRed,
+        onPrimary: Colors.white,
+        secondary: derivRed,
+        onSecondary: Colors.white,
+        surface: surface,
+        onSurface: const Color(0xFFE4E4E4),
+        background: background,
+        onBackground: const Color(0xFFE4E4E4),
+        error: const Color(0xFFEF5350),
+        onError: Colors.white,
+        surfaceContainerLowest: profundo ? const Color(0xFF050505) : const Color(0xFF141414),
+        surfaceContainerLow: profundo ? const Color(0xFF0A0A0A) : const Color(0xFF1A1A1A),
+        surfaceContainer: profundo ? const Color(0xFF1A1A1A) : const Color(0xFF282828),
+        surfaceContainerHigh: profundo ? const Color(0xFF242424) : const Color(0xFF323232),
+        surfaceContainerHighest: profundo ? const Color(0xFF2E2E2E) : const Color(0xFF3C3C3C),
+        onSurfaceVariant: const Color(0xFFB8B8B8),
+        outline: profundo ? const Color(0xFF3A3A3A) : const Color(0xFF4A4A4A),
+        outlineVariant: profundo ? const Color(0xFF242424) : const Color(0xFF323232),
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         backgroundColor: surface.withOpacity(0.7),
         foregroundColor: const Color(0xFFE4E4E4),
+        iconTheme: const IconThemeData(color: Color(0xFFE4E4E4)),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface.withOpacity(0.7),
-        indicatorColor: (usarCorDinamica ? const Color(0xFF1976D2) : derivRed).withOpacity(0.2),
+        indicatorColor: derivRed.withOpacity(0.2),
       ),
       cardTheme: CardThemeData(
         color: surface,
@@ -145,19 +217,29 @@ class MyApp extends StatelessWidget {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: surfaceContainerHigh,
+        backgroundColor: profundo ? const Color(0xFF242424) : const Color(0xFF323232),
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surfaceContainerHigh,
-        modalBackgroundColor: surfaceContainerHigh,
+        backgroundColor: profundo ? const Color(0xFF242424) : const Color(0xFF323232),
+        modalBackgroundColor: profundo ? const Color(0xFF242424) : const Color(0xFF323232),
         elevation: 8,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return derivRed;
+          return const Color(0xFF616161);
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return derivRed.withOpacity(0.5);
+          return const Color(0xFF424242);
+        }),
       ),
     );
   }
@@ -165,42 +247,65 @@ class MyApp extends StatelessWidget {
   ThemeData _buildAmoledTheme(bool usarCorDinamica) {
     const pureBlack = Color(0xFF000000);
     const almostBlack = Color(0xFF0A0A0A);
-    const darkGray = Color(0xFF151515);
-    const mediumGray = Color(0xFF1A1A1A);
-    const modalGray = Color(0xFF252525);
     const derivRed = Color(0xFFFF444F);
 
+    if (usarCorDinamica) {
+      return ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1976D2),
+          brightness: Brightness.dark,
+          surface: almostBlack,
+          background: pureBlack,
+        ),
+        scaffoldBackgroundColor: pureBlack,
+        cardColor: almostBlack,
+        appBarTheme: const AppBarTheme(
+          centerTitle: false,
+          elevation: 0,
+          backgroundColor: pureBlack,
+        ),
+      );
+    }
+
+    // Tema sem cor dinâmica - cores próprias do app
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: usarCorDinamica ? const Color(0xFF1976D2) : derivRed,
-        brightness: Brightness.dark,
-        surface: almostBlack,
-        background: pureBlack,
-        surfaceContainerLowest: pureBlack,
-        surfaceContainerLow: almostBlack,
-        surfaceContainer: darkGray,
-        surfaceContainerHigh: mediumGray,
-        surfaceContainerHighest: const Color(0xFF202020),
-        onSurface: const Color(0xFFFFFFFF),
-        onSurfaceVariant: const Color(0xFFB0B0B0),
-        onBackground: const Color(0xFFFFFFFF),
-        outline: const Color(0xFF2A2A2A),
-        outlineVariant: const Color(0xFF1A1A1A),
-        shadow: pureBlack,
-      ),
+      brightness: Brightness.dark,
+      primaryColor: derivRed,
       scaffoldBackgroundColor: pureBlack,
       cardColor: almostBlack,
       dividerColor: const Color(0xFF1A1A1A),
+      colorScheme: const ColorScheme.dark(
+        primary: derivRed,
+        onPrimary: Colors.white,
+        secondary: derivRed,
+        onSecondary: Colors.white,
+        surface: almostBlack,
+        onSurface: Color(0xFFFFFFFF),
+        background: pureBlack,
+        onBackground: Color(0xFFFFFFFF),
+        error: Color(0xFFEF5350),
+        onError: Colors.white,
+        surfaceContainerLowest: pureBlack,
+        surfaceContainerLow: almostBlack,
+        surfaceContainer: Color(0xFF151515),
+        surfaceContainerHigh: Color(0xFF1A1A1A),
+        surfaceContainerHighest: Color(0xFF202020),
+        onSurfaceVariant: Color(0xFFB0B0B0),
+        outline: Color(0xFF2A2A2A),
+        outlineVariant: Color(0xFF1A1A1A),
+      ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
         backgroundColor: pureBlack,
         foregroundColor: Color(0xFFFFFFFF),
+        iconTheme: IconThemeData(color: Color(0xFFFFFFFF)),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: almostBlack,
-        indicatorColor: (usarCorDinamica ? const Color(0xFF1976D2) : derivRed).withOpacity(0.3),
+        indicatorColor: derivRed.withOpacity(0.3),
       ),
       cardTheme: CardThemeData(
         color: almostBlack,
@@ -213,20 +318,30 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      dialogTheme: DialogThemeData(
-        backgroundColor: modalGray,
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Color(0xFF252525),
         elevation: 8,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(28)),
         ),
       ),
-      bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: modalGray,
-        modalBackgroundColor: modalGray,
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Color(0xFF252525),
+        modalBackgroundColor: Color(0xFF252525),
         elevation: 8,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return derivRed;
+          return const Color(0xFF424242);
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return derivRed.withOpacity(0.5);
+          return const Color(0xFF2A2A2A);
+        }),
       ),
     );
   }
