@@ -1,9 +1,11 @@
+import 'dart:math' show cos, sin, pi;
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
-import 'dart:math' show cos, sin, pi;
 
 class JogoDetalhesPage extends StatefulWidget {
   final String jogoId;
@@ -56,47 +58,25 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    // Adotamos as cores do tema para garantir que a página muda com o app
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF000000),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF000000),
-          leading: IconButton(
-            icon: const Icon(Symbols.arrow_back_rounded, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: const Text('Detalhes', style: TextStyle(color: Colors.white)),
-        ),
-        body: Center(
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: AnimatedBuilder(
-              animation: _loadingController,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: _ExpressiveProgressPainter(
-                    progress: _loadingController.value,
-                    color: const Color(0xFFFF6B35),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      );
+      return _buildLoadingScaffold(cs);
     }
 
     if (_jogo == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF000000),
+        backgroundColor: cs.background,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF000000),
+          backgroundColor: cs.surface,
           leading: IconButton(
-            icon: const Icon(Symbols.arrow_back_rounded, color: Colors.white),
+            icon: Icon(Symbols.arrow_back_rounded, color: cs.onSurface),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text('Detalhes', style: TextStyle(color: Colors.white)),
+          title: Text('Detalhes', style: TextStyle(color: cs.onSurface)),
+          elevation: 0,
         ),
         body: Center(
           child: Column(
@@ -105,10 +85,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               Icon(
                 Symbols.error_rounded,
                 size: 64,
-                color: Colors.red.withOpacity(0.5),
+                color: cs.error.withOpacity(0.7),
               ),
               const SizedBox(height: 16),
-              const Text('Erro ao carregar detalhes', style: TextStyle(color: Colors.white)),
+              Text('Erro ao carregar detalhes', style: TextStyle(color: cs.onSurface)),
             ],
           ),
         ),
@@ -118,30 +98,146 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     return _buildDetalhes(_jogo!);
   }
 
+  Widget _buildLoadingScaffold(ColorScheme cs) {
+    // Lista de cards com glassmorphism e o loader expressivo no centro de cada card.
+    return Scaffold(
+      backgroundColor: cs.background,
+      appBar: AppBar(
+        backgroundColor: cs.surface,
+        leading: IconButton(
+          icon: Icon(Symbols.arrow_back_rounded, color: cs.onSurface),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Detalhes', style: TextStyle(color: cs.onSurface)),
+        elevation: 0,
+      ),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: 4,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          return _buildGlassLoadingCard(cs);
+        },
+      ),
+    );
+  }
+
+  Widget _buildGlassLoadingCard(ColorScheme cs) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Stack(
+        children: [
+          // fundo translúcido
+          Container(
+            height: 140,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  cs.surface.withOpacity(0.55),
+                  cs.surfaceVariant.withOpacity(0.35),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cs.onSurface.withOpacity(0.06)),
+            ),
+          ),
+          // blur
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              height: 140,
+              padding: const EdgeInsets.all(16),
+              alignment: Alignment.center,
+              color: Colors.transparent,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: AnimatedBuilder(
+                      animation: _loadingController,
+                      builder: (context, child) {
+                        return CustomPaint(
+                          painter: _ExpressiveProgressPainter(
+                            progress: _loadingController.value,
+                            color: cs.primary,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          height: 14,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: cs.onSurface.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 12,
+                          width: MediaQuery.of(context).size.width * 0.6,
+                          decoration: BoxDecoration(
+                            color: cs.onSurface.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 10,
+                          width: MediaQuery.of(context).size.width * 0.4,
+                          decoration: BoxDecoration(
+                            color: cs.onSurface.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDetalhes(Map<String, dynamic> jogo) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final status = jogo['match_status'] ?? '';
     final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: cs.background,
       body: CustomScrollView(
         slivers: [
           // App Bar com Header
           SliverAppBar(
             expandedHeight: 320,
             pinned: true,
-            backgroundColor: const Color(0xFF1C1C1E),
+            backgroundColor: cs.surface,
             leading: IconButton(
-              icon: const Icon(Symbols.arrow_back_rounded, color: Colors.white),
+              icon: Icon(Symbols.arrow_back_rounded, color: cs.onSurface),
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
               IconButton(
-                icon: const Icon(Symbols.share_rounded, color: Colors.white),
+                icon: Icon(Symbols.share_rounded, color: cs.onSurface),
                 onPressed: () {},
               ),
               IconButton(
-                icon: const Icon(Symbols.star_outline_rounded, color: Colors.white),
+                icon: Icon(Symbols.star_outline_rounded, color: cs.onSurface),
                 onPressed: () {},
               ),
             ],
@@ -152,8 +248,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      const Color(0xFF1C1C1E),
-                      const Color(0xFF000000).withOpacity(0.8),
+                      cs.primaryContainer,
+                      cs.surface.withOpacity(0.9),
                     ],
                   ),
                 ),
@@ -164,9 +260,9 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                       const SizedBox(height: 60),
                       Text(
                         jogo['league_name'] ?? '',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF8E8E93),
+                          color: cs.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -182,19 +278,19 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                   jogo['team_home_badge'] ?? '',
                                   width: 64,
                                   height: 64,
-                                  errorBuilder: (_, __, ___) => const Icon(
+                                  errorBuilder: (_, __, ___) => Icon(
                                     Icons.shield,
                                     size: 64,
-                                    color: Color(0xFFFF6B35),
+                                    color: cs.primary,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
                                   jogo['match_hometeam_name'] ?? '',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: cs.onSurface,
                                   ),
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
@@ -209,10 +305,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                               children: [
                                 Text(
                                   '${jogo['match_hometeam_score'] ?? '0'} - ${jogo['match_awayteam_score'] ?? '0'}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 48,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.white,
+                                    color: cs.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -220,8 +316,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: isLive
-                                        ? const Color(0xFFFF3B30).withOpacity(0.2)
-                                        : const Color(0xFF2C2C2E),
+                                        ? cs.error.withOpacity(0.14)
+                                        : cs.surfaceVariant,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Row(
@@ -231,8 +327,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                         Container(
                                           width: 6,
                                           height: 6,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFFF3B30),
+                                          decoration: BoxDecoration(
+                                            color: cs.error,
                                             shape: BoxShape.circle,
                                           ),
                                         ),
@@ -243,9 +339,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w700,
-                                          color: isLive
-                                              ? const Color(0xFFFF3B30)
-                                              : const Color(0xFF8E8E93),
+                                          color: isLive ? cs.error : cs.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -262,19 +356,19 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                   jogo['team_away_badge'] ?? '',
                                   width: 64,
                                   height: 64,
-                                  errorBuilder: (_, __, ___) => const Icon(
+                                  errorBuilder: (_, __, ___) => Icon(
                                     Icons.shield,
                                     size: 64,
-                                    color: Color(0xFFFF6B35),
+                                    color: cs.primary,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
                                   jogo['match_awayteam_name'] ?? '',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: cs.onSurface,
                                   ),
                                   textAlign: TextAlign.center,
                                   maxLines: 2,
@@ -287,9 +381,9 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                       const SizedBox(height: 16),
                       Text(
                         '${jogo['match_date']} • ${jogo['match_time']}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF8E8E93),
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -299,17 +393,17 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
             ),
           ),
 
-          // Tabs de navegação
+          // Tabs de navegação (custom buttons - sem indicator separado)
           SliverPersistentHeader(
             pinned: true,
             delegate: _TabBarDelegate(
               child: Container(
-                color: const Color(0xFF000000),
+                color: cs.surface,
                 child: Column(
                   children: [
                     Container(
                       height: 1,
-                      color: const Color(0xFF2C2C2E),
+                      color: cs.surfaceVariant.withOpacity(0.6),
                     ),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -335,7 +429,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           // Conteúdo
           SliverToBoxAdapter(
             child: Container(
-              color: const Color(0xFF000000),
+              color: cs.background,
               child: _buildTabContent(jogo),
             ),
           ),
@@ -343,25 +437,25 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Color(0xFF1C1C1E),
-          border: Border(top: BorderSide(color: Color(0xFF2C2C2E), width: 1)),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          border: Border(top: BorderSide(color: cs.surfaceVariant, width: 1)),
         ),
         child: SafeArea(
           child: ElevatedButton(
             onPressed: () {},
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF3B30),
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 0,
             ),
-            child: const Text(
+            child: Text(
               'Começar Aposta',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: cs.onPrimary),
             ),
           ),
         ),
@@ -371,20 +465,24 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   Widget _buildTabButton(String value, String label) {
     final isSelected = _selectedTab == value;
+    final cs = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: () => setState(() => _selectedTab = value),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6B35) : Colors.transparent,
+          color: isSelected ? cs.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? cs.primary : cs.onSurface.withOpacity(0.06)),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : const Color(0xFF8E8E93),
+            color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
           ),
         ),
       ),
@@ -405,6 +503,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildOverviewTab(Map<String, dynamic> jogo) {
+    final cs = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -429,15 +529,16 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildLiveStreamCard() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
           image: NetworkImage('https://images.unsplash.com/photo-1459865264687-595d652de67e?w=800'),
           fit: BoxFit.cover,
-          opacity: 0.3,
+          opacity: 0.25,
         ),
       ),
       child: Center(
@@ -447,18 +548,18 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF3B30),
+                color: Theme.of(context).colorScheme.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Symbols.play_arrow_rounded, color: Colors.white, size: 32),
+              child: Icon(Symbols.play_arrow_rounded, color: Theme.of(context).colorScheme.onPrimary, size: 32),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Live Stream',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -468,6 +569,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildTimelineSection(Map<String, dynamic> jogo) {
+    final cs = Theme.of(context).colorScheme;
     final events = <Map<String, dynamic>>[];
 
     // Adicionar gols
@@ -515,19 +617,19 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Timeline',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: cs.onSurface,
             ),
           ),
           const SizedBox(height: 16),
@@ -546,7 +648,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     Color eventColor;
 
     if (type == 'goal') {
-      eventIcon = const Icon(Symbols.sports_soccer_rounded, size: 20, color: Colors.white);
+      eventIcon = Icon(Symbols.sports_soccer_rounded, size: 20, color: Colors.white);
       eventColor = const Color(0xFF34C759);
     } else if (type == 'yellow') {
       eventIcon = Container(
@@ -563,14 +665,14 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         width: 16,
         height: 20,
         decoration: BoxDecoration(
-          color: const Color(0xFFFF3B30),
+          color: Theme.of(context).colorScheme.error,
           borderRadius: BorderRadius.circular(3),
         ),
       );
-      eventColor = const Color(0xFFFF3B30);
+      eventColor = Theme.of(context).colorScheme.error;
     } else {
-      eventIcon = const Icon(Symbols.swap_horiz_rounded, size: 20, color: Color(0xFF007AFF));
-      eventColor = const Color(0xFF007AFF);
+      eventIcon = Icon(Symbols.swap_horiz_rounded, size: 20, color: Theme.of(context).colorScheme.primary);
+      eventColor = Theme.of(context).colorScheme.primary;
     }
 
     return Padding(
@@ -600,13 +702,14 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildTimelineDot(int time, Widget icon, Color color) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       children: [
         Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withOpacity(0.18),
             shape: BoxShape.circle,
             border: Border.all(color: color, width: 2),
           ),
@@ -615,10 +718,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         const SizedBox(height: 4),
         Text(
           '$time\'',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF8E8E93),
+            color: cs.onSurfaceVariant,
           ),
         ),
       ],
@@ -634,10 +737,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         children: [
           Text(
             event['player'],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             textAlign: isHome ? TextAlign.right : TextAlign.left,
           ),
@@ -645,9 +748,9 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
             const SizedBox(height: 2),
             Text(
               'Assistência: ${event['assist']}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF8E8E93),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: isHome ? TextAlign.right : TextAlign.left,
             ),
@@ -655,10 +758,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           const SizedBox(height: 2),
           Text(
             event['score'],
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF34C759),
+              color: Color(0xFF34C759),
             ),
             textAlign: isHome ? TextAlign.right : TextAlign.left,
           ),
@@ -672,7 +775,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!isHome) ...[
-                const Icon(Symbols.arrow_upward_rounded, size: 16, color: Color(0xFF34C759)),
+                Icon(Symbols.arrow_upward_rounded, size: 16, color: const Color(0xFF34C759)),
                 const SizedBox(width: 4),
               ],
               Flexible(
@@ -697,22 +800,22 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!isHome) ...[
-                const Icon(Symbols.arrow_downward_rounded, size: 16, color: Color(0xFFFF3B30)),
+                Icon(Symbols.arrow_downward_rounded, size: 16, color: Theme.of(context).colorScheme.error),
                 const SizedBox(width: 4),
               ],
               Flexible(
                 child: Text(
                   event['playerOut'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFFFF3B30),
+                    color: Theme.of(context).colorScheme.error,
                   ),
                   textAlign: isHome ? TextAlign.right : TextAlign.left,
                 ),
               ),
               if (isHome) ...[
                 const SizedBox(width: 4),
-                const Icon(Symbols.arrow_downward_rounded, size: 16, color: Color(0xFFFF3B30)),
+                Icon(Symbols.arrow_downward_rounded, size: 16, color: Theme.of(context).colorScheme.error),
               ],
             ],
           ),
@@ -721,10 +824,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     } else {
       return Text(
         event['player'],
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         textAlign: isHome ? TextAlign.right : TextAlign.left,
       );
@@ -732,21 +835,22 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildInfoCard(Map<String, dynamic> jogo) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Informações',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: cs.onSurface,
             ),
           ),
           const SizedBox(height: 16),
@@ -760,11 +864,12 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: const Color(0xFF8E8E93)),
+          Icon(icon, size: 20, color: cs.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -772,17 +877,17 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF8E8E93),
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: cs.onSurface,
                   ),
                 ),
               ],
@@ -794,13 +899,14 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildStatsTab(Map<String, dynamic> jogo) {
+    final cs = Theme.of(context).colorScheme;
     if (jogo['statistics'] == null || (jogo['statistics'] as List).isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(40),
+          padding: const EdgeInsets.all(40),
           child: Text(
             'Estatísticas não disponíveis',
-            style: TextStyle(color: Color(0xFF8E8E93)),
+            style: TextStyle(color: cs.onSurfaceVariant),
           ),
         ),
       );
@@ -812,7 +918,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         children: [
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1C1C1E),
+              color: cs.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             padding: const EdgeInsets.all(20),
@@ -842,10 +948,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         children: [
           Text(
             stat['type'] ?? '',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF8E8E93),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 20),
@@ -855,9 +961,9 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               painter: _PieChartPainter(
                 homeValue: home,
                 awayValue: away,
-                homeColor: const Color(0xFF007AFF),
+                homeColor: Theme.of(context).colorScheme.primary,
                 awayColor: const Color(0xFF34C759),
-                backgroundColor: const Color(0xFF1C1C1E),
+                backgroundColor: Theme.of(context).colorScheme.surface,
               ),
               child: Center(
                 child: Column(
@@ -865,10 +971,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                   children: [
                     Text(
                       '${home.toInt()}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF007AFF),
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -992,7 +1098,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: isHome ? const Color(0xFF007AFF) : const Color(0xFFFF3B30),
+                color: isHome ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
@@ -1021,12 +1127,13 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Widget _buildH2HTab(Map<String, dynamic> jogo) {
-    return const Center(
+    final cs = Theme.of(context).colorScheme;
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(40),
+        padding: const EdgeInsets.all(40),
         child: Text(
           'Histórico H2H não disponível',
-          style: TextStyle(color: Color(0xFF8E8E93)),
+          style: TextStyle(color: cs.onSurfaceVariant),
         ),
       ),
     );
@@ -1163,6 +1270,7 @@ class _AnimatedStatBarState extends State<_AnimatedStatBar> with SingleTickerPro
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -1175,17 +1283,17 @@ class _AnimatedStatBarState extends State<_AnimatedStatBar> with SingleTickerPro
                 children: [
                   Text(
                     '${widget.home.toInt()}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF007AFF),
+                      color: cs.primary,
                     ),
                   ),
                   Text(
                     widget.type,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF8E8E93),
+                      color: cs.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1204,14 +1312,14 @@ class _AnimatedStatBarState extends State<_AnimatedStatBar> with SingleTickerPro
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
                   height: 10,
-                  color: const Color(0xFF2C2C2E),
+                  color: Theme.of(context).colorScheme.surfaceVariant,
                   child: Row(
                     children: [
                       Expanded(
                         flex: ((widget.homePercent * _animation.value) * 100).toInt().clamp(1, 100),
                         child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF007AFF),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -1305,7 +1413,7 @@ class _ExpressiveProgressPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ExpressiveProgressPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress || oldDelegate.color != color;
   }
 }
 
