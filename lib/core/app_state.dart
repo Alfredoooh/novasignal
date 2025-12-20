@@ -9,6 +9,8 @@ class AppState with ChangeNotifier {
   // Configurações de tema e notificações
   bool _temaEscuro = false;
   bool _temaAmoled = false;
+  bool _temaEscuroProfundo = false;
+  bool _corDinamica = true;
   bool _notificacoesAtivas = true;
 
   // Estado de navegação
@@ -33,11 +35,13 @@ class AppState with ChangeNotifier {
   // Getters para configurações
   bool get temaEscuro => _temaEscuro;
   bool get temaAmoled => _temaAmoled;
+  bool get temaEscuroProfundo => _temaEscuroProfundo;
+  bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
 
   // ========== CLOUDFLARE API CONFIGURATION ==========
   static const String cloudflareBase = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
-  
+
   // Cache de duração por tipo de requisição (em minutos)
   static const int _cacheDurationJogos = 2;
   static const int _cacheDurationDetalhes = 1;
@@ -81,6 +85,8 @@ class AppState with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _temaEscuro = prefs.getBool('tema_escuro') ?? false;
       _temaAmoled = prefs.getBool('tema_amoled') ?? false;
+      _temaEscuroProfundo = prefs.getBool('tema_escuro_profundo') ?? false;
+      _corDinamica = prefs.getBool('cor_dinamica') ?? true;
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
       notifyListeners();
     } catch (e) {
@@ -99,6 +105,20 @@ class AppState with ChangeNotifier {
     _temaAmoled = valor;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('tema_amoled', valor);
+    notifyListeners();
+  }
+
+  Future<void> alternarTemaEscuroProfundo(bool valor) async {
+    _temaEscuroProfundo = valor;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('tema_escuro_profundo', valor);
+    notifyListeners();
+  }
+
+  Future<void> alternarCorDinamica(bool valor) async {
+    _corDinamica = valor;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('cor_dinamica', valor);
     notifyListeners();
   }
 
@@ -180,13 +200,11 @@ class AppState with ChangeNotifier {
   // ========== MÉTODOS DE API CLOUDFLARE ==========
 
   Future<dynamic> _makeCloudflareRequest(String endpoint) async {
-    // Verifica se já existe uma requisição em andamento
     if (_pendingRequests.containsKey(endpoint)) {
       debugPrint('⏳ Requisição já em andamento, aguardando...');
       return await _pendingRequests[endpoint]!;
     }
 
-    // Cria a requisição e armazena como pendente
     final requestFuture = _executeCloudflareRequest(endpoint);
     _pendingRequests[endpoint] = requestFuture;
 
@@ -209,12 +227,11 @@ class AppState with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
-        // Verifica se há erro na resposta
+
         if (data is Map && data.containsKey('error')) {
           throw Exception(data['error']);
         }
-        
+
         return data;
       } else {
         throw Exception('HTTP ${response.statusCode}');
@@ -235,13 +252,11 @@ class AppState with ChangeNotifier {
     if (cached != null) return cached as List<dynamic>;
 
     try {
-      // Busca todos os jogos do Cloudflare
       final response = await _makeCloudflareRequest('/api/matches');
-      
+
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
-        
-        // Filtra por data
+
         final jogosDoDia = todosJogos.where((jogo) {
           final matchDate = jogo['match_date'] ?? '';
           return matchDate == dataStr;
@@ -267,11 +282,10 @@ class AppState with ChangeNotifier {
 
     try {
       final response = await _makeCloudflareRequest('/api/matches');
-      
+
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
-        
-        // Filtra jogos com times populares
+
         final jogosFiltrados = todosJogos.where((jogo) {
           final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
           final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
@@ -285,7 +299,6 @@ class AppState with ChangeNotifier {
           return false;
         }).toList();
 
-        // Ordena por status (ao vivo primeiro)
         jogosFiltrados.sort((a, b) {
           final aStatus = a['match_status'] ?? '';
           final bStatus = b['match_status'] ?? '';
@@ -319,10 +332,10 @@ class AppState with ChangeNotifier {
 
     try {
       final response = await _makeCloudflareRequest('/api/matches');
-      
+
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
-        
+
         final resultados = todosJogos.where((jogo) {
           final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
           final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
@@ -351,7 +364,7 @@ class AppState with ChangeNotifier {
 
     try {
       final response = await _makeCloudflareRequest('/api/matches/$jogoId');
-      
+
       if (response != null && response is! Map) {
         _saveToCache(cacheKey, response, _cacheDurationDetalhes);
         return response;
@@ -359,7 +372,7 @@ class AppState with ChangeNotifier {
         _saveToCache(cacheKey, response, _cacheDurationDetalhes);
         return response;
       }
-      
+
       return null;
     } catch (e) {
       debugPrint('✗ Erro ao carregar detalhes: $e');
@@ -378,17 +391,16 @@ class AppState with ChangeNotifier {
 
     try {
       final response = await _makeCloudflareRequest('/api/matches');
-      
+
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
-        
-        // Extrai ligas únicas dos jogos
+
         final ligasMap = <String, Map<String, dynamic>>{};
-        
+
         for (var jogo in todosJogos) {
           final ligaId = jogo['league_id']?.toString();
           final ligaNome = jogo['league_name'];
-          
+
           if (ligaId != null && ligaNome != null && !ligasMap.containsKey(ligaId)) {
             ligasMap[ligaId] = {
               'league_id': ligaId,
@@ -398,7 +410,7 @@ class AppState with ChangeNotifier {
             };
           }
         }
-        
+
         todasLigas = ligasMap.values.toList();
         _saveToCache(cacheKey, todasLigas, _cacheDurationLigas);
         debugPrint('✓ ${todasLigas.length} ligas carregadas');
@@ -418,13 +430,8 @@ class AppState with ChangeNotifier {
     if (cached != null) return cached as List<dynamic>;
 
     try {
-      // Busca jogos da liga e calcula classificação manualmente
       final jogosLiga = await carregarJogosPorLiga(ligaId);
-      
-      // Aqui você pode implementar lógica para calcular classificação
-      // baseado nos resultados dos jogos, ou retornar vazio se não tiver
-      // essa funcionalidade no Cloudflare
-      
+
       _saveToCache(cacheKey, [], _cacheDurationClassificacao);
       return [];
     } catch (e) {
@@ -441,7 +448,7 @@ class AppState with ChangeNotifier {
 
     try {
       final response = await _makeCloudflareRequest('/api/matches/league?league_id=$ligaId');
-      
+
       if (response is Map && response.containsKey('matches')) {
         final jogos = response['matches'] as List<dynamic>;
         debugPrint('✓ ${jogos.length} jogos da liga $ligaId');
@@ -459,7 +466,6 @@ class AppState with ChangeNotifier {
     return carregarJogosPorLiga(ligaId);
   }
 
-  // Pré-carregar dados em paralelo
   Future<void> precarregarDadosHome() async {
     debugPrint('🔥 Pré-carregando dados da Home...');
     await Future.wait([
@@ -469,7 +475,6 @@ class AppState with ChangeNotifier {
     debugPrint('✓ Dados da Home pré-carregados');
   }
 
-  // Limpar cache manualmente
   void limparCache() {
     _cache.clear();
     debugPrint('🗑️ Cache limpo manualmente');
@@ -482,7 +487,6 @@ class AppState with ChangeNotifier {
   }
 }
 
-// Classe auxiliar para cache com expiração
 class _CacheEntry {
   final dynamic data;
   final DateTime expiresAt;
