@@ -38,7 +38,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     )..repeat(reverse: true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadJogos();
+      _loadTodosJogos();
     });
   }
 
@@ -59,10 +59,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
   }
 
-  void _loadJogos() async {
+  void _loadTodosJogos() async {
     final appState = context.read<AppState>();
     setState(() {
-      _futureJogos = appState.carregarJogosDoDia(appState.dataSelecionada);
+      // Carrega TODOS os jogos disponíveis, não apenas de um dia
+      _futureJogos = _carregarTodosJogosDisponiveis(appState);
     });
 
     _futureJogos?.then((jogos) {
@@ -72,6 +73,35 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         });
       }
     });
+  }
+
+  Future<List<dynamic>> _carregarTodosJogosDisponiveis(AppState appState) async {
+    try {
+      // Busca jogos de uma janela de tempo (ontem, hoje, amanhã)
+      final hoje = DateTime.now();
+      final ontem = hoje.subtract(const Duration(days: 1));
+      final amanha = hoje.add(const Duration(days: 1));
+
+      final futures = [
+        appState.carregarJogosDoDia(ontem),
+        appState.carregarJogosDoDia(hoje),
+        appState.carregarJogosDoDia(amanha),
+      ];
+
+      final results = await Future.wait(futures);
+      
+      // Combina todos os jogos em uma lista única
+      final todosJogos = <dynamic>[];
+      for (var result in results) {
+        todosJogos.addAll(result);
+      }
+
+      debugPrint('🔥 Total de jogos carregados: ${todosJogos.length}');
+      return todosJogos;
+    } catch (e) {
+      debugPrint('❌ Erro ao carregar jogos: $e');
+      return [];
+    }
   }
 
   Widget _buildLoadingShimmer() {
@@ -205,8 +235,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             child: Row(
               children: [
                 _AnimatedFilterChip(
-                  label: 'Hoje',
-                  icon: Symbols.today_rounded,
+                  label: 'Todos',
+                  icon: Symbols.sports_soccer_rounded,
                   isSelected: appState.filtroJogos == 'hoje',
                   onSelected: () => appState.filtrarJogos('hoje'),
                 ),
@@ -223,6 +253,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   icon: Symbols.check_circle_rounded,
                   isSelected: appState.filtroJogos == 'terminados',
                   onSelected: () => appState.filtrarJogos('terminados'),
+                ),
+                const SizedBox(width: 8),
+                _AnimatedFilterChip(
+                  label: 'Agendados',
+                  icon: Symbols.schedule_rounded,
+                  isSelected: appState.filtroJogos == 'agendados',
+                  onSelected: () => appState.filtrarJogos('agendados'),
                 ),
               ],
             ),
@@ -259,15 +296,28 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           ),
                           const SizedBox(height: 16),
                           FilledButton.icon(
-                            onPressed: _loadJogos,
+                            onPressed: _loadTodosJogos,
                             icon: const Icon(Symbols.refresh_rounded),
                             label: const Text('Tentar Novamente'),
                           ),
                         ],
                       ),
                     );
-                  } else if (!snapshot.hasData) {
-                    return const Center(child: Text('Erro ao carregar jogos'));
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Symbols.sports_soccer_rounded,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Nenhum jogo disponível'),
+                        ],
+                      ),
+                    );
                   }
 
                   return _buildCachedContent(snapshot.data!, appState.filtroJogos);
@@ -292,13 +342,26 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
             ),
             const SizedBox(height: 16),
-            const Text('Nenhum jogo disponível'),
+            Text('Nenhum jogo ${_getTituloFiltro(filtro)}'),
           ],
         ),
       );
     }
 
     return _buildJogosList(jogosFiltrados);
+  }
+
+  String _getTituloFiltro(String filtro) {
+    switch (filtro) {
+      case 'direto':
+        return 'ao vivo no momento';
+      case 'terminados':
+        return 'terminado';
+      case 'agendados':
+        return 'agendado';
+      default:
+        return 'disponível';
+    }
   }
 
   List<dynamic> _filtrarJogos(List<dynamic> jogos, String filtro) {
@@ -313,6 +376,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
           final status = j['match_status'] ?? '';
           return status.contains('Finished') || status == 'FT' || status == 'AET';
         }).toList();
+      case 'agendados':
+        return jogos.where((j) {
+          final status = j['match_status'] ?? '';
+          return status.isEmpty || status == '' || 
+                 (!status.contains("'") && status != 'HT' && status != 'LIVE' && 
+                  !status.contains('Finished') && status != 'FT' && status != 'AET');
+        }).toList();
       default:
         return jogos;
     }
@@ -320,6 +390,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   Widget _buildJogosList(List<dynamic> jogos) {
     Map<String, List<dynamic>> jogosPorLiga = {};
+    Map<String, Map<String, dynamic>> ligasInfo = {};
     List<String> ligasOrdenadas = [];
 
     for (var jogo in jogos) {
@@ -327,6 +398,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       if (!jogosPorLiga.containsKey(ligaNome)) {
         jogosPorLiga[ligaNome] = [];
         ligasOrdenadas.add(ligaNome);
+        ligasInfo[ligaNome] = {
+          'logo': jogo['league_logo'],
+          'id': jogo['league_id'],
+        };
       }
       jogosPorLiga[ligaNome]!.add(jogo);
     }
@@ -339,8 +414,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       itemBuilder: (context, index) {
         final ligaNome = ligasOrdenadas[index];
         final jogosLiga = jogosPorLiga[ligaNome]!;
-        final leagueLogo = jogosLiga.isNotEmpty ? jogosLiga[0]['league_logo'] : null;
-        final leagueId = jogosLiga.isNotEmpty ? jogosLiga[0]['league_id'] : null;
+        final ligaInfo = ligasInfo[ligaNome]!;
+        final leagueLogo = ligaInfo['logo'];
+        final leagueId = ligaInfo['id'];
 
         return Container(
           color: Theme.of(context).colorScheme.surface,
@@ -362,44 +438,61 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  ),
                   child: Row(
                     children: [
                       if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
-                        _CachedNetworkImage(
-                          imageUrl: leagueLogo,
-                          width: 24,
-                          height: 24,
-                          placeholder: Icon(
-                            Symbols.emoji_events_rounded,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary,
+                        Hero(
+                          tag: 'liga_logo_$leagueId',
+                          child: _CachedNetworkImage(
+                            imageUrl: leagueLogo,
+                            width: 28,
+                            height: 28,
+                            placeholder: Icon(
+                              Symbols.emoji_events_rounded,
+                              size: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
                       ] else ...[
-                        Icon(Symbols.emoji_events_rounded, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        Icon(
+                          Symbols.emoji_events_rounded,
+                          size: 24,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 12),
                       ],
                       Expanded(
                         child: Text(
                           ligaNome,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
-                      Text(
-                        '${jogosLiga.length}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${jogosLiga.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Icon(
                         Symbols.chevron_right_rounded,
                         size: 20,
@@ -409,7 +502,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   ),
                 ),
               ),
-              Container(height: 0.5, color: Theme.of(context).dividerColor.withOpacity(0.1)),
               ...jogosLiga.map((jogo) => _buildMatchItem(jogo)),
             ],
           ),
@@ -432,7 +524,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
@@ -450,7 +542,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   children: [
                     Text(
                       jogo['match_time'] ?? '--:--',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     if (isLive || isHalfTime) ...[
                       const SizedBox(width: 8),
@@ -469,28 +565,42 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   AnimatedBuilder(
                     animation: _blinkController,
                     builder: (context, child) {
-                      return Text(
-                        "${status.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.green,
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          "${status.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.green,
+                          ),
                         ),
                       );
                     },
                   )
                 else
-                  Text(
-                    formatarStatus(status),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: isHalfTime ? Colors.amber : getStatusColor(status, context),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: getStatusColor(status, context).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      formatarStatus(status),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: getStatusColor(status, context),
+                      ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -500,13 +610,20 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                         imageUrl: jogo['team_home_badge'] ?? '',
                         width: 32,
                         height: 32,
-                        placeholder: Container(width: 32, height: 32),
+                        placeholder: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           jogo['match_hometeam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -514,12 +631,12 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
@@ -531,7 +648,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       Expanded(
                         child: Text(
                           jogo['match_awayteam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.right,
                         ),
@@ -541,7 +658,14 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                         imageUrl: jogo['team_away_badge'] ?? '',
                         width: 32,
                         height: 32,
-                        placeholder: Container(width: 32, height: 32),
+                        placeholder: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
                     ],
                   ),
