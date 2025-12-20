@@ -21,27 +21,174 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
   final PageController _pageController = PageController();
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    
+    _slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0.65, 0.0),
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _animationController.dispose();
     super.dispose();
+  }
+
+  void _onDrawerChanged(bool isOpened) {
+    if (isOpened) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
-        return Scaffold(
-          key: _scaffoldKey,
-          extendBody: true,
-          extendBodyBehindAppBar: true,
-          appBar: _buildAppBar(context, appState),
-          drawer: _buildDrawer(context, appState),
-          body: _buildBody(appState),
-          bottomNavigationBar: _buildBottomNav(appState),
+        return AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Stack(
+              children: [
+                // Drawer Background
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 60),
+                          Text(
+                            'Football Live',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Acompanhe seu futebol favorito',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 40),
+                          _buildDrawerItem(
+                            icon: Symbols.settings_rounded,
+                            title: 'Configurações',
+                            onTap: () {
+                              _scaffoldKey.currentState?.closeDrawer();
+                              Future.delayed(const Duration(milliseconds: 300), () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const ConfiguracoesPage(),
+                                  ),
+                                );
+                              });
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Symbols.info_rounded,
+                            title: 'Sobre',
+                            onTap: () {
+                              _scaffoldKey.currentState?.closeDrawer();
+                              Future.delayed(const Duration(milliseconds: 300), () {
+                                showAboutDialog(
+                                  context: context,
+                                  applicationName: 'Football Live',
+                                  applicationVersion: '1.0.0',
+                                );
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Main Content com animação
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                      _animationController.value * 20,
+                    ),
+                    child: Scaffold(
+                      key: _scaffoldKey,
+                      extendBody: true,
+                      extendBodyBehindAppBar: true,
+                      appBar: _buildAppBar(context, appState),
+                      body: _buildBody(appState),
+                      bottomNavigationBar: _buildBottomNav(appState),
+                      drawer: const SizedBox.shrink(),
+                      drawerEnableOpenDragGesture: true,
+                      onDrawerChanged: _onDrawerChanged,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -121,210 +268,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             actions: actions,
             centerTitle: false,
-            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.65),
             surfaceTintColor: Colors.transparent,
             elevation: 0,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context, AppState appState) {
-    return Drawer(
-      width: 280,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      child: Column(
-        children: [
-          // Header do Drawer
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withOpacity(0.7),
-                ],
-              ),
-            ),
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 20,
-              left: 20,
-              right: 20,
-              bottom: 20,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Symbols.sports_soccer_rounded,
-                    size: 40,
-                    color: Theme.of(context).colorScheme.primary,
-                    fill: 1,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Football Live',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Acompanhe seu futebol favorito',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Menu Items
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                ListTile(
-                  leading: Icon(
-                    Symbols.home_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: const Text('Início'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    appState.mudarTab('home');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Symbols.sports_soccer_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: const Text('Jogos'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    appState.mudarTab('jogos');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Symbols.notifications_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: const Text('Atividades'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    appState.mudarTab('atividades');
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Symbols.inbox_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: const Text('Inbox'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    appState.mudarTab('inbox');
-                  },
-                ),
-                const Divider(height: 32),
-                ListTile(
-                  leading: Icon(
-                    Symbols.settings_rounded,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  title: const Text('Configurações'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ConfiguracoesPage(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(
-                    Symbols.info_rounded,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  title: const Text('Sobre'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    showAboutDialog(
-                      context: context,
-                      applicationName: 'Football Live',
-                      applicationVersion: '1.0.0',
-                      applicationLegalese: '© 2025 Football Live',
-                      children: [
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Aplicativo para acompanhamento de jogos de futebol em tempo real.',
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Footer
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Symbols.favorite_rounded,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                  fill: 1,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Feito com paixão pelo futebol',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -369,7 +317,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.65),
             border: Border(
               top: BorderSide(
                 color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
