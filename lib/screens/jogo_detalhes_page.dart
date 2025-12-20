@@ -1051,3 +1051,337 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_TabBarDelegate oldDelegate) => false;
+}
+
+class _FootballFieldPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Círculo central
+    canvas.drawCircle(center, 50, paint);
+    canvas.drawCircle(center, 2, Paint()..color = Colors.white);
+
+    // Áreas
+    final areaWidth = size.width * 0.6;
+    final areaHeight = size.height * 0.15;
+
+    // Área superior
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, areaHeight / 2),
+        width: areaWidth,
+        height: areaHeight,
+      ),
+      paint,
+    );
+
+    // Área inferior
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height - areaHeight / 2),
+        width: areaWidth,
+        height: areaHeight,
+      ),
+      paint,
+    );
+
+    // Pequenas áreas
+    final smallAreaWidth = size.width * 0.35;
+    final smallAreaHeight = size.height * 0.08;
+
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, smallAreaHeight / 2),
+        width: smallAreaWidth,
+        height: smallAreaHeight,
+      ),
+      paint,
+    );
+
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height - smallAreaHeight / 2),
+        width: smallAreaWidth,
+        height: smallAreaHeight,
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _AnimatedStatBar extends StatefulWidget {
+  final double home;
+  final double away;
+  final double homePercent;
+  final String type;
+
+  const _AnimatedStatBar({
+    required this.home,
+    required this.away,
+    required this.homePercent,
+    required this.type,
+  });
+
+  @override
+  State<_AnimatedStatBar> createState() => _AnimatedStatBarState();
+}
+
+class _AnimatedStatBarState extends State<_AnimatedStatBar> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${widget.home.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF007AFF),
+                    ),
+                  ),
+                  Text(
+                    widget.type,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF8E8E93),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    '${widget.away.toInt()}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF34C759),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  height: 10,
+                  color: const Color(0xFF2C2C2E),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: ((widget.homePercent * _animation.value) * 100).toInt().clamp(1, 100),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF007AFF),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: (((1 - widget.homePercent) * _animation.value) * 100).toInt().clamp(1, 100),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF34C759),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ExpressiveProgressPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  _ExpressiveProgressPainter({
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 4;
+
+    final path = Path();
+    final phase = (progress * 3) % 3;
+
+    double startAngle = -pi / 2 + (progress * 2 * pi);
+    double sweepAngle;
+
+    if (phase < 1) {
+      sweepAngle = phase * pi * 1.5;
+    } else if (phase < 2) {
+      sweepAngle = pi * 1.5;
+      startAngle += (phase - 1) * pi * 2;
+    } else {
+      sweepAngle = (3 - phase) * pi * 1.5;
+      startAngle += pi * 2;
+    }
+
+    final segments = 60;
+    for (var i = 0; i <= segments; i++) {
+      final t = i / segments;
+      final angle = startAngle + (sweepAngle * t);
+      final wave = sin(angle * 3 + progress * pi * 4) * 2;
+      final r = radius + wave;
+
+      final x = center.dx + r * cos(angle);
+      final y = center.dy + r * sin(angle);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    paint.shader = SweepGradient(
+      colors: [
+        color.withOpacity(0.2),
+        color,
+        color,
+        color.withOpacity(0.2),
+      ],
+      stops: const [0.0, 0.3, 0.7, 1.0],
+      transform: GradientRotation(startAngle),
+    ).createShader(rect);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_ExpressiveProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
+
+class _PieChartPainter extends CustomPainter {
+  final double homeValue;
+  final double awayValue;
+  final Color homeColor;
+  final Color awayColor;
+  final Color backgroundColor;
+
+  _PieChartPainter({
+    required this.homeValue,
+    required this.awayValue,
+    required this.homeColor,
+    required this.awayColor,
+    required this.backgroundColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    final total = homeValue + awayValue;
+
+    if (total == 0) return;
+
+    final homeSweep = (homeValue / total) * 2 * pi;
+
+    final homePaint = Paint()
+      ..color = homeColor
+      ..style = PaintingStyle.fill;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2,
+      homeSweep,
+      true,
+      homePaint,
+    );
+
+    final awayPaint = Paint()
+      ..color = awayColor
+      ..style = PaintingStyle.fill;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2 + homeSweep,
+      2 * pi - homeSweep,
+      true,
+      awayPaint,
+    );
+
+    final centerPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(center, radius * 0.65, centerPaint);
+  }
+
+  @override
+  bool shouldRepaint(_PieChartPainter oldDelegate) => true;
+}
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _TabBarDelegate({required this.child});
+
+  @override
+  double get minExtent => 60;
+
+  @override
+  double get maxExtent => 60;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_TabBarDelegate oldDelegate) => false;
