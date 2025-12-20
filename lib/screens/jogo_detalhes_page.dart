@@ -219,7 +219,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: isLive 
+                                    color: isLive
                                         ? const Color(0xFFFF3B30).withOpacity(0.2)
                                         : const Color(0xFF2C2C2E),
                                     borderRadius: BorderRadius.circular(12),
@@ -243,7 +243,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w700,
-                                          color: isLive 
+                                          color: isLive
                                               ? const Color(0xFFFF3B30)
                                               : const Color(0xFF8E8E93),
                                         ),
@@ -627,7 +627,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   Widget _buildEventContent(Map<String, dynamic> event, bool isHome) {
     final type = event['type'];
-    
+
     if (type == 'goal') {
       return Column(
         crossAxisAlignment: isHome ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -981,7 +981,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   Widget _buildFormationPositions(String formation, bool isHome) {
     final positions = formation.split('-').map((e) => int.tryParse(e) ?? 1).toList();
-    
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: positions.reversed.map((count) {
@@ -1050,7 +1050,9 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(_TabBarDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) {
+    return oldDelegate.child != child;
+  }
 }
 
 class _FootballFieldPainter extends CustomPainter {
@@ -1366,22 +1368,3 @@ class _PieChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(_PieChartPainter oldDelegate) => true;
 }
-
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  _TabBarDelegate({required this.child});
-
-  @override
-  double get minExtent => 60;
-
-  @override
-  double get maxExtent => 60;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(_TabBarDelegate oldDelegate) => false;
