@@ -36,37 +36,81 @@ class ConfiguracoesPage extends StatelessWidget {
               ),
               Container(
                 color: Theme.of(context).colorScheme.surface,
-                child: SwitchListTile(
-                  title: const Text('Tema Escuro'),
-                  subtitle: const Text('Ativar modo escuro'),
-                  secondary: Icon(
-                    Symbols.dark_mode_rounded,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  value: appState.temaEscuro,
-                  onChanged: (valor) {
-                    appState.alternarTema(valor);
-                    if (!valor) {
-                      appState.alternarTemaAmoled(false);
-                    }
-                  },
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Cor Dinâmica'),
+                      subtitle: const Text('Usar cor azul adaptativa ou vermelho Deriv'),
+                      secondary: Icon(
+                        Symbols.palette_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      value: appState.corDinamica,
+                      onChanged: appState.alternarCorDinamica,
+                    ),
+                    Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                    SwitchListTile(
+                      title: const Text('Tema Escuro'),
+                      subtitle: const Text('Ativar modo escuro'),
+                      secondary: Icon(
+                        Symbols.dark_mode_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      value: appState.temaEscuro,
+                      onChanged: (valor) {
+                        appState.alternarTema(valor);
+                        if (!valor) {
+                          appState.alternarTemaAmoled(false);
+                          appState.alternarTemaEscuroProfundo(false);
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
-              // Opção AMOLED só aparece se tema escuro estiver ativo
+              // Opções de tema escuro só aparecem se tema escuro estiver ativo
               if (appState.temaEscuro) ...[
+                const SizedBox(height: 8),
                 Container(
                   color: Theme.of(context).colorScheme.surface,
-                  child: ListTile(
-                    leading: Icon(
-                      Symbols.brightness_1_rounded,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    title: const Text('Tema AMOLED'),
-                    subtitle: const Text('Preto puro para telas OLED'),
-                    trailing: AnimatedCheckbox(
-                      value: appState.temaAmoled,
-                      onChanged: appState.alternarTemaAmoled,
-                    ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          Symbols.contrast_rounded,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        title: const Text('Tema Escuro Profundo'),
+                        subtitle: const Text('Tons mais escuros e contraste elevado'),
+                        trailing: AnimatedCheckbox(
+                          value: appState.temaEscuroProfundo,
+                          onChanged: (valor) {
+                            appState.alternarTemaEscuroProfundo(valor);
+                            if (valor) {
+                              appState.alternarTemaAmoled(false);
+                            }
+                          },
+                        ),
+                      ),
+                      Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                      ListTile(
+                        leading: Icon(
+                          Symbols.brightness_1_rounded,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        title: const Text('Tema AMOLED'),
+                        subtitle: const Text('Preto puro para telas OLED'),
+                        trailing: AnimatedCheckbox(
+                          value: appState.temaAmoled,
+                          onChanged: (valor) {
+                            appState.alternarTemaAmoled(valor);
+                            if (valor) {
+                              appState.alternarTemaEscuroProfundo(false);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
