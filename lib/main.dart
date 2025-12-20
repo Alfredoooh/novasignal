@@ -22,8 +22,10 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'Football Live',
           debugShowCheckedModeBanner: false,
-          theme: _buildLightTheme(),
-          darkTheme: appState.temaAmoled ? _buildAmoledTheme() : _buildDarkTheme(),
+          theme: _buildLightTheme(appState.corDinamica),
+          darkTheme: appState.temaAmoled 
+              ? _buildAmoledTheme(appState.corDinamica) 
+              : _buildDarkTheme(appState.corDinamica, appState.temaEscuroProfundo),
           themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
           home: const HomePage(),
         );
@@ -31,13 +33,15 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  ThemeData _buildLightTheme() {
+  ThemeData _buildLightTheme(bool usarCorDinamica) {
     const pureWhite = Color(0xFFFFFFFF);
-    
+    // Vermelho Deriv: #FF444F
+    const derivRed = Color(0xFFFF444F);
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF1976D2),
+        seedColor: usarCorDinamica ? const Color(0xFF1976D2) : derivRed,
         brightness: Brightness.light,
         surface: pureWhite,
         background: pureWhite,
@@ -80,62 +84,76 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  ThemeData _buildDarkTheme() {
+  ThemeData _buildDarkTheme(bool usarCorDinamica, bool profundo) {
+    // Tema normal escuro
     const surfaceColor = Color(0xFF1E1E1E);
     const backgroundColor = Color(0xFF161616);
     const surfaceContainerColor = Color(0xFF282828);
     const surfaceContainerHighColor = Color(0xFF323232);
 
+    // Tema escuro profundo
+    const surfaceColorDeep = Color(0xFF0D0D0D);
+    const backgroundColorDeep = Color(0xFF000000);
+    const surfaceContainerColorDeep = Color(0xFF1A1A1A);
+    const surfaceContainerHighColorDeep = Color(0xFF242424);
+
+    // Vermelho Deriv
+    const derivRed = Color(0xFFFF444F);
+
+    final surface = profundo ? surfaceColorDeep : surfaceColor;
+    final background = profundo ? backgroundColorDeep : backgroundColor;
+    final surfaceContainer = profundo ? surfaceContainerColorDeep : surfaceContainerColor;
+    final surfaceContainerHigh = profundo ? surfaceContainerHighColorDeep : surfaceContainerHighColor;
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF1976D2),
+        seedColor: usarCorDinamica ? const Color(0xFF1976D2) : derivRed,
         brightness: Brightness.dark,
-        surface: surfaceColor,
-        background: backgroundColor,
-        surfaceContainerLowest: const Color(0xFF141414),
-        surfaceContainerLow: const Color(0xFF1A1A1A),
-        surfaceContainer: surfaceContainerColor,
-        surfaceContainerHigh: surfaceContainerHighColor,
-        surfaceContainerHighest: const Color(0xFF3C3C3C),
+        surface: surface,
+        background: background,
+        surfaceContainerLowest: profundo ? const Color(0xFF050505) : const Color(0xFF141414),
+        surfaceContainerLow: profundo ? const Color(0xFF0A0A0A) : const Color(0xFF1A1A1A),
+        surfaceContainer: surfaceContainer,
+        surfaceContainerHigh: surfaceContainerHigh,
+        surfaceContainerHighest: profundo ? const Color(0xFF2E2E2E) : const Color(0xFF3C3C3C),
         onSurface: const Color(0xFFE4E4E4),
         onSurfaceVariant: const Color(0xFFB8B8B8),
         onBackground: const Color(0xFFE4E4E4),
-        outline: const Color(0xFF4A4A4A),
-        outlineVariant: const Color(0xFF323232),
+        outline: profundo ? const Color(0xFF3A3A3A) : const Color(0xFF4A4A4A),
+        outlineVariant: profundo ? const Color(0xFF242424) : const Color(0xFF323232),
         shadow: Colors.black.withOpacity(0.5),
       ),
-      scaffoldBackgroundColor: backgroundColor,
-      cardColor: surfaceColor,
-      dividerColor: const Color(0xFF2A2A2A),
+      scaffoldBackgroundColor: background,
+      cardColor: surface,
+      dividerColor: profundo ? const Color(0xFF1A1A1A) : const Color(0xFF2A2A2A),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
-        backgroundColor: surfaceColor.withOpacity(0.7),
+        backgroundColor: surface.withOpacity(0.7),
         foregroundColor: const Color(0xFFE4E4E4),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surfaceColor.withOpacity(0.7),
-        indicatorColor: const Color(0xFF1976D2).withOpacity(0.2),
+        backgroundColor: surface.withOpacity(0.7),
+        indicatorColor: (usarCorDinamica ? const Color(0xFF1976D2) : derivRed).withOpacity(0.2),
       ),
       cardTheme: CardThemeData(
-        color: surfaceColor,
+        color: surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      // MODAIS E BOTTOM SHEETS MAIS CLAROS
       dialogTheme: DialogThemeData(
-        backgroundColor: surfaceContainerHighColor,
+        backgroundColor: surfaceContainerHigh,
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surfaceContainerHighColor,
-        modalBackgroundColor: surfaceContainerHighColor,
+        backgroundColor: surfaceContainerHigh,
+        modalBackgroundColor: surfaceContainerHigh,
         elevation: 8,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -144,18 +162,18 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  // TEMA AMOLED - PRETO PURO MAS MODALS MAIS CLAROS
-  ThemeData _buildAmoledTheme() {
+  ThemeData _buildAmoledTheme(bool usarCorDinamica) {
     const pureBlack = Color(0xFF000000);
     const almostBlack = Color(0xFF0A0A0A);
     const darkGray = Color(0xFF151515);
     const mediumGray = Color(0xFF1A1A1A);
-    const modalGray = Color(0xFF252525); // Mais claro para modals
+    const modalGray = Color(0xFF252525);
+    const derivRed = Color(0xFFFF444F);
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF1976D2),
+        seedColor: usarCorDinamica ? const Color(0xFF1976D2) : derivRed,
         brightness: Brightness.dark,
         surface: almostBlack,
         background: pureBlack,
@@ -182,7 +200,7 @@ class MyApp extends StatelessWidget {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: almostBlack,
-        indicatorColor: const Color(0xFF1976D2).withOpacity(0.3),
+        indicatorColor: (usarCorDinamica ? const Color(0xFF1976D2) : derivRed).withOpacity(0.3),
       ),
       cardTheme: CardThemeData(
         color: almostBlack,
@@ -195,7 +213,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      // MODALS E BOTTOM SHEETS MAIS CLAROS MESMO NO AMOLED
       dialogTheme: DialogThemeData(
         backgroundColor: modalGray,
         elevation: 8,
