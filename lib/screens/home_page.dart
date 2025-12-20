@@ -322,17 +322,29 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: AppBar(
-            leading: leading,
-            title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-            actions: actions,
-            centerTitle: false,
-            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.65),
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.primaryContainer,
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: AppBar(
+              leading: leading,
+              title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              actions: actions,
+              centerTitle: false,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+            ),
           ),
         ),
       ),
