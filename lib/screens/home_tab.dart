@@ -124,7 +124,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     };
   }
 
-  // Função para obter cor gradiente baseada na liga
   List<Color> _getLeagueGradient(String? leagueName, BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final league = (leagueName ?? '').toLowerCase();
@@ -151,7 +150,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           : [const Color(0xFF003A70), const Color(0xFF0066CC)];
     }
 
-    // Gradiente padrão mais suave
     return isDark
         ? [const Color(0xFF1E3A5F), const Color(0xFF2C5F8D)]
         : [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withOpacity(0.7)];
@@ -166,14 +164,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 56,
-              height: 56,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+            _buildLoadingShimmer(),
             const SizedBox(height: 16),
             Text(
               'Carregando jogos...',
@@ -242,8 +233,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final categorized = _categorizeMatches(_jogos);
     final liveMatches = categorized['live']!;
     final upcomingMatches = categorized['upcoming']!;
-    
-    // Featured = ao vivo primeiro, depois próximos
+
     final featured = [...liveMatches, ...upcomingMatches].take(8).toList();
 
     return RefreshIndicator(
@@ -328,11 +318,53 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     );
   }
 
+  Widget _buildLoadingShimmer() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                height: 16,
+                width: 120,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFeaturedCard(dynamic jogo, int index) {
     final status = jogo['match_status'] ?? '';
     final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
-    
-    // Animação de escala baseada na posição do card
+
     return AnimatedBuilder(
       animation: _pageController,
       builder: (context, child) {
