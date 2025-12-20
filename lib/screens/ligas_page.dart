@@ -603,7 +603,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
         _buildStatCard(
           icon: Symbols.home_rounded,
           title: 'Vitórias Casa',
-          value: '${stats['vitóriasCasa']}',
+          value: '${stats['vitoriasCasa']}',
           subtitle: '${stats['percentualCasa'].toStringAsFixed(1)}%',
           color: Colors.blue,
         ),
@@ -611,7 +611,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
         _buildStatCard(
           icon: Symbols.flight_rounded,
           title: 'Vitórias Fora',
-          value: '${stats['vitóriasFora']}',
+          value: '${stats['vitoriasFora']}',
           subtitle: '${stats['percentualFora'].toStringAsFixed(1)}%',
           color: Colors.purple,
         ),
@@ -780,8 +780,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
   Map<String, dynamic> _calcularEstatisticas(List<dynamic> jogos) {
     int totalJogos = 0;
     int totalGols = 0;
-    int vitóriasCasa = 0;
-    int vitóriasFora = 0;
+    int vitoriasCasa = 0;
+    int vitoriasFora = 0;
     int empates = 0;
 
     for (var jogo in jogos) {
@@ -796,9 +796,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
       totalGols += homeScore + awayScore;
 
       if (homeScore > awayScore) {
-        vitóriasCasa++;
+        vitoriasCasa++;
       } else if (awayScore > homeScore) {
-        vitóriasFora++;
+        vitoriasFora++;
       } else {
         empates++;
       }
@@ -808,11 +808,11 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
       'totalJogos': totalJogos,
       'totalGols': totalGols,
       'mediaGols': totalJogos > 0 ? totalGols / totalJogos : 0.0,
-      'vitóriasCasa': vitóriasCasa,
-      'vitóriasFora': vitóriasFora,
+      'vitoriasCasa': vitoriasCasa,
+      'vitoriasFora': vitoriasFora,
       'empates': empates,
-      'percentualCasa': totalJogos > 0 ? (vitóriasCasa / totalJogos) * 100 : 0.0,
-      'percentualFora': totalJogos > 0 ? (vitóriasFora / totalJogos) * 100 : 0.0,
+      'percentualCasa': totalJogos > 0 ? (vitoriasCasa / totalJogos) * 100 : 0.0,
+      'percentualFora': totalJogos > 0 ? (vitoriasFora / totalJogos) * 100 : 0.0,
       'percentualEmpates': totalJogos > 0 ? (empates / totalJogos) * 100 : 0.0,
     };
   }
