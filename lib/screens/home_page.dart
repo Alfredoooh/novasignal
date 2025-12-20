@@ -316,11 +316,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             appState.mudarTab(tabs[index]);
           }
         },
-        children: const [
-          HomeTab(),
-          JogosPage(),
-          AtividadesPage(),
-          InboxPage(),
+        children: [
+          const HomeTab(),
+          const JogosPage(),
+          const AtividadesPage(),
+          const InboxPage(),
         ],
       ),
     );
