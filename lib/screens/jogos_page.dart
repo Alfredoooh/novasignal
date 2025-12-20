@@ -137,23 +137,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 future: _futureJogos,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: AnimatedBuilder(
-                          animation: _loadingController,
-                          builder: (context, child) {
-                            return CustomPaint(
-                              painter: _ExpressiveProgressPainter(
-                                progress: _loadingController.value,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
+                    return _buildLoadingShimmer();
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Column(
@@ -860,5 +844,62 @@ class _ExpressiveProgressPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ExpressiveProgressPainter oldDelegate) {
     return oldDelegate.progress != progress;
+  }
+}
+
+  Widget _buildLoadingShimmer() {
+    return Center(
+      child: SizedBox(
+        width: 200,
+        height: 200,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 16,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 12,
+                    width: 80,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
