@@ -18,30 +18,203 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
   final PageController _pageController = PageController();
+  late AnimationController _drawerAnimationController;
+  late Animation<double> _drawerAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _drawerAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _drawerAnimation = CurvedAnimation(
+      parent: _drawerAnimationController,
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _drawerAnimationController.dispose();
     super.dispose();
+  }
+
+  void _openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
+    _drawerAnimationController.forward();
+  }
+
+  void _closeDrawer() {
+    Navigator.of(context).pop();
+    _drawerAnimationController.reverse();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
-        return Scaffold(
-          key: _scaffoldKey,
-          extendBody: true,
-          extendBodyBehindAppBar: true,
-          appBar: _buildAppBar(context, appState),
-          body: _buildBody(appState),
-          bottomNavigationBar: _buildBottomNav(appState),
-          drawer: _buildDrawer(context, appState),
+        return AnimatedBuilder(
+          animation: _drawerAnimation,
+          builder: (context, child) {
+            final slideValue = _drawerAnimation.value * 0.6;
+            final scaleValue = 1 - (_drawerAnimation.value * 0.15);
+            
+            return Stack(
+              children: [
+                // Drawer personalizado
+                _buildCustomDrawer(context, appState),
+                
+                // Conteúdo principal com animação
+                Transform(
+                  transform: Matrix4.identity()
+                    ..translate(MediaQuery.of(context).size.width * slideValue)
+                    ..scale(scaleValue),
+                  alignment: Alignment.centerLeft,
+                  child: Scaffold(
+                    key: _scaffoldKey,
+                    extendBody: true,
+                    extendBodyBehindAppBar: true,
+                    appBar: _buildAppBar(context, appState),
+                    body: _buildBody(appState),
+                    bottomNavigationBar: _buildBottomNav(appState),
+                    drawerEnableOpenDragGesture: true,
+                    onDrawerChanged: (isOpened) {
+                      if (isOpened) {
+                        _drawerAnimationController.forward();
+                      } else {
+                        _drawerAnimationController.reverse();
+                      }
+                    },
+                    drawer: const SizedBox.shrink(), // Drawer invisível para manter o gesto
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildCustomDrawer(BuildContext context, AppState appState) {
+    return Positioned(
+      left: 0,
+      top: 0,
+      bottom: 0,
+      child: AnimatedBuilder(
+        animation: _drawerAnimation,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(
+              -280 + (_drawerAnimation.value * 280),
+              0,
+            ),
+            child: Container(
+              width: 280,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2 * _drawerAnimation.value),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        height: 180,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                              width: 0.5,
+                            ),
+                          ),
+                        ),
+                        padding: EdgeInsets.only(
+                          top: MediaQuery.of(context).padding.top + 20,
+                          left: 20,
+                          right: 20,
+                          bottom: 20,
+                        ),
+                        alignment: Alignment.bottomLeft,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Football Live',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Acompanhe seu futebol favorito',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        ListTile(
+                          leading: Icon(Symbols.settings_rounded, color: Theme.of(context).colorScheme.primary),
+                          title: const Text('Configurações'),
+                          onTap: () {
+                            _closeDrawer();
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const ConfiguracoesPage(),
+                                ),
+                              );
+                            });
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(Symbols.info_rounded, color: Theme.of(context).colorScheme.primary),
+                          title: const Text('Sobre'),
+                          onTap: () {
+                            _closeDrawer();
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              showAboutDialog(
+                                context: context,
+                                applicationName: 'Football Live',
+                                applicationVersion: '1.0.0',
+                              );
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -58,7 +231,7 @@ class _HomePageState extends State<HomePage> {
       case 'home':
         leading = IconButton(
           icon: const Icon(Symbols.menu_rounded),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          onPressed: _openDrawer,
         );
         title = 'Football Live';
         actions = [
@@ -75,7 +248,7 @@ class _HomePageState extends State<HomePage> {
       case 'jogos':
         leading = IconButton(
           icon: const Icon(Symbols.menu_rounded),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          onPressed: _openDrawer,
         );
         title = 'Jogos';
         actions = [
@@ -98,14 +271,14 @@ class _HomePageState extends State<HomePage> {
       case 'atividades':
         leading = IconButton(
           icon: const Icon(Symbols.menu_rounded),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          onPressed: _openDrawer,
         );
         title = 'Atividades';
         break;
       case 'inbox':
         leading = IconButton(
           icon: const Icon(Symbols.menu_rounded),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          onPressed: _openDrawer,
         );
         title = 'Caixa de Entrada';
         break;
@@ -215,92 +388,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context, AppState appState) {
-    return Drawer(
-      child: Column(
-        children: [
-          ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-                      width: 0.5,
-                    ),
-                  ),
-                ),
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 20,
-                  left: 20,
-                  right: 20,
-                  bottom: 20,
-                ),
-                alignment: Alignment.bottomLeft,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Football Live',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Acompanhe seu futebol favorito',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                ListTile(
-                  leading: Icon(Symbols.settings_rounded, color: Theme.of(context).colorScheme.primary),
-                  title: const Text('Configurações'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ConfiguracoesPage(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Symbols.info_rounded, color: Theme.of(context).colorScheme.primary),
-                  title: const Text('Sobre'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    showAboutDialog(
-                      context: context,
-                      applicationName: 'Football Live',
-                      applicationVersion: '1.0.0',
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
