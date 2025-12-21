@@ -4,7 +4,6 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
-import 'dart:math' show cos, sin, pi;
 import 'jogo_detalhes_page.dart';
 import 'ligas_page.dart';
 
@@ -23,7 +22,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   List<dynamic>? _cachedJogos;
   String? _lastFiltro;
   Timer? _autoUpdateTimer;
-  int _selectedDayIndex = 3; // Índice do dia selecionado (hoje é 3)
+  int _selectedDayIndex = 3;
 
   @override
   bool get wantKeepAlive => true;
@@ -105,7 +104,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   DateTime _getDateForIndex(int index) {
     final hoje = DateTime.now();
-    final diferencaDias = index - 3; // 3 é o índice de "hoje"
+    final diferencaDias = index - 3;
     return hoje.add(Duration(days: diferencaDias));
   }
 
@@ -248,29 +247,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
-    if (widget.imageUrl.isEmpty) {
-      return widget.placeholder;
-    }
-
-    return Image.network(
-      widget.imageUrl,
-      width: widget.width,
-      height: widget.height,
-      cacheWidth: (widget.width * MediaQuery.of(context).devicePixelRatio).round(),
-      cacheHeight: (widget.height * MediaQuery.of(context).devicePixelRatio).round(),
-      errorBuilder: (_, __, ___) => widget.placeholder,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return SizedBox(
-          width: widget.width,
-          height: widget.height,
-          child: widget.placeholder,
-        );
-      },
-    );
-  }
-}.build(context);
     final appState = context.watch<AppState>();
 
     return Column(
@@ -795,7 +771,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 }
 
-// Widget de filtro com animação de clique
 class _AnimatedFilterChip extends StatefulWidget {
   final String label;
   final IconData icon;
@@ -883,7 +858,6 @@ class _AnimatedFilterChipState extends State<_AnimatedFilterChip> with SingleTic
   }
 }
 
-// Widget de imagem com cache
 class _CachedNetworkImage extends StatefulWidget {
   final String imageUrl;
   final double width;
@@ -907,4 +881,27 @@ class _CachedNetworkImageState extends State<_CachedNetworkImage> with Automatic
 
   @override
   Widget build(BuildContext context) {
-    super
+    super.build(context);
+
+    if (widget.imageUrl.isEmpty) {
+      return widget.placeholder;
+    }
+
+    return Image.network(
+      widget.imageUrl,
+      width: widget.width,
+      height: widget.height,
+      cacheWidth: (widget.width * MediaQuery.of(context).devicePixelRatio).round(),
+      cacheHeight: (widget.height * MediaQuery.of(context).devicePixelRatio).round(),
+      errorBuilder: (_, __, ___) => widget.placeholder,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: widget.placeholder,
+        );
+      },
+    );
+  }
+}
