@@ -175,27 +175,27 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ),
 
                 // --- Conteúdo principal com animação ---
-                GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _isDrawerOpen ? _closeDrawer : null,
-                  onHorizontalDragUpdate: canSwipeDrawer ? (details) {
-                    final width = MediaQuery.of(context).size.width;
-                    final delta = details.delta.dx / width;
-                    _animationController.value = (_animationController.value + delta).clamp(0.0, 1.0);
-                  } : null,
-                  onHorizontalDragEnd: canSwipeDrawer ? (details) {
-                    final velocity = details.primaryVelocity ?? 0;
-                    if (velocity > 700 || _animationController.value > 0.5) {
-                      _animationController.forward();
-                    } else {
-                      _animationController.reverse();
-                    }
-                  } : null,
-                  child: Transform.translate(
-                    offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
-                    child: Transform.scale(
-                      scale: _scaleAnimation.value,
-                      alignment: Alignment.centerLeft,
+                Transform.translate(
+                  offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _isDrawerOpen ? _closeDrawer : null,
+                      onHorizontalDragUpdate: canSwipeDrawer ? (details) {
+                        final width = MediaQuery.of(context).size.width;
+                        final delta = details.delta.dx / width;
+                        _animationController.value = (_animationController.value + delta).clamp(0.0, 1.0);
+                      } : null,
+                      onHorizontalDragEnd: canSwipeDrawer ? (details) {
+                        final velocity = details.primaryVelocity ?? 0;
+                        if (velocity > 700 || _animationController.value > 0.5) {
+                          _animationController.forward();
+                        } else {
+                          _animationController.reverse();
+                        }
+                      } : null,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(_animationController.value * 16),
                         child: IgnorePointer(
