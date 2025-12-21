@@ -51,62 +51,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/icons/
-
-    # Ícones existentes
-    - assets/icons/plus.svg
-    - assets/icons/sparkle.svg
-    - assets/icons/home.svg
-    - assets/icons/settings.svg
-    - assets/icons/check.svg
-    - assets/icons/close.svg
-    - assets/icons/arrow_back.svg
-    - assets/icons/chevron_right.svg
-    - assets/icons/refresh.svg
-    - assets/icons/error.svg
-    - assets/icons/inbox.svg
-    - assets/icons/share.svg
-    - assets/icons/download.svg
-    - assets/icons/play.svg
-    - assets/icons/star.svg
-    - assets/icons/business.svg
-    - assets/icons/academic.svg
-    - assets/icons/personal.svg
-    - assets/icons/legal.svg
-    - assets/icons/creative.svg
-    - assets/icons/document.svg
-    - assets/icons/edit.svg
-    - assets/icons/responsive.svg
-    - assets/icons/pallette.svg
-
-    # ---------------------------
-    #   NOVOS ÍCONES ADICIONADOS
-    # ---------------------------
-
-    # Navegação
-    - assets/icons/menu.svg
-
-    # Ações
-    - assets/icons/heart.svg
-    - assets/icons/heart_filled.svg
-    - assets/icons/alert.svg
-    - assets/icons/filter.svg
-
-    # Categorias extras
-    - assets/icons/finance.svg
-    - assets/icons/health.svg
-    - assets/icons/education.svg
-    - assets/icons/technology.svg
-    - assets/icons/marketing.svg
-    - assets/icons/sports.svg
-    - assets/icons/travel.svg
-    - assets/icons/food.svg
-    - assets/icons/real_estate.svg
-    - assets/icons/automotive.svg
-
-    # Ícones gerais
-    - assets/icons/zoom_in.svg
-    - assets/icons/swipe.svg
-    - assets/icons/link.svg
-    - assets/icons/email.svg
-    - assets/icons/menu_two.svg
+    - assets/gold_medal.png
+    - assets/silver_medal.png
+    - assets/bronze_medal.png
