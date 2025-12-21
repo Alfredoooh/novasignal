@@ -124,6 +124,29 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    if (widget.imageUrl.isEmpty) {
+      return widget.placeholder;
+    }
+
+    return Image.network(
+      widget.imageUrl,
+      width: widget.width,
+      height: widget.height,
+      cacheWidth: (widget.width * MediaQuery.of(context).devicePixelRatio).round(),
+      cacheHeight: (widget.height * MediaQuery.of(context).devicePixelRatio).round(),
+      errorBuilder: (_, __, ___) => widget.placeholder,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: widget.placeholder,
+        );
+      },
+    );
+  }
+}.build(context);
     final appState = context.watch<AppState>();
 
     return Column(
