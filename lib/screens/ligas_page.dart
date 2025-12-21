@@ -654,109 +654,148 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
     if (top3.length < 3) return const SizedBox();
 
     return Container(
-      height: 280,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        image: const DecorationImage(
-          image: AssetImage('assets/podium.png'),
-          fit: BoxFit.cover,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Stack(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 2º Lugar (Esquerda)
-          Positioned(
-            left: 20,
-            bottom: 80,
-            child: _buildPodiumTeam(top3[1], 2, 70),
-          ),
-          // 1º Lugar (Centro)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 120,
-            child: _buildPodiumTeam(top3[0], 1, 80),
-          ),
-          // 3º Lugar (Direita)
-          Positioned(
-            right: 20,
-            bottom: 60,
-            child: _buildPodiumTeam(top3[2], 3, 60),
-          ),
+          _buildPodiumTeam(top3[1], 2),
+          _buildPodiumTeam(top3[0], 1),
+          _buildPodiumTeam(top3[2], 3),
         ],
       ),
     );
   }
 
-  Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao, double size) {
+  String _abreviarNome(String nomeCompleto) {
+    final partes = nomeCompleto.trim().split(' ');
+    if (partes.length == 1) return nomeCompleto;
+    
+    // Abrevia todos menos o último
+    final abreviados = partes.sublist(0, partes.length - 1).map((p) => '${p[0]}.').toList();
+    final ultimo = partes.last;
+    
+    return '${abreviados.join('')} $ultimo';
+  }
+
+  Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao) {
     final pontos = int.tryParse(time['overall_league_PTS']?.toString() ?? 
                                 time['points']?.toString() ?? '0') ?? 0;
     
-    return Column(
-      children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Theme.of(context).colorScheme.surface,
-            border: Border.all(
+    final nomeCompleto = time['team_name']?.toString() ?? time['name']?.toString() ?? '';
+    final nomeAbreviado = _abreviarNome(nomeCompleto);
+    
+    String medalImage;
+    if (posicao == 1) {
+      medalImage = 'assets/gold_medal.png';
+    } else if (posicao == 2) {
+      medalImage = 'assets/silver_medal.png';
+    } else {
+      medalImage = 'assets/bronze_medal.png';
+    }
+    
+    return Expanded(
+      child: Column(
+        children: [
+          // Medalha
+          Image.asset(
+            medalImage,
+            width: posicao == 1 ? 50 : 45,
+            height: posicao == 1 ? 50 : 45,
+            errorBuilder: (_, __, ___) => Icon(
+              Symbols.workspace_premium_rounded,
+              size: posicao == 1 ? 50 : 45,
               color: posicao == 1 ? Colors.amber : posicao == 2 ? Colors.grey.shade400 : Colors.brown,
-              width: 3,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
-          child: ClipOval(
-            child: (time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty
-                ? Image.network(
-                    time['team_badge'] ?? time['logo'],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Icon(Icons.shield, size: size * 0.6),
-                  )
-                : Icon(Icons.shield, size: size * 0.6),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+          const SizedBox(height: 12),
+          
+          // Escudo do clube
+          Container(
+            width: posicao == 1 ? 70 : 60,
+            height: posicao == 1 ? 70 : 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              border: Border.all(
+                color: posicao == 1 ? Colors.amber : posicao == 2 ? Colors.grey.shade400 : Colors.brown,
+                width: 3,
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Text(
-                time['team_name']?.toString() ?? time['name']?.toString() ?? '',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                '$pontos pts',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.primary,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: ClipOval(
+              child: (time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty
+                  ? Image.network(
+                      time['team_badge'] ?? time['logo'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Symbols.shield_rounded,
+                        size: posicao == 1 ? 35 : 30,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
+                  : Icon(
+                      Symbols.shield_rounded,
+                      size: posicao == 1 ? 35 : 30,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          
+          // Nome abreviado
+          Text(
+            nomeAbreviado,
+            style: TextStyle(
+              fontSize: posicao == 1 ? 13 : 12,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          
+          // Pontos
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: posicao == 1 
+                  ? Colors.amber.withOpacity(0.2) 
+                  : posicao == 2 
+                      ? Colors.grey.shade300.withOpacity(0.3) 
+                      : Colors.brown.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$pontos pts',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: posicao == 1 ? Colors.amber.shade800 : posicao == 2 ? Colors.grey.shade700 : Colors.brown,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
