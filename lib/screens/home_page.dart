@@ -143,33 +143,29 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                           _buildDrawerItem(
                             icon: Symbols.settings_rounded,
                             title: 'Configurações',
-                            onTap: () {
-                              _closeDrawer();
-                              Future.delayed(const Duration(milliseconds: 300), () {
-                                if (mounted) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => const ConfiguracoesPage(),
-                                    ),
-                                  );
-                                }
-                              });
+                            onTap: () async {
+                              await _animationController.reverse();
+                              if (mounted) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const ConfiguracoesPage(),
+                                  ),
+                                );
+                              }
                             },
                           ),
                           _buildDrawerItem(
                             icon: Symbols.info_rounded,
                             title: 'Sobre',
-                            onTap: () {
-                              _closeDrawer();
-                              Future.delayed(const Duration(milliseconds: 300), () {
-                                if (mounted) {
-                                  showAboutDialog(
-                                    context: context,
-                                    applicationName: 'Football Live',
-                                    applicationVersion: '1.0.0',
-                                  );
-                                }
-                              });
+                            onTap: () async {
+                              await _animationController.reverse();
+                              if (mounted) {
+                                showAboutDialog(
+                                  context: context,
+                                  applicationName: 'Football Live',
+                                  applicationVersion: '1.0.0',
+                                );
+                              }
                             },
                           ),
                         ],
