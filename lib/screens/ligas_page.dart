@@ -69,7 +69,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    // monta ligaData a partir do map recebido ou dos parâmetros soltos (compatibilidade)
     final ligaData = widget.ligaData ??
         {
           'league_name': widget.ligaNome ?? 'Liga',
@@ -198,36 +197,131 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
       itemBuilder: (context, index) {
         if (index == 0) {
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.primaryContainer,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
-                const SizedBox(width: 40, child: Text('Pos', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
-                const Expanded(child: Text('Clube', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
-                const SizedBox(width: 35, child: Text('J', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
-                const SizedBox(width: 45, child: Text('Pts', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+                SizedBox(
+                  width: 40,
+                  child: Text(
+                    'Pos',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Clube',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 35,
+                  child: Text(
+                    'J',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 35,
+                  child: Text(
+                    'V',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 35,
+                  child: Text(
+                    'E',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 35,
+                  child: Text(
+                    'D',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 45,
+                  child: Text(
+                    'Pts',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
               ],
             ),
           );
         }
 
         final time = classificacao[index - 1];
-        final posicao = int.tryParse(time['overall_league_position']?.toString() ?? '0') ?? index;
+        final posicao = int.tryParse(time['overall_league_position']?.toString() ?? 
+                        time['league_position']?.toString() ?? 
+                        time['position']?.toString() ?? '0') ?? index;
+        
+        final jogos = int.tryParse(time['overall_league_payed']?.toString() ?? 
+                                   time['matches_played']?.toString() ?? '0') ?? 0;
+        final vitorias = int.tryParse(time['overall_league_W']?.toString() ?? 
+                                      time['wins']?.toString() ?? '0') ?? 0;
+        final empates = int.tryParse(time['overall_league_D']?.toString() ?? 
+                                     time['draws']?.toString() ?? '0') ?? 0;
+        final derrotas = int.tryParse(time['overall_league_L']?.toString() ?? 
+                                      time['losses']?.toString() ?? '0') ?? 0;
+        final pontos = int.tryParse(time['overall_league_PTS']?.toString() ?? 
+                                    time['points']?.toString() ?? '0') ?? 0;
+        
         Color? posicaoColor;
+        Color? borderColor;
 
         if (posicao <= 4) {
           posicaoColor = Colors.green.withOpacity(0.15);
+          borderColor = Colors.green;
         } else if (posicao <= 6) {
           posicaoColor = Colors.orange.withOpacity(0.15);
+          borderColor = Colors.orange;
         } else if (posicao >= classificacao.length - 2) {
           posicaoColor = Colors.red.withOpacity(0.15);
+          borderColor = Colors.red;
         }
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           decoration: BoxDecoration(
             color: posicaoColor ?? Theme.of(context).colorScheme.surface,
             border: Border(
@@ -235,15 +329,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                 color: Theme.of(context).dividerColor.withOpacity(0.1),
                 width: 0.5,
               ),
-              left: posicaoColor != null
-                  ? BorderSide(
-                      color: posicao <= 4
-                          ? Colors.green
-                          : posicao <= 6
-                              ? Colors.orange
-                              : Colors.red,
-                      width: 3,
-                    )
+              left: borderColor != null
+                  ? BorderSide(color: borderColor, width: 4)
                   : BorderSide.none,
             ),
           ),
@@ -253,24 +340,24 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                 width: 40,
                 child: Text(
                   '$posicao',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
               Expanded(
                 child: Row(
                   children: [
-                    if (time['team_badge'] != null) ...[
+                    if ((time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty) ...[
                       Image.network(
-                        time['team_badge'],
-                        width: 24,
-                        height: 24,
-                        errorBuilder: (_, __, ___) => const SizedBox(width: 24, height: 24),
+                        time['team_badge'] ?? time['logo'],
+                        width: 28,
+                        height: 28,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 28),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                     ],
                     Expanded(
                       child: Text(
-                        time['team_name'] ?? 'Unknown',
+                        time['team_name']?.toString() ?? time['name']?.toString() ?? 'Unknown',
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -281,7 +368,31 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
               SizedBox(
                 width: 35,
                 child: Text(
-                  time['overall_league_payed']?.toString() ?? '0',
+                  '$jogos',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              SizedBox(
+                width: 35,
+                child: Text(
+                  '$vitorias',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              SizedBox(
+                width: 35,
+                child: Text(
+                  '$empates',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              SizedBox(
+                width: 35,
+                child: Text(
+                  '$derrotas',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 13),
                 ),
@@ -289,10 +400,10 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
               SizedBox(
                 width: 45,
                 child: Text(
-                  time['overall_league_PTS']?.toString() ?? '0',
+                  '$pontos',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -374,6 +485,13 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                     : Theme.of(context).dividerColor.withOpacity(0.2),
                 width: isLive ? 2 : 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -388,18 +506,18 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: isLive
-                            ? Colors.red.withOpacity(0.2)
+                            ? Colors.red
                             : isFinished
                                 ? Theme.of(context).colorScheme.surfaceContainerHighest
-                                : Colors.blue.withOpacity(0.2),
+                                : Colors.blue,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         formatarStatus(status),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: isLive ? Colors.red : isFinished ? Theme.of(context).colorScheme.onSurfaceVariant : Colors.blue,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -415,7 +533,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                             jogo['team_home_badge'] ?? '',
                             width: 32,
                             height: 32,
-                            errorBuilder: (_, __, ___) => const SizedBox(width: 32, height: 32),
+                            errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 32),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -456,7 +574,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                             jogo['team_away_badge'] ?? '',
                             width: 32,
                             height: 32,
-                            errorBuilder: (_, __, ___) => const SizedBox(width: 32, height: 32),
+                            errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 32),
                           ),
                         ],
                       ),
@@ -472,9 +590,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
   }
 
   Widget _buildEstatisticasTab() {
-    if (_cachedJogos == null) {
+    if (_cachedClassificacao == null) {
       return FutureBuilder<List<dynamic>>(
-        future: _futureJogos,
+        future: _futureClassificacao,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -486,97 +604,204 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
         },
       );
     }
-    return _buildEstatisticasContent(_cachedJogos!);
+    return _buildEstatisticasContent(_cachedClassificacao!);
   }
 
-  Widget _buildEstatisticasContent(List<dynamic> jogos) {
-    final stats = _calcularEstatisticas(jogos);
+  Widget _buildEstatisticasContent(List<dynamic> classificacao) {
+    if (classificacao.isEmpty) {
+      return const Center(child: Text('Sem dados de estatísticas'));
+    }
 
-    return ListView(
+    final top3 = classificacao.take(3).toList();
+    final bottom3 = classificacao.skip(classificacao.length - 3).take(3).toList();
+
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      children: [
-        _buildStatCard(
-          icon: Symbols.sports_soccer_rounded,
-          title: 'Total de Jogos',
-          value: '${stats['totalJogos']}',
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 12),
-        _buildStatCard(
-          icon: Symbols.sports_score_rounded,
-          title: 'Total de Gols',
-          value: '${stats['totalGols']}',
-          color: Colors.orange,
-        ),
-        const SizedBox(height: 12),
-        _buildStatCard(
-          icon: Symbols.calculate_rounded,
-          title: 'Média de Gols/Jogo',
-          value: stats['mediaGols'].toStringAsFixed(2),
-          color: Colors.green,
-        ),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Top 3 Clubes',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildPodium(top3),
+          const SizedBox(height: 32),
+          Text(
+            'Zona de Rebaixamento',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...bottom3.asMap().entries.map((entry) {
+            final time = entry.value;
+            final pos = classificacao.length - 2 + entry.key;
+            return _buildBottomTeamCard(time, pos);
+          }),
+        ],
+      ),
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
+  Widget _buildPodium(List<dynamic> top3) {
+    if (top3.length < 3) return const SizedBox();
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      height: 280,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3), width: 2),
+        image: const DecorationImage(
+          image: AssetImage('assets/podium.png'),
+          fit: BoxFit.cover,
+        ),
       ),
-      child: Row(
+      child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
+          // 2º Lugar (Esquerda)
+          Positioned(
+            left: 20,
+            bottom: 80,
+            child: _buildPodiumTeam(top3[1], 2, 70),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                const SizedBox(height: 4),
-                Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: color)),
-              ],
-            ),
+          // 1º Lugar (Centro)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 120,
+            child: _buildPodiumTeam(top3[0], 1, 80),
+          ),
+          // 3º Lugar (Direita)
+          Positioned(
+            right: 20,
+            bottom: 60,
+            child: _buildPodiumTeam(top3[2], 3, 60),
           ),
         ],
       ),
     );
   }
 
-  Map<String, dynamic> _calcularEstatisticas(List<dynamic> jogos) {
-    int totalJogos = 0;
-    int totalGols = 0;
+  Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao, double size) {
+    final pontos = int.tryParse(time['overall_league_PTS']?.toString() ?? 
+                                time['points']?.toString() ?? '0') ?? 0;
+    
+    return Column(
+      children: [
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Theme.of(context).colorScheme.surface,
+            border: Border.all(
+              color: posicao == 1 ? Colors.amber : posicao == 2 ? Colors.grey.shade400 : Colors.brown,
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: (time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty
+                ? Image.network(
+                    time['team_badge'] ?? time['logo'],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Icon(Icons.shield, size: size * 0.6),
+                  )
+                : Icon(Icons.shield, size: size * 0.6),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                time['team_name']?.toString() ?? time['name']?.toString() ?? '',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                '$pontos pts',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-    for (var jogo in jogos) {
-      final status = jogo['match_status'] ?? '';
-      if (!status.contains('Finished') && status != 'FT') continue;
-
-      totalJogos++;
-      final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
-      final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
-      totalGols += homeScore + awayScore;
-    }
-
-    return {
-      'totalJogos': totalJogos,
-      'totalGols': totalGols,
-      'mediaGols': totalJogos > 0 ? totalGols / totalJogos : 0.0,
-    };
+  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao) {
+    final pontos = int.tryParse(time['overall_league_PTS']?.toString() ?? 
+                                time['points']?.toString() ?? '0') ?? 0;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red, width: 2),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '$posicao',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.red),
+          ),
+          const SizedBox(width: 16),
+          if ((time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty)
+            Image.network(
+              time['team_badge'] ?? time['logo'],
+              width: 40,
+              height: 40,
+              errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 40),
+            )
+          else
+            const Icon(Icons.shield, size: 40),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              time['team_name']?.toString() ?? time['name']?.toString() ?? '',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            '$pontos pts',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.red),
+          ),
+        ],
+      ),
+    );
   }
 }
 
