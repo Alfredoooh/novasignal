@@ -19,11 +19,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   late AnimationController _loadingController;
   late AnimationController _blinkController;
   late TabController _tabController;
-  late TabController _filtroTabController;
   List<dynamic>? _cachedJogos;
   String? _lastFiltro;
   Timer? _autoUpdateTimer;
-  int _selectedDayIndex = 60; // Hoje está no meio dos 120 dias
+  int _selectedTabIndex = 63; // Hoje está no índice 63 (60 dias passados + 3 filtros)
 
   @override
   bool get wantKeepAlive => true;
@@ -41,24 +40,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
-    // 120 dias: 60 no passado + hoje + 59 no futuro
-    _tabController = TabController(length: 120, vsync: this, initialIndex: 60);
-    _filtroTabController = TabController(length: 4, vsync: this, initialIndex: 0);
+    // 123 tabs: 60 passado + Hoje + Ao Vivo + Terminados + Agendados + 59 futuro
+    _tabController = TabController(length: 123, vsync: this, initialIndex: 63);
     
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         setState(() {
-          _selectedDayIndex = _tabController.index;
+          _selectedTabIndex = _tabController.index;
         });
         _loadJogosDoDia();
-      }
-    });
-
-    _filtroTabController.addListener(() {
-      if (_filtroTabController.indexIsChanging) {
-        final appState = context.read<AppState>();
-        final filtros = ['hoje', 'direto', 'terminados', 'agendados'];
-        appState.filtrarJogos(filtros[_filtroTabController.index]);
       }
     });
 
@@ -73,7 +63,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     _loadingController.dispose();
     _blinkController.dispose();
     _tabController.dispose();
-    _filtroTabController.dispose();
     _autoUpdateTimer?.cancel();
     super.dispose();
   }
@@ -101,8 +90,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
     try {
       final appState = context.read<AppState>();
-      final data = _getDateForIndex(_selectedDayIndex);
-      final jogos = await appState.carregarJogosDoDia(data);
+      final resultado = _getDateAndFilterForIndex(_selectedTabIndex);
+      final jogos = await appState.carregarJogosDoDia(resultado['date']);
 
       if (!mounted) return;
 
@@ -114,35 +103,86 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
   }
 
-  DateTime _getDateForIndex(int index) {
+  Map<String, dynamic> _getDateAndFilterForIndex(int index) {
     final hoje = DateTime.now();
-    final diferencaDias = index - 60; // 60 é o índice do "hoje"
-    return hoje.add(Duration(days: diferencaDias));
+    
+    // 60 dias passados
+    if (index < 60) {
+      final diferencaDias = index - 60;
+      return {
+        'date': hoje.add(Duration(days: diferencaDias)),
+        'filter': 'hoje',
+      };
+    }
+    
+    // Index 60 = Hoje
+    if (index == 60) {
+      return {'date': hoje, 'filter': 'hoje'};
+    }
+    
+    // Index 61 = Ao Vivo (hoje)
+    if (index == 61) {
+      return {'date': hoje, 'filter': 'direto'};
+    }
+    
+    // Index 62 = Terminados (hoje)
+    if (index == 62) {
+      return {'date': hoje, 'filter': 'terminados'};
+    }
+    
+    // Index 63 = Agendados (hoje)
+    if (index == 63) {
+      return {'date': hoje, 'filter': 'agendados'};
+    }
+    
+    // 59 dias futuros (index 64+)
+    final diferencaDias = index - 63;
+    return {
+      'date': hoje.add(Duration(days: diferencaDias)),
+      'filter': 'hoje',
+    };
   }
 
   String _getTabLabel(int index) {
-    final data = _getDateForIndex(index);
-    final diasDiferenca = index - 60;
+    // 60 dias passados
+    if (index < 60) {
+      final data = DateTime.now().add(Duration(days: index - 60));
+      final diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      final diaSemana = diasSemana[data.weekday % 7];
+      
+      if (index == 58) return 'Anteontem';
+      if (index == 59) return 'Ontem';
+      
+      return '$diaSemana/${data.day}';
+    }
     
-    // Nomes especiais para dias próximos
-    if (diasDiferenca == 0) return 'Hoje';
-    if (diasDiferenca == -1) return 'Ontem';
-    if (diasDiferenca == -2) return 'Anteontem';
-    if (diasDiferenca == 1) return 'Amanhã';
+    // Index 60 = Hoje
+    if (index == 60) return 'Hoje';
     
-    // Para outros dias: "Sexta/16", "Sáb/17", etc
+    // Filtros do dia atual
+    if (index == 61) return 'Ao Vivo';
+    if (index == 62) return 'Terminados';
+    if (index == 63) return 'Agendados';
+    
+    // Dias futuros
+    final data = DateTime.now().add(Duration(days: index - 63));
     final diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     final diaSemana = diasSemana[data.weekday % 7];
+    
+    if (index == 64) return 'Amanhã';
     
     return '$diaSemana/${data.day}';
   }
 
   void _loadJogosDoDia() async {
     final appState = context.read<AppState>();
-    final data = _getDateForIndex(_selectedDayIndex);
+    final resultado = _getDateAndFilterForIndex(_selectedTabIndex);
+    
+    // Aplica o filtro no AppState
+    appState.filtrarJogos(resultado['filter']);
     
     setState(() {
-      _futureJogos = appState.carregarJogosDoDia(data);
+      _futureJogos = appState.carregarJogosDoDia(resultado['date']);
     });
 
     _futureJogos?.then((jogos) {
@@ -162,8 +202,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -274,8 +321,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -290,33 +337,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            tabs: List.generate(120, (index) => Tab(text: _getTabLabel(index))),
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-                width: 0.5,
-              ),
-            ),
-          ),
-          child: TabBar(
-            controller: _filtroTabController,
-            labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            indicatorWeight: 3,
-            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-            tabs: const [
-              Tab(text: 'Todos'),
-              Tab(text: 'Ao Vivo'),
-              Tab(text: 'Terminados'),
-              Tab(text: 'Agendados'),
-            ],
+            tabs: List.generate(123, (index) => Tab(text: _getTabLabel(index))),
           ),
         ),
         Expanded(
@@ -475,12 +496,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         return Container(
           margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-              width: 1,
-            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -502,7 +526,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                   ),
                   child: Row(
@@ -517,7 +541,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                             placeholder: Icon(
                               Symbols.emoji_events_rounded,
                               size: 24,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
                             ),
                           ),
                         ),
@@ -526,7 +550,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                         Icon(
                           Symbols.emoji_events_rounded,
                           size: 24,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
                         ),
                         const SizedBox(width: 12),
                       ],
@@ -536,14 +560,14 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
+                          color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -551,7 +575,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         ),
                       ),
@@ -559,7 +583,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       Icon(
                         Symbols.chevron_right_rounded,
                         size: 20,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                     ],
                   ),
@@ -598,10 +622,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           border: isLast ? null : Border(
             bottom: BorderSide(
-              color: Theme.of(context).dividerColor.withOpacity(0.1),
-              width: 0.5,
+              color: Theme.of(context).dividerColor.withOpacity(0.15),
+              width: 1,
             ),
           ),
           borderRadius: isLast 
@@ -640,15 +665,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isHalfTime ? Colors.orange.withOpacity(0.15) : Colors.green.withOpacity(0.15),
+                      color: isHalfTime ? Colors.orange : Colors.green,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       formatarStatus(status),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: isHalfTime ? Colors.orange : Colors.green,
+                        color: Colors.white,
                       ),
                     ),
                   )
@@ -656,15 +681,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: getStatusColor(status, context).withOpacity(0.15),
+                      color: getStatusColor(status, context),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       formatarStatus(status),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: getStatusColor(status, context),
+                        color: Colors.white,
                       ),
                     ),
                   ),
