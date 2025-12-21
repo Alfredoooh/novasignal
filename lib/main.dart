@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
 
   ThemeData _buildLightTheme(bool usarCorDinamica) {
     const pureWhite = Color(0xFFFFFFFF);
-    const derivRed = Color(0xFFFF444F);
+    const appleBlue = Color(0xFF007AFF);
     const lightGray = Color(0xFFFAFAFA);
     const mediumGray = Color(0xFFF5F5F5);
 
@@ -70,14 +70,14 @@ class MyApp extends StatelessWidget {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: derivRed,
+      primaryColor: appleBlue,
       scaffoldBackgroundColor: pureWhite,
       cardColor: pureWhite,
       dividerColor: const Color(0xFFE0E0E0),
       colorScheme: const ColorScheme.light(
-        primary: derivRed,
+        primary: appleBlue,
         onPrimary: pureWhite,
-        secondary: derivRed,
+        secondary: appleBlue,
         onSecondary: pureWhite,
         surface: pureWhite,
         onSurface: Color(0xFF1A1A1A),
@@ -126,11 +126,11 @@ class MyApp extends StatelessWidget {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return derivRed;
+          if (states.contains(WidgetState.selected)) return appleBlue;
           return const Color(0xFFBDBDBD);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return derivRed.withOpacity(0.5);
+          if (states.contains(WidgetState.selected)) return appleBlue.withOpacity(0.5);
           return const Color(0xFFE0E0E0);
         }),
       ),
@@ -138,12 +138,12 @@ class MyApp extends StatelessWidget {
   }
 
   ThemeData _buildDarkTheme(bool usarCorDinamica, bool profundo) {
-    const derivRed = Color(0xFFFF444F);
-    
+    const appleBlue = Color(0xFF007AFF);
+
     // Tema normal escuro
     const surfaceColor = Color(0xFF1E1E1E);
     const backgroundColor = Color(0xFF161616);
-    
+
     // Tema escuro profundo
     const surfaceColorDeep = Color(0xFF0D0D0D);
     const backgroundColorDeep = Color(0xFF000000);
@@ -174,14 +174,14 @@ class MyApp extends StatelessWidget {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: derivRed,
+      primaryColor: appleBlue,
       scaffoldBackgroundColor: background,
       cardColor: surface,
       dividerColor: profundo ? const Color(0xFF1A1A1A) : const Color(0xFF2A2A2A),
       colorScheme: ColorScheme.dark(
-        primary: derivRed,
+        primary: appleBlue,
         onPrimary: Colors.white,
-        secondary: derivRed,
+        secondary: appleBlue,
         onSecondary: Colors.white,
         surface: surface,
         onSurface: const Color(0xFFE4E4E4),
@@ -207,7 +207,7 @@ class MyApp extends StatelessWidget {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface.withOpacity(0.7),
-        indicatorColor: derivRed.withOpacity(0.2),
+        indicatorColor: appleBlue.withOpacity(0.2),
       ),
       cardTheme: CardThemeData(
         color: surface,
@@ -233,11 +233,11 @@ class MyApp extends StatelessWidget {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return derivRed;
+          if (states.contains(WidgetState.selected)) return appleBlue;
           return const Color(0xFF616161);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return derivRed.withOpacity(0.5);
+          if (states.contains(WidgetState.selected)) return appleBlue.withOpacity(0.5);
           return const Color(0xFF424242);
         }),
       ),
@@ -247,7 +247,7 @@ class MyApp extends StatelessWidget {
   ThemeData _buildAmoledTheme(bool usarCorDinamica) {
     const pureBlack = Color(0xFF000000);
     const almostBlack = Color(0xFF0A0A0A);
-    const derivRed = Color(0xFFFF444F);
+    const appleBlue = Color(0xFF007AFF);
 
     if (usarCorDinamica) {
       return ThemeData(
@@ -272,14 +272,14 @@ class MyApp extends StatelessWidget {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: derivRed,
+      primaryColor: appleBlue,
       scaffoldBackgroundColor: pureBlack,
       cardColor: almostBlack,
       dividerColor: const Color(0xFF1A1A1A),
       colorScheme: const ColorScheme.dark(
-        primary: derivRed,
+        primary: appleBlue,
         onPrimary: Colors.white,
-        secondary: derivRed,
+        secondary: appleBlue,
         onSecondary: Colors.white,
         surface: almostBlack,
         onSurface: Color(0xFFFFFFFF),
@@ -305,7 +305,7 @@ class MyApp extends StatelessWidget {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: almostBlack,
-        indicatorColor: derivRed.withOpacity(0.3),
+        indicatorColor: appleBlue.withOpacity(0.3),
       ),
       cardTheme: CardThemeData(
         color: almostBlack,
@@ -335,11 +335,11 @@ class MyApp extends StatelessWidget {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return derivRed;
+          if (states.contains(WidgetState.selected)) return appleBlue;
           return const Color(0xFF424242);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return derivRed.withOpacity(0.5);
+          if (states.contains(WidgetState.selected)) return appleBlue.withOpacity(0.5);
           return const Color(0xFF2A2A2A);
         }),
       ),
