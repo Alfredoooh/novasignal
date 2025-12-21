@@ -1,9 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
-import 'dart:math' show cos, sin, pi;
 import 'jogo_detalhes_page.dart';
 import 'ligas_page.dart';
 
@@ -16,10 +16,12 @@ class JogosPage extends StatefulWidget {
 
 class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   Future<List<dynamic>>? _futureJogos;
-  late AnimationController _loadingController;
   late AnimationController _blinkController;
+  late TabController _tabController;
   List<dynamic>? _cachedJogos;
   String? _lastFiltro;
+  Timer? _autoUpdateTimer;
+  int _selectedDayIndex = 3; // Índice do dia selecionado (hoje é 3)
 
   @override
   bool get wantKeepAlive => true;
@@ -27,43 +29,87 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   @override
   void initState() {
     super.initState();
-    _loadingController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
-
+    
     _blinkController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
+    _tabController = TabController(length: 7, vsync: this, initialIndex: 3);
+    
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          _selectedDayIndex = _tabController.index;
+        });
+        _loadJogosDoDia();
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadTodosJogos();
+      _loadJogosDoDia();
+      _startAutoUpdate();
     });
   }
 
   @override
   void dispose() {
-    _loadingController.dispose();
     _blinkController.dispose();
+    _tabController.dispose();
+    _autoUpdateTimer?.cancel();
     super.dispose();
   }
 
-  @override
-  void didUpdateWidget(JogosPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final appState = context.read<AppState>();
-    if (_lastFiltro != appState.filtroJogos) {
-      _lastFiltro = appState.filtroJogos;
-      if (mounted) setState(() {});
+  void _startAutoUpdate() {
+    _autoUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) {
+        _silentUpdate();
+      }
+    });
+  }
+
+  Future<void> _silentUpdate() async {
+    if (!mounted) return;
+
+    try {
+      final appState = context.read<AppState>();
+      final data = _getDateForIndex(_selectedDayIndex);
+      final jogos = await appState.carregarJogosDoDia(data);
+
+      if (!mounted) return;
+
+      setState(() {
+        _cachedJogos = jogos;
+      });
+    } catch (e) {
+      // Falha silenciosa
     }
   }
 
-  void _loadTodosJogos() async {
+  DateTime _getDateForIndex(int index) {
+    final hoje = DateTime.now();
+    final diferencaDias = index - 3; // 3 é o índice de "hoje"
+    return hoje.add(Duration(days: diferencaDias));
+  }
+
+  String _getTabLabel(int index) {
+    final hoje = DateTime.now();
+    final data = _getDateForIndex(index);
+    
+    if (index == 3) return 'Hoje';
+    if (index == 2) return 'Ontem';
+    if (index == 1) return 'Anteontem';
+    if (index == 4) return 'Amanhã';
+    
+    return '${data.day}/${data.month}';
+  }
+
+  void _loadJogosDoDia() async {
     final appState = context.read<AppState>();
+    final data = _getDateForIndex(_selectedDayIndex);
+    
     setState(() {
-      // Carrega TODOS os jogos disponíveis, não apenas de um dia
-      _futureJogos = _carregarTodosJogosDisponiveis(appState);
+      _futureJogos = appState.carregarJogosDoDia(data);
     });
 
     _futureJogos?.then((jogos) {
@@ -73,143 +119,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         });
       }
     });
-  }
-
-  Future<List<dynamic>> _carregarTodosJogosDisponiveis(AppState appState) async {
-    try {
-      // Busca jogos de uma janela de tempo (ontem, hoje, amanhã)
-      final hoje = DateTime.now();
-      final ontem = hoje.subtract(const Duration(days: 1));
-      final amanha = hoje.add(const Duration(days: 1));
-
-      final futures = [
-        appState.carregarJogosDoDia(ontem),
-        appState.carregarJogosDoDia(hoje),
-        appState.carregarJogosDoDia(amanha),
-      ];
-
-      final results = await Future.wait(futures);
-      
-      // Combina todos os jogos em uma lista única
-      final todosJogos = <dynamic>[];
-      for (var result in results) {
-        todosJogos.addAll(result);
-      }
-
-      debugPrint('🔥 Total de jogos carregados: ${todosJogos.length}');
-      return todosJogos;
-    } catch (e) {
-      debugPrint('❌ Erro ao carregar jogos: $e');
-      return [];
-    }
-  }
-
-  Widget _buildLoadingShimmer() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 120,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Container(
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Container(
-                      width: 50,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -222,47 +131,25 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-                width: 0.5,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-            ),
+            ],
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _AnimatedFilterChip(
-                  label: 'Todos',
-                  icon: Symbols.sports_soccer_rounded,
-                  isSelected: appState.filtroJogos == 'hoje',
-                  onSelected: () => appState.filtrarJogos('hoje'),
-                ),
-                const SizedBox(width: 8),
-                _AnimatedFilterChip(
-                  label: 'Ao Vivo',
-                  icon: Symbols.circle_rounded,
-                  isSelected: appState.filtroJogos == 'direto',
-                  onSelected: () => appState.filtrarJogos('direto'),
-                ),
-                const SizedBox(width: 8),
-                _AnimatedFilterChip(
-                  label: 'Terminados',
-                  icon: Symbols.check_circle_rounded,
-                  isSelected: appState.filtroJogos == 'terminados',
-                  onSelected: () => appState.filtrarJogos('terminados'),
-                ),
-                const SizedBox(width: 8),
-                _AnimatedFilterChip(
-                  label: 'Agendados',
-                  icon: Symbols.schedule_rounded,
-                  isSelected: appState.filtroJogos == 'agendados',
-                  onSelected: () => appState.filtrarJogos('agendados'),
-                ),
-              ],
-            ),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            labelColor: Theme.of(context).colorScheme.primary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            tabs: List.generate(7, (index) => Tab(text: _getTabLabel(index))),
           ),
         ),
         Expanded(
@@ -272,7 +159,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 future: _futureJogos,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return _buildLoadingShimmer();
+                    return const Center(child: CircularProgressIndicator());
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Column(
@@ -285,18 +172,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           ),
                           const SizedBox(height: 16),
                           const Text('Erro ao carregar jogos'),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${snapshot.error}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
                           const SizedBox(height: 16),
                           FilledButton.icon(
-                            onPressed: _loadTodosJogos,
+                            onPressed: _loadJogosDoDia,
                             icon: const Icon(Symbols.refresh_rounded),
                             label: const Text('Tentar Novamente'),
                           ),
@@ -329,9 +207,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   Widget _buildCachedContent(List<dynamic> jogos, String filtro) {
-    final jogosFiltrados = _filtrarJogos(jogos, filtro);
-
-    if (jogosFiltrados.isEmpty) {
+    if (jogos.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -342,50 +218,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
             ),
             const SizedBox(height: 16),
-            Text('Nenhum jogo ${_getTituloFiltro(filtro)}'),
+            const Text('Nenhum jogo disponível'),
           ],
         ),
       );
     }
 
-    return _buildJogosList(jogosFiltrados);
-  }
-
-  String _getTituloFiltro(String filtro) {
-    switch (filtro) {
-      case 'direto':
-        return 'ao vivo no momento';
-      case 'terminados':
-        return 'terminado';
-      case 'agendados':
-        return 'agendado';
-      default:
-        return 'disponível';
-    }
-  }
-
-  List<dynamic> _filtrarJogos(List<dynamic> jogos, String filtro) {
-    switch (filtro) {
-      case 'direto':
-        return jogos.where((j) {
-          final status = j['match_status'] ?? '';
-          return status.contains("'") || status == 'HT' || status == 'LIVE';
-        }).toList();
-      case 'terminados':
-        return jogos.where((j) {
-          final status = j['match_status'] ?? '';
-          return status.contains('Finished') || status == 'FT' || status == 'AET';
-        }).toList();
-      case 'agendados':
-        return jogos.where((j) {
-          final status = j['match_status'] ?? '';
-          return status.isEmpty || status == '' || 
-                 (!status.contains("'") && status != 'HT' && status != 'LIVE' && 
-                  !status.contains('Finished') && status != 'FT' && status != 'AET');
-        }).toList();
-      default:
-        return jogos;
-    }
+    return _buildJogosList(jogos);
   }
 
   Widget _buildJogosList(List<dynamic> jogos) {
@@ -407,10 +246,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
 
     return ListView.builder(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(vertical: 16),
       itemCount: ligasOrdenadas.length,
-      addAutomaticKeepAlives: true,
-      cacheExtent: 1000,
       itemBuilder: (context, index) {
         final ligaNome = ligasOrdenadas[index];
         final jogosLiga = jogosPorLiga[ligaNome]!;
@@ -419,8 +256,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         final leagueId = ligaInfo['id'];
 
         return Container(
-          color: Theme.of(context).colorScheme.surface,
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
           child: Column(
             children: [
               InkWell(
@@ -437,25 +281,24 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     );
                   }
                 },
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                   ),
                   child: Row(
                     children: [
                       if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
-                        Hero(
-                          tag: 'liga_logo_$leagueId',
-                          child: _CachedNetworkImage(
-                            imageUrl: leagueLogo,
-                            width: 28,
-                            height: 28,
-                            placeholder: Icon(
-                              Symbols.emoji_events_rounded,
-                              size: 24,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                        Image.network(
+                          leagueLogo,
+                          width: 24,
+                          height: 24,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Symbols.emoji_events_rounded,
+                            size: 24,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -502,7 +345,12 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                   ),
                 ),
               ),
-              ...jogosLiga.map((jogo) => _buildMatchItem(jogo)),
+              ...jogosLiga.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final jogo = entry.value;
+                final isLast = idx == jogosLiga.length - 1;
+                return _buildMatchItem(jogo, isLast);
+              }),
             ],
           ),
         );
@@ -510,10 +358,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     );
   }
 
-  Widget _buildMatchItem(dynamic jogo) {
+  Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
     final isLive = status.contains("'") || status == 'LIVE';
     final isHalfTime = status == 'HT';
+    final isPlaying = isLive && !isHalfTime;
 
     return InkWell(
       onTap: () {
@@ -523,66 +372,52 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
           ),
         );
       },
+      borderRadius: isLast 
+          ? const BorderRadius.vertical(bottom: Radius.circular(16))
+          : BorderRadius.zero,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border(
+          border: isLast ? null : Border(
             bottom: BorderSide(
               color: Theme.of(context).dividerColor.withOpacity(0.1),
               width: 0.5,
             ),
           ),
+          borderRadius: isLast 
+              ? const BorderRadius.vertical(bottom: Radius.circular(16))
+              : BorderRadius.zero,
         ),
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      jogo['match_time'] ?? '--:--',
+                Text(
+                  jogo['match_time'] ?? '--:--',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (!isPlaying && (isLive || isHalfTime))
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isHalfTime ? Colors.orange.withOpacity(0.15) : Colors.green.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      formatarStatus(status),
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: isHalfTime ? Colors.orange : Colors.green,
                       ),
                     ),
-                    if (isLive || isHalfTime) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: isHalfTime ? Colors.amber : Colors.green,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                if (isLive)
-                  AnimatedBuilder(
-                    animation: _blinkController,
-                    builder: (context, child) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          "${status.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.green,
-                          ),
-                        ),
-                      );
-                    },
                   )
-                else
+                else if (!isLive)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
@@ -606,11 +441,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 Expanded(
                   child: Row(
                     children: [
-                      _CachedNetworkImage(
-                        imageUrl: jogo['team_home_badge'] ?? '',
+                      Image.network(
+                        jogo['team_home_badge'] ?? '',
                         width: 32,
                         height: 32,
-                        placeholder: Container(
+                        errorBuilder: (_, __, ___) => Container(
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
@@ -632,13 +467,33 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      if (isPlaying) ...[
+                        const SizedBox(height: 4),
+                        AnimatedBuilder(
+                          animation: _blinkController,
+                          builder: (context, child) {
+                            return Text(
+                              "${status.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.green,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 Expanded(
@@ -654,11 +509,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                         ),
                       ),
                       const SizedBox(width: 10),
-                      _CachedNetworkImage(
-                        imageUrl: jogo['team_away_badge'] ?? '',
+                      Image.network(
+                        jogo['team_away_badge'] ?? '',
                         width: 32,
                         height: 32,
-                        placeholder: Container(
+                        errorBuilder: (_, __, ___) => Container(
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
@@ -675,143 +530,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
           ],
         ),
       ),
-    );
-  }
-}
-
-// Widget de filtro com animação de clique
-class _AnimatedFilterChip extends StatefulWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onSelected;
-
-  const _AnimatedFilterChip({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onSelected,
-  });
-
-  @override
-  State<_AnimatedFilterChip> createState() => _AnimatedFilterChipState();
-}
-
-class _AnimatedFilterChipState extends State<_AnimatedFilterChip> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 20, end: 8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) {
-        _controller.reverse();
-        widget.onSelected();
-      },
-      onTapCancel: () => _controller.reverse(),
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: widget.isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(_animation.value),
-              border: Border.all(
-                color: widget.isSelected 
-                    ? Theme.of(context).colorScheme.primary 
-                    : Theme.of(context).dividerColor.withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  widget.icon,
-                  size: 16,
-                  color: widget.isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    color: widget.isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// Widget de imagem com cache
-class _CachedNetworkImage extends StatefulWidget {
-  final String imageUrl;
-  final double width;
-  final double height;
-  final Widget placeholder;
-
-  const _CachedNetworkImage({
-    required this.imageUrl,
-    required this.width,
-    required this.height,
-    required this.placeholder,
-  });
-
-  @override
-  State<_CachedNetworkImage> createState() => _CachedNetworkImageState();
-}
-
-class _CachedNetworkImageState extends State<_CachedNetworkImage> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-
-    if (widget.imageUrl.isEmpty) {
-      return widget.placeholder;
-    }
-
-    return Image.network(
-      widget.imageUrl,
-      width: widget.width,
-      height: widget.height,
-      cacheWidth: (widget.width * MediaQuery.of(context).devicePixelRatio).round(),
-      cacheHeight: (widget.height * MediaQuery.of(context).devicePixelRatio).round(),
-      errorBuilder: (_, __, ___) => widget.placeholder,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return SizedBox(
-          width: widget.width,
-          height: widget.height,
-          child: widget.placeholder,
-        );
-      },
     );
   }
 }
