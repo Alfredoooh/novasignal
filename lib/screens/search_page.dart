@@ -6,7 +6,9 @@ import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final String? initialQuery;
+  
+  const SearchPage({super.key, this.initialQuery});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -16,6 +18,20 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
   Future<List<dynamic>>? _searchResults;
   bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+      // Executar busca imediatamente após o build
+      Future.microtask(() {
+        if (mounted) {
+          _performSearch(widget.initialQuery!);
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -66,7 +82,7 @@ class _SearchPageState extends State<SearchPage> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: _performSearch,
-                        autofocus: true,
+                        autofocus: widget.initialQuery == null || widget.initialQuery!.isEmpty,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 16,
