@@ -19,10 +19,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   late AnimationController _loadingController;
   late AnimationController _blinkController;
   late TabController _tabController;
+  late TabController _filtroTabController;
   List<dynamic>? _cachedJogos;
   String? _lastFiltro;
   Timer? _autoUpdateTimer;
-  int _selectedDayIndex = 3;
+  int _selectedDayIndex = 60; // Hoje está no meio dos 120 dias
 
   @override
   bool get wantKeepAlive => true;
@@ -40,7 +41,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
-    _tabController = TabController(length: 7, vsync: this, initialIndex: 3);
+    // 120 dias: 60 no passado + hoje + 59 no futuro
+    _tabController = TabController(length: 120, vsync: this, initialIndex: 60);
+    _filtroTabController = TabController(length: 4, vsync: this, initialIndex: 0);
     
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -48,6 +51,14 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
           _selectedDayIndex = _tabController.index;
         });
         _loadJogosDoDia();
+      }
+    });
+
+    _filtroTabController.addListener(() {
+      if (_filtroTabController.indexIsChanging) {
+        final appState = context.read<AppState>();
+        final filtros = ['hoje', 'direto', 'terminados', 'agendados'];
+        appState.filtrarJogos(filtros[_filtroTabController.index]);
       }
     });
 
@@ -62,6 +73,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     _loadingController.dispose();
     _blinkController.dispose();
     _tabController.dispose();
+    _filtroTabController.dispose();
     _autoUpdateTimer?.cancel();
     super.dispose();
   }
@@ -104,19 +116,25 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   DateTime _getDateForIndex(int index) {
     final hoje = DateTime.now();
-    final diferencaDias = index - 3;
+    final diferencaDias = index - 60; // 60 é o índice do "hoje"
     return hoje.add(Duration(days: diferencaDias));
   }
 
   String _getTabLabel(int index) {
     final data = _getDateForIndex(index);
+    final diasDiferenca = index - 60;
     
-    if (index == 3) return 'Hoje';
-    if (index == 2) return 'Ontem';
-    if (index == 1) return 'Anteontem';
-    if (index == 4) return 'Amanhã';
+    // Nomes especiais para dias próximos
+    if (diasDiferenca == 0) return 'Hoje';
+    if (diasDiferenca == -1) return 'Ontem';
+    if (diasDiferenca == -2) return 'Anteontem';
+    if (diasDiferenca == 1) return 'Amanhã';
     
-    return '${data.day}/${data.month}';
+    // Para outros dias: "Sexta/16", "Sáb/17", etc
+    final diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    final diaSemana = diasSemana[data.weekday % 7];
+    
+    return '$diaSemana/${data.day}';
   }
 
   void _loadJogosDoDia() async {
@@ -272,7 +290,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            tabs: List.generate(7, (index) => Tab(text: _getTabLabel(index))),
+            tabs: List.generate(120, (index) => Tab(text: _getTabLabel(index))),
           ),
         ),
         Container(
@@ -285,40 +303,20 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               ),
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _AnimatedFilterChip(
-                  label: 'Todos',
-                  icon: Symbols.sports_soccer_rounded,
-                  isSelected: appState.filtroJogos == 'hoje',
-                  onSelected: () => appState.filtrarJogos('hoje'),
-                ),
-                const SizedBox(width: 8),
-                _AnimatedFilterChip(
-                  label: 'Ao Vivo',
-                  icon: Symbols.circle_rounded,
-                  isSelected: appState.filtroJogos == 'direto',
-                  onSelected: () => appState.filtrarJogos('direto'),
-                ),
-                const SizedBox(width: 8),
-                _AnimatedFilterChip(
-                  label: 'Terminados',
-                  icon: Symbols.check_circle_rounded,
-                  isSelected: appState.filtroJogos == 'terminados',
-                  onSelected: () => appState.filtrarJogos('terminados'),
-                ),
-                const SizedBox(width: 8),
-                _AnimatedFilterChip(
-                  label: 'Agendados',
-                  icon: Symbols.schedule_rounded,
-                  isSelected: appState.filtroJogos == 'agendados',
-                  onSelected: () => appState.filtrarJogos('agendados'),
-                ),
-              ],
-            ),
+          child: TabBar(
+            controller: _filtroTabController,
+            labelColor: Theme.of(context).colorScheme.primary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            tabs: const [
+              Tab(text: 'Todos'),
+              Tab(text: 'Ao Vivo'),
+              Tab(text: 'Terminados'),
+              Tab(text: 'Agendados'),
+            ],
           ),
         ),
         Expanded(
@@ -766,93 +764,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AnimatedFilterChip extends StatefulWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onSelected;
-
-  const _AnimatedFilterChip({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onSelected,
-  });
-
-  @override
-  State<_AnimatedFilterChip> createState() => _AnimatedFilterChipState();
-}
-
-class _AnimatedFilterChipState extends State<_AnimatedFilterChip> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 20, end: 8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) {
-        _controller.reverse();
-        widget.onSelected();
-      },
-      onTapCancel: () => _controller.reverse(),
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: widget.isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(_animation.value),
-              border: Border.all(
-                color: widget.isSelected 
-                    ? Theme.of(context).colorScheme.primary 
-                    : Theme.of(context).dividerColor.withOpacity(0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  widget.icon,
-                  size: 16,
-                  color: widget.isSelected ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    color: widget.isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }
