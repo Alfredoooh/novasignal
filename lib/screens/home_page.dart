@@ -1,6 +1,7 @@
 // home_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
@@ -35,15 +36,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       duration: const Duration(milliseconds: 250),
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.94).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.88).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
     _slideAnimation = Tween<Offset>(
       begin: Offset.zero,
-      end: const Offset(0.65, 0.0),
+      end: const Offset(0.7, 0.0),
     ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
     _animationController.addListener(() {
@@ -52,7 +53,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     _animationController.addStatusListener((status) {
       setState(() {
-        _isDrawerOpen = status == AnimationStatus.completed || _animationController.value > 0.0;
+        _isDrawerOpen = status == AnimationStatus.completed;
       });
     });
   }
@@ -65,162 +66,194 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   void _toggleDrawer() {
-    if (_animationController.isCompleted || _animationController.value > 0.5) {
+    if (_animationController.isCompleted) {
       _animationController.reverse();
     } else {
       _animationController.forward();
     }
   }
 
-  void _closeDrawerThen(VoidCallback action) {
-    _animationController.reverse();
-    Future.delayed(const Duration(milliseconds: 260), action);
+  void _closeDrawer() {
+    if (_animationController.isCompleted) {
+      _animationController.reverse();
+    }
+  }
+
+  void _navigateAndCloseDrawer(VoidCallback action) {
+    _animationController.reverse().then((_) {
+      if (mounted) {
+        action();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppState>(
-      builder: (context, appState, child) {
-        return Stack(
-          children: [
-            // --- Drawer (custom) ---
-            Container(
-              color: Theme.of(context).colorScheme.surface,
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 20, top: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Football Live',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                    color: Theme.of(context).colorScheme.onSurface,
+    final brightness = Theme.of(context).brightness;
+    
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: brightness == Brightness.dark ? Brightness.dark : Brightness.light,
+      ),
+      child: Consumer<AppState>(
+        builder: (context, appState, child) {
+          final canSwipeDrawer = appState.tabAtual == 'home';
+          
+          return Stack(
+            children: [
+              // --- Drawer (custom) ---
+              Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 20, top: 20, right: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Football Live',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(context).colorScheme.onSurface,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Acompanhe seu futebol favorito',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Acompanhe seu futebol favorito',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Symbols.chevron_left_rounded),
-                            onPressed: _toggleDrawer,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 40),
-                      _buildDrawerItem(
-                        icon: Symbols.settings_rounded,
-                        title: 'Configurações',
-                        onTap: () {
-                          _closeDrawerThen(() {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const ConfiguracoesPage(),
+                                ],
                               ),
-                            );
-                          });
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Symbols.info_rounded,
-                        title: 'Sobre',
-                        onTap: () {
-                          _closeDrawerThen(() {
-                            showAboutDialog(
-                              context: context,
-                              applicationName: 'Football Live',
-                              applicationVersion: '1.0.0',
-                            );
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(),
-                      const SizedBox(height: 8),
-                      _buildDrawerItem(
-                        icon: Symbols.home_rounded,
-                        title: 'Home',
-                        onTap: () {
-                          _closeDrawerThen(() {
-                            appState.mudarTab('home');
-                          });
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Symbols.sports_soccer_rounded,
-                        title: 'Jogos',
-                        onTap: () {
-                          _closeDrawerThen(() {
-                            appState.mudarTab('jogos');
-                          });
-                        },
-                      ),
-                    ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 40),
+                        _buildDrawerItem(
+                          icon: Symbols.home_rounded,
+                          title: 'Home',
+                          onTap: () {
+                            _navigateAndCloseDrawer(() {
+                              appState.mudarTab('home');
+                            });
+                          },
+                        ),
+                        _buildDrawerItem(
+                          icon: Symbols.sports_soccer_rounded,
+                          title: 'Jogos',
+                          onTap: () {
+                            _navigateAndCloseDrawer(() {
+                              appState.mudarTab('jogos');
+                            });
+                          },
+                        ),
+                        _buildDrawerItem(
+                          icon: Symbols.notifications_rounded,
+                          title: 'Atividades',
+                          onTap: () {
+                            _navigateAndCloseDrawer(() {
+                              appState.mudarTab('atividades');
+                            });
+                          },
+                        ),
+                        _buildDrawerItem(
+                          icon: Symbols.inbox_rounded,
+                          title: 'Inbox',
+                          onTap: () {
+                            _navigateAndCloseDrawer(() {
+                              appState.mudarTab('inbox');
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        Divider(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+                        const SizedBox(height: 20),
+                        _buildDrawerItem(
+                          icon: Symbols.settings_rounded,
+                          title: 'Configurações',
+                          onTap: () {
+                            _navigateAndCloseDrawer(() {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const ConfiguracoesPage(),
+                                ),
+                              );
+                            });
+                          },
+                        ),
+                        _buildDrawerItem(
+                          icon: Symbols.info_rounded,
+                          title: 'Sobre',
+                          onTap: () {
+                            _navigateAndCloseDrawer(() {
+                              showAboutDialog(
+                                context: context,
+                                applicationName: 'Football Live',
+                                applicationVersion: '1.0.0',
+                              );
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // --- Conteúdo principal com animação ---
-            GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: _isDrawerOpen ? _toggleDrawer : null,
-              onHorizontalDragUpdate: (details) {
-                final width = MediaQuery.of(context).size.width;
-                final delta = details.delta.dx / width;
-                _animationController.value += delta;
-              },
-              onHorizontalDragEnd: (details) {
-                final v = details.primaryVelocity ?? 0;
-                if (_animationController.value >= 0.5 || v > 250) {
-                  _animationController.forward();
-                } else {
-                  _animationController.reverse();
-                }
-              },
-              child: Transform.translate(
-                offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(_animationController.value * 20),
-                    child: IgnorePointer(
-                      ignoring: _isDrawerOpen,
-                      child: Scaffold(
-                        extendBody: true,
-                        extendBodyBehindAppBar: true,
-                        appBar: _buildAppBar(context, appState),
-                        body: _buildBody(appState),
-                        bottomNavigationBar: _buildBottomNav(appState),
-                        drawer: null,
-                        drawerEnableOpenDragGesture: false,
+              // --- Conteúdo principal com animação ---
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _isDrawerOpen ? _closeDrawer : null,
+                onHorizontalDragUpdate: canSwipeDrawer ? (details) {
+                  final width = MediaQuery.of(context).size.width;
+                  final delta = details.delta.dx / width;
+                  _animationController.value = (_animationController.value + delta).clamp(0.0, 1.0);
+                } : null,
+                onHorizontalDragEnd: canSwipeDrawer ? (details) {
+                  final velocity = details.primaryVelocity ?? 0;
+                  if (velocity > 700 || _animationController.value > 0.5) {
+                    _animationController.forward();
+                  } else {
+                    _animationController.reverse();
+                  }
+                } : null,
+                child: Transform.translate(
+                  offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    alignment: Alignment.centerLeft,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(_animationController.value * 16),
+                      child: IgnorePointer(
+                        ignoring: _isDrawerOpen,
+                        child: Scaffold(
+                          extendBody: true,
+                          extendBodyBehindAppBar: true,
+                          appBar: _buildAppBar(context, appState),
+                          body: _buildBody(appState),
+                          bottomNavigationBar: _buildBottomNav(appState),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -233,8 +266,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
           child: Row(
             children: [
               Icon(
@@ -247,7 +281,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 title,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
@@ -268,7 +302,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     List<Widget>? actions;
 
     final menuButton = IconButton(
-      icon: Icon(_isDrawerOpen ? Symbols.chevron_left_rounded : Symbols.menu_rounded),
+      icon: const Icon(Symbols.menu_rounded),
       onPressed: _toggleDrawer,
     );
 
