@@ -6,6 +6,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import 'search_page.dart';
 
 class JogoDetalhesPage extends StatefulWidget {
   final String jogoId;
@@ -75,7 +76,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       }
     }
 
-    // Extrair cartões e contar
+    // Extrair cartões e contar corretamente
     _cartoesAmareloCasa = 0;
     _cartoesVermelhoCasa = 0;
     _cartoesAmareloFora = 0;
@@ -83,13 +84,15 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
     if (_jogo!['cards'] != null && _jogo!['cards'] is List) {
       for (var card in _jogo!['cards']) {
-        final isHome = (card['home_fault'] != null && card['home_fault'].toString().isNotEmpty);
+        final homeFault = card['home_fault']?.toString() ?? '';
+        final awayFault = card['away_fault']?.toString() ?? '';
+        final isHome = homeFault.isNotEmpty;
         final isYellow = card['card'] == 'yellow card';
-        
+
         if (isHome) {
           if (isYellow) _cartoesAmareloCasa++;
           else _cartoesVermelhoCasa++;
-        } else {
+        } else if (awayFault.isNotEmpty) {
           if (isYellow) _cartoesAmareloFora++;
           else _cartoesVermelhoFora++;
         }
@@ -97,8 +100,9 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         tmpEvents.add({
           'type': isYellow ? 'yellow' : 'red',
           'time': int.tryParse(card['time']?.toString() ?? '0') ?? 0,
-          'player': card['home_fault'] ?? card['away_fault'] ?? '',
+          'player': isHome ? homeFault : awayFault,
           'isHome': isHome,
+          'info': card['info']?.toString() ?? '',
         });
       }
     }
@@ -107,10 +111,13 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     if (_jogo!['substitutions'] != null && _jogo!['substitutions'] is List) {
       for (var sub in _jogo!['substitutions']) {
         final substitution = sub['substitution']?.toString() ?? '';
+        final parts = substitution.split('|');
         tmpEvents.add({
           'type': 'substitution',
           'time': int.tryParse(sub['time']?.toString() ?? '0') ?? 0,
           'substitution': substitution,
+          'playerOut': parts.isNotEmpty ? parts[0].trim() : '',
+          'playerIn': parts.length > 1 ? parts[1].trim() : '',
           'isHome': (sub['home_scorer'] != null && sub['home_scorer'].toString().isNotEmpty),
         });
       }
@@ -131,6 +138,114 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     }
 
     if (mounted) setState(() {});
+  }
+
+  void _showBettingModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildBettingModal(),
+    );
+  }
+
+  Widget _buildBettingModal() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 50 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.95,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Conteúdo do modal
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Começar Aposta',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Selecione suas opções de aposta',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Botões de ação
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text('Confirmar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -175,7 +290,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         headerSliverBuilder: (context, innerScrolled) {
           return [
             SliverAppBar(
-              expandedHeight: 340,
+              expandedHeight: 320,
               pinned: true,
               stretch: true,
               backgroundColor: cs.surface,
@@ -183,10 +298,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                 icon: Icon(Symbols.arrow_back_rounded, color: cs.onSurface),
                 onPressed: () => Navigator.pop(context),
               ),
-              actions: [
-                IconButton(icon: Icon(Symbols.share_rounded, color: cs.onSurface), onPressed: () {}),
-                IconButton(icon: Icon(Symbols.star_outline_rounded, color: cs.onSurface), onPressed: () {}),
-              ],
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(
                   _jogo!['league_name'] ?? 'Liga',
@@ -219,53 +330,32 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                             Expanded(
                               child: Column(
                                 children: [
-                                  if ((_jogo!['team_home_badge'] ?? '').toString().isNotEmpty)
-                                    Image.network(
-                                      _jogo!['team_home_badge'],
-                                      width: 64,
-                                      height: 64,
-                                      errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 64, color: cs.primary),
-                                    )
-                                  else
-                                    Icon(Icons.shield, size: 64, color: cs.primary),
+                                  GestureDetector(
+                                    onTap: () {
+                                      final query = _jogo!['match_hometeam_name'] ?? '';
+                                      if (query.isNotEmpty) {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) => SearchPage(initialQuery: query),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    child: (_jogo!['team_home_badge'] ?? '').toString().isNotEmpty
+                                        ? Image.network(
+                                            _jogo!['team_home_badge'],
+                                            width: 64,
+                                            height: 64,
+                                            errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 64, color: cs.primary),
+                                          )
+                                        : Icon(Icons.shield, size: 64, color: cs.primary),
+                                  ),
                                   const SizedBox(height: 10),
                                   Text(
                                     _jogo!['match_hometeam_name'] ?? '',
                                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.onSurface),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Cartões casa
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      if (_cartoesAmareloCasa > 0) ...[
-                                        Container(
-                                          width: 16,
-                                          height: 22,
-                                          decoration: BoxDecoration(
-                                            color: Colors.yellow.shade700,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text('$_cartoesAmareloCasa', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
-                                        const SizedBox(width: 8),
-                                      ],
-                                      if (_cartoesVermelhoCasa > 0) ...[
-                                        Container(
-                                          width: 16,
-                                          height: 22,
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text('$_cartoesVermelhoCasa', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
-                                      ],
-                                    ],
                                   ),
                                 ],
                               ),
@@ -304,15 +394,26 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                             Expanded(
                               child: Column(
                                 children: [
-                                  if ((_jogo!['team_away_badge'] ?? '').toString().isNotEmpty)
-                                    Image.network(
-                                      _jogo!['team_away_badge'],
-                                      width: 64,
-                                      height: 64,
-                                      errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 64, color: cs.primary),
-                                    )
-                                  else
-                                    Icon(Icons.shield, size: 64, color: cs.primary),
+                                  GestureDetector(
+                                    onTap: () {
+                                      final query = _jogo!['match_awayteam_name'] ?? '';
+                                      if (query.isNotEmpty) {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) => SearchPage(initialQuery: query),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    child: (_jogo!['team_away_badge'] ?? '').toString().isNotEmpty
+                                        ? Image.network(
+                                            _jogo!['team_away_badge'],
+                                            width: 64,
+                                            height: 64,
+                                            errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 64, color: cs.primary),
+                                          )
+                                        : Icon(Icons.shield, size: 64, color: cs.primary),
+                                  ),
                                   const SizedBox(height: 10),
                                   Text(
                                     _jogo!['match_awayteam_name'] ?? '',
@@ -320,44 +421,82 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                   ),
-                                  const SizedBox(height: 6),
-                                  // Cartões fora
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      if (_cartoesAmareloFora > 0) ...[
-                                        Container(
-                                          width: 16,
-                                          height: 22,
-                                          decoration: BoxDecoration(
-                                            color: Colors.yellow.shade700,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text('$_cartoesAmareloFora', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
-                                        const SizedBox(width: 8),
-                                      ],
-                                      if (_cartoesVermelhoFora > 0) ...[
-                                        Container(
-                                          width: 16,
-                                          height: 22,
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text('$_cartoesVermelhoFora', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
-                                      ],
-                                    ],
-                                  ),
                                 ],
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
+                        // Cartões nas laterais
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Cartões Casa
+                              Row(
+                                children: [
+                                  if (_cartoesAmareloCasa > 0) ...[
+                                    Container(
+                                      width: 14,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: Colors.yellow.shade700,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text('$_cartoesAmareloCasa', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  if (_cartoesVermelhoCasa > 0) ...[
+                                    Container(
+                                      width: 14,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text('$_cartoesVermelhoCasa', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
+                                  ],
+                                ],
+                              ),
+                              // Cartões Fora
+                              Row(
+                                children: [
+                                  if (_cartoesAmareloFora > 0) ...[
+                                    Text('$_cartoesAmareloFora', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      width: 14,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: Colors.yellow.shade700,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  if (_cartoesVermelhoFora > 0) ...[
+                                    Text('$_cartoesVermelhoFora', style: TextStyle(color: cs.onSurface, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    const SizedBox(width: 4),
+                                    Container(
+                                      width: 14,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         Text('${_jogo!['match_date'] ?? ''} • ${_jogo!['match_time'] ?? ''}',
                             style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                       ],
@@ -405,12 +544,12 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         decoration: BoxDecoration(color: cs.surface, border: Border(top: BorderSide(color: cs.surfaceVariant))),
         child: SafeArea(
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: _showBettingModal,
             style: ElevatedButton.styleFrom(
               backgroundColor: cs.primary,
               foregroundColor: cs.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
             ),
             child: Text('Começar Aposta', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: cs.onPrimary)),
@@ -490,7 +629,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: _events.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, idx) {
         final e = _events[idx];
         final type = (e['type'] ?? '').toString();
@@ -498,60 +637,72 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         final isHome = e['isHome'] == true;
         final player = (e['player'] ?? '').toString();
         final assist = (e['assist'] ?? '').toString();
+        final info = (e['info'] ?? '').toString();
 
         Widget eventIcon;
         if (type == 'goal') {
-          eventIcon = Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 24);
+          eventIcon = Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 20);
         } else if (type == 'yellow') {
-          eventIcon = Container(width: 18, height: 24, decoration: BoxDecoration(color: Colors.yellow.shade700, borderRadius: BorderRadius.circular(2)));
+          eventIcon = Container(width: 14, height: 20, decoration: BoxDecoration(color: Colors.yellow.shade700, borderRadius: BorderRadius.circular(2)));
         } else if (type == 'red') {
-          eventIcon = Container(width: 18, height: 24, decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(2)));
+          eventIcon = Container(width: 14, height: 20, decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(2)));
         } else {
-          eventIcon = Icon(Symbols.swap_horiz_rounded, color: cs.primary, size: 24);
+          eventIcon = Icon(Symbols.swap_horiz_rounded, color: cs.primary, size: 20);
         }
 
         return Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: cs.surface,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Lado esquerdo (casa)
               if (isHome)
                 Expanded(
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
+                      Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14)),
+                      if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
+                      if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
+                      if (type == 'substitution' && e['playerIn'] != null)
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14)),
-                            if (assist.isNotEmpty) Text(assist, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                            Row(
+                              children: [
+                                Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
+                                const SizedBox(width: 4),
+                                Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11))),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
+                                const SizedBox(width: 4),
+                                Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11))),
+                              ],
+                            ),
                           ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
                     ],
                   ),
                 )
               else
                 const Expanded(child: SizedBox()),
 
-              // Centro (minuto + ícone)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: cs.surfaceVariant,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+              // Minuto e ícone (sem container)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Text("$time'", style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 12)),
+                    const SizedBox(width: 12),
                     eventIcon,
-                    const SizedBox(width: 8),
-                    Text("$time'", style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface, fontSize: 13)),
                   ],
                 ),
               ),
@@ -559,18 +710,38 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               // Lado direito (fora)
               if (!isHome)
                 Expanded(
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
+                      if (type == 'yellow' || type == 'red') ...[
+                        Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14), textAlign: TextAlign.right),
+                        if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
+                      ] else if (type == 'goal') ...[
+                        Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14), textAlign: TextAlign.right),
+                        if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
+                      ] else if (type == 'substitution' && e['playerIn'] != null) ...[
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14), textAlign: TextAlign.right),
-                            if (assist.isNotEmpty) Text(assist, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12), textAlign: TextAlign.right),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11), textAlign: TextAlign.right)),
+                                const SizedBox(width: 4),
+                                Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11), textAlign: TextAlign.right)),
+                                const SizedBox(width: 4),
+                                Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
+                              ],
+                            ),
                           ],
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 )
@@ -672,17 +843,26 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       itemBuilder: (context, idx) {
         final s = statList[idx];
         final type = s['type']?.toString() ?? 'Stat';
-        final home = double.tryParse(s['home']?.toString().replaceAll('%', '') ?? '0') ?? 0;
-        final away = double.tryParse(s['away']?.toString().replaceAll('%', '') ?? '0') ?? 0;
+        final homeStr = s['home']?.toString().replaceAll('%', '') ?? '0';
+        final awayStr = s['away']?.toString().replaceAll('%', '') ?? '0';
+        
+        final home = double.tryParse(homeStr) ?? 0;
+        final away = double.tryParse(awayStr) ?? 0;
+        
+        // Para posse de bola, mostrar em percentagem
+        final isPercentage = type.toLowerCase().contains('possession') || type.toLowerCase().contains('posse');
+        final displayHome = isPercentage ? home : home.toInt();
+        final displayAway = isPercentage ? away : away.toInt();
+        final suffix = isPercentage ? '%' : '';
 
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(12)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('${home.toInt()}', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              Text('$displayHome$suffix', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
               Text(type, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
-              Text('${away.toInt()}', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              Text('$displayAway$suffix', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
             ]),
             const SizedBox(height: 8),
             ClipRRect(
