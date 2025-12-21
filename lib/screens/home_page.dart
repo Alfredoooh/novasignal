@@ -1,4 +1,3 @@
-// home_page.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -89,168 +88,140 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
+      value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: brightness == Brightness.dark ? Brightness.light : Brightness.dark,
-        statusBarBrightness: brightness == Brightness.dark ? Brightness.dark : Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Consumer<AppState>(
         builder: (context, appState, child) {
           final canSwipeDrawer = appState.tabAtual == 'home';
-          
-          return Stack(
-            children: [
-              // --- Drawer (custom) ---
-              Container(
-                color: Theme.of(context).colorScheme.surface,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20, top: 20, right: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Football Live',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w700,
-                                      color: Theme.of(context).colorScheme.onSurface,
+
+          return Material(
+            color: Theme.of(context).colorScheme.surface,
+            child: Stack(
+              children: [
+                // --- Drawer (custom) ---
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20, top: 20, right: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Football Live',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w700,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Acompanhe seu futebol favorito',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Acompanhe seu futebol favorito',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 40),
-                        _buildDrawerItem(
-                          icon: Symbols.home_rounded,
-                          title: 'Home',
-                          onTap: () {
-                            _navigateAndCloseDrawer(() {
-                              appState.mudarTab('home');
-                            });
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Symbols.sports_soccer_rounded,
-                          title: 'Jogos',
-                          onTap: () {
-                            _navigateAndCloseDrawer(() {
-                              appState.mudarTab('jogos');
-                            });
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Symbols.notifications_rounded,
-                          title: 'Atividades',
-                          onTap: () {
-                            _navigateAndCloseDrawer(() {
-                              appState.mudarTab('atividades');
-                            });
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Symbols.inbox_rounded,
-                          title: 'Inbox',
-                          onTap: () {
-                            _navigateAndCloseDrawer(() {
-                              appState.mudarTab('inbox');
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        Divider(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
-                        const SizedBox(height: 20),
-                        _buildDrawerItem(
-                          icon: Symbols.settings_rounded,
-                          title: 'Configurações',
-                          onTap: () {
-                            _navigateAndCloseDrawer(() {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const ConfiguracoesPage(),
+                                  ],
                                 ),
-                              );
-                            });
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Symbols.info_rounded,
-                          title: 'Sobre',
-                          onTap: () {
-                            _navigateAndCloseDrawer(() {
-                              showAboutDialog(
-                                context: context,
-                                applicationName: 'Football Live',
-                                applicationVersion: '1.0.0',
-                              );
-                            });
-                          },
-                        ),
-                      ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 40),
+                          _buildDrawerItem(
+                            icon: Symbols.settings_rounded,
+                            title: 'Configurações',
+                            onTap: () {
+                              _closeDrawer();
+                              Future.delayed(const Duration(milliseconds: 300), () {
+                                if (mounted) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const ConfiguracoesPage(),
+                                    ),
+                                  );
+                                }
+                              });
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Symbols.info_rounded,
+                            title: 'Sobre',
+                            onTap: () {
+                              _closeDrawer();
+                              Future.delayed(const Duration(milliseconds: 300), () {
+                                if (mounted) {
+                                  showAboutDialog(
+                                    context: context,
+                                    applicationName: 'Football Live',
+                                    applicationVersion: '1.0.0',
+                                  );
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // --- Conteúdo principal com animação ---
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _isDrawerOpen ? _closeDrawer : null,
-                onHorizontalDragUpdate: canSwipeDrawer ? (details) {
-                  final width = MediaQuery.of(context).size.width;
-                  final delta = details.delta.dx / width;
-                  _animationController.value = (_animationController.value + delta).clamp(0.0, 1.0);
-                } : null,
-                onHorizontalDragEnd: canSwipeDrawer ? (details) {
-                  final velocity = details.primaryVelocity ?? 0;
-                  if (velocity > 700 || _animationController.value > 0.5) {
-                    _animationController.forward();
-                  } else {
-                    _animationController.reverse();
-                  }
-                } : null,
-                child: Transform.translate(
-                  offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
-                  child: Transform.scale(
-                    scale: _scaleAnimation.value,
-                    alignment: Alignment.centerLeft,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(_animationController.value * 16),
-                      child: IgnorePointer(
-                        ignoring: _isDrawerOpen,
-                        child: Scaffold(
-                          extendBody: true,
-                          extendBodyBehindAppBar: true,
-                          appBar: _buildAppBar(context, appState),
-                          body: _buildBody(appState),
-                          bottomNavigationBar: _buildBottomNav(appState),
+                // --- Conteúdo principal com animação ---
+                GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _isDrawerOpen ? _closeDrawer : null,
+                  onHorizontalDragUpdate: canSwipeDrawer ? (details) {
+                    final width = MediaQuery.of(context).size.width;
+                    final delta = details.delta.dx / width;
+                    _animationController.value = (_animationController.value + delta).clamp(0.0, 1.0);
+                  } : null,
+                  onHorizontalDragEnd: canSwipeDrawer ? (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity > 700 || _animationController.value > 0.5) {
+                      _animationController.forward();
+                    } else {
+                      _animationController.reverse();
+                    }
+                  } : null,
+                  child: Transform.translate(
+                    offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
+                    child: Transform.scale(
+                      scale: _scaleAnimation.value,
+                      alignment: Alignment.centerLeft,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(_animationController.value * 16),
+                        child: IgnorePointer(
+                          ignoring: _isDrawerOpen,
+                          child: Container(
+                            color: Theme.of(context).colorScheme.surface,
+                            child: Column(
+                              children: [
+                                if (appState.paginaAtual != 'search')
+                                  _buildAppBar(context, appState),
+                                Expanded(child: _buildBody(appState)),
+                                _buildBottomNav(appState),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -292,11 +263,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  PreferredSizeWidget? _buildAppBar(BuildContext context, AppState appState) {
-    if (appState.paginaAtual == 'search') {
-      return null;
-    }
-
+  Widget _buildAppBar(BuildContext context, AppState appState) {
     String title = '';
     Widget? leading;
     List<Widget>? actions;
@@ -354,30 +321,41 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         title = 'Football Live';
     }
 
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primaryContainer,
-              Theme.of(context).colorScheme.surface,
-            ],
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer,
+            Theme.of(context).colorScheme.surface,
+          ],
         ),
+      ),
+      child: SafeArea(
+        bottom: false,
         child: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: AppBar(
-              leading: leading,
-              title: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-              actions: actions,
-              centerTitle: false,
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
+            child: Container(
+              height: kToolbarHeight,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                children: [
+                  if (leading != null) leading,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (actions != null) ...actions,
+                ],
+              ),
             ),
           ),
         ),
@@ -386,25 +364,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildBody(AppState appState) {
-    return SafeArea(
-      top: true,
-      bottom: false,
-      child: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        onPageChanged: (index) {
-          final tabs = ['home', 'jogos', 'atividades', 'inbox'];
-          if (index < tabs.length) {
-            appState.mudarTab(tabs[index]);
-          }
-        },
-        children: const [
-          HomeTab(),
-          JogosPage(),
-          AtividadesPage(),
-          InboxPage(),
-        ],
-      ),
+    return PageView(
+      controller: _pageController,
+      physics: const NeverScrollableScrollPhysics(),
+      onPageChanged: (index) {
+        final tabs = ['home', 'jogos', 'atividades', 'inbox'];
+        if (index < tabs.length) {
+          appState.mudarTab(tabs[index]);
+        }
+      },
+      children: const [
+        HomeTab(),
+        JogosPage(),
+        AtividadesPage(),
+        InboxPage(),
+      ],
     );
   }
 
