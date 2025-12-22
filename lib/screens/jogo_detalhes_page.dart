@@ -7,6 +7,10 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'search_page.dart';
+import 'package:provider/provider.dart';
+import '../core/app_state.dart';
+import '../utils/formatters.dart';
+import 'search_page.dart';
 
 class JogoDetalhesPage extends StatefulWidget {
   final String jogoId;
@@ -641,17 +645,17 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
         Widget eventIcon;
         if (type == 'goal') {
-          eventIcon = Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 20);
+          eventIcon = Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 22);
         } else if (type == 'yellow') {
           eventIcon = Container(width: 14, height: 20, decoration: BoxDecoration(color: Colors.yellow.shade700, borderRadius: BorderRadius.circular(2)));
         } else if (type == 'red') {
           eventIcon = Container(width: 14, height: 20, decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(2)));
         } else {
-          eventIcon = Icon(Symbols.swap_horiz_rounded, color: cs.primary, size: 20);
+          eventIcon = Icon(Symbols.swap_horiz_rounded, color: cs.primary, size: 22);
         }
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
             color: cs.surface,
             borderRadius: BorderRadius.circular(12),
@@ -662,86 +666,92 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               // Lado esquerdo (casa)
               if (isHome)
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14)),
-                      if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
-                      if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
-                      if (type == 'substitution' && e['playerIn'] != null)
-                        Column(
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
-                                const SizedBox(width: 4),
-                                Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11))),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
-                                const SizedBox(width: 4),
-                                Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11))),
-                              ],
-                            ),
+                            Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14)),
+                            if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
+                            if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
+                            if (type == 'substitution' && e['playerIn'] != null)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
+                                      const SizedBox(width: 4),
+                                      Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11))),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
+                                      const SizedBox(width: 4),
+                                      Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11))),
+                                    ],
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      eventIcon,
                     ],
                   ),
                 )
               else
                 const Expanded(child: SizedBox()),
 
-              // Minuto e ícone (sem container)
+              // Minuto (sozinho, afastado)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text("$time'", style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 12)),
-                    const SizedBox(width: 12),
-                    eventIcon,
-                  ],
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text("$time'", style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
               ),
 
               // Lado direito (fora)
               if (!isHome)
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      if (type == 'yellow' || type == 'red') ...[
-                        Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14), textAlign: TextAlign.right),
-                        if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
-                      ] else if (type == 'goal') ...[
-                        Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14), textAlign: TextAlign.right),
-                        if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
-                      ] else if (type == 'substitution' && e['playerIn'] != null) ...[
-                        Column(
+                      eventIcon,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11), textAlign: TextAlign.right)),
-                                const SizedBox(width: 4),
-                                Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11), textAlign: TextAlign.right)),
-                                const SizedBox(width: 4),
-                                Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
-                              ],
-                            ),
+                            Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14), textAlign: TextAlign.right),
+                            if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
+                            if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
+                            if (type == 'substitution' && e['playerIn'] != null)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11), textAlign: TextAlign.right)),
+                                      const SizedBox(width: 4),
+                                      Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11), textAlign: TextAlign.right)),
+                                      const SizedBox(width: 4),
+                                      Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
+                                    ],
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 )
