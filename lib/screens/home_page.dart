@@ -88,23 +88,25 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
       child: Consumer<AppState>(
         builder: (context, appState, child) {
           final canSwipeDrawer = appState.tabAtual == 'home';
 
           return Material(
-            color: Theme.of(context).colorScheme.surface,
+            color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
             child: Stack(
               children: [
                 // --- Drawer (custom) ---
                 Container(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
                   child: SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 20, top: 20, right: 20),
@@ -201,7 +203,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         child: IgnorePointer(
                           ignoring: _isDrawerOpen,
                           child: Container(
-                            color: Theme.of(context).colorScheme.surface,
+                            color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
                             child: Column(
                               children: [
                                 if (appState.paginaAtual != 'search')
@@ -287,22 +289,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       case 'jogos':
         leading = menuButton;
         title = 'Jogos';
-        actions = [
-          IconButton(
-            icon: const Icon(Symbols.calendar_month_rounded),
-            onPressed: () async {
-              final data = await showDatePicker(
-                context: context,
-                initialDate: appState.dataSelecionada,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2100),
-              );
-              if (data != null) {
-                appState.setDataSelecionada(data);
-              }
-            },
-          ),
-        ];
         break;
       case 'atividades':
         leading = menuButton;
@@ -318,41 +304,29 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Theme.of(context).colorScheme.primaryContainer,
-            Theme.of(context).colorScheme.surface,
-          ],
-        ),
-      ),
+      color: Theme.of(context).brightness == Brightness.light 
+          ? Colors.white 
+          : Theme.of(context).colorScheme.surface,
       child: SafeArea(
         bottom: false,
-        child: ClipRRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              height: kToolbarHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                children: [
-                  if (leading != null) leading,
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+        child: Container(
+          height: kToolbarHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              if (leading != null) leading,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
                   ),
-                  if (actions != null) ...actions,
-                ],
+                ),
               ),
-            ),
+              if (actions != null) ...actions,
+            ],
           ),
         ),
       ),
@@ -405,38 +379,41 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
           child: SafeArea(
             top: false,
-            child: NavigationBar(
-              selectedIndex: currentIndex,
-              onDestinationSelected: (index) {
-                final tabs = ['home', 'jogos', 'atividades', 'inbox'];
-                appState.mudarTab(tabs[index]);
-              },
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              surfaceTintColor: Colors.transparent,
-              indicatorColor: Theme.of(context).colorScheme.primaryContainer,
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Symbols.home_rounded),
-                  selectedIcon: Icon(Symbols.home_rounded, fill: 1),
-                  label: 'Home',
-                ),
-                NavigationDestination(
-                  icon: Icon(Symbols.sports_soccer_rounded),
-                  selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
-                  label: 'Jogos',
-                ),
-                NavigationDestination(
-                  icon: Icon(Symbols.notifications_rounded),
-                  selectedIcon: Icon(Symbols.notifications_rounded, fill: 1),
-                  label: 'Atividades',
-                ),
-                NavigationDestination(
-                  icon: Icon(Symbols.inbox_rounded),
-                  selectedIcon: Icon(Symbols.inbox_rounded, fill: 1),
-                  label: 'Inbox',
-                ),
-              ],
+            child: SizedBox(
+              height: 48,
+              child: NavigationBar(
+                selectedIndex: currentIndex,
+                onDestinationSelected: (index) {
+                  final tabs = ['home', 'jogos', 'atividades', 'inbox'];
+                  appState.mudarTab(tabs[index]);
+                },
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                surfaceTintColor: Colors.transparent,
+                indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Symbols.home_rounded),
+                    selectedIcon: Icon(Symbols.home_rounded, fill: 1),
+                    label: 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Symbols.sports_soccer_rounded),
+                    selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
+                    label: 'Jogos',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Symbols.notifications_rounded),
+                    selectedIcon: Icon(Symbols.notifications_rounded, fill: 1),
+                    label: 'Atividades',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Symbols.inbox_rounded),
+                    selectedIcon: Icon(Symbols.inbox_rounded, fill: 1),
+                    label: 'Inbox',
+                  ),
+                ],
+              ),
             ),
           ),
         ),
