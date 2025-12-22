@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/app_state.dart';
 import 'screens/home_page.dart';
 
 void main() {
+  // Configurar StatusBar para todas as telas
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.black,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ),
+  );
+  
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
@@ -19,15 +30,22 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
-        return MaterialApp(
-          title: 'Football Live',
-          debugShowCheckedModeBanner: false,
-          theme: _buildLightTheme(appState.corDinamica),
-          darkTheme: appState.temaAmoled 
-              ? _buildAmoledTheme(appState.corDinamica) 
-              : _buildDarkTheme(appState.corDinamica, appState.temaEscuroProfundo),
-          themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
-          home: const HomePage(),
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.black,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
+          child: MaterialApp(
+            title: 'Football Live',
+            debugShowCheckedModeBanner: false,
+            theme: _buildLightTheme(appState.corDinamica),
+            darkTheme: appState.temaAmoled 
+                ? _buildAmoledTheme(appState.corDinamica) 
+                : _buildDarkTheme(appState.corDinamica, appState.temaEscuroProfundo),
+            themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
+            home: const HomePage(),
+          ),
         );
       },
     );
@@ -54,6 +72,11 @@ class MyApp extends StatelessWidget {
           centerTitle: false,
           elevation: 0,
           backgroundColor: pureWhite,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.black,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
         ),
         cardTheme: CardThemeData(
           color: pureWhite,
@@ -100,6 +123,11 @@ class MyApp extends StatelessWidget {
         backgroundColor: pureWhite,
         foregroundColor: Color(0xFF1A1A1A),
         iconTheme: IconThemeData(color: Color(0xFF1A1A1A)),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.black,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
       ),
       cardTheme: CardThemeData(
         color: pureWhite,
@@ -166,6 +194,11 @@ class MyApp extends StatelessWidget {
           centerTitle: false,
           elevation: 0,
           backgroundColor: surface.withOpacity(0.7),
+          systemOverlayStyle: const SystemUiOverlayStyle(
+            statusBarColor: Colors.black,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
         ),
       );
     }
@@ -204,6 +237,11 @@ class MyApp extends StatelessWidget {
         backgroundColor: surface.withOpacity(0.7),
         foregroundColor: const Color(0xFFE4E4E4),
         iconTheme: const IconThemeData(color: Color(0xFFE4E4E4)),
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.black,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surface.withOpacity(0.7),
@@ -264,6 +302,11 @@ class MyApp extends StatelessWidget {
           centerTitle: false,
           elevation: 0,
           backgroundColor: pureBlack,
+          systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarColor: Colors.black,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
         ),
       );
     }
@@ -302,6 +345,11 @@ class MyApp extends StatelessWidget {
         backgroundColor: pureBlack,
         foregroundColor: Color(0xFFFFFFFF),
         iconTheme: IconThemeData(color: Color(0xFFFFFFFF)),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.black,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: almostBlack,
