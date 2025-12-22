@@ -24,7 +24,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   List<dynamic>? _cachedJogos;
   String? _lastFiltro;
   Timer? _autoUpdateTimer;
-  int _selectedTabIndex = 60; // Hoje está no índice 60
+  int _selectedTabIndex = 60;
   bool _isLoadingNewTab = false;
 
   @override
@@ -40,16 +40,19 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
     _blinkController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
-    // 121 tabs: 60 passado + Hoje + Ao Vivo + Terminados + 59 futuro
     _tabController = TabController(length: 121, vsync: this, initialIndex: 60);
     _pageController = PageController(initialPage: 60);
 
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
-        _pageController.jumpToPage(_tabController.index);
+        _pageController.animateToPage(
+          _tabController.index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
     });
 
@@ -80,7 +83,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   void _startAutoUpdate() {
-    _autoUpdateTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    _autoUpdateTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (mounted) {
         _silentUpdate();
       }
@@ -108,7 +111,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   Map<String, dynamic> _getDateAndFilterForIndex(int index) {
     final hoje = DateTime.now();
 
-    // 60 dias passados
     if (index < 60) {
       final diferencaDias = index - 60;
       return {
@@ -117,22 +119,18 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       };
     }
 
-    // Index 60 = Hoje
     if (index == 60) {
       return {'date': hoje, 'filter': 'hoje'};
     }
 
-    // Index 61 = Ao Vivo (hoje)
     if (index == 61) {
       return {'date': hoje, 'filter': 'direto'};
     }
 
-    // Index 62 = Terminados (hoje)
     if (index == 62) {
       return {'date': hoje, 'filter': 'terminados'};
     }
 
-    // 59 dias futuros (index 63+)
     final diferencaDias = index - 62;
     return {
       'date': hoje.add(Duration(days: diferencaDias)),
@@ -141,7 +139,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   String _getTabLabel(int index) {
-    // 60 dias passados
     if (index < 60) {
       final data = DateTime.now().add(Duration(days: index - 60));
       final diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -153,17 +150,14 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       return '$diaSemana/${data.day}';
     }
 
-    // Index 60 = Hoje
     if (index == 60) return 'Hoje';
 
-    // Filtros do dia atual
     if (index == 61) {
       final jogosAoVivo = _contarJogosAoVivo();
       return jogosAoVivo > 0 ? 'Ao Vivo ($jogosAoVivo)' : 'Ao Vivo';
     }
     if (index == 62) return 'Terminados';
 
-    // Dias futuros
     final data = DateTime.now().add(Duration(days: index - 62));
     final diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     final diaSemana = diasSemana[data.weekday % 7];
@@ -185,7 +179,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     final appState = context.read<AppState>();
     final resultado = _getDateAndFilterForIndex(_selectedTabIndex);
 
-    // Aplica o filtro no AppState
     appState.filtrarJogos(resultado['filter']);
 
     setState(() {
@@ -217,7 +210,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -483,7 +476,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         return Container(
           margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -513,7 +506,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                     border: Border(
                       bottom: BorderSide(
@@ -527,23 +520,40 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
                         Hero(
                           tag: 'liga_logo_$leagueId',
-                          child: _CachedNetworkImage(
-                            imageUrl: leagueLogo,
-                            width: 24,
-                            height: 24,
-                            placeholder: Icon(
-                              Symbols.emoji_events_rounded,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.onSurface,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.red,
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: _CachedNetworkImage(
+                              imageUrl: leagueLogo,
+                              width: 20,
+                              height: 20,
+                              placeholder: Icon(
+                                Symbols.emoji_events_rounded,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                       ] else ...[
-                        Icon(
-                          Symbols.emoji_events_rounded,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.onSurface,
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.red,
+                          ),
+                          child: Icon(
+                            Symbols.emoji_events_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(width: 12),
                       ],
@@ -616,7 +626,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
           border: isLast ? null : Border(
             bottom: BorderSide(
               color: Theme.of(context).dividerColor.withOpacity(0.15),
@@ -705,15 +715,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (isPlaying) ...[
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
                   AnimatedBuilder(
                     animation: _blinkController,
                     builder: (context, child) {
@@ -722,43 +723,49 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Colors.green,
+                          color: Color(0xFF00C853),
                         ),
                       );
                     },
                   ),
-                ] else if (isHalfTime) ...[
+                  const SizedBox(width: 8),
                   Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.orange,
-                      shape: BoxShape.circle,
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'LIVE',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Intervalo',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange,
-                    ),
+                ] else if (isHalfTime) ...[
+                  AnimatedBuilder(
+                    animation: _blinkController,
+                    builder: (context, child) {
+                      return Text(
+                        _blinkController.value > 0.5 ? "HT'" : "HT",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF00C853),
+                        ),
+                      );
+                    },
                   ),
                 ] else if (isFinished) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Finalizado',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                  Text(
+                    'Finalizado',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
                     ),
                   ),
                 ] else ...[
