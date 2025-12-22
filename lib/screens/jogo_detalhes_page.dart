@@ -804,34 +804,55 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
     Widget eventIcon;
     if (type == 'goal') {
-      eventIcon = Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.15),
-          shape: BoxShape.circle,
+      // Usar PNG de assets para bola
+      eventIcon = Image.asset(
+        'assets/icons/soccer_ball.png',
+        width: 24,
+        height: 24,
+        errorBuilder: (_, __, ___) => Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 16),
         ),
-        child: Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 18),
       );
     } else if (type == 'yellow') {
       eventIcon = Container(
-        width: 16,
-        height: 22,
+        width: 14,
+        height: 20,
         decoration: BoxDecoration(
           color: Colors.yellow.shade700,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.yellow.shade900.withOpacity(0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
       );
     } else if (type == 'red') {
       eventIcon = Container(
-        width: 16,
-        height: 22,
+        width: 14,
+        height: 20,
         decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(3),
+          color: Colors.red.shade700,
+          borderRadius: BorderRadius.circular(2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.shade900.withOpacity(0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
       );
     } else {
+      // Substituição - ícone de setas circulares
       eventIcon = Container(
         width: 28,
         height: 28,
@@ -839,7 +860,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           color: cs.primary.withOpacity(0.15),
           shape: BoxShape.circle,
         ),
-        child: Icon(Symbols.swap_horiz_rounded, color: cs.primary, size: 18),
+        child: Icon(Symbols.sync_alt_rounded, color: cs.primary, size: 18),
       );
     }
 
@@ -876,15 +897,71 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                   if (assist.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Assistência: $assist',
-                        style: TextStyle(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 12,
-                        ),
+                      child: Row(
+                        children: [
+                          Image.asset(
+                            'assets/icons/assist.png',
+                            width: 14,
+                            height: 14,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Symbols.sports_rounded,
+                              size: 14,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              assist,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  if (method.isNotEmpty)
+                  if (method.isNotEmpty && method.toLowerCase().contains('var'))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        children: [
+                          Image.asset(
+                            'assets/icons/var.png',
+                            width: 16,
+                            height: 16,
+                            errorBuilder: (_, __, ___) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade700,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'VAR',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              method,
+                              style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (method.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
@@ -977,16 +1054,75 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                   if (assist.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Assistência: $assist',
-                        style: TextStyle(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.right,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              assist,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Image.asset(
+                            'assets/icons/assist.png',
+                            width: 14,
+                            height: 14,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Symbols.sports_rounded,
+                              size: 14,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  if (method.isNotEmpty)
+                  if (method.isNotEmpty && method.toLowerCase().contains('var'))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              method,
+                              style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Image.asset(
+                            'assets/icons/var.png',
+                            width: 16,
+                            height: 16,
+                            errorBuilder: (_, __, ___) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade700,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'VAR',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (method.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
