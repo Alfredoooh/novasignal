@@ -169,10 +169,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   int _contarJogosAoVivo() {
     if (_cachedJogos == null) return 0;
-    return _cachedJogos!.where((j) {
-      final status = j['match_status'] ?? '';
-      return status.contains("'") || status == 'HT' || status == 'LIVE';
-    }).length;
+    return _cachedJogos!.where((j) => _isJogoAoVivo(j)).length;
   }
 
   void _loadJogosDoDia() async {
@@ -213,25 +210,30 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             color: Theme.of(context).colorScheme.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
               width: 1,
             ),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
+                      Colors.white.withOpacity(0.3),
                       Colors.white.withOpacity(0.1),
-                      Colors.white.withOpacity(0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.4),
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,7 +244,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           width: 24,
                           height: 24,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withOpacity(0.4),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -251,7 +253,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           width: 120,
                           height: 16,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withOpacity(0.4),
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
@@ -267,7 +269,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withOpacity(0.4),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -276,7 +278,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 child: Container(
                                   height: 14,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withOpacity(0.4),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
@@ -290,7 +292,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                             width: 50,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withOpacity(0.4),
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
@@ -303,7 +305,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 child: Container(
                                   height: 14,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Colors.white.withOpacity(0.4),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
@@ -313,7 +315,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withOpacity(0.4),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -426,17 +428,35 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
   }
 
+  bool _isJogoAoVivo(dynamic jogo) {
+    final status = j['match_status'] ?? '';
+    
+    // Verifica se é um número (minutos do jogo)
+    if (int.tryParse(status.toString()) != null) {
+      return true;
+    }
+    
+    // Verifica formatos comuns de jogo ao vivo
+    return status.contains("'") || 
+           status == 'HT' || 
+           status == 'LIVE' ||
+           status == '1H' ||
+           status == '2H' ||
+           status.toLowerCase().contains('half');
+  }
+
   List<dynamic> _filtrarJogos(List<dynamic> jogos, String filtro) {
     switch (filtro) {
       case 'direto':
-        return jogos.where((j) {
-          final status = j['match_status'] ?? '';
-          return status.contains("'") || status == 'HT' || status == 'LIVE';
-        }).toList();
+        return jogos.where((j) => _isJogoAoVivo(j)).toList();
       case 'terminados':
         return jogos.where((j) {
           final status = j['match_status'] ?? '';
-          return status.contains('Finished') || status == 'FT' || status == 'AET';
+          return status.contains('Finished') || 
+                 status == 'FT' || 
+                 status == 'AET' ||
+                 status == 'AP' ||
+                 status == 'Pen.';
         }).toList();
       default:
         return jogos;
@@ -525,7 +545,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.red,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             ),
                             padding: const EdgeInsets.all(4),
                             child: _CachedNetworkImage(
@@ -535,7 +555,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                               placeholder: Icon(
                                 Symbols.emoji_events_rounded,
                                 size: 16,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -547,12 +567,12 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           height: 28,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.red,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           ),
                           child: Icon(
                             Symbols.emoji_events_rounded,
                             size: 16,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -570,15 +590,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
+                          color: Colors.red,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '${jogosLiga.length}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -607,10 +627,30 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
-    final isLive = status.contains("'") || status == 'LIVE';
-    final isHalfTime = status == 'HT';
+    
+    // Verifica se é um número (minutos do jogo)
+    final isNumericStatus = int.tryParse(status.toString()) != null;
+    
+    final isLive = isNumericStatus || 
+                   status.contains("'") || 
+                   status == 'LIVE' ||
+                   status == '1H' ||
+                   status == '2H';
+    
+    final isHalfTime = status == 'HT' || status.toLowerCase() == 'half time';
     final isPlaying = isLive && !isHalfTime;
-    final isFinished = status.contains('Finished') || status == 'FT' || status == 'AET';
+    
+    final isFinished = status.contains('Finished') || 
+                       status == 'FT' || 
+                       status == 'AET' ||
+                       status == 'AP' ||
+                       status == 'Pen.';
+    
+    // Formatar o status para exibição
+    String displayStatus = status;
+    if (isNumericStatus) {
+      displayStatus = "$status'";
+    }
 
     return InkWell(
       onTap: () {
@@ -719,7 +759,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     animation: _blinkController,
                     builder: (context, child) {
                       return Text(
-                        "${status.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
+                        isNumericStatus 
+                            ? "${status}${_blinkController.value > 0.5 ? "'" : ""}"
+                            : "${displayStatus.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -746,18 +788,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     ),
                   ),
                 ] else if (isHalfTime) ...[
-                  AnimatedBuilder(
-                    animation: _blinkController,
-                    builder: (context, child) {
-                      return Text(
-                        _blinkController.value > 0.5 ? "HT'" : "HT",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF00C853),
-                        ),
-                      );
-                    },
+                  Text(
+                    'HT',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ] else if (isFinished) ...[
                   Text(
