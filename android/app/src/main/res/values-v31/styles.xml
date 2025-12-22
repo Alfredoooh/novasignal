@@ -6,7 +6,7 @@
         <item name="android:windowBackground">@drawable/launch_background</item>
         
         <!-- SPLASH NATIVO - Ícone diferente do launcher -->
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_background</item>
         
         <!-- Cor de fundo do splash nativo -->
         <item name="android:windowSplashScreenBackground">#FFFFFF</item>
