@@ -16,6 +16,7 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   final PageController _pageController = PageController(viewportFraction: 0.92);
+  final DraggableScrollableController _bottomSheetController = DraggableScrollableController();
   int _currentPage = 0;
   List<dynamic> _jogos = [];
   List<dynamic> _jogosAoVivo = [];
@@ -46,6 +47,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   @override
   void dispose() {
     _pageController.dispose();
+    _bottomSheetController.dispose();
     _liveUpdateTimer?.cancel();
     super.dispose();
   }
@@ -138,71 +140,226 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadTopMatches,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text('Grandes Clubes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(height: 16),
-          if (_jogos.isNotEmpty) ...[
-            SizedBox(
-              height: 160,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _jogos.take(10).length,
-                itemBuilder: (context, index) => _buildAppleSportsCard(_jogos[index], index),
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _loadTopMatches,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text('Grandes Clubes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
               ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  _jogos.take(10).length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: _currentPage == index ? 24 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(4),
+              const SizedBox(height: 16),
+              if (_jogos.isNotEmpty) ...[
+                SizedBox(
+                  height: 160,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _jogos.take(10).length,
+                    itemBuilder: (context, index) => _buildAppleSportsCard(_jogos[index], index),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(
+                      _jogos.take(10).length,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: _currentPage == index ? 24 : 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _currentPage == index
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-          if (_jogosAoVivo.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
+              ],
+              if (_jogosAoVivo.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Em Direto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  const Text('Em Direto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(height: 12),
+                ..._jogosAoVivo.map((jogo) => _buildLiveMatchCard(jogo)),
+              ],
+              const SizedBox(height: 100),
+            ],
+          ),
+        ),
+        // Bottom Sheet Deslizável
+        DraggableScrollableSheet(
+          controller: _bottomSheetController,
+          initialChildSize: 0.08,
+          minChildSize: 0.08,
+          maxChildSize: 0.9,
+          snap: true,
+          snapSizes: const [0.08, 0.5, 0.9],
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
                 ],
               ),
+              child: Column(
+                children: [
+                  // Handle do modal
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  // Título
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Symbols.newspaper_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Notícias e Mais',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+                  // Conteúdo do modal
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        _buildNewsCard(
+                          'Transferências de Janeiro',
+                          'Confira os principais rumores e confirmações',
+                          Symbols.swap_horiz_rounded,
+                          Colors.blue,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildNewsCard(
+                          'Resultados da Semana',
+                          'Veja o resumo de todos os jogos',
+                          Symbols.emoji_events_rounded,
+                          Colors.amber,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildNewsCard(
+                          'Classificações',
+                          'Tabelas atualizadas de todas as ligas',
+                          Symbols.leaderboard_rounded,
+                          Colors.green,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildNewsCard(
+                          'Estatísticas',
+                          'Artilheiros, assistências e muito mais',
+                          Symbols.analytics_rounded,
+                          Colors.purple,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildNewsCard(
+                          'Próximos Jogos',
+                          'Agenda completa da semana',
+                          Symbols.calendar_month_rounded,
+                          Colors.orange,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNewsCard(String title, String subtitle, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 12),
-            ..._jogosAoVivo.map((jogo) => _buildLiveMatchCard(jogo)),
-          ],
-          const SizedBox(height: 100),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Symbols.chevron_right_rounded,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ],
       ),
     );
