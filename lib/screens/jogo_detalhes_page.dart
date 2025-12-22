@@ -7,10 +7,6 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'search_page.dart';
-import 'package:provider/provider.dart';
-import '../core/app_state.dart';
-import '../utils/formatters.dart';
-import 'search_page.dart';
 
 class JogoDetalhesPage extends StatefulWidget {
   final String jogoId;
@@ -27,9 +23,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   late TabController _tabController;
 
   List<Map<String, dynamic>> _events = [];
-  Map<String, double>? _probabilidades;
   List<Map<String, dynamic>> _lineupHome = [];
   List<Map<String, dynamic>> _lineupAway = [];
+  List<Map<String, dynamic>> _statistics = [];
+  List<Map<String, dynamic>> _comentarios = [];
   int _cartoesAmareloCasa = 0;
   int _cartoesVermelhoCasa = 0;
   int _cartoesAmareloFora = 0;
@@ -38,7 +35,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _carregarDados();
   }
 
@@ -76,11 +73,12 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           'assist': gol['home_assist'] ?? gol['away_assist'] ?? '',
           'isHome': (gol['home_scorer'] != null && gol['home_scorer'].toString().isNotEmpty),
           'score': gol['score'] ?? '',
+          'method': gol['info']?.toString() ?? '',
         });
       }
     }
 
-    // Extrair cartões e contar corretamente
+    // Extrair cartões
     _cartoesAmareloCasa = 0;
     _cartoesVermelhoCasa = 0;
     _cartoesAmareloFora = 0;
@@ -130,6 +128,25 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     tmpEvents.sort((a, b) => (a['time'] ?? 0).compareTo(b['time'] ?? 0));
     _events = tmpEvents;
 
+    // Estatísticas
+    final stats = _jogo!['statistics'];
+    if (stats != null && stats is List) {
+      final tmpStats = <Map<String, dynamic>>[];
+      for (var s in stats) {
+        if (s is Map) tmpStats.add(Map<String, dynamic>.from(s));
+      }
+      
+      tmpStats.sort((a, b) {
+        final aType = (a['type']?.toString() ?? '').toLowerCase();
+        final bType = (b['type']?.toString() ?? '').toLowerCase();
+        if (aType.contains('possession') || aType.contains('posse')) return -1;
+        if (bType.contains('possession') || bType.contains('posse')) return 1;
+        return 0;
+      });
+      
+      _statistics = tmpStats;
+    }
+
     // Lineup
     if (_jogo!['lineup'] != null && _jogo!['lineup'] is Map) {
       final lineup = _jogo!['lineup'] as Map;
@@ -141,7 +158,31 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       }
     }
 
+    // Comentários
+    if (_jogo!['comments'] != null && _jogo!['comments'] is List) {
+      _comentarios = List<Map<String, dynamic>>.from(_jogo!['comments']);
+    }
+
     if (mounted) setState(() {});
+  }
+
+  String _translateStatType(String type) {
+    final translations = {
+      'Ball Possession': 'Posse de Bola',
+      'Shots Total': 'Finalizações',
+      'Shots On Goal': 'Finalizações no Gol',
+      'Shots Off Goal': 'Finalizações para Fora',
+      'Shots Blocked': 'Finalizações Bloqueadas',
+      'Corner Kicks': 'Escanteios',
+      'Offsides': 'Impedimentos',
+      'Fouls': 'Faltas',
+      'Yellow Cards': 'Cartões Amarelos',
+      'Red Cards': 'Cartões Vermelhos',
+      'Goalkeeper Saves': 'Defesas do Goleiro',
+      'Total Passes': 'Passes Totais',
+      'Passes Accurate': 'Passes Certos',
+    };
+    return translations[type] ?? type;
   }
 
   void _showBettingModal() {
@@ -175,7 +216,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         ),
         child: Column(
           children: [
-            // Handle bar
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 40,
@@ -185,7 +225,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Conteúdo do modal
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -209,38 +248,21 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                       ),
                     ),
                     const Spacer(),
-                    // Botões de ação
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text('Cancelar'),
-                          ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade600,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(27),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Text('Confirmar'),
-                          ),
-                        ),
-                      ],
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Fechar',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ],
                 ),
@@ -303,10 +325,40 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                 onPressed: () => Navigator.pop(context),
               ),
               flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  _jogo!['league_name'] ?? 'Liga',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface),
-                ),
+                title: innerScrolled
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_jogo!['team_home_badge'] != null)
+                            Image.network(
+                              _jogo!['team_home_badge'],
+                              width: 24,
+                              height: 24,
+                              errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 24, color: cs.onSurface),
+                            ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'VS',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              color: cs.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_jogo!['team_away_badge'] != null)
+                            Image.network(
+                              _jogo!['team_away_badge'],
+                              width: 24,
+                              height: 24,
+                              errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 24, color: cs.onSurface),
+                            ),
+                        ],
+                      )
+                    : Text(
+                        _jogo!['league_name'] ?? 'Liga',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface),
+                      ),
                 titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
                 centerTitle: false,
                 background: Container(
@@ -330,7 +382,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            // Casa
                             Expanded(
                               child: Column(
                                 children: [
@@ -364,8 +415,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                 ],
                               ),
                             ),
-
-                            // Placar
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Column(
@@ -393,8 +442,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                 ],
                               ),
                             ),
-
-                            // Fora
                             Expanded(
                               child: Column(
                                 children: [
@@ -431,13 +478,11 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                           ],
                         ),
                         const SizedBox(height: 12),
-                        // Cartões nas laterais
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Cartões Casa
                               Row(
                                 children: [
                                   if (_cartoesAmareloCasa > 0) ...[
@@ -467,7 +512,6 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                                   ],
                                 ],
                               ),
-                              // Cartões Fora
                               Row(
                                 children: [
                                   if (_cartoesAmareloFora > 0) ...[
@@ -521,10 +565,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
                     isScrollable: true,
                     tabs: const [
                       Tab(text: 'Eventos'),
-                      Tab(text: 'Odds'),
                       Tab(text: 'Formações'),
-                      Tab(text: 'Estatísticas'),
-                      Tab(text: 'Notícias'),
+                      Tab(text: 'Comentários'),
                     ],
                   ),
                 ),
@@ -536,27 +578,33 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           controller: _tabController,
           children: [
             _buildEventosTab(),
-            _buildOddsTab(),
             _buildFormacoesTab(),
-            _buildEstatisticasTab(),
-            _buildNoticiasTab(),
+            _buildComentariosTab(),
           ],
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: cs.surface, border: Border(top: BorderSide(color: cs.surfaceVariant))),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          border: Border(top: BorderSide(color: cs.surfaceVariant)),
+        ),
         child: SafeArea(
           child: ElevatedButton(
             onPressed: _showBettingModal,
             style: ElevatedButton.styleFrom(
-              backgroundColor: cs.primary,
-              foregroundColor: cs.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: const Color(0xFF00C853),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
               elevation: 0,
             ),
-            child: Text('Começar Aposta', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: cs.onPrimary)),
+            child: const Text(
+              'Começar Aposta',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
           ),
         ),
       ),
@@ -568,7 +616,10 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       backgroundColor: cs.background,
       appBar: AppBar(
         backgroundColor: cs.surface,
-        leading: IconButton(icon: Icon(Symbols.arrow_back_rounded, color: cs.onSurface), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: Icon(Symbols.arrow_back_rounded, color: cs.onSurface),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text('Detalhes', style: TextStyle(color: cs.onSurface)),
         elevation: 0,
       ),
@@ -585,20 +636,20 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: 130,
+          height: 100,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: cs.surface.withOpacity(0.7),
+            color: cs.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
+            border: Border.all(color: Colors.white.withOpacity(0.3)),
           ),
           child: Row(
             children: [
               Container(
-                width: 64,
-                height: 64,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest.withOpacity(0.5),
                   shape: BoxShape.circle,
@@ -606,11 +657,29 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Container(height: 12, width: double.infinity, decoration: BoxDecoration(color: cs.onSurface.withOpacity(0.06), borderRadius: BorderRadius.circular(6))),
-                  const SizedBox(height: 8),
-                  Container(height: 10, width: MediaQuery.of(context).size.width * 0.5, decoration: BoxDecoration(color: cs.onSurface.withOpacity(0.05), borderRadius: BorderRadius.circular(6))),
-                ]),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 12,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: cs.onSurface.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 10,
+                      width: MediaQuery.of(context).size.width * 0.5,
+                      decoration: BoxDecoration(
+                        color: cs.onSurface.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -621,155 +690,360 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   Widget _buildEventosTab() {
     final cs = Theme.of(context).colorScheme;
-    if (_events.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text('Nenhum evento disponível', style: TextStyle(color: cs.onSurfaceVariant)),
-        ),
-      );
-    }
 
-    return ListView.separated(
+    return ListView(
       padding: const EdgeInsets.all(16),
-      itemCount: _events.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, idx) {
-        final e = _events[idx];
-        final type = (e['type'] ?? '').toString();
-        final time = e['time']?.toString() ?? '';
-        final isHome = e['isHome'] == true;
-        final player = (e['player'] ?? '').toString();
-        final assist = (e['assist'] ?? '').toString();
-        final info = (e['info'] ?? '').toString();
-
-        Widget eventIcon;
-        if (type == 'goal') {
-          eventIcon = Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 22);
-        } else if (type == 'yellow') {
-          eventIcon = Container(width: 14, height: 20, decoration: BoxDecoration(color: Colors.yellow.shade700, borderRadius: BorderRadius.circular(2)));
-        } else if (type == 'red') {
-          eventIcon = Container(width: 14, height: 20, decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(2)));
-        } else {
-          eventIcon = Icon(Symbols.swap_horiz_rounded, color: cs.primary, size: 22);
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Lado esquerdo (casa)
-              if (isHome)
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14)),
-                            if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
-                            if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
-                            if (type == 'substitution' && e['playerIn'] != null)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
-                                      const SizedBox(width: 4),
-                                      Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11))),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
-                                      const SizedBox(width: 4),
-                                      Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11))),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
+      children: [
+        if (_statistics.isNotEmpty) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Symbols.bar_chart_rounded, color: cs.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Estatísticas',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
                       ),
-                      const SizedBox(width: 8),
-                      eventIcon,
-                    ],
-                  ),
-                )
-              else
-                const Expanded(child: SizedBox()),
-
-              // Minuto (sozinho, afastado)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text("$time'", style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
-              ),
-
-              // Lado direito (fora)
-              if (!isHome)
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      eventIcon,
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(player, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 14), textAlign: TextAlign.right),
-                            if (assist.isNotEmpty) Text('Assist: $assist', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
-                            if (info.isNotEmpty) Text(info, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11), textAlign: TextAlign.right),
-                            if (type == 'substitution' && e['playerIn'] != null)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Expanded(child: Text(e['playerIn'], style: TextStyle(color: Colors.green, fontSize: 11), textAlign: TextAlign.right)),
-                                      const SizedBox(width: 4),
-                                      Icon(Symbols.arrow_upward_rounded, size: 12, color: Colors.green),
-                                    ],
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Expanded(child: Text(e['playerOut'], style: TextStyle(color: Colors.red, fontSize: 11), textAlign: TextAlign.right)),
-                                      const SizedBox(width: 4),
-                                      Icon(Symbols.arrow_downward_rounded, size: 12, color: Colors.red),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                const Expanded(child: SizedBox()),
-            ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ..._statistics.take(5).map((s) => _buildStatRow(s, cs)),
+              ],
+            ),
           ),
-        );
-      },
+        ],
+        
+        if (_events.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Nenhum evento disponível', style: TextStyle(color: cs.onSurfaceVariant)),
+            ),
+          )
+        else
+          ..._events.map((e) => _buildEventCard(e, cs)),
+      ],
     );
   }
 
-  Widget _buildOddsTab() {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text('Odds em breve', style: TextStyle(color: cs.onSurfaceVariant)),
+  Widget _buildStatRow(Map<String, dynamic> s, ColorScheme cs) {
+    final type = _translateStatType(s['type']?.toString() ?? 'Stat');
+    final homeStr = s['home']?.toString().replaceAll('%', '') ?? '0';
+    final awayStr = s['away']?.toString().replaceAll('%', '') ?? '0';
+
+    final home = double.tryParse(homeStr) ?? 0;
+    final away = double.tryParse(awayStr) ?? 0;
+
+    final isPercentage = type.toLowerCase().contains('posse');
+    final displayHome = isPercentage ? home : home.toInt();
+    final displayAway = isPercentage ? away : away.toInt();
+    final suffix = isPercentage ? '%' : '';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('$displayHome$suffix', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              Text(type, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+              Text('$displayAway$suffix', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: home.toInt().clamp(1, 100),
+                  child: Container(height: 6, color: cs.primary),
+                ),
+                Expanded(
+                  flex: away.toInt().clamp(1, 100),
+                  child: Container(height: 6, color: Colors.green),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventCard(Map<String, dynamic> e, ColorScheme cs) {
+    final type = (e['type'] ?? '').toString();
+    final time = e['time']?.toString() ?? '';
+    final isHome = e['isHome'] == true;
+    final player = (e['player'] ?? '').toString();
+    final assist = (e['assist'] ?? '').toString();
+    final info = (e['info'] ?? '').toString();
+    final method = (e['method'] ?? '').toString();
+
+    Widget eventIcon;
+    if (type == 'goal') {
+      eventIcon = Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 18),
+      );
+    } else if (type == 'yellow') {
+      eventIcon = Container(
+        width: 16,
+        height: 22,
+        decoration: BoxDecoration(
+          color: Colors.yellow.shade700,
+          borderRadius: BorderRadius.circular(3),
+        ),
+      );
+    } else if (type == 'red') {
+      eventIcon = Container(
+        width: 16,
+        height: 22,
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(3),
+        ),
+      );
+    } else {
+      eventIcon = Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: cs.primary.withOpacity(0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Symbols.swap_horiz_rounded, color: cs.primary, size: 18),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isHome) ...[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    player,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                      fontSize: 15,
+                    ),
+                  ),
+                  if (assist.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Assistência: $assist',
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  if (method.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        method,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  if (type == 'substitution' && e['playerIn'] != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            e['playerIn'],
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            e['playerOut'],
+                            style: TextStyle(
+                              color: Colors.red.shade400,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            eventIcon,
+          ] else
+            const Expanded(child: SizedBox()),
+          
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "$time'",
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: cs.onSurface,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+          
+          if (!isHome) ...[
+            eventIcon,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    player,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                      fontSize: 15,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                  if (assist.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Assistência: $assist',
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  if (method.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        method,
+                        style: TextStyle(
+                          color: cs.onSurfaceVariant,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  if (type == 'substitution' && e['playerIn'] != null) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            e['playerIn'],
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            e['playerOut'],
+                            style: TextStyle(
+                              color: Colors.red.shade400,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ] else
+            const Expanded(child: SizedBox()),
+        ],
       ),
     );
   }
@@ -778,131 +1052,350 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     final cs = Theme.of(context).colorScheme;
 
     if (_lineupHome.isEmpty && _lineupAway.isEmpty) {
-      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('Formações não disponíveis', style: TextStyle(color: cs.onSurfaceVariant))));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Formações não disponíveis',
+            style: TextStyle(color: cs.onSurfaceVariant),
+          ),
+        ),
+      );
     }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Column(children: [
-        if (_lineupHome.isNotEmpty) ...[
-          Container(
-            decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.all(12),
-            child: Column(children: [
-              Text(_jogo!['match_hometeam_name'] ?? 'Casa', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              ..._lineupHome.map((p) => ListTile(
-                leading: CircleAvatar(child: Text(p['lineup_number']?.toString() ?? '0', style: TextStyle(fontSize: 12))),
-                title: Text(p['lineup_player']?.toString() ?? '-', style: TextStyle(color: cs.onSurface)),
-                subtitle: p['lineup_position'] != null ? Text(p['lineup_position'].toString(), style: TextStyle(color: cs.onSurfaceVariant)) : null,
-              )),
-            ]),
-          ),
+      child: Column(
+        children: [
+          if ((_jogo!['match_hometeam_system'] ?? '').toString().isNotEmpty ||
+              (_jogo!['match_awayteam_system'] ?? '').toString().isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Formações Táticas',
+                    style: TextStyle(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if ((_jogo!['match_hometeam_system'] ?? '').toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _jogo!['match_hometeam_name'] ?? '',
+                            style: TextStyle(
+                              color: cs.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            _jogo!['match_hometeam_system'],
+                            style: TextStyle(
+                              color: cs.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if ((_jogo!['match_awayteam_system'] ?? '').toString().isNotEmpty)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _jogo!['match_awayteam_name'] ?? '',
+                          style: TextStyle(
+                            color: cs.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _jogo!['match_awayteam_system'],
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (_lineupHome.isNotEmpty) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      if (_jogo!['team_home_badge'] != null)
+                        Image.network(
+                          _jogo!['team_home_badge'],
+                          width: 32,
+                          height: 32,
+                          errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 32, color: cs.primary),
+                        ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _jogo!['match_hometeam_name'] ?? 'Casa',
+                        style: TextStyle(
+                          color: cs.onSurface,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ..._lineupHome.map((p) => Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: cs.primary.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              p['lineup_number']?.toString() ?? '0',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: cs.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p['lineup_player']?.toString() ?? '-',
+                                style: TextStyle(
+                                  color: cs.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (p['lineup_position'] != null)
+                                Text(
+                                  p['lineup_position'].toString(),
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (_lineupAway.isNotEmpty) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      if (_jogo!['team_away_badge'] != null)
+                        Image.network(
+                          _jogo!['team_away_badge'],
+                          width: 32,
+                          height: 32,
+                          errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 32, color: Colors.green),
+                        ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _jogo!['match_awayteam_name'] ?? 'Fora',
+                        style: TextStyle(
+                          color: cs.onSurface,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ..._lineupAway.map((p) => Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              p['lineup_number']?.toString() ?? '0',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p['lineup_player']?.toString() ?? '-',
+                                style: TextStyle(
+                                  color: cs.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (p['lineup_position'] != null)
+                                Text(
+                                  p['lineup_position'].toString(),
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+          ],
         ],
-        const SizedBox(height: 12),
-        if (_lineupAway.isNotEmpty) ...[
-          Container(
-            decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.all(12),
-            child: Column(children: [
-              Text(_jogo!['match_awayteam_name'] ?? 'Fora', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              ..._lineupAway.map((p) => ListTile(
-                leading: CircleAvatar(child: Text(p['lineup_number']?.toString() ?? '0', style: TextStyle(fontSize: 12))),
-                title: Text(p['lineup_player']?.toString() ?? '-', style: TextStyle(color: cs.onSurface)),
-                subtitle: p['lineup_position'] != null ? Text(p['lineup_position'].toString(), style: TextStyle(color: cs.onSurfaceVariant)) : null,
-              )),
-            ]),
-          ),
-        ],
-        const SizedBox(height: 16),
-        if ((_jogo!['match_hometeam_system'] ?? '').toString().isNotEmpty || (_jogo!['match_awayteam_system'] ?? '').toString().isNotEmpty)
-          Column(children: [
-            Text('Formações Táticas', style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w700, fontSize: 16)),
-            const SizedBox(height: 12),
-            if ((_jogo!['match_hometeam_system'] ?? '').toString().isNotEmpty) ...[
-              Text('${_jogo!['match_hometeam_name']}: ${_jogo!['match_hometeam_system']}', style: TextStyle(color: cs.onSurfaceVariant)),
-              const SizedBox(height: 8),
-            ],
-            if ((_jogo!['match_awayteam_system'] ?? '').toString().isNotEmpty) ...[
-              Text('${_jogo!['match_awayteam_name']}: ${_jogo!['match_awayteam_system']}', style: TextStyle(color: cs.onSurfaceVariant)),
-            ],
-          ]),
-      ]),
+      ),
     );
   }
 
-  Widget _buildEstatisticasTab() {
+  Widget _buildComentariosTab() {
     final cs = Theme.of(context).colorScheme;
-    final stats = _jogo!['statistics'];
-    if (stats == null || (stats is List && stats.isEmpty)) {
-      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('Estatísticas não disponíveis', style: TextStyle(color: cs.onSurfaceVariant))));
-    }
 
-    final List<Map<String, dynamic>> statList = [];
-    if (stats is List) {
-      for (var s in stats) {
-        if (s is Map) statList.add(Map<String, dynamic>.from(s));
-      }
+    if (_comentarios.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Symbols.article_rounded,
+                size: 64,
+                color: cs.onSurfaceVariant.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nenhum comentário disponível',
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: statList.length,
+      itemCount: _comentarios.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, idx) {
-        final s = statList[idx];
-        final type = s['type']?.toString() ?? 'Stat';
-        final homeStr = s['home']?.toString().replaceAll('%', '') ?? '0';
-        final awayStr = s['away']?.toString().replaceAll('%', '') ?? '0';
-        
-        final home = double.tryParse(homeStr) ?? 0;
-        final away = double.tryParse(awayStr) ?? 0;
-        
-        // Para posse de bola, mostrar em percentagem
-        final isPercentage = type.toLowerCase().contains('possession') || type.toLowerCase().contains('posse');
-        final displayHome = isPercentage ? home : home.toInt();
-        final displayAway = isPercentage ? away : away.toInt();
-        final suffix = isPercentage ? '%' : '';
-
+      itemBuilder: (context, index) {
+        final comentario = _comentarios[index];
         return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(12)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('$displayHome$suffix', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
-              Text(type, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
-              Text('$displayAway$suffix', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
-            ]),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: home.toInt().clamp(1, 100),
-                    child: Container(height: 8, color: cs.primary),
-                  ),
-                  Expanded(
-                    flex: away.toInt().clamp(1, 100),
-                    child: Container(height: 8, color: Colors.green),
-                  ),
-                ],
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-            ),
-          ]),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (comentario['comment_minute'] != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    "${comentario['comment_minute']}'",
+                    style: TextStyle(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Text(
+                comentario['comment']?.toString() ?? '',
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
         );
       },
-    );
-  }
-
-  Widget _buildNoticiasTab() {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text('Notícias em breve', style: TextStyle(color: cs.onSurfaceVariant)),
-      ),
     );
   }
 }
