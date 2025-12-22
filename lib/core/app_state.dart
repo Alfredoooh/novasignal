@@ -22,15 +22,18 @@ class AppState with ChangeNotifier {
   String filtroJogos = 'hoje';
   DateTime dataSelecionada = DateTime.now();
 
-  // Cache com expiração
+  // Cache com exibição imediata e atualização em background
   final Map<String, _CacheEntry> _cache = {};
   String jogoDetalhesId = '';
   String ligaDetalhesId = '';
   String ligaDetalhesTitulo = '';
   List<dynamic> todasLigas = [];
 
-  // HTTP Client reutilizável
+  // HTTP Client reutilizável com pool de conexões
   final http.Client _httpClient = http.Client();
+
+  // Timers de auto-atualização
+  final Map<String, Timer> _autoUpdateTimers = {};
 
   // Getters para configurações
   bool get temaEscuro => _temaEscuro;
@@ -42,11 +45,14 @@ class AppState with ChangeNotifier {
   // ========== CLOUDFLARE API CONFIGURATION ==========
   static const String cloudflareBase = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
 
-  // Cache de duração por tipo de requisição (em minutos)
-  static const int _cacheDurationJogos = 2;
-  static const int _cacheDurationDetalhes = 1;
-  static const int _cacheDurationLigas = 60;
-  static const int _cacheDurationClassificacao = 30;
+  // NOVA ESTRATÉGIA: Cache serve apenas para exibição imediata
+  // Dados são SEMPRE atualizados em background
+  static const int _cacheStaleTime = 30; // segundos - quando considerar "antigo"
+  
+  // Intervalos de atualização automática (em segundos)
+  static const int _updateIntervalJogosAoVivo = 10; // 10s para jogos ao vivo
+  static const int _updateIntervalJogosNormais = 30; // 30s para jogos normais
+  static const int _updateIntervalDetalhes = 5; // 5s para detalhes de jogo
 
   // Top clubs para jogos em destaque
   final List<String> topClubs = [
@@ -57,25 +63,28 @@ class AppState with ChangeNotifier {
     'PSG', 'Lyon', 'Marseille',
   ];
 
-  // Map para controlar requisições em andamento
-  final Map<String, Future<dynamic>> _pendingRequests = {};
+  // Map para controlar requisições em andamento (evita duplicação)
+  final Map<String, Completer<dynamic>> _pendingRequests = {};
 
   AppState() {
     _carregarPreferencias();
     _startCacheCleanup();
   }
 
-  // Timer para limpar cache expirado automaticamente
+  // Timer para limpar cache muito antigo
   void _startCacheCleanup() {
-    Timer.periodic(const Duration(minutes: 5), (timer) {
-      _cleanExpiredCache();
+    Timer.periodic(const Duration(minutes: 10), (timer) {
+      _cleanOldCache();
     });
   }
 
-  void _cleanExpiredCache() {
+  void _cleanOldCache() {
     final now = DateTime.now();
-    _cache.removeWhere((key, entry) => entry.isExpired(now));
-    debugPrint('Cache limpo. Itens restantes: ${_cache.length}');
+    // Remove apenas itens com mais de 1 hora
+    _cache.removeWhere((key, entry) => 
+      now.difference(entry.timestamp).inHours > 1
+    );
+    debugPrint('🧹 Cache antigo limpo. Itens restantes: ${_cache.length}');
   }
 
   // ========== MÉTODOS DE PREFERÊNCIAS ==========
@@ -90,7 +99,7 @@ class AppState with ChangeNotifier {
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
       notifyListeners();
     } catch (e) {
-      debugPrint('Erro ao carregar preferências: $e');
+      debugPrint('❌ Erro ao carregar preferências: $e');
     }
   }
 
@@ -175,54 +184,75 @@ class AppState with ChangeNotifier {
     ligaDetalhesTitulo = titulo;
   }
 
-  // ========== MÉTODOS DE CACHE ==========
+  // ========== NOVO SISTEMA DE CACHE COM STALE-WHILE-REVALIDATE ==========
 
   dynamic _getFromCache(String key) {
     final entry = _cache[key];
-    if (entry != null && !entry.isExpired(DateTime.now())) {
-      debugPrint('✓ Cache HIT: $key');
-      return entry.data;
-    }
     if (entry != null) {
-      debugPrint('✗ Cache EXPIRED: $key');
-      _cache.remove(key);
+      final age = DateTime.now().difference(entry.timestamp).inSeconds;
+      if (age < _cacheStaleTime) {
+        debugPrint('✅ Cache FRESH: $key (${age}s)');
+        return entry.data;
+      } else {
+        debugPrint('⚠️ Cache STALE: $key (${age}s) - retornando mas atualizando...');
+        return entry.data; // Retorna mesmo se antigo
+      }
     }
+    debugPrint('❌ Cache MISS: $key');
     return null;
   }
 
-  void _saveToCache(String key, dynamic data, int durationMinutes) {
+  void _saveToCache(String key, dynamic data) {
     _cache[key] = _CacheEntry(
       data: data,
-      expiresAt: DateTime.now().add(Duration(minutes: durationMinutes)),
+      timestamp: DateTime.now(),
     );
   }
 
-  // ========== MÉTODOS DE API CLOUDFLARE ==========
+  bool _isCacheStale(String key) {
+    final entry = _cache[key];
+    if (entry == null) return true;
+    final age = DateTime.now().difference(entry.timestamp).inSeconds;
+    return age >= _cacheStaleTime;
+  }
 
-  Future<dynamic> _makeCloudflareRequest(String endpoint) async {
+  // ========== SISTEMA DE REQUISIÇÕES COM DEDUPLICAÇÃO ==========
+
+  Future<dynamic> _makeRequest(String endpoint, String cacheKey) async {
+    // Se já existe uma requisição em andamento, aguarda ela
     if (_pendingRequests.containsKey(endpoint)) {
-      debugPrint('⏳ Requisição já em andamento, aguardando...');
-      return await _pendingRequests[endpoint]!;
+      debugPrint('⏳ Aguardando requisição em andamento: $endpoint');
+      return await _pendingRequests[endpoint]!.future;
     }
 
-    final requestFuture = _executeCloudflareRequest(endpoint);
-    _pendingRequests[endpoint] = requestFuture;
+    // Cria um novo Completer para esta requisição
+    final completer = Completer<dynamic>();
+    _pendingRequests[endpoint] = completer;
 
     try {
-      final result = await requestFuture;
+      final result = await _executeRequest(endpoint);
+      
+      // Salva no cache
+      _saveToCache(cacheKey, result);
+      
+      // Completa a requisição
+      completer.complete(result);
       return result;
+    } catch (e) {
+      completer.completeError(e);
+      rethrow;
     } finally {
       _pendingRequests.remove(endpoint);
     }
   }
 
-  Future<dynamic> _executeCloudflareRequest(String endpoint) async {
+  Future<dynamic> _executeRequest(String endpoint) async {
     try {
       final url = '$cloudflareBase$endpoint';
-      debugPrint('🚀 Cloudflare Request: $url');
+      debugPrint('🚀 API Request: $url');
 
       final response = await _httpClient.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 8),
       );
 
       if (response.statusCode == 200) {
@@ -232,27 +262,39 @@ class AppState with ChangeNotifier {
           throw Exception(data['error']);
         }
 
+        debugPrint('✅ API Response OK: $endpoint');
         return data;
       } else {
         throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('✗ Erro na requisição Cloudflare: $e');
+      debugPrint('❌ Erro na requisição: $e');
       rethrow;
     }
   }
 
-  // ========== MÉTODOS PRINCIPAIS ==========
+  // ========== MÉTODOS PRINCIPAIS COM STALE-WHILE-REVALIDATE ==========
 
   Future<List<dynamic>> carregarJogosDoDia(DateTime data) async {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
     final cacheKey = 'jogos_$dataStr';
 
+    // 1. Retorna cache imediatamente se existir
     final cached = _getFromCache(cacheKey);
-    if (cached != null) return cached as List<dynamic>;
+    
+    // 2. Se cache está antigo OU não existe, busca novos dados
+    if (_isCacheStale(cacheKey)) {
+      _fetchJogosDoDiaBackground(data, cacheKey);
+    }
 
+    // 3. Retorna cache (mesmo que antigo) ou lista vazia
+    return cached as List<dynamic>? ?? [];
+  }
+
+  Future<void> _fetchJogosDoDiaBackground(DateTime data, String cacheKey) async {
     try {
-      final response = await _makeCloudflareRequest('/api/matches');
+      final dataStr = DateFormat('yyyy-MM-dd').format(data);
+      final response = await _makeRequest('/api/matches', cacheKey);
 
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
@@ -262,26 +304,58 @@ class AppState with ChangeNotifier {
           return matchDate == dataStr;
         }).toList();
 
-        debugPrint('✓ ${jogosDoDia.length} jogos encontrados para $dataStr');
-        _saveToCache(cacheKey, jogosDoDia, _cacheDurationJogos);
-        return jogosDoDia;
+        debugPrint('✅ ${jogosDoDia.length} jogos para $dataStr');
+        _saveToCache(cacheKey, jogosDoDia);
+        notifyListeners(); // Atualiza UI
       }
-
-      return [];
     } catch (e) {
-      debugPrint('✗ Erro ao carregar jogos: $e');
-      return [];
+      debugPrint('❌ Erro ao buscar jogos: $e');
     }
   }
 
+  // Auto-atualização contínua para jogos ao vivo
+  void iniciarAutoAtualizacaoJogos(DateTime data) {
+    final dataStr = DateFormat('yyyy-MM-dd').format(data);
+    final timerId = 'jogos_$dataStr';
+    
+    // Cancela timer anterior se existir
+    _autoUpdateTimers[timerId]?.cancel();
+    
+    // Cria novo timer
+    _autoUpdateTimers[timerId] = Timer.periodic(
+      Duration(seconds: _updateIntervalJogosAoVivo),
+      (timer) {
+        final cacheKey = 'jogos_$dataStr';
+        _fetchJogosDoDiaBackground(data, cacheKey);
+      },
+    );
+    
+    debugPrint('🔄 Auto-atualização iniciada para $dataStr');
+  }
+
+  void pararAutoAtualizacaoJogos(DateTime data) {
+    final dataStr = DateFormat('yyyy-MM-dd').format(data);
+    final timerId = 'jogos_$dataStr';
+    _autoUpdateTimers[timerId]?.cancel();
+    _autoUpdateTimers.remove(timerId);
+    debugPrint('⏸️ Auto-atualização pausada para $dataStr');
+  }
+
   Future<List<dynamic>> carregarJogosDestaque(List<String> topTeams) async {
-    final cacheKey = 'destaque_jogos';
+    const cacheKey = 'destaque_jogos';
 
     final cached = _getFromCache(cacheKey);
-    if (cached != null) return cached as List<dynamic>;
+    
+    if (_isCacheStale(cacheKey)) {
+      _fetchJogosDestaqueBackground(cacheKey);
+    }
 
+    return cached as List<dynamic>? ?? [];
+  }
+
+  Future<void> _fetchJogosDestaqueBackground(String cacheKey) async {
     try {
-      final response = await _makeCloudflareRequest('/api/matches');
+      final response = await _makeRequest('/api/matches', cacheKey);
 
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
@@ -299,12 +373,10 @@ class AppState with ChangeNotifier {
           return false;
         }).toList();
 
+        // Ordenar: jogos ao vivo primeiro
         jogosFiltrados.sort((a, b) {
-          final aStatus = a['match_status'] ?? '';
-          final bStatus = b['match_status'] ?? '';
-
-          final aIsLive = aStatus.contains("'") || aStatus == 'HT' || aStatus == 'LIVE';
-          final bIsLive = bStatus.contains("'") || bStatus == 'HT' || bStatus == 'LIVE';
+          final aIsLive = _isJogoAoVivo(a);
+          final bIsLive = _isJogoAoVivo(b);
 
           if (aIsLive && !bIsLive) return -1;
           if (!aIsLive && bIsLive) return 1;
@@ -312,15 +384,28 @@ class AppState with ChangeNotifier {
         });
 
         final limitedJogos = jogosFiltrados.take(10).toList();
-        debugPrint('✓ ${limitedJogos.length} jogos em destaque');
-        _saveToCache(cacheKey, limitedJogos, _cacheDurationJogos);
-        return limitedJogos;
+        debugPrint('✅ ${limitedJogos.length} jogos em destaque');
+        _saveToCache(cacheKey, limitedJogos);
+        notifyListeners();
       }
-      return [];
     } catch (e) {
-      debugPrint('✗ Erro ao carregar destaques: $e');
-      return [];
+      debugPrint('❌ Erro ao buscar destaques: $e');
     }
+  }
+
+  bool _isJogoAoVivo(dynamic jogo) {
+    final status = jogo['match_status'] ?? '';
+    
+    // Verifica se é um número (minutos do jogo)
+    if (int.tryParse(status.toString()) != null) {
+      return true;
+    }
+    
+    return status.contains("'") || 
+           status == 'HT' || 
+           status == 'LIVE' ||
+           status == '1H' ||
+           status == '2H';
   }
 
   Future<List<dynamic>> pesquisarJogos(String termo) async {
@@ -328,10 +413,18 @@ class AppState with ChangeNotifier {
     final cacheKey = 'pesquisa_$termoLower';
 
     final cached = _getFromCache(cacheKey);
-    if (cached != null) return cached as List<dynamic>;
+    
+    if (_isCacheStale(cacheKey)) {
+      _fetchPesquisaBackground(termo, cacheKey);
+    }
 
+    return cached as List<dynamic>? ?? [];
+  }
+
+  Future<void> _fetchPesquisaBackground(String termo, String cacheKey) async {
     try {
-      final response = await _makeCloudflareRequest('/api/matches');
+      final termoLower = termo.toLowerCase();
+      final response = await _makeRequest('/api/matches', cacheKey);
 
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
@@ -345,14 +438,12 @@ class AppState with ChangeNotifier {
                  league.contains(termoLower);
         }).toList();
 
-        debugPrint('✓ ${resultados.length} resultados para "$termo"');
-        _saveToCache(cacheKey, resultados, _cacheDurationJogos);
-        return resultados;
+        debugPrint('✅ ${resultados.length} resultados para "$termo"');
+        _saveToCache(cacheKey, resultados);
+        notifyListeners();
       }
-      return [];
     } catch (e) {
-      debugPrint('✗ Erro na pesquisa: $e');
-      return [];
+      debugPrint('❌ Erro na pesquisa: $e');
     }
   }
 
@@ -360,24 +451,48 @@ class AppState with ChangeNotifier {
     final cacheKey = 'detalhes_$jogoId';
 
     final cached = _getFromCache(cacheKey);
-    if (cached != null) return cached;
+    
+    // Sempre atualiza detalhes (dados mais críticos)
+    _fetchJogoDetalhesBackground(jogoId, cacheKey);
 
+    return cached;
+  }
+
+  Future<void> _fetchJogoDetalhesBackground(String jogoId, String cacheKey) async {
     try {
-      final response = await _makeCloudflareRequest('/api/matches/$jogoId');
+      final response = await _makeRequest('/api/matches/$jogoId', cacheKey);
 
-      if (response != null && response is! Map) {
-        _saveToCache(cacheKey, response, _cacheDurationDetalhes);
-        return response;
-      } else if (response is Map && !response.containsKey('error')) {
-        _saveToCache(cacheKey, response, _cacheDurationDetalhes);
-        return response;
+      if (response != null) {
+        _saveToCache(cacheKey, response);
+        notifyListeners();
       }
-
-      return null;
     } catch (e) {
-      debugPrint('✗ Erro ao carregar detalhes: $e');
-      return null;
+      debugPrint('❌ Erro ao buscar detalhes: $e');
     }
+  }
+
+  // Auto-atualização para detalhes de jogo
+  void iniciarAutoAtualizacaoDetalhes(String jogoId) {
+    final timerId = 'detalhes_$jogoId';
+    
+    _autoUpdateTimers[timerId]?.cancel();
+    
+    _autoUpdateTimers[timerId] = Timer.periodic(
+      Duration(seconds: _updateIntervalDetalhes),
+      (timer) {
+        final cacheKey = 'detalhes_$jogoId';
+        _fetchJogoDetalhesBackground(jogoId, cacheKey);
+      },
+    );
+    
+    debugPrint('🔄 Auto-atualização de detalhes iniciada para jogo $jogoId');
+  }
+
+  void pararAutoAtualizacaoDetalhes(String jogoId) {
+    final timerId = 'detalhes_$jogoId';
+    _autoUpdateTimers[timerId]?.cancel();
+    _autoUpdateTimers.remove(timerId);
+    debugPrint('⏸️ Auto-atualização de detalhes pausada');
   }
 
   Future<List<dynamic>> carregarLigas() async {
@@ -386,11 +501,18 @@ class AppState with ChangeNotifier {
     final cached = _getFromCache(cacheKey);
     if (cached != null) {
       todasLigas = cached as List<dynamic>;
-      return todasLigas;
+    }
+    
+    if (_isCacheStale(cacheKey)) {
+      _fetchLigasBackground(cacheKey);
     }
 
+    return todasLigas;
+  }
+
+  Future<void> _fetchLigasBackground(String cacheKey) async {
     try {
-      final response = await _makeCloudflareRequest('/api/matches');
+      final response = await _makeRequest('/api/matches', cacheKey);
 
       if (response is Map && response.containsKey('matches')) {
         final todosJogos = response['matches'] as List<dynamic>;
@@ -412,14 +534,12 @@ class AppState with ChangeNotifier {
         }
 
         todasLigas = ligasMap.values.toList();
-        _saveToCache(cacheKey, todasLigas, _cacheDurationLigas);
-        debugPrint('✓ ${todasLigas.length} ligas carregadas');
-        return todasLigas;
+        _saveToCache(cacheKey, todasLigas);
+        debugPrint('✅ ${todasLigas.length} ligas carregadas');
+        notifyListeners();
       }
-      return [];
     } catch (e) {
-      debugPrint('✗ Erro ao carregar ligas: $e');
-      return [];
+      debugPrint('❌ Erro ao carregar ligas: $e');
     }
   }
 
@@ -427,16 +547,21 @@ class AppState with ChangeNotifier {
     final cacheKey = 'classificacao_$ligaId';
 
     final cached = _getFromCache(cacheKey);
-    if (cached != null) return cached as List<dynamic>;
+    
+    if (_isCacheStale(cacheKey)) {
+      _fetchClassificacaoBackground(ligaId, cacheKey);
+    }
 
+    return cached as List<dynamic>? ?? [];
+  }
+
+  Future<void> _fetchClassificacaoBackground(String ligaId, String cacheKey) async {
     try {
-      final jogosLiga = await carregarJogosPorLiga(ligaId);
-
-      _saveToCache(cacheKey, [], _cacheDurationClassificacao);
-      return [];
+      await carregarJogosPorLiga(ligaId);
+      _saveToCache(cacheKey, []);
+      notifyListeners();
     } catch (e) {
-      debugPrint('✗ Erro ao carregar classificação: $e');
-      return [];
+      debugPrint('❌ Erro ao carregar classificação: $e');
     }
   }
 
@@ -444,21 +569,29 @@ class AppState with ChangeNotifier {
     final cacheKey = 'jogos_liga_$ligaId';
 
     final cached = _getFromCache(cacheKey);
-    if (cached != null) return cached as List<dynamic>;
+    
+    if (_isCacheStale(cacheKey)) {
+      _fetchJogosPorLigaBackground(ligaId, cacheKey);
+    }
 
+    return cached as List<dynamic>? ?? [];
+  }
+
+  Future<void> _fetchJogosPorLigaBackground(String ligaId, String cacheKey) async {
     try {
-      final response = await _makeCloudflareRequest('/api/matches/league?league_id=$ligaId');
+      final response = await _makeRequest(
+        '/api/matches/league?league_id=$ligaId',
+        cacheKey,
+      );
 
       if (response is Map && response.containsKey('matches')) {
         final jogos = response['matches'] as List<dynamic>;
-        debugPrint('✓ ${jogos.length} jogos da liga $ligaId');
-        _saveToCache(cacheKey, jogos, _cacheDurationJogos);
-        return jogos;
+        debugPrint('✅ ${jogos.length} jogos da liga $ligaId');
+        _saveToCache(cacheKey, jogos);
+        notifyListeners();
       }
-      return [];
     } catch (e) {
-      debugPrint('✗ Erro ao carregar jogos da liga: $e');
-      return [];
+      debugPrint('❌ Erro ao carregar jogos da liga: $e');
     }
   }
 
@@ -468,20 +601,36 @@ class AppState with ChangeNotifier {
 
   Future<void> precarregarDadosHome() async {
     debugPrint('🔥 Pré-carregando dados da Home...');
+    
+    // Inicia carregamento em paralelo
     await Future.wait([
       carregarJogosDoDia(DateTime.now()),
       carregarJogosDestaque(topClubs),
     ]);
-    debugPrint('✓ Dados da Home pré-carregados');
+    
+    // Inicia auto-atualização
+    iniciarAutoAtualizacaoJogos(DateTime.now());
+    
+    debugPrint('✅ Dados da Home pré-carregados e auto-atualização iniciada');
   }
 
   void limparCache() {
     _cache.clear();
     debugPrint('🗑️ Cache limpo manualmente');
+    notifyListeners();
+  }
+
+  void pararTodasAutoAtualizacoes() {
+    for (var timer in _autoUpdateTimers.values) {
+      timer.cancel();
+    }
+    _autoUpdateTimers.clear();
+    debugPrint('⏸️ Todas auto-atualizações pausadas');
   }
 
   @override
   void dispose() {
+    pararTodasAutoAtualizacoes();
     _httpClient.close();
     super.dispose();
   }
@@ -489,12 +638,10 @@ class AppState with ChangeNotifier {
 
 class _CacheEntry {
   final dynamic data;
-  final DateTime expiresAt;
+  final DateTime timestamp;
 
   _CacheEntry({
     required this.data,
-    required this.expiresAt,
+    required this.timestamp,
   });
-
-  bool isExpired(DateTime now) => now.isAfter(expiresAt);
 }
