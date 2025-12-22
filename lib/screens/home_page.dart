@@ -89,7 +89,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.black,
@@ -380,7 +380,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           child: SafeArea(
             top: false,
             child: SizedBox(
-              height: 48,
+              height: 72,
               child: NavigationBar(
                 selectedIndex: currentIndex,
                 onDestinationSelected: (index) {
