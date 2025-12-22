@@ -268,6 +268,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     final menuButton = IconButton(
       icon: const Icon(Symbols.menu_rounded),
+      iconSize: 24,
       onPressed: _toggleDrawer,
     );
 
@@ -278,6 +279,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         actions = [
           IconButton(
             icon: const Icon(Symbols.search_rounded),
+            iconSize: 24,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const SearchPage(),
@@ -310,17 +312,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: SafeArea(
         bottom: false,
         child: Container(
-          height: kToolbarHeight,
+          height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             children: [
               if (leading != null) leading,
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -380,7 +382,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           child: SafeArea(
             top: false,
             child: SizedBox(
-              height: 72,
+              height: 80,
               child: NavigationBar(
                 selectedIndex: currentIndex,
                 onDestinationSelected: (index) {
@@ -391,6 +393,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 elevation: 0,
                 surfaceTintColor: Colors.transparent,
                 indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 destinations: const [
                   NavigationDestination(
                     icon: Icon(Symbols.home_rounded),
