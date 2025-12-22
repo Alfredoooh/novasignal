@@ -169,7 +169,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   int _contarJogosAoVivo() {
     if (_cachedJogos == null) return 0;
-    return _cachedJogos!.where((j) => _isJogoAoVivo(j)).length;
+    return _cachedJogos!.where((jogo) => _isJogoAoVivo(jogo)).length;
   }
 
   void _loadJogosDoDia() async {
@@ -429,13 +429,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   bool _isJogoAoVivo(dynamic jogo) {
-    final status = j['match_status'] ?? '';
-    
+    final status = jogo['match_status'] ?? '';
+
     // Verifica se é um número (minutos do jogo)
     if (int.tryParse(status.toString()) != null) {
       return true;
     }
-    
+
     // Verifica formatos comuns de jogo ao vivo
     return status.contains("'") || 
            status == 'HT' || 
@@ -448,10 +448,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   List<dynamic> _filtrarJogos(List<dynamic> jogos, String filtro) {
     switch (filtro) {
       case 'direto':
-        return jogos.where((j) => _isJogoAoVivo(j)).toList();
+        return jogos.where((jogo) => _isJogoAoVivo(jogo)).toList();
       case 'terminados':
-        return jogos.where((j) {
-          final status = j['match_status'] ?? '';
+        return jogos.where((jogo) {
+          final status = jogo['match_status'] ?? '';
           return status.contains('Finished') || 
                  status == 'FT' || 
                  status == 'AET' ||
@@ -627,25 +627,25 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
-    
+
     // Verifica se é um número (minutos do jogo)
     final isNumericStatus = int.tryParse(status.toString()) != null;
-    
+
     final isLive = isNumericStatus || 
                    status.contains("'") || 
                    status == 'LIVE' ||
                    status == '1H' ||
                    status == '2H';
-    
+
     final isHalfTime = status == 'HT' || status.toLowerCase() == 'half time';
     final isPlaying = isLive && !isHalfTime;
-    
+
     final isFinished = status.contains('Finished') || 
                        status == 'FT' || 
                        status == 'AET' ||
                        status == 'AP' ||
                        status == 'Pen.';
-    
+
     // Formatar o status para exibição
     String displayStatus = status;
     if (isNumericStatus) {
