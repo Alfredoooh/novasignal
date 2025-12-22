@@ -77,7 +77,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
       final liveMatches = jogos.where((jogo) {
         final status = jogo['match_status'] ?? '';
-        return status.contains("'") || status == 'HT' || status == 'LIVE';
+        final isNumeric = int.tryParse(status.toString()) != null;
+        return isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
       }).toList();
 
       setState(() {
@@ -207,28 +208,28 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                 const SizedBox(height: 12),
                 ..._jogosAoVivo.map((jogo) => _buildLiveMatchCard(jogo)),
               ],
-              const SizedBox(height: 100),
+              const SizedBox(height: 180),
             ],
           ),
         ),
-        // Bottom Sheet Deslizável
+        // Bottom Sheet Deslizável - MUITO MAIS ALTO
         DraggableScrollableSheet(
           controller: _bottomSheetController,
-          initialChildSize: 0.06,
-          minChildSize: 0.06,
-          maxChildSize: 0.9,
+          initialChildSize: 0.12,
+          minChildSize: 0.12,
+          maxChildSize: 0.92,
           snap: true,
-          snapSizes: const [0.06, 0.9],
+          snapSizes: const [0.12, 0.92],
           builder: (context, scrollController) {
             return Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
@@ -236,45 +237,77 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                 children: [
                   // Handle do modal
                   Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 8),
-                    width: 40,
-                    height: 4,
+                    margin: const EdgeInsets.only(top: 14, bottom: 10),
+                    width: 48,
+                    height: 5,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(2),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                   // Título
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                     child: Row(
-                      children: const [
-                        Text(
+                      children: [
+                        Icon(
+                          Symbols.article_rounded,
+                          size: 22,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
                           'Atualidades',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Divider(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: Divider(
+                      thickness: 1,
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
                   // Conteúdo do modal
                   Expanded(
                     child: _noticias.isEmpty
                         ? Center(
-                            child: Text(
-                              'Sem notícias ainda',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Symbols.news_rounded,
+                                  size: 56,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Sem notícias no momento',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Fique atento às próximas atualizações',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
                             ),
                           )
                         : ListView(
                             controller: scrollController,
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                             children: _noticias.map((noticia) {
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
@@ -348,7 +381,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
   Widget _buildAppleSportsCard(dynamic jogo, int index) {
     final status = jogo['match_status'] ?? '';
-    final isLive = status.contains("'") || status == 'HT' || status == 'LIVE';
+    final isNumeric = int.tryParse(status.toString()) != null;
+    final isLive = isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
     final leagueName = jogo['league_name'] ?? '';
     final leagueLogo = jogo['league_logo'];
 
@@ -668,17 +702,25 @@ class _LiveTimeIndicatorState extends State<_LiveTimeIndicator> {
 
   @override
   Widget build(BuildContext context) {
-    final isLive = widget.status.contains("'") || widget.status == 'LIVE';
+    final isNumeric = int.tryParse(widget.status.toString()) != null;
+    final isLive = isNumeric || widget.status.contains("'") || widget.status == 'LIVE' || widget.status == '1H' || widget.status == '2H';
     final isHT = widget.status == 'HT';
 
     Color timeColor = isHT 
-        ? Colors.orange 
+        ? Theme.of(context).colorScheme.onSurfaceVariant
         : isLive 
-            ? Colors.green 
+            ? const Color(0xFF00C853)
             : Theme.of(context).colorScheme.onSurfaceVariant;
 
+    String displayText = widget.status;
+    if (isNumeric) {
+      displayText = isLive && _showApostrophe ? "${widget.status}'" : widget.status;
+    } else if (isLive && !isHT) {
+      displayText = _showApostrophe ? "${widget.status}'" : widget.status;
+    }
+
     return Text(
-      isLive && _showApostrophe ? "${widget.status}'" : widget.status,
+      displayText,
       style: TextStyle(
         fontSize: widget.compact ? 11 : 13,
         fontWeight: FontWeight.w700,
