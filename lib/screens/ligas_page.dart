@@ -54,6 +54,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
       if (mounted) {
         setState(() {
           _cachedJogos = jogos;
+          _buildClassificacaoFromMatches(jogos);
         });
       }
     });
@@ -64,6 +65,94 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
           _cachedClassificacao = classificacao;
         });
       }
+    });
+  }
+
+  void _buildClassificacaoFromMatches(List<dynamic> jogos) {
+    if (jogos.isEmpty) return;
+
+    Map<String, Map<String, dynamic>> tabelaCalculada = {};
+
+    for (var jogo in jogos) {
+      final status = jogo['match_status'] ?? '';
+      final isFinished = status.contains('Finished') || status == 'FT' || status == 'AET';
+
+      if (!isFinished) continue;
+
+      final homeTeam = jogo['match_hometeam_name'] ?? '';
+      final awayTeam = jogo['match_awayteam_name'] ?? '';
+      final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
+      final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
+      final homeBadge = jogo['team_home_badge'] ?? '';
+      final awayBadge = jogo['team_away_badge'] ?? '';
+
+      if (!tabelaCalculada.containsKey(homeTeam)) {
+        tabelaCalculada[homeTeam] = {
+          'team_name': homeTeam,
+          'team_badge': homeBadge,
+          'jogos': 0,
+          'vitorias': 0,
+          'empates': 0,
+          'derrotas': 0,
+          'gols_pro': 0,
+          'gols_contra': 0,
+          'pontos': 0,
+        };
+      }
+
+      if (!tabelaCalculada.containsKey(awayTeam)) {
+        tabelaCalculada[awayTeam] = {
+          'team_name': awayTeam,
+          'team_badge': awayBadge,
+          'jogos': 0,
+          'vitorias': 0,
+          'empates': 0,
+          'derrotas': 0,
+          'gols_pro': 0,
+          'gols_contra': 0,
+          'pontos': 0,
+        };
+      }
+
+      tabelaCalculada[homeTeam]!['jogos'] = (tabelaCalculada[homeTeam]!['jogos'] as int) + 1;
+      tabelaCalculada[awayTeam]!['jogos'] = (tabelaCalculada[awayTeam]!['jogos'] as int) + 1;
+
+      tabelaCalculada[homeTeam]!['gols_pro'] = (tabelaCalculada[homeTeam]!['gols_pro'] as int) + homeScore;
+      tabelaCalculada[homeTeam]!['gols_contra'] = (tabelaCalculada[homeTeam]!['gols_contra'] as int) + awayScore;
+      tabelaCalculada[awayTeam]!['gols_pro'] = (tabelaCalculada[awayTeam]!['gols_pro'] as int) + awayScore;
+      tabelaCalculada[awayTeam]!['gols_contra'] = (tabelaCalculada[awayTeam]!['gols_contra'] as int) + homeScore;
+
+      if (homeScore > awayScore) {
+        tabelaCalculada[homeTeam]!['vitorias'] = (tabelaCalculada[homeTeam]!['vitorias'] as int) + 1;
+        tabelaCalculada[homeTeam]!['pontos'] = (tabelaCalculada[homeTeam]!['pontos'] as int) + 3;
+        tabelaCalculada[awayTeam]!['derrotas'] = (tabelaCalculada[awayTeam]!['derrotas'] as int) + 1;
+      } else if (awayScore > homeScore) {
+        tabelaCalculada[awayTeam]!['vitorias'] = (tabelaCalculada[awayTeam]!['vitorias'] as int) + 1;
+        tabelaCalculada[awayTeam]!['pontos'] = (tabelaCalculada[awayTeam]!['pontos'] as int) + 3;
+        tabelaCalculada[homeTeam]!['derrotas'] = (tabelaCalculada[homeTeam]!['derrotas'] as int) + 1;
+      } else {
+        tabelaCalculada[homeTeam]!['empates'] = (tabelaCalculada[homeTeam]!['empates'] as int) + 1;
+        tabelaCalculada[homeTeam]!['pontos'] = (tabelaCalculada[homeTeam]!['pontos'] as int) + 1;
+        tabelaCalculada[awayTeam]!['empates'] = (tabelaCalculada[awayTeam]!['empates'] as int) + 1;
+        tabelaCalculada[awayTeam]!['pontos'] = (tabelaCalculada[awayTeam]!['pontos'] as int) + 1;
+      }
+    }
+
+    final tabelaOrdenada = tabelaCalculada.values.toList()
+      ..sort((a, b) {
+        final pontosCompare = (b['pontos'] as int).compareTo(a['pontos'] as int);
+        if (pontosCompare != 0) return pontosCompare;
+
+        final saldoA = (a['gols_pro'] as int) - (a['gols_contra'] as int);
+        final saldoB = (b['gols_pro'] as int) - (b['gols_contra'] as int);
+        final saldoCompare = saldoB.compareTo(saldoA);
+        if (saldoCompare != 0) return saldoCompare;
+
+        return (b['gols_pro'] as int).compareTo(a['gols_pro'] as int);
+      });
+
+    setState(() {
+      _cachedClassificacao = tabelaOrdenada;
     });
   }
 
@@ -164,7 +253,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
     }
 
     return FutureBuilder<List<dynamic>>(
-      future: _futureClassificacao,
+      future: _futureJogos,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -185,12 +274,29 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
             ),
           );
         }
-        return _buildClassificacaoContent(snapshot.data!);
+        return _buildClassificacaoContent(_cachedClassificacao ?? []);
       },
     );
   }
 
   Widget _buildClassificacaoContent(List<dynamic> classificacao) {
+    if (classificacao.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Symbols.table_chart_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            const Text('Nenhum jogo finalizado ainda'),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: classificacao.length + 1,
@@ -291,21 +397,14 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
         }
 
         final time = classificacao[index - 1];
-        final posicao = int.tryParse(time['overall_league_position']?.toString() ?? 
-                        time['league_position']?.toString() ?? 
-                        time['position']?.toString() ?? '0') ?? index;
-        
-        final jogos = int.tryParse(time['overall_league_payed']?.toString() ?? 
-                                   time['matches_played']?.toString() ?? '0') ?? 0;
-        final vitorias = int.tryParse(time['overall_league_W']?.toString() ?? 
-                                      time['wins']?.toString() ?? '0') ?? 0;
-        final empates = int.tryParse(time['overall_league_D']?.toString() ?? 
-                                     time['draws']?.toString() ?? '0') ?? 0;
-        final derrotas = int.tryParse(time['overall_league_L']?.toString() ?? 
-                                      time['losses']?.toString() ?? '0') ?? 0;
-        final pontos = int.tryParse(time['overall_league_PTS']?.toString() ?? 
-                                    time['points']?.toString() ?? '0') ?? 0;
-        
+        final posicao = index;
+
+        final jogos = time['jogos'] as int;
+        final vitorias = time['vitorias'] as int;
+        final empates = time['empates'] as int;
+        final derrotas = time['derrotas'] as int;
+        final pontos = time['pontos'] as int;
+
         Color? posicaoColor;
         Color? borderColor;
 
@@ -346,9 +445,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
               Expanded(
                 child: Row(
                   children: [
-                    if ((time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty) ...[
+                    if ((time['team_badge'] ?? '').toString().isNotEmpty) ...[
                       Image.network(
-                        time['team_badge'] ?? time['logo'],
+                        time['team_badge'],
                         width: 28,
                         height: 28,
                         errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 28),
@@ -357,7 +456,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
                     ],
                     Expanded(
                       child: Text(
-                        time['team_name']?.toString() ?? time['name']?.toString() ?? 'Unknown',
+                        time['team_name']?.toString() ?? 'Unknown',
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -592,7 +691,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
   Widget _buildEstatisticasTab() {
     if (_cachedClassificacao == null) {
       return FutureBuilder<List<dynamic>>(
-        future: _futureClassificacao,
+        future: _futureJogos,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -600,7 +699,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
           if (snapshot.hasError || !snapshot.hasData) {
             return const Center(child: Text('Sem dados disponíveis'));
           }
-          return _buildEstatisticasContent(snapshot.data!);
+          return _buildEstatisticasContent(_cachedClassificacao ?? []);
         },
       );
     }
@@ -609,11 +708,28 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
 
   Widget _buildEstatisticasContent(List<dynamic> classificacao) {
     if (classificacao.isEmpty) {
-      return const Center(child: Text('Sem dados de estatísticas'));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Symbols.analytics_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            const Text('Sem dados de estatísticas'),
+          ],
+        ),
+      );
     }
 
     final top3 = classificacao.take(3).toList();
-    final bottom3 = classificacao.skip(classificacao.length - 3).take(3).toList();
+    final bottom3 = classificacao.length >= 3 
+        ? classificacao.skip(classificacao.length - 3).take(3).toList() 
+        : [];
+
+    final artilheiros = _calcularArtilheiros();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -630,21 +746,125 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
           ),
           const SizedBox(height: 16),
           _buildPodium(top3),
-          const SizedBox(height: 32),
-          Text(
-            'Zona de Rebaixamento',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurface,
+          if (bottom3.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Text(
+              'Zona de Rebaixamento',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...bottom3.asMap().entries.map((entry) {
+              final time = entry.value;
+              final pos = classificacao.length - 2 + entry.key;
+              return _buildBottomTeamCard(time, pos);
+            }),
+          ],
+          if (artilheiros.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Text(
+              'Artilheiros',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...artilheiros.take(5).map((artilheiro) => _buildArtilheiroCard(artilheiro)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _calcularArtilheiros() {
+    if (_cachedJogos == null) return [];
+
+    Map<String, Map<String, dynamic>> golsPorTime = {};
+
+    for (var jogo in _cachedJogos!) {
+      final homeTeam = jogo['match_hometeam_name'] ?? '';
+      final awayTeam = jogo['match_awayteam_name'] ?? '';
+      final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
+      final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
+      final homeBadge = jogo['team_home_badge'] ?? '';
+      final awayBadge = jogo['team_away_badge'] ?? '';
+
+      if (!golsPorTime.containsKey(homeTeam)) {
+        golsPorTime[homeTeam] = {
+          'team': homeTeam,
+          'badge': homeBadge,
+          'gols': 0,
+        };
+      }
+
+      if (!golsPorTime.containsKey(awayTeam)) {
+        golsPorTime[awayTeam] = {
+          'team': awayTeam,
+          'badge': awayBadge,
+          'gols': 0,
+        };
+      }
+
+      golsPorTime[homeTeam]!['gols'] = (golsPorTime[homeTeam]!['gols'] as int) + homeScore;
+      golsPorTime[awayTeam]!['gols'] = (golsPorTime[awayTeam]!['gols'] as int) + awayScore;
+    }
+
+    final artilheiros = golsPorTime.values.toList()
+      ..sort((a, b) => (b['gols'] as int).compareTo(a['gols'] as int));
+
+    return artilheiros;
+  }
+
+  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          if ((artilheiro['badge'] ?? '').toString().isNotEmpty)
+            Image.network(
+              artilheiro['badge'],
+              width: 40,
+              height: 40,
+              errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 40),
+            )
+          else
+            const Icon(Icons.shield, size: 40),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              artilheiro['team']?.toString() ?? '',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(height: 16),
-          ...bottom3.asMap().entries.map((entry) {
-            final time = entry.value;
-            final pos = classificacao.length - 2 + entry.key;
-            return _buildBottomTeamCard(time, pos);
-          }),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${artilheiro['gols']} gols',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -681,21 +901,19 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
   String _abreviarNome(String nomeCompleto) {
     final partes = nomeCompleto.trim().split(' ');
     if (partes.length == 1) return nomeCompleto;
-    
-    // Abrevia todos menos o último
+
     final abreviados = partes.sublist(0, partes.length - 1).map((p) => '${p[0]}.').toList();
     final ultimo = partes.last;
-    
+
     return '${abreviados.join('')} $ultimo';
   }
 
   Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao) {
-    final pontos = int.tryParse(time['overall_league_PTS']?.toString() ?? 
-                                time['points']?.toString() ?? '0') ?? 0;
-    
-    final nomeCompleto = time['team_name']?.toString() ?? time['name']?.toString() ?? '';
+    final pontos = time['pontos'] as int;
+
+    final nomeCompleto = time['team_name']?.toString() ?? '';
     final nomeAbreviado = _abreviarNome(nomeCompleto);
-    
+
     String medalImage;
     if (posicao == 1) {
       medalImage = 'assets/gold_medal.png';
@@ -704,11 +922,10 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
     } else {
       medalImage = 'assets/bronze_medal.png';
     }
-    
+
     return Expanded(
       child: Column(
         children: [
-          // Medalha
           Image.asset(
             medalImage,
             width: posicao == 1 ? 50 : 45,
@@ -720,8 +937,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
             ),
           ),
           const SizedBox(height: 12),
-          
-          // Escudo do clube
+
           Container(
             width: posicao == 1 ? 70 : 60,
             height: posicao == 1 ? 70 : 60,
@@ -741,9 +957,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
               ],
             ),
             child: ClipOval(
-              child: (time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty
+              child: (time['team_badge'] ?? '').toString().isNotEmpty
                   ? Image.network(
-                      time['team_badge'] ?? time['logo'],
+                      time['team_badge'],
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(
                         Symbols.shield_rounded,
@@ -759,8 +975,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
             ),
           ),
           const SizedBox(height: 10),
-          
-          // Nome abreviado
+
           Text(
             nomeAbreviado,
             style: TextStyle(
@@ -773,8 +988,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          
-          // Pontos
+
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -800,9 +1014,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
   }
 
   Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao) {
-    final pontos = int.tryParse(time['overall_league_PTS']?.toString() ?? 
-                                time['points']?.toString() ?? '0') ?? 0;
-    
+    final pontos = time['pontos'] as int;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -818,9 +1031,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.red),
           ),
           const SizedBox(width: 16),
-          if ((time['team_badge'] ?? time['logo'] ?? '').toString().isNotEmpty)
+          if ((time['team_badge'] ?? '').toString().isNotEmpty)
             Image.network(
-              time['team_badge'] ?? time['logo'],
+              time['team_badge'],
               width: 40,
               height: 40,
               errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 40),
@@ -830,7 +1043,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage> with SingleTickerPr
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              time['team_name']?.toString() ?? time['name']?.toString() ?? '',
+              time['team_name']?.toString() ?? '',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
