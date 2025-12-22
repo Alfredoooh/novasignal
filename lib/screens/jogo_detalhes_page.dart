@@ -40,20 +40,29 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   }
 
   Future<void> _carregarDados() async {
+    if (!mounted) return;
+    
     try {
       final dados = await context.read<AppState>().carregarJogoDetalhes(widget.jogoId);
-      if (mounted) {
-        setState(() {
-          _jogo = dados;
-          _isLoading = false;
-        });
-        _extractStructuredData();
-      }
+      if (!mounted) return;
+      
+      setState(() {
+        _jogo = dados;
+        _isLoading = false;
+      });
+      _extractStructuredData();
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+      debugPrint('Erro ao carregar detalhes do jogo: $e');
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Tentar novamente após 1 segundo
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted && _jogo == null) {
+        _carregarDados();
       }
     }
   }
@@ -865,8 +874,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
@@ -879,21 +888,25 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (isHome) ...[
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              flex: 4,
+              child: Row(
                 children: [
-                  Text(
-                    player,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface,
-                      fontSize: 15,
-                    ),
-                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          player,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurface,
+                            fontSize: 15,
+                          ),
+                        ),
                   if (assist.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
