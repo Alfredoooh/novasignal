@@ -54,3 +54,6 @@ flutter:
     - assets/gold_medal.png
     - assets/silver_medal.png
     - assets/bronze_medal.png
+    - soccer_ball.png
+    - assist.png
+    - var.png
