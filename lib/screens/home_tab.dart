@@ -23,6 +23,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   bool _isLoading = true;
   String? _error;
   Timer? _liveUpdateTimer;
+  final List<Map<String, dynamic>> _noticias = []; // Lista vazia de notícias por padrão
 
   @override
   bool get wantKeepAlive => true;
@@ -213,11 +214,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         // Bottom Sheet Deslizável
         DraggableScrollableSheet(
           controller: _bottomSheetController,
-          initialChildSize: 0.08,
-          minChildSize: 0.08,
+          initialChildSize: 0.06,
+          minChildSize: 0.06,
           maxChildSize: 0.9,
           snap: true,
-          snapSizes: const [0.08, 0.5, 0.9],
+          snapSizes: const [0.06, 0.9],
           builder: (context, scrollController) {
             return Container(
               decoration: BoxDecoration(
@@ -247,14 +248,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Row(
-                      children: [
-                        Icon(
-                          Symbols.newspaper_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Notícias e Mais',
+                      children: const [
+                        Text(
+                          'Atualidades',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -266,46 +262,31 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   const Divider(),
                   // Conteúdo do modal
                   Expanded(
-                    child: ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        _buildNewsCard(
-                          'Transferências de Janeiro',
-                          'Confira os principais rumores e confirmações',
-                          Symbols.swap_horiz_rounded,
-                          Colors.blue,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNewsCard(
-                          'Resultados da Semana',
-                          'Veja o resumo de todos os jogos',
-                          Symbols.emoji_events_rounded,
-                          Colors.amber,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNewsCard(
-                          'Classificações',
-                          'Tabelas atualizadas de todas as ligas',
-                          Symbols.leaderboard_rounded,
-                          Colors.green,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNewsCard(
-                          'Estatísticas',
-                          'Artilheiros, assistências e muito mais',
-                          Symbols.analytics_rounded,
-                          Colors.purple,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNewsCard(
-                          'Próximos Jogos',
-                          'Agenda completa da semana',
-                          Symbols.calendar_month_rounded,
-                          Colors.orange,
-                        ),
-                      ],
-                    ),
+                    child: _noticias.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Sem notícias ainda',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          )
+                        : ListView(
+                            controller: scrollController,
+                            padding: const EdgeInsets.all(20),
+                            children: _noticias.map((noticia) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildNewsCard(
+                                  noticia['title'] ?? '',
+                                  noticia['subtitle'] ?? '',
+                                  noticia['icon'] ?? Symbols.article_rounded,
+                                  noticia['color'] ?? Colors.blue,
+                                ),
+                              );
+                            }).toList(),
+                          ),
                   ),
                 ],
               ),
@@ -689,7 +670,7 @@ class _LiveTimeIndicatorState extends State<_LiveTimeIndicator> {
   Widget build(BuildContext context) {
     final isLive = widget.status.contains("'") || widget.status == 'LIVE';
     final isHT = widget.status == 'HT';
-    
+
     Color timeColor = isHT 
         ? Colors.orange 
         : isLive 
