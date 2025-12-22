@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme para Android 12+ (API 31+) com Splash Nativo personalizado -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <!-- Splash do Flutter (mantém o original) -->
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        
+        <!-- SPLASH NATIVO - Ícone diferente do launcher -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        
+        <!-- Cor de fundo do splash nativo -->
+        <item name="android:windowSplashScreenBackground">#FFFFFF</item>
+        
+        <!-- Duração da animação do splash (em milissegundos) -->
+        <item name="android:windowSplashScreenAnimationDuration">300</item>
+    </style>
+    
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>
