@@ -278,6 +278,8 @@ class JogoDetalhesHeader extends StatelessWidget {
             tabs: const [
               Tab(text: 'Eventos'),
               Tab(text: 'Formações'),
+              Tab(text: 'Classificação'),
+              Tab(text: 'Previsões'),
               Tab(text: 'Comentários'),
             ],
           ),
