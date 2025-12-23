@@ -91,11 +91,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     final brightness = Theme.of(context).brightness;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
+      // StatusBar totalmente escuro com conteúdo claro (ícones/notifications brancos)
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
+        statusBarColor: Colors.black, // fundo do status bar escuro
+        statusBarIconBrightness: Brightness.light, // ícones brancos (Android)
+        statusBarBrightness: Brightness.dark, // iOS: conteúdo claro sobre fundo escuro
+        systemNavigationBarColor: Colors.black,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: Consumer<AppState>(
@@ -396,27 +397,53 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   surfaceTintColor: Colors.transparent,
-                  indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+                  // Remove a "pill" do indicador
+                  indicatorColor: Colors.transparent,
                   labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                  destinations: const [
+                  // Subir os ícones um pouco sem alterar mais nada
+                  destinations: [
                     NavigationDestination(
-                      icon: Icon(Symbols.home_rounded),
-                      selectedIcon: Icon(Symbols.home_rounded, fill: 1),
+                      icon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.home_rounded),
+                      ),
+                      selectedIcon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.home_rounded, fill: 1),
+                      ),
                       label: 'Home',
                     ),
                     NavigationDestination(
-                      icon: Icon(Symbols.sports_soccer_rounded),
-                      selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
+                      icon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.sports_soccer_rounded),
+                      ),
+                      selectedIcon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.sports_soccer_rounded, fill: 1),
+                      ),
                       label: 'Jogos',
                     ),
                     NavigationDestination(
-                      icon: Icon(Symbols.shapes_rounded),
-                      selectedIcon: Icon(Symbols.shapes_rounded, fill: 1),
+                      icon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.shapes_rounded),
+                      ),
+                      selectedIcon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.shapes_rounded, fill: 1),
+                      ),
                       label: 'Opções',
                     ),
                     NavigationDestination(
-                      icon: Icon(Symbols.inbox_rounded),
-                      selectedIcon: Icon(Symbols.inbox_rounded, fill: 1),
+                      icon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.inbox_rounded),
+                      ),
+                      selectedIcon: Transform.translate(
+                        offset: const Offset(0, -4),
+                        child: const Icon(Symbols.inbox_rounded, fill: 1),
+                      ),
                       label: 'Inbox',
                     ),
                   ],
