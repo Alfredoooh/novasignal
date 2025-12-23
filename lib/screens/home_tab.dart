@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
+import 'home_config_page.dart';
+import 'news_page.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -16,14 +18,13 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   final PageController _pageController = PageController(viewportFraction: 0.92);
-  final DraggableScrollableController _bottomSheetController = DraggableScrollableController();
   int _currentPage = 0;
   List<dynamic> _jogos = [];
   List<dynamic> _jogosAoVivo = [];
   bool _isLoading = true;
   String? _error;
   Timer? _liveUpdateTimer;
-  final List<Map<String, dynamic>> _noticias = []; // Lista vazia de notícias por padrão
+  final List<Map<String, dynamic>> _noticias = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -48,7 +49,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   @override
   void dispose() {
     _pageController.dispose();
-    _bottomSheetController.dispose();
     _liveUpdateTimer?.cancel();
     super.dispose();
   }
@@ -94,6 +94,35 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         _isLoading = false;
       });
     }
+  }
+
+  void _openNewsPage() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => NewsPage(noticias: _noticias),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOutCubic;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
+  }
+
+  void _openHomeConfig() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const HomeConfigPage(),
+      ),
+    );
   }
 
   @override
@@ -150,9 +179,26 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             padding: EdgeInsets.zero,
             children: [
               const SizedBox(height: 16),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text('Grandes Clubes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Grandes Clubes',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                    ),
+                    IconButton(
+                      onPressed: _openHomeConfig,
+                      icon: const Icon(Symbols.tune_rounded),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      tooltip: 'Configurar Tela Inicial',
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               if (_jogos.isNotEmpty) ...[
@@ -212,16 +258,20 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             ],
           ),
         ),
-        // Bottom Sheet Deslizável - MUITO MAIS ALTO
-        DraggableScrollableSheet(
-          controller: _bottomSheetController,
-          initialChildSize: 0.12,
-          minChildSize: 0.12,
-          maxChildSize: 0.92,
-          snap: true,
-          snapSizes: const [0.12, 0.92],
-          builder: (context, scrollController) {
-            return Container(
+        // Área de Notícias Inferior - Estilo Modal
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              if (details.primaryDelta! < -10) {
+                _openNewsPage();
+              }
+            },
+            onTap: _openNewsPage,
+            child: Container(
+              height: 120,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -235,7 +285,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               ),
               child: Column(
                 children: [
-                  // Handle do modal
                   Container(
                     margin: const EdgeInsets.only(top: 14, bottom: 10),
                     width: 48,
@@ -245,7 +294,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                  // Título
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                     child: Row(
@@ -263,6 +311,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        const Spacer(),
+                        Icon(
+                          Symbols.expand_less_rounded,
+                          size: 24,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                        ),
                       ],
                     ),
                   ),
@@ -273,109 +327,24 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                     ),
                   ),
-                  // Conteúdo do modal
-                  Expanded(
-                    child: _noticias.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Symbols.news_rounded,
-                                  size: 56,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Sem notícias no momento',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Fique atento às próximas atualizações',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView(
-                            controller: scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                            children: _noticias.map((noticia) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _buildNewsCard(
-                                  noticia['title'] ?? '',
-                                  noticia['subtitle'] ?? '',
-                                  noticia['icon'] ?? Symbols.article_rounded,
-                                  noticia['color'] ?? Colors.blue,
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      _noticias.isEmpty 
+                          ? 'Sem conteúdo ainda • Deslize para cima'
+                          : '${_noticias.length} ${_noticias.length == 1 ? 'notícia disponível' : 'notícias disponíveis'} • Deslize para cima',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildNewsCard(String title, String subtitle, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Symbols.chevron_right_rounded,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
     );
   }
 
