@@ -41,11 +41,11 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
 
   Future<void> _carregarDados() async {
     if (!mounted) return;
-    
+
     try {
       final dados = await context.read<AppState>().carregarJogoDetalhes(widget.jogoId);
       if (!mounted) return;
-      
+
       setState(() {
         _jogo = dados;
         _isLoading = false;
@@ -54,11 +54,11 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     } catch (e) {
       debugPrint('Erro ao carregar detalhes do jogo: $e');
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = false;
       });
-      
+
       // Tentar novamente após 1 segundo
       await Future.delayed(const Duration(seconds: 1));
       if (mounted && _jogo == null) {
@@ -144,7 +144,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       for (var s in stats) {
         if (s is Map) tmpStats.add(Map<String, dynamic>.from(s));
       }
-      
+
       tmpStats.sort((a, b) {
         final aType = (a['type']?.toString() ?? '').toLowerCase();
         final bType = (b['type']?.toString() ?? '').toLowerCase();
@@ -152,7 +152,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         if (bType.contains('possession') || bType.contains('posse')) return 1;
         return 0;
       });
-      
+
       _statistics = tmpStats;
     }
 
@@ -741,7 +741,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
             ),
           ),
         ],
-        
+
         if (_events.isEmpty)
           Center(
             child: Padding(
@@ -802,6 +802,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
     );
   }
 
+  // === Função _buildEventCard corrigida (substitui a versão problemática) ===
   Widget _buildEventCard(Map<String, dynamic> e, ColorScheme cs) {
     final type = (e['type'] ?? '').toString();
     final time = e['time']?.toString() ?? '';
@@ -873,6 +874,235 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       );
     }
 
+    // bloco do jogador (reduz aninhamento mas preserva conteúdo)
+    Widget playerBlock({required bool leftAligned}) {
+      return Expanded(
+        child: Column(
+          crossAxisAlignment: leftAligned ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          children: [
+            Text(
+              player,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: cs.onSurface,
+                fontSize: 15,
+              ),
+              textAlign: leftAligned ? TextAlign.left : TextAlign.right,
+            ),
+            if (assist.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: leftAligned
+                      ? [
+                          Image.asset(
+                            'assets/icons/assist.png',
+                            width: 14,
+                            height: 14,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Symbols.sports_rounded,
+                              size: 14,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              assist,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ]
+                      : [
+                          Expanded(
+                            child: Text(
+                              assist,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Image.asset(
+                            'assets/icons/assist.png',
+                            width: 14,
+                            height: 14,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Symbols.sports_rounded,
+                              size: 14,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                ),
+              ),
+            if (method.isNotEmpty && method.toLowerCase().contains('var'))
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: leftAligned
+                      ? [
+                          Image.asset(
+                            'assets/icons/var.png',
+                            width: 16,
+                            height: 16,
+                            errorBuilder: (_, __, ___) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade700,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'VAR',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              method,
+                              style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ]
+                      : [
+                          Expanded(
+                            child: Text(
+                              method,
+                              style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Image.asset(
+                            'assets/icons/var.png',
+                            width: 16,
+                            height: 16,
+                            errorBuilder: (_, __, ___) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade700,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'VAR',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                ),
+              )
+            else if (method.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  method,
+                  style: TextStyle(
+                    color: cs.onSurfaceVariant,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: leftAligned ? TextAlign.left : TextAlign.right,
+                ),
+              ),
+            if (type == 'substitution' && e['playerIn'] != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: leftAligned
+                    ? [
+                        Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            e['playerIn'],
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ]
+                    : [
+                        Expanded(
+                          child: Text(
+                            e['playerIn'],
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
+                      ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: leftAligned
+                    ? [
+                        Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            e['playerOut'],
+                            style: TextStyle(
+                              color: Colors.red.shade400,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ]
+                    : [
+                        Expanded(
+                          child: Text(
+                            e['playerOut'],
+                            style: TextStyle(
+                              color: Colors.red.shade400,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
+                      ],
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -891,144 +1121,12 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (isHome) ...[
-            Expanded(
-              flex: 4,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          player,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface,
-                            fontSize: 15,
-                          ),
-                        ),
-                  if (assist.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          Image.asset(
-                            'assets/icons/assist.png',
-                            width: 14,
-                            height: 14,
-                            errorBuilder: (_, __, ___) => Icon(
-                              Symbols.sports_rounded,
-                              size: 14,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              assist,
-                              style: TextStyle(
-                                color: cs.onSurfaceVariant,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (method.isNotEmpty && method.toLowerCase().contains('var'))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          Image.asset(
-                            'assets/icons/var.png',
-                            width: 16,
-                            height: 16,
-                            errorBuilder: (_, __, ___) => Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.shade700,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'VAR',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              method,
-                              style: TextStyle(
-                                color: Colors.purple.shade700,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (method.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        method,
-                        style: TextStyle(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  if (type == 'substitution' && e['playerIn'] != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            e['playerIn'],
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            e['playerOut'],
-                            style: TextStyle(
-                              color: Colors.red.shade400,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
+            playerBlock(leftAligned: true),
             const SizedBox(width: 12),
             eventIcon,
           ] else
             const Expanded(child: SizedBox()),
-          
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -1047,155 +1145,19 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
               ),
             ),
           ),
-          
+
           if (!isHome) ...[
             eventIcon,
             const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    player,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: cs.onSurface,
-                      fontSize: 15,
-                    ),
-                    textAlign: TextAlign.right,
-                  ),
-                  if (assist.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              assist,
-                              style: TextStyle(
-                                color: cs.onSurfaceVariant,
-                                fontSize: 12,
-                              ),
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Image.asset(
-                            'assets/icons/assist.png',
-                            width: 14,
-                            height: 14,
-                            errorBuilder: (_, __, ___) => Icon(
-                              Symbols.sports_rounded,
-                              size: 14,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (method.isNotEmpty && method.toLowerCase().contains('var'))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              method,
-                              style: TextStyle(
-                                color: Colors.purple.shade700,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Image.asset(
-                            'assets/icons/var.png',
-                            width: 16,
-                            height: 16,
-                            errorBuilder: (_, __, ___) => Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.shade700,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'VAR',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (method.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        method,
-                        style: TextStyle(
-                          color: cs.onSurfaceVariant,
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  if (type == 'substitution' && e['playerIn'] != null) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            e['playerIn'],
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            e['playerOut'],
-                            style: TextStyle(
-                              color: Colors.red.shade400,
-                              fontSize: 12,
-                            ),
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
+            playerBlock(leftAligned: false),
           ] else
             const Expanded(child: SizedBox()),
         ],
       ),
     );
   }
+
+  // === fim do _buildEventCard corrigido ===
 
   Widget _buildFormacoesTab() {
     final cs = Theme.of(context).colorScheme;
