@@ -91,11 +91,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     final brightness = Theme.of(context).brightness;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      // StatusBar totalmente escuro com conteúdo claro (ícones/notifications brancos)
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.black, // fundo do status bar escuro
-        statusBarIconBrightness: Brightness.light, // ícones brancos (Android)
-        statusBarBrightness: Brightness.dark, // iOS: conteúdo claro sobre fundo escuro
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
         systemNavigationBarColor: Colors.black,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
@@ -107,7 +106,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
             child: Stack(
               children: [
-                // --- Drawer (custom) ---
                 Container(
                   color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
                   child: SafeArea(
@@ -178,8 +176,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     ),
                   ),
                 ),
-
-                // --- Conteúdo principal com animação ---
                 Transform.translate(
                   offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
                   child: Transform.scale(
@@ -384,71 +380,85 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
           child: SafeArea(
             top: false,
-            child: SizedBox(
-              height: 65,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: NavigationBar(
-                  selectedIndex: currentIndex,
-                  onDestinationSelected: (index) {
-                    final tabs = ['home', 'jogos', 'opcoes', 'inbox'];
-                    appState.mudarTab(tabs[index]);
-                  },
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  surfaceTintColor: Colors.transparent,
-                  // Remove a "pill" do indicador
-                  indicatorColor: Colors.transparent,
-                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                  // Subir os ícones um pouco sem alterar mais nada
-                  destinations: [
-                    NavigationDestination(
-                      icon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.home_rounded),
-                      ),
-                      selectedIcon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.home_rounded, fill: 1),
-                      ),
-                      label: 'Home',
-                    ),
-                    NavigationDestination(
-                      icon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.sports_soccer_rounded),
-                      ),
-                      selectedIcon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.sports_soccer_rounded, fill: 1),
-                      ),
-                      label: 'Jogos',
-                    ),
-                    NavigationDestination(
-                      icon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.shapes_rounded),
-                      ),
-                      selectedIcon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.shapes_rounded, fill: 1),
-                      ),
-                      label: 'Opções',
-                    ),
-                    NavigationDestination(
-                      icon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.inbox_rounded),
-                      ),
-                      selectedIcon: Transform.translate(
-                        offset: const Offset(0, -4),
-                        child: const Icon(Symbols.inbox_rounded, fill: 1),
-                      ),
-                      label: 'Inbox',
-                    ),
-                  ],
-                ),
+            child: Container(
+              height: 72,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(
+                    icon: Symbols.home_rounded,
+                    label: 'Home',
+                    isSelected: currentIndex == 0,
+                    onTap: () => appState.mudarTab('home'),
+                  ),
+                  _buildNavItem(
+                    icon: Symbols.sports_soccer_rounded,
+                    label: 'Jogos',
+                    isSelected: currentIndex == 1,
+                    onTap: () => appState.mudarTab('jogos'),
+                  ),
+                  _buildNavItem(
+                    icon: Symbols.shapes_rounded,
+                    label: 'Opções',
+                    isSelected: currentIndex == 2,
+                    onTap: () => appState.mudarTab('opcoes'),
+                  ),
+                  _buildNavItem(
+                    icon: Symbols.inbox_rounded,
+                    label: 'Inbox',
+                    isSelected: currentIndex == 3,
+                    onTap: () => appState.mudarTab('inbox'),
+                  ),
+                ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          highlightColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 26,
+                  fill: isSelected ? 1 : 0,
+                  color: isSelected 
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected 
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
