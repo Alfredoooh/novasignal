@@ -1,9 +1,8 @@
-// atividades_page.dart
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 
-class AtividadesPage extends StatelessWidget {
-  const AtividadesPage({super.key});
+class OpcoesPage extends StatelessWidget {
+  const OpcoesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,13 +11,13 @@ class AtividadesPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Symbols.notifications_rounded,
+            Symbols.shapes_rounded,
             size: 80,
             color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
-            'Atividades',
+            'Opções',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -27,7 +26,7 @@ class AtividadesPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Nenhuma atividade recente',
+            'Configure suas preferências',
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
