@@ -83,7 +83,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   void _startAutoUpdate() {
-    _autoUpdateTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    _autoUpdateTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) {
         _silentUpdate();
       }
@@ -206,34 +206,19 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.3),
-                      Colors.white.withOpacity(0.1),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.4),
-                    width: 1.5,
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    width: 1,
                   ),
-                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +229,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           width: 24,
                           height: 24,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.4),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -253,7 +238,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           width: 120,
                           height: 16,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.4),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
@@ -269,7 +254,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.4),
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -278,7 +263,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 child: Container(
                                   height: 14,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.4),
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
@@ -292,7 +277,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                             width: 50,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.4),
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
@@ -305,7 +290,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 child: Container(
                                   height: 14,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.4),
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
@@ -315,7 +300,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.4),
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -431,12 +416,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   bool _isJogoAoVivo(dynamic jogo) {
     final status = jogo['match_status'] ?? '';
 
-    // Verifica se é um número (minutos do jogo)
     if (int.tryParse(status.toString()) != null) {
       return true;
     }
 
-    // Verifica formatos comuns de jogo ao vivo
     return status.contains("'") || 
            status == 'HT' || 
            status == 'LIVE' ||
@@ -495,130 +478,141 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              InkWell(
-                onTap: () {
-                  if (leagueId != null) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => LigaDetalhesPage(
-                          ligaId: leagueId.toString(),
-                          ligaNome: ligaNome,
-                          ligaLogo: leagueLogo,
-                        ),
-                      ),
-                    );
-                  }
-                },
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Theme.of(context).dividerColor.withOpacity(0.15),
-                        width: 1,
-                      ),
-                    ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    width: 1,
                   ),
-                  child: Row(
-                    children: [
-                      if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
-                        Hero(
-                          tag: 'liga_logo_$leagueId',
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            ),
-                            padding: const EdgeInsets.all(4),
-                            child: _CachedNetworkImage(
-                              imageUrl: leagueLogo,
-                              width: 20,
-                              height: 20,
-                              placeholder: Icon(
-                                Symbols.emoji_events_rounded,
-                                size: 16,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        if (leagueId != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => LigaDetalhesPage(
+                                ligaId: leagueId.toString(),
+                                ligaNome: ligaNome,
+                                ligaLogo: leagueLogo,
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ] else ...[
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          ),
-                          child: Icon(
-                            Symbols.emoji_events_rounded,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                      Expanded(
-                        child: Text(
-                          ligaNome,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          );
+                        }
+                      },
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${jogosLiga.length}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Theme.of(context).dividerColor.withOpacity(0.15),
+                              width: 1,
+                            ),
                           ),
                         ),
+                        child: Row(
+                          children: [
+                            if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
+                              Hero(
+                                tag: 'liga_logo_$leagueId',
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: _CachedNetworkImage(
+                                    imageUrl: leagueLogo,
+                                    width: 20,
+                                    height: 20,
+                                    placeholder: Icon(
+                                      Symbols.emoji_events_rounded,
+                                      size: 16,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ] else ...[
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                ),
+                                child: Icon(
+                                  Symbols.emoji_events_rounded,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            Expanded(
+                              child: Text(
+                                ligaNome,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${jogosLiga.length}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Symbols.chevron_right_rounded,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Symbols.chevron_right_rounded,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
+                    ),
+                    ...jogosLiga.asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final jogo = entry.value;
+                      final isLast = idx == jogosLiga.length - 1;
+                      return _buildMatchItem(jogo, isLast);
+                    }),
+                  ],
                 ),
               ),
-              ...jogosLiga.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final jogo = entry.value;
-                final isLast = idx == jogosLiga.length - 1;
-                return _buildMatchItem(jogo, isLast);
-              }),
-            ],
+            ),
           ),
         );
       },
@@ -628,7 +622,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
 
-    // Verifica se é um número (minutos do jogo)
     final isNumericStatus = int.tryParse(status.toString()) != null;
 
     final isLive = isNumericStatus || 
@@ -646,7 +639,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                        status == 'AP' ||
                        status == 'Pen.';
 
-    // Formatar o status para exibição
     String displayStatus = status;
     if (isNumericStatus) {
       displayStatus = "$status'";
@@ -661,12 +653,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         );
       },
       borderRadius: isLast 
-          ? const BorderRadius.vertical(bottom: Radius.circular(12))
+          ? const BorderRadius.vertical(bottom: Radius.circular(16))
           : BorderRadius.zero,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHigh,
           border: isLast ? null : Border(
             bottom: BorderSide(
               color: Theme.of(context).dividerColor.withOpacity(0.15),
@@ -674,7 +665,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             ),
           ),
           borderRadius: isLast 
-              ? const BorderRadius.vertical(bottom: Radius.circular(12))
+              ? const BorderRadius.vertical(bottom: Radius.circular(16))
               : BorderRadius.zero,
         ),
         child: Column(
@@ -752,8 +743,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             ),
             const SizedBox(height: 8),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                const SizedBox(width: 40),
                 if (isPlaying) ...[
                   AnimatedBuilder(
                     animation: _blinkController,
@@ -770,23 +762,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       );
                     },
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'LIVE',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
                 ] else if (isHalfTime) ...[
                   Text(
                     'HT',
@@ -799,7 +774,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 ] else if (isFinished) ...[
                   Text(
                     'Finalizado',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Colors.red,
@@ -815,6 +790,28 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     ),
                   ),
                 ],
+                if (isPlaying)
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'LIVE',
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox(width: 40),
               ],
             ),
           ],
