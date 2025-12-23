@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'event_card_widget.dart';
 import 'statistics_widget.dart';
 import 'lineup_widget.dart';
+import 'standings_widget.dart';
+import 'predictions_widget.dart';
 import 'comments_widget.dart';
 
 class JogoDetalhesTabs extends StatelessWidget {
@@ -11,6 +13,8 @@ class JogoDetalhesTabs extends StatelessWidget {
   final List<Map<String, dynamic>> lineupHome;
   final List<Map<String, dynamic>> lineupAway;
   final List<Map<String, dynamic>> comentarios;
+  final List<Map<String, dynamic>> standings;
+  final Map<String, dynamic>? predictions;
   final Map<String, dynamic> jogo;
 
   const JogoDetalhesTabs({
@@ -21,6 +25,8 @@ class JogoDetalhesTabs extends StatelessWidget {
     required this.lineupHome,
     required this.lineupAway,
     required this.comentarios,
+    required this.standings,
+    required this.predictions,
     required this.jogo,
   });
 
@@ -35,6 +41,8 @@ class JogoDetalhesTabs extends StatelessWidget {
           lineupAway: lineupAway,
           jogo: jogo,
         ),
+        StandingsTab(standings: standings, jogo: jogo),
+        PredictionsTab(predictions: predictions, jogo: jogo),
         ComentariosTab(comentarios: comentarios),
       ],
     );
