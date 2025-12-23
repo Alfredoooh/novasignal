@@ -28,6 +28,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   List<Map<String, dynamic>> _lineupAway = [];
   List<Map<String, dynamic>> _statistics = [];
   List<Map<String, dynamic>> _comentarios = [];
+  List<Map<String, dynamic>> _standings = [];
+  Map<String, dynamic>? _predictions;
   int _cartoesAmareloCasa = 0;
   int _cartoesVermelhoCasa = 0;
   int _cartoesAmareloFora = 0;
@@ -36,7 +38,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _carregarDados();
   }
 
@@ -172,6 +174,16 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
       _comentarios = List<Map<String, dynamic>>.from(_jogo!['comments']);
     }
 
+    // Standings
+    if (_jogo!['standings'] != null && _jogo!['standings'] is List) {
+      _standings = List<Map<String, dynamic>>.from(_jogo!['standings']);
+    }
+
+    // Predictions
+    if (_jogo!['predictions'] != null && _jogo!['predictions'] is Map) {
+      _predictions = Map<String, dynamic>.from(_jogo!['predictions']);
+    }
+
     if (mounted) setState(() {});
   }
 
@@ -243,6 +255,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           lineupHome: _lineupHome,
           lineupAway: _lineupAway,
           comentarios: _comentarios,
+          standings: _standings,
+          predictions: _predictions,
           jogo: _jogo!,
         ),
       ),
