@@ -25,6 +25,7 @@ class AppState with ChangeNotifier {
   // Cache com exibição imediata e atualização em background
   final Map<String, _CacheEntry> _cache = {};
   String jogoDetalhesId = '';
+  String jogoDetalhesTitulo = '';
   String ligaDetalhesId = '';
   String ligaDetalhesTitulo = '';
   List<dynamic> todasLigas = [];
@@ -48,7 +49,7 @@ class AppState with ChangeNotifier {
   // NOVA ESTRATÉGIA: Cache serve apenas para exibição imediata
   // Dados são SEMPRE atualizados em background
   static const int _cacheStaleTime = 30; // segundos - quando considerar "antigo"
-  
+
   // Intervalos de atualização automática (em segundos)
   static const int _updateIntervalJogosAoVivo = 10; // 10s para jogos ao vivo
   static const int _updateIntervalJogosNormais = 30; // 30s para jogos normais
@@ -67,8 +68,13 @@ class AppState with ChangeNotifier {
   final Map<String, Completer<dynamic>> _pendingRequests = {};
 
   AppState() {
+    // Carrega preferências, inicia limpeza de cache e pré-carrega dados da home
     _carregarPreferencias();
     _startCacheCleanup();
+
+    // Dispara pré-carregamento da Home (não bloqueante)
+    // Use microtask para evitar bloqueios no construtor
+    Future.microtask(() => precarregarDadosHome());
   }
 
   // Timer para limpar cache muito antigo
@@ -81,8 +87,8 @@ class AppState with ChangeNotifier {
   void _cleanOldCache() {
     final now = DateTime.now();
     // Remove apenas itens com mais de 1 hora
-    _cache.removeWhere((key, entry) => 
-      now.difference(entry.timestamp).inHours > 1
+    _cache.removeWhere((key, entry) =>
+        now.difference(entry.timestamp).inHours > 1
     );
     debugPrint('🧹 Cache antigo limpo. Itens restantes: ${_cache.length}');
   }
@@ -177,6 +183,8 @@ class AppState with ChangeNotifier {
 
   void setJogoDetalhes(String id, String titulo) {
     jogoDetalhesId = id;
+    jogoDetalhesTitulo = titulo;
+    notifyListeners();
   }
 
   void setLigaDetalhes(String id, String titulo) {
@@ -207,6 +215,7 @@ class AppState with ChangeNotifier {
       data: data,
       timestamp: DateTime.now(),
     );
+    debugPrint('💾 Cache salvo: $key (items: ${_cache.length})');
   }
 
   bool _isCacheStale(String key) {
@@ -231,10 +240,10 @@ class AppState with ChangeNotifier {
 
     try {
       final result = await _executeRequest(endpoint);
-      
+
       // Salva no cache
       _saveToCache(cacheKey, result);
-      
+
       // Completa a requisição
       completer.complete(result);
       return result;
@@ -281,8 +290,16 @@ class AppState with ChangeNotifier {
 
     // 1. Retorna cache imediatamente se existir
     final cached = _getFromCache(cacheKey);
-    
-    // 2. Se cache está antigo OU não existe, busca novos dados
+
+    // 2a. Se não existe cache, aguarda a primeira fetch (garante que a primeira load fornece dados)
+    if (cached == null) {
+      debugPrint('ℹ️ Sem cache para $cacheKey — buscando de imediato...');
+      await _fetchJogosDoDiaBackground(data, cacheKey);
+      final after = _getFromCache(cacheKey);
+      return after as List<dynamic>? ?? [];
+    }
+
+    // 2b. Se cache está antigo OU não existe, busca novos dados em background
     if (_isCacheStale(cacheKey)) {
       _fetchJogosDoDiaBackground(data, cacheKey);
     }
@@ -296,18 +313,23 @@ class AppState with ChangeNotifier {
       final dataStr = DateFormat('yyyy-MM-dd').format(data);
       final response = await _makeRequest('/api/matches', cacheKey);
 
+      List<dynamic> todosJogos;
       if (response is Map && response.containsKey('matches')) {
-        final todosJogos = response['matches'] as List<dynamic>;
-
-        final jogosDoDia = todosJogos.where((jogo) {
-          final matchDate = jogo['match_date'] ?? '';
-          return matchDate == dataStr;
-        }).toList();
-
-        debugPrint('✅ ${jogosDoDia.length} jogos para $dataStr');
-        _saveToCache(cacheKey, jogosDoDia);
-        notifyListeners(); // Atualiza UI
+        todosJogos = List<dynamic>.from(response['matches'] as List);
+      } else if (response is List) {
+        todosJogos = response;
+      } else {
+        todosJogos = [];
       }
+
+      final jogosDoDia = todosJogos.where((jogo) {
+        final matchDate = (jogo['match_date'] ?? '').toString();
+        return matchDate == dataStr;
+      }).toList();
+
+      debugPrint('✅ ${jogosDoDia.length} jogos para $dataStr');
+      _saveToCache(cacheKey, jogosDoDia);
+      notifyListeners(); // Atualiza UI
     } catch (e) {
       debugPrint('❌ Erro ao buscar jogos: $e');
     }
@@ -317,10 +339,10 @@ class AppState with ChangeNotifier {
   void iniciarAutoAtualizacaoJogos(DateTime data) {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
     final timerId = 'jogos_$dataStr';
-    
+
     // Cancela timer anterior se existir
     _autoUpdateTimers[timerId]?.cancel();
-    
+
     // Cria novo timer
     _autoUpdateTimers[timerId] = Timer.periodic(
       Duration(seconds: _updateIntervalJogosAoVivo),
@@ -329,7 +351,7 @@ class AppState with ChangeNotifier {
         _fetchJogosDoDiaBackground(data, cacheKey);
       },
     );
-    
+
     debugPrint('🔄 Auto-atualização iniciada para $dataStr');
   }
 
@@ -345,7 +367,7 @@ class AppState with ChangeNotifier {
     const cacheKey = 'destaque_jogos';
 
     final cached = _getFromCache(cacheKey);
-    
+
     if (_isCacheStale(cacheKey)) {
       _fetchJogosDestaqueBackground(cacheKey);
     }
@@ -357,55 +379,60 @@ class AppState with ChangeNotifier {
     try {
       final response = await _makeRequest('/api/matches', cacheKey);
 
+      List<dynamic> todosJogos;
       if (response is Map && response.containsKey('matches')) {
-        final todosJogos = response['matches'] as List<dynamic>;
-
-        final jogosFiltrados = todosJogos.where((jogo) {
-          final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
-          final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
-
-          for (var team in topClubs) {
-            final teamLower = team.toLowerCase();
-            if (home.contains(teamLower) || away.contains(teamLower)) {
-              return true;
-            }
-          }
-          return false;
-        }).toList();
-
-        // Ordenar: jogos ao vivo primeiro
-        jogosFiltrados.sort((a, b) {
-          final aIsLive = _isJogoAoVivo(a);
-          final bIsLive = _isJogoAoVivo(b);
-
-          if (aIsLive && !bIsLive) return -1;
-          if (!aIsLive && bIsLive) return 1;
-          return 0;
-        });
-
-        final limitedJogos = jogosFiltrados.take(10).toList();
-        debugPrint('✅ ${limitedJogos.length} jogos em destaque');
-        _saveToCache(cacheKey, limitedJogos);
-        notifyListeners();
+        todosJogos = List<dynamic>.from(response['matches'] as List);
+      } else if (response is List) {
+        todosJogos = response;
+      } else {
+        todosJogos = [];
       }
+
+      final jogosFiltrados = todosJogos.where((jogo) {
+        final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
+        final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
+
+        for (var team in topClubs) {
+          final teamLower = team.toLowerCase();
+          if (home.contains(teamLower) || away.contains(teamLower)) {
+            return true;
+          }
+        }
+        return false;
+      }).toList();
+
+      // Ordenar: jogos ao vivo primeiro
+      jogosFiltrados.sort((a, b) {
+        final aIsLive = _isJogoAoVivo(a);
+        final bIsLive = _isJogoAoVivo(b);
+
+        if (aIsLive && !bIsLive) return -1;
+        if (!aIsLive && bIsLive) return 1;
+        return 0;
+      });
+
+      final limitedJogos = jogosFiltrados.take(10).toList();
+      debugPrint('✅ ${limitedJogos.length} jogos em destaque');
+      _saveToCache(cacheKey, limitedJogos);
+      notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro ao buscar destaques: $e');
     }
   }
 
   bool _isJogoAoVivo(dynamic jogo) {
-    final status = jogo['match_status'] ?? '';
-    
+    final status = (jogo['match_status'] ?? '').toString();
+
     // Verifica se é um número (minutos do jogo)
-    if (int.tryParse(status.toString()) != null) {
+    if (int.tryParse(status) != null) {
       return true;
     }
-    
-    return status.contains("'") || 
-           status == 'HT' || 
-           status == 'LIVE' ||
-           status == '1H' ||
-           status == '2H';
+
+    return status.contains("'") ||
+        status == 'HT' ||
+        status == 'LIVE' ||
+        status == '1H' ||
+        status == '2H';
   }
 
   Future<List<dynamic>> pesquisarJogos(String termo) async {
@@ -413,7 +440,7 @@ class AppState with ChangeNotifier {
     final cacheKey = 'pesquisa_$termoLower';
 
     final cached = _getFromCache(cacheKey);
-    
+
     if (_isCacheStale(cacheKey)) {
       _fetchPesquisaBackground(termo, cacheKey);
     }
@@ -426,22 +453,27 @@ class AppState with ChangeNotifier {
       final termoLower = termo.toLowerCase();
       final response = await _makeRequest('/api/matches', cacheKey);
 
+      List<dynamic> todosJogos;
       if (response is Map && response.containsKey('matches')) {
-        final todosJogos = response['matches'] as List<dynamic>;
-
-        final resultados = todosJogos.where((jogo) {
-          final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
-          final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
-          final league = (jogo['league_name'] ?? '').toString().toLowerCase();
-          return home.contains(termoLower) || 
-                 away.contains(termoLower) || 
-                 league.contains(termoLower);
-        }).toList();
-
-        debugPrint('✅ ${resultados.length} resultados para "$termo"');
-        _saveToCache(cacheKey, resultados);
-        notifyListeners();
+        todosJogos = List<dynamic>.from(response['matches'] as List);
+      } else if (response is List) {
+        todosJogos = response;
+      } else {
+        todosJogos = [];
       }
+
+      final resultados = todosJogos.where((jogo) {
+        final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
+        final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
+        final league = (jogo['league_name'] ?? '').toString().toLowerCase();
+        return home.contains(termoLower) ||
+            away.contains(termoLower) ||
+            league.contains(termoLower);
+      }).toList();
+
+      debugPrint('✅ ${resultados.length} resultados para "$termo"');
+      _saveToCache(cacheKey, resultados);
+      notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro na pesquisa: $e');
     }
@@ -451,7 +483,7 @@ class AppState with ChangeNotifier {
     final cacheKey = 'detalhes_$jogoId';
 
     final cached = _getFromCache(cacheKey);
-    
+
     // Sempre atualiza detalhes (dados mais críticos)
     _fetchJogoDetalhesBackground(jogoId, cacheKey);
 
@@ -474,9 +506,9 @@ class AppState with ChangeNotifier {
   // Auto-atualização para detalhes de jogo
   void iniciarAutoAtualizacaoDetalhes(String jogoId) {
     final timerId = 'detalhes_$jogoId';
-    
+
     _autoUpdateTimers[timerId]?.cancel();
-    
+
     _autoUpdateTimers[timerId] = Timer.periodic(
       Duration(seconds: _updateIntervalDetalhes),
       (timer) {
@@ -484,7 +516,7 @@ class AppState with ChangeNotifier {
         _fetchJogoDetalhesBackground(jogoId, cacheKey);
       },
     );
-    
+
     debugPrint('🔄 Auto-atualização de detalhes iniciada para jogo $jogoId');
   }
 
@@ -492,7 +524,7 @@ class AppState with ChangeNotifier {
     final timerId = 'detalhes_$jogoId';
     _autoUpdateTimers[timerId]?.cancel();
     _autoUpdateTimers.remove(timerId);
-    debugPrint('⏸️ Auto-atualização de detalhes pausada');
+    debugPrint('⏸️ Auto-atualização de detalhes pausada para $jogoId');
   }
 
   Future<List<dynamic>> carregarLigas() async {
@@ -502,7 +534,7 @@ class AppState with ChangeNotifier {
     if (cached != null) {
       todasLigas = cached as List<dynamic>;
     }
-    
+
     if (_isCacheStale(cacheKey)) {
       _fetchLigasBackground(cacheKey);
     }
@@ -514,30 +546,35 @@ class AppState with ChangeNotifier {
     try {
       final response = await _makeRequest('/api/matches', cacheKey);
 
+      List<dynamic> todosJogos;
       if (response is Map && response.containsKey('matches')) {
-        final todosJogos = response['matches'] as List<dynamic>;
-
-        final ligasMap = <String, Map<String, dynamic>>{};
-
-        for (var jogo in todosJogos) {
-          final ligaId = jogo['league_id']?.toString();
-          final ligaNome = jogo['league_name'];
-
-          if (ligaId != null && ligaNome != null && !ligasMap.containsKey(ligaId)) {
-            ligasMap[ligaId] = {
-              'league_id': ligaId,
-              'league_name': ligaNome,
-              'country_name': jogo['country_name'] ?? '',
-              'league_logo': jogo['league_logo'] ?? '',
-            };
-          }
-        }
-
-        todasLigas = ligasMap.values.toList();
-        _saveToCache(cacheKey, todasLigas);
-        debugPrint('✅ ${todasLigas.length} ligas carregadas');
-        notifyListeners();
+        todosJogos = List<dynamic>.from(response['matches'] as List);
+      } else if (response is List) {
+        todosJogos = response;
+      } else {
+        todosJogos = [];
       }
+
+      final ligasMap = <String, Map<String, dynamic>>{};
+
+      for (var jogo in todosJogos) {
+        final ligaId = jogo['league_id']?.toString();
+        final ligaNome = jogo['league_name'];
+
+        if (ligaId != null && ligaNome != null && !ligasMap.containsKey(ligaId)) {
+          ligasMap[ligaId] = {
+            'league_id': ligaId,
+            'league_name': ligaNome,
+            'country_name': jogo['country_name'] ?? '',
+            'league_logo': jogo['league_logo'] ?? '',
+          };
+        }
+      }
+
+      todasLigas = ligasMap.values.toList();
+      _saveToCache(cacheKey, todasLigas);
+      debugPrint('✅ ${todasLigas.length} ligas carregadas');
+      notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro ao carregar ligas: $e');
     }
@@ -547,7 +584,7 @@ class AppState with ChangeNotifier {
     final cacheKey = 'classificacao_$ligaId';
 
     final cached = _getFromCache(cacheKey);
-    
+
     if (_isCacheStale(cacheKey)) {
       _fetchClassificacaoBackground(ligaId, cacheKey);
     }
@@ -569,7 +606,7 @@ class AppState with ChangeNotifier {
     final cacheKey = 'jogos_liga_$ligaId';
 
     final cached = _getFromCache(cacheKey);
-    
+
     if (_isCacheStale(cacheKey)) {
       _fetchJogosPorLigaBackground(ligaId, cacheKey);
     }
@@ -584,12 +621,18 @@ class AppState with ChangeNotifier {
         cacheKey,
       );
 
+      List<dynamic> jogos;
       if (response is Map && response.containsKey('matches')) {
-        final jogos = response['matches'] as List<dynamic>;
-        debugPrint('✅ ${jogos.length} jogos da liga $ligaId');
-        _saveToCache(cacheKey, jogos);
-        notifyListeners();
+        jogos = List<dynamic>.from(response['matches'] as List);
+      } else if (response is List) {
+        jogos = response;
+      } else {
+        jogos = [];
       }
+
+      debugPrint('✅ ${jogos.length} jogos da liga $ligaId');
+      _saveToCache(cacheKey, jogos);
+      notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro ao carregar jogos da liga: $e');
     }
@@ -601,17 +644,23 @@ class AppState with ChangeNotifier {
 
   Future<void> precarregarDadosHome() async {
     debugPrint('🔥 Pré-carregando dados da Home...');
-    
-    // Inicia carregamento em paralelo
-    await Future.wait([
-      carregarJogosDoDia(DateTime.now()),
-      carregarJogosDestaque(topClubs),
-    ]);
-    
-    // Inicia auto-atualização
-    iniciarAutoAtualizacaoJogos(DateTime.now());
-    
-    debugPrint('✅ Dados da Home pré-carregados e auto-atualização iniciada');
+
+    try {
+      // Inicia carregamento em paralelo; para a primeira load de jogos do dia
+      // queremos garantir que haja dados, por isso aguardamos carregarJogosDoDia
+      await Future.wait([
+        carregarJogosDoDia(DateTime.now()), // esta agora aguarda primeiro carregamento
+        carregarJogosDestaque(topClubs),
+        carregarLigas(),
+      ]);
+
+      // Inicia auto-atualização
+      iniciarAutoAtualizacaoJogos(DateTime.now());
+
+      debugPrint('✅ Dados da Home pré-carregados e auto-atualização iniciada');
+    } catch (e) {
+      debugPrint('❌ Erro ao pré-carregar dados da Home: $e');
+    }
   }
 
   void limparCache() {
