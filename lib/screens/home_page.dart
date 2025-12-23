@@ -7,7 +7,7 @@ import '../core/app_state.dart';
 import 'home_tab.dart';
 import 'search_page.dart';
 import 'jogos_page.dart';
-import 'atividades_page.dart';
+import 'opcoes_page.dart';
 import 'inbox_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
@@ -91,10 +91,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     final brightness = Theme.of(context).brightness;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Colors.black,
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: Consumer<AppState>(
         builder: (context, appState, child) {
@@ -292,9 +294,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         leading = menuButton;
         title = 'Jogos';
         break;
-      case 'atividades':
+      case 'opcoes':
         leading = menuButton;
-        title = 'Atividades';
+        title = 'Opções';
         break;
       case 'inbox':
         leading = menuButton;
@@ -340,7 +342,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       controller: _pageController,
       physics: const NeverScrollableScrollPhysics(),
       onPageChanged: (index) {
-        final tabs = ['home', 'jogos', 'atividades', 'inbox'];
+        final tabs = ['home', 'jogos', 'opcoes', 'inbox'];
         if (index < tabs.length) {
           appState.mudarTab(tabs[index]);
         }
@@ -348,14 +350,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       children: const [
         HomeTab(),
         JogosPage(),
-        AtividadesPage(),
+        OpcoesPage(),
         InboxPage(),
       ],
     );
   }
 
   Widget _buildBottomNav(AppState appState) {
-    int currentIndex = ['home', 'jogos', 'atividades', 'inbox'].indexOf(appState.tabAtual);
+    int currentIndex = ['home', 'jogos', 'opcoes', 'inbox'].indexOf(appState.tabAtual);
     if (currentIndex == -1) currentIndex = 0;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -382,40 +384,43 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           child: SafeArea(
             top: false,
             child: SizedBox(
-              height: 80,
-              child: NavigationBar(
-                selectedIndex: currentIndex,
-                onDestinationSelected: (index) {
-                  final tabs = ['home', 'jogos', 'atividades', 'inbox'];
-                  appState.mudarTab(tabs[index]);
-                },
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                surfaceTintColor: Colors.transparent,
-                indicatorColor: Theme.of(context).colorScheme.primaryContainer,
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(Symbols.home_rounded),
-                    selectedIcon: Icon(Symbols.home_rounded, fill: 1),
-                    label: 'Home',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Symbols.sports_soccer_rounded),
-                    selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
-                    label: 'Jogos',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Symbols.notifications_rounded),
-                    selectedIcon: Icon(Symbols.notifications_rounded, fill: 1),
-                    label: 'Atividades',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Symbols.inbox_rounded),
-                    selectedIcon: Icon(Symbols.inbox_rounded, fill: 1),
-                    label: 'Inbox',
-                  ),
-                ],
+              height: 65,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: NavigationBar(
+                  selectedIndex: currentIndex,
+                  onDestinationSelected: (index) {
+                    final tabs = ['home', 'jogos', 'opcoes', 'inbox'];
+                    appState.mudarTab(tabs[index]);
+                  },
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  surfaceTintColor: Colors.transparent,
+                  indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Symbols.home_rounded),
+                      selectedIcon: Icon(Symbols.home_rounded, fill: 1),
+                      label: 'Home',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Symbols.sports_soccer_rounded),
+                      selectedIcon: Icon(Symbols.sports_soccer_rounded, fill: 1),
+                      label: 'Jogos',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Symbols.shapes_rounded),
+                      selectedIcon: Icon(Symbols.shapes_rounded, fill: 1),
+                      label: 'Opções',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Symbols.inbox_rounded),
+                      selectedIcon: Icon(Symbols.inbox_rounded, fill: 1),
+                      label: 'Inbox',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
