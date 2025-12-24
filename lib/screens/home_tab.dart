@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:animations/animations.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
 import 'home_config_page.dart';
 import 'news_page.dart';
+import 'news_detail_page.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -92,31 +94,18 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  void _openNewsPage() {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => NewsPage(noticias: _noticias),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0.0, 1.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOutCubic;
-          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-          var offsetAnimation = animation.drive(tween);
-
-          return SlideTransition(
-            position: offsetAnimation,
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-      ),
-    );
-  }
-
   void _openHomeConfig() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const HomeConfigPage(),
+      ),
+    );
+  }
+
+  void _openNewsDetail(Map<String, dynamic> noticia) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => NewsDetailPage(noticia: noticia),
       ),
     );
   }
@@ -153,7 +142,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
     return Stack(
       children: [
-        // Glassmorphism Background Effect
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -182,11 +170,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   ),
                   IconButton(
                     onPressed: _openHomeConfig,
-                    icon: const Icon(Symbols.tune_rounded),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-                      padding: const EdgeInsets.all(12),
-                    ),
+                    icon: const Icon(Symbols.more_horiz_rounded),
+                    padding: const EdgeInsets.all(12),
                     tooltip: 'Configurar Tela Inicial',
                   ),
                 ],
@@ -246,106 +231,168 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               const SizedBox(height: 12),
               ..._jogosAoVivo.map((jogo) => _buildLiveMatchCard(jogo)),
             ],
-            const SizedBox(height: 180),
+            const SizedBox(height: 32),
+            OpenContainer(
+              closedElevation: 0,
+              openElevation: 0,
+              closedColor: Colors.transparent,
+              openColor: Theme.of(context).colorScheme.surface,
+              transitionDuration: const Duration(milliseconds: 500),
+              transitionType: ContainerTransitionType.fadeThrough,
+              closedBuilder: (context, action) => _buildNewsPreview(action),
+              openBuilder: (context, action) => NewsPage(noticias: _noticias),
+            ),
+            const SizedBox(height: 100),
           ],
         ),
-        // Área de Notícias Inferior - Glassmorphism
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: GestureDetector(
-            onVerticalDragUpdate: (details) {
-              if (details.primaryDelta! < -10) {
-                _openNewsPage();
-              }
-            },
-            onTap: _openNewsPage,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 14, bottom: 10),
-                        width: 48,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Symbols.article_rounded,
-                              size: 22,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Atualidades',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              Symbols.expand_less_rounded,
-                              size: 24,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                        child: Divider(
-                          thickness: 1,
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          _noticias.isEmpty 
-                              ? 'Sem conteúdo ainda • Deslize para cima'
-                              : '${_noticias.length} ${_noticias.length == 1 ? 'notícia disponível' : 'notícias disponíveis'} • Deslize para cima',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+      ],
+    );
+  }
+
+  Widget _buildNewsPreview(VoidCallback openContainer) {
+    return GestureDetector(
+      onVerticalDragUpdate: (details) {
+        if (details.primaryDelta! < -10) {
+          openContainer();
+        }
+      },
+      onTap: openContainer,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Atualidades',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
                 ),
+                Icon(
+                  Symbols.expand_less_rounded,
+                  size: 24,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildNewsSection(),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              'Deslize para cima para ver mais',
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewsSection() {
+    if (_noticias.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        child: Center(
+          child: Text(
+            'Error!',
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
-      ],
+      );
+    }
+
+    final newsToShow = _noticias.take(3).toList();
+
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      child: Column(
+        children: [
+          ...newsToShow.asMap().entries.map((entry) {
+            final index = entry.key;
+            final noticia = entry.value;
+            return Column(
+              children: [
+                if (index > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                  ),
+                _buildNewsItem(noticia),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewsItem(Map<String, dynamic> noticia) {
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: InkWell(
+        onTap: () => _openNewsDetail(noticia),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: (noticia['color'] as Color?)?.withOpacity(0.15) ?? Colors.blue.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  noticia['icon'] ?? Symbols.article_rounded,
+                  color: noticia['color'] ?? Colors.blue,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      noticia['title'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (noticia['date'] != null && (noticia['date'] as String).isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        noticia['date'],
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Symbols.chevron_right_rounded,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
