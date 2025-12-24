@@ -436,7 +436,7 @@ class EventCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: isHome
                 ? [
-                    _buildPlayerAvatar(
+                    _buildPlayerAvatarFromEventosTab(
                       playerImageUrl: playerImageUrl,
                       teamLogo: teamLogo,
                       player: player,
@@ -468,7 +468,7 @@ class EventCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    _buildPlayerAvatar(
+                    _buildPlayerAvatarFromEventosTab(
                       playerImageUrl: playerImageUrl,
                       teamLogo: teamLogo,
                       player: player,
