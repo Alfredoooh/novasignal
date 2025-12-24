@@ -88,6 +88,99 @@ class EventosTab extends StatelessWidget {
     );
   }
 
+  Widget _buildPlayerAvatar({
+    required String? playerImageUrl,
+    required String? teamLogo,
+    required String player,
+    required ColorScheme cs,
+  }) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: Stack(
+        children: [
+          // Avatar do jogador
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: cs.surfaceContainerHighest,
+              border: Border.all(
+                color: cs.outline.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: ClipOval(
+              child: playerImageUrl != null && playerImageUrl.isNotEmpty
+                  ? Image.network(
+                      playerImageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/icons/player_placeholder.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Symbols.person_rounded,
+                          size: 18,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/icons/player_placeholder.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Symbols.person_rounded,
+                        size: 18,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+            ),
+          ),
+          // Badge do clube no canto inferior direito
+          if (teamLogo != null && teamLogo.isNotEmpty)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.network(
+                    teamLogo,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: cs.surfaceContainerHighest,
+                      child: Icon(
+                        Symbols.shield_rounded,
+                        size: 8,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatRow(Map<String, dynamic> s, ColorScheme cs) {
     final type = _translateStatType(s['type']?.toString() ?? 'Stat');
     final homeStr = s['home']?.toString().replaceAll('%', '') ?? '0';
@@ -147,73 +240,12 @@ class EventCard extends StatelessWidget {
     final type = (event['type'] ?? '').toString();
     final time = event['time']?.toString() ?? '';
     final isHome = event['isHome'] == true;
-    final player = (event['player'] ?? '').toString();
-    final assist = (event['assist'] ?? '').toString();
-    final method = (event['method'] ?? '').toString();
 
-    Widget eventIcon;
-    if (type == 'goal') {
-      eventIcon = Image.asset(
-        'assets/icons/soccer_ball.png',
-        width: 24,
-        height: 24,
-        errorBuilder: (_, __, ___) => Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 16),
-        ),
-      );
-    } else if (type == 'yellow') {
-      eventIcon = Container(
-        width: 14,
-        height: 20,
-        decoration: BoxDecoration(
-          color: Colors.yellow.shade700,
-          borderRadius: BorderRadius.circular(2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.yellow.shade900.withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-      );
-    } else if (type == 'red') {
-      eventIcon = Container(
-        width: 14,
-        height: 20,
-        decoration: BoxDecoration(
-          color: Colors.red.shade700,
-          borderRadius: BorderRadius.circular(2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.red.shade900.withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-      );
-    } else {
-      eventIcon = Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          color: cs.primary.withOpacity(0.15),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Symbols.sync_alt_rounded, color: cs.primary, size: 18),
-      );
-    }
+    Widget eventIcon = _buildEventIcon(type, cs);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
@@ -226,26 +258,21 @@ class EventCard extends StatelessWidget {
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isHome) ...[
-            _buildPlayerBlock(
-              player: player,
-              assist: assist,
-              method: method,
-              leftAligned: true,
-              cs: cs,
-              event: event,
-              type: type,
-            ),
-            const SizedBox(width: 12),
-            eventIcon,
-          ] else
-            const Expanded(child: SizedBox()),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          // Coluna do time da casa
+          Expanded(
+            child: isHome 
+              ? _buildEventDetails(isHome: true, cs: cs, type: type, icon: eventIcon)
+              : const SizedBox(),
+          ),
+          
+          // Coluna central com minutos
+          Container(
+            width: 50,
+            alignment: Alignment.center,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: cs.primaryContainer.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(8),
@@ -260,38 +287,196 @@ class EventCard extends StatelessWidget {
               ),
             ),
           ),
-          if (!isHome) ...[
-            eventIcon,
-            const SizedBox(width: 12),
-            _buildPlayerBlock(
-              player: player,
-              assist: assist,
-              method: method,
-              leftAligned: false,
-              cs: cs,
-              event: event,
-              type: type,
-            ),
-          ] else
-            const Expanded(child: SizedBox()),
+          
+          // Coluna do time visitante
+          Expanded(
+            child: !isHome 
+              ? _buildEventDetails(isHome: false, cs: cs, type: type, icon: eventIcon)
+              : const SizedBox(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPlayerBlock({
+  Widget _buildEventIcon(String type, ColorScheme cs) {
+    if (type == 'goal') {
+      return Image.asset(
+        'assets/icons/soccer_ball.png',
+        width: 20,
+        height: 20,
+        errorBuilder: (_, __, ___) => Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Symbols.sports_soccer_rounded, color: Colors.green, size: 14),
+        ),
+      );
+    } else if (type == 'yellow') {
+      return Container(
+        width: 12,
+        height: 18,
+        decoration: BoxDecoration(
+          color: Colors.yellow.shade700,
+          borderRadius: BorderRadius.circular(2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.yellow.shade900.withOpacity(0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+      );
+    } else if (type == 'red') {
+      return Container(
+        width: 12,
+        height: 18,
+        decoration: BoxDecoration(
+          color: Colors.red.shade700,
+          borderRadius: BorderRadius.circular(2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.shade900.withOpacity(0.3),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: cs.primary.withOpacity(0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(Symbols.sync_alt_rounded, color: cs.primary, size: 16),
+      );
+    }
+  }
+
+  Widget _buildEventDetails({
+    required bool isHome,
+    required ColorScheme cs,
+    required String type,
+    required Widget icon,
+  }) {
+    final player = (event['player'] ?? '').toString();
+    final assist = (event['assist'] ?? '').toString();
+    final method = (event['method'] ?? '').toString();
+
+    return Row(
+      mainAxisAlignment: isHome ? MainAxisAlignment.start : MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isHome) const SizedBox(width: 4),
+        
+        if (!isHome) ...[
+          Expanded(
+            child: _buildPlayerInfo(
+              player: player,
+              assist: assist,
+              method: method,
+              isHome: isHome,
+              cs: cs,
+              type: type,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: icon,
+          ),
+        ] else ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: icon,
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _buildPlayerInfo(
+              player: player,
+              assist: assist,
+              method: method,
+              isHome: isHome,
+              cs: cs,
+              type: type,
+            ),
+          ),
+        ],
+        
+        if (isHome) const SizedBox(width: 4),
+      ],
+    );
+  }
+
+  Widget _buildPlayerInfo({
     required String player,
     required String assist,
     required String method,
-    required bool leftAligned,
+    required bool isHome,
     required ColorScheme cs,
-    required Map<String, dynamic> event,
     required String type,
   }) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: leftAligned ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-        children: [
+    // Obter URL da imagem do jogador e do clube da API
+    final playerImageUrl = event['player_image']?.toString();
+    final teamLogo = isHome ? event['home_team_logo']?.toString() : event['away_team_logo']?.toString();
+    
+    return Column(
+      crossAxisAlignment: isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        // Nome do jogador com foto (somente para gols)
+        if (type == 'goal')
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: isHome
+                ? [
+                    _buildPlayerAvatar(
+                      playerImageUrl: playerImageUrl,
+                      teamLogo: teamLogo,
+                      player: player,
+                      cs: cs,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        player,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                          fontSize: 15,
+                        ),
+                        textAlign: TextAlign.left,
+                      ),
+                    ),
+                  ]
+                : [
+                    Flexible(
+                      child: Text(
+                        player,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                          fontSize: 15,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildPlayerAvatar(
+                      playerImageUrl: playerImageUrl,
+                      teamLogo: teamLogo,
+                      player: player,
+                      cs: cs,
+                    ),
+                  ],
+          )
+        else
           Text(
             player,
             style: TextStyle(
@@ -299,115 +484,114 @@ class EventCard extends StatelessWidget {
               color: cs.onSurface,
               fontSize: 15,
             ),
-            textAlign: leftAligned ? TextAlign.left : TextAlign.right,
+            textAlign: isHome ? TextAlign.left : TextAlign.right,
           ),
-          if (assist.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: leftAligned
-                    ? [
-                        Image.asset(
-                          'assets/icons/assist.png',
-                          width: 14,
-                          height: 14,
-                          errorBuilder: (_, __, ___) => Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(child: Text(assist, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12))),
-                      ]
-                    : [
-                        Expanded(child: Text(assist, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12), textAlign: TextAlign.right)),
-                        const SizedBox(width: 4),
-                        Image.asset(
-                          'assets/icons/assist.png',
-                          width: 14,
-                          height: 14,
-                          errorBuilder: (_, __, ___) => Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
-                        ),
-                      ],
-              ),
-            ),
-          if (method.isNotEmpty && method.toLowerCase().contains('var'))
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: leftAligned
-                    ? [
-                        Image.asset(
-                          'assets/icons/var.png',
-                          width: 16,
-                          height: 16,
-                          errorBuilder: (_, __, ___) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.purple.shade700, borderRadius: BorderRadius.circular(4)),
-                            child: const Text('VAR', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(child: Text(method, style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.w600))),
-                      ]
-                    : [
-                        Expanded(child: Text(method, style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
-                        const SizedBox(width: 4),
-                        Image.asset(
-                          'assets/icons/var.png',
-                          width: 16,
-                          height: 16,
-                          errorBuilder: (_, __, ___) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(color: Colors.purple.shade700, borderRadius: BorderRadius.circular(4)),
-                            child: const Text('VAR', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
-                          ),
-                        ),
-                      ],
-              ),
-            )
-          else if (method.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                method,
-                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11, fontStyle: FontStyle.italic),
-                textAlign: leftAligned ? TextAlign.left : TextAlign.right,
-              ),
-            ),
-          if (type == 'substitution' && event['playerIn'] != null) ...[
-            const SizedBox(height: 6),
-            Row(
+        if (assist.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: leftAligned
+              children: isHome
                   ? [
-                      const Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text(event['playerIn'], style: const TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w700))),
+                      Image.asset(
+                        'assets/icons/assist.png',
+                        width: 13,
+                        height: 13,
+                        errorBuilder: (_, __, ___) => Icon(Symbols.sports_rounded, size: 13, color: cs.onSurfaceVariant),
+                      ),
+                      const SizedBox(width: 3),
+                      Flexible(child: Text(assist, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12))),
                     ]
                   : [
-                      Expanded(child: Text(event['playerIn'], style: const TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
-                      const SizedBox(width: 4),
-                      const Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
+                      Flexible(child: Text(assist, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12), textAlign: TextAlign.right)),
+                      const SizedBox(width: 3),
+                      Image.asset(
+                        'assets/icons/assist.png',
+                        width: 13,
+                        height: 13,
+                        errorBuilder: (_, __, ___) => Icon(Symbols.sports_rounded, size: 13, color: cs.onSurfaceVariant),
+                      ),
                     ],
             ),
-            const SizedBox(height: 4),
-            Row(
+          ),
+        if (method.isNotEmpty && method.toLowerCase().contains('var'))
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: leftAligned
+              children: isHome
                   ? [
-                      Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text(event['playerOut'], style: TextStyle(color: Colors.red.shade400, fontSize: 12))),
+                      Image.asset(
+                        'assets/icons/var.png',
+                        width: 15,
+                        height: 15,
+                        errorBuilder: (_, __, ___) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.purple.shade700, borderRadius: BorderRadius.circular(4)),
+                          child: const Text('VAR', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Flexible(child: Text(method, style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.w600))),
                     ]
                   : [
-                      Expanded(child: Text(event['playerOut'], style: TextStyle(color: Colors.red.shade400, fontSize: 12), textAlign: TextAlign.right)),
-                      const SizedBox(width: 4),
-                      Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
+                      Flexible(child: Text(method, style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+                      const SizedBox(width: 3),
+                      Image.asset(
+                        'assets/icons/var.png',
+                        width: 15,
+                        height: 15,
+                        errorBuilder: (_, __, ___) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.purple.shade700, borderRadius: BorderRadius.circular(4)),
+                          child: const Text('VAR', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
+                        ),
+                      ),
                     ],
             ),
-          ],
+          )
+        else if (method.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              method,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11, fontStyle: FontStyle.italic),
+              textAlign: isHome ? TextAlign.left : TextAlign.right,
+            ),
+          ),
+        if (type == 'substitution' && event['playerIn'] != null) ...[
+          const SizedBox(height: 6),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: isHome
+                ? [
+                    const Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
+                    const SizedBox(width: 4),
+                    Flexible(child: Text(event['playerIn'], style: const TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w700))),
+                  ]
+                : [
+                    Flexible(child: Text(event['playerIn'], style: const TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                    const SizedBox(width: 4),
+                    const Icon(Symbols.arrow_upward_rounded, size: 14, color: Colors.green),
+                  ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: isHome
+                ? [
+                    Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
+                    const SizedBox(width: 4),
+                    Flexible(child: Text(event['playerOut'], style: TextStyle(color: Colors.red.shade400, fontSize: 12))),
+                  ]
+                : [
+                    Flexible(child: Text(event['playerOut'], style: TextStyle(color: Colors.red.shade400, fontSize: 12), textAlign: TextAlign.right)),
+                    const SizedBox(width: 4),
+                    Icon(Symbols.arrow_downward_rounded, size: 14, color: Colors.red.shade400),
+                  ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }
