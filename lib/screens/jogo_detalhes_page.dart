@@ -205,6 +205,7 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_isLoading) {
       return _buildLoadingScaffold(cs);
@@ -270,8 +271,8 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
           child: ElevatedButton(
             onPressed: _showBettingModal,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00C853),
-              foregroundColor: Colors.white,
+              backgroundColor: isDark ? Colors.white : Colors.black,
+              foregroundColor: isDark ? Colors.black : Colors.white,
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
