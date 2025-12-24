@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'event_card_widget.dart';
-import 'statistics_widget.dart';
 import 'lineup_widget.dart';
 import 'standings_widget.dart';
 import 'predictions_widget.dart';
