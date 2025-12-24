@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import '../../utils/formatters.dart';
-import '../search_page.dart';
+import '../utils/formatters.dart';
+import '../screens/search_page.dart';
 
 class JogoDetalhesHeader extends StatelessWidget {
   final Map<String, dynamic> jogo;
