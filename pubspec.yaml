@@ -18,6 +18,7 @@ dependencies:
   flutter_html: any
   dynamic_color: any
   shimmer: any
+  glassmorphism: any
 
   # Nova dependência obrigatória para extração de cor
   palette_generator: any
