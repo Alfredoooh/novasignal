@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'search_page.dart';
-import 'widgets/jogo_detalhes_header.dart';
-import 'widgets/jogo_detalhes_tabs.dart';
-import 'widgets/jogo_detalhes_betting_modal.dart';
+import '../widgets/jogo_detalhes_header.dart';
+import '../widgets/jogo_detalhes_tabs.dart';
+import '../widgets/jogo_detalhes_betting_modal.dart';
 
 class JogoDetalhesPage extends StatefulWidget {
   final String jogoId;
