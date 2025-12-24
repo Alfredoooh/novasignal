@@ -38,6 +38,7 @@ dependencies:
   share_plus: any
   pdf: any
   path_provider: any
+  animations: any
   
   # State Management (se necessário)
   provider: any
