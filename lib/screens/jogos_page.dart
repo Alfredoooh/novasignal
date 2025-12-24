@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:glassmorphism/glassmorphism.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
@@ -20,7 +20,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   late AnimationController _loadingController;
   late AnimationController _blinkController;
   late TabController _tabController;
-  late PageController _pageController;
   List<dynamic>? _cachedJogos;
   String? _lastFiltro;
   Timer? _autoUpdateTimer;
@@ -44,15 +43,14 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     )..repeat(reverse: true);
 
     _tabController = TabController(length: 121, vsync: this, initialIndex: 60);
-    _pageController = PageController(initialPage: 60);
 
     _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        _pageController.animateToPage(
-          _tabController.index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+      if (!_tabController.indexIsChanging && _tabController.index != _selectedTabIndex) {
+        setState(() {
+          _selectedTabIndex = _tabController.index;
+          _cachedJogos = null;
+        });
+        _loadJogosDoDia();
       }
     });
 
@@ -67,7 +65,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     _loadingController.dispose();
     _blinkController.dispose();
     _tabController.dispose();
-    _pageController.dispose();
     _autoUpdateTimer?.cancel();
     super.dispose();
   }
@@ -206,111 +203,121 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
+          child: GlassmorphicContainer(
+            width: double.infinity,
+            height: 120,
+            borderRadius: 16,
+            blur: 10,
+            alignment: Alignment.center,
+            border: 1,
+            linearGradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.3),
+                Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.1),
+              ],
+            ),
+            borderGradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                Theme.of(context).colorScheme.outline.withOpacity(0.1),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 120,
-                          height: 16,
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 120,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Container(
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Container(
+                          width: 50,
+                          height: 20,
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 32,
-                                height: 32,
+                      ),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 14,
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                  shape: BoxShape.circle,
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Container(
-                                  height: 14,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Container(
-                            width: 50,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  height: 14,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
+                            const SizedBox(width: 10),
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                                shape: BoxShape.circle,
                               ),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -351,28 +358,14 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
           ),
         ),
         Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              _tabController.animateTo(index);
-              setState(() {
-                _selectedTabIndex = index;
-                _cachedJogos = null;
-              });
-              _loadJogosDoDia();
-            },
-            itemCount: 121,
-            itemBuilder: (context, index) {
-              if (index != _selectedTabIndex) {
-                return const SizedBox.shrink();
-              }
-
+          child: TabBarView(
+            controller: _tabController,
+            children: List.generate(121, (index) {
               if (_isLoadingNewTab || _cachedJogos == null) {
                 return _buildLoadingShimmer();
               }
-
               return _buildCachedContent(_cachedJogos!, appState.filtroJogos);
-            },
+            }),
           ),
         ),
       ],
@@ -465,7 +458,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       itemCount: ligasOrdenadas.length,
       addAutomaticKeepAlives: true,
       cacheExtent: 1000,
@@ -477,142 +470,119 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         final leagueId = ligaInfo['id'];
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-          child: ClipRRect(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        if (leagueId != null) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => LigaDetalhesPage(
-                                ligaId: leagueId.toString(),
-                                ligaNome: ligaNome,
-                                ligaLogo: leagueLogo,
-                              ),
+          ),
+          child: Column(
+            children: [
+              InkWell(
+                onTap: () {
+                  if (leagueId != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => LigaDetalhesPage(
+                          ligaId: leagueId.toString(),
+                          ligaNome: ligaNome,
+                          ligaLogo: leagueLogo,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
+                        Hero(
+                          tag: 'liga_logo_$leagueId',
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             ),
-                          );
-                        }
-                      },
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          border: Border(
-                            bottom: BorderSide(
-                              color: Theme.of(context).dividerColor.withOpacity(0.15),
-                              width: 1,
+                            padding: const EdgeInsets.all(4),
+                            child: _CachedNetworkImage(
+                              imageUrl: leagueLogo,
+                              width: 20,
+                              height: 20,
+                              placeholder: Icon(
+                                Symbols.emoji_events_rounded,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
-                              Hero(
-                                tag: 'liga_logo_$leagueId',
-                                child: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                  ),
-                                  padding: const EdgeInsets.all(4),
-                                  child: _CachedNetworkImage(
-                                    imageUrl: leagueLogo,
-                                    width: 20,
-                                    height: 20,
-                                    placeholder: Icon(
-                                      Symbols.emoji_events_rounded,
-                                      size: 16,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                            ] else ...[
-                              Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                ),
-                                child: Icon(
-                                  Symbols.emoji_events_rounded,
-                                  size: 16,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                            Expanded(
-                              child: Text(
-                                ligaNome,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                '${jogosLiga.length}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Symbols.chevron_right_rounded,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ],
+                        const SizedBox(width: 12),
+                      ] else ...[
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          ),
+                          child: Icon(
+                            Symbols.emoji_events_rounded,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        child: Text(
+                          ligaNome,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
-                    ),
-                    ...jogosLiga.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final jogo = entry.value;
-                      final isLast = idx == jogosLiga.length - 1;
-                      return _buildMatchItem(jogo, isLast);
-                    }),
-                  ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${jogosLiga.length}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Symbols.chevron_right_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+              ...jogosLiga.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final jogo = entry.value;
+                final isLast = idx == jogosLiga.length - 1;
+                return _buildMatchItem(jogo, isLast);
+              }),
+            ],
           ),
         );
       },
@@ -655,167 +625,166 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       borderRadius: isLast 
           ? const BorderRadius.vertical(bottom: Radius.circular(16))
           : BorderRadius.zero,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: isLast ? null : Border(
-            bottom: BorderSide(
-              color: Theme.of(context).dividerColor.withOpacity(0.15),
-              width: 1,
-            ),
-          ),
-          borderRadius: isLast 
-              ? const BorderRadius.vertical(bottom: Radius.circular(16))
-              : BorderRadius.zero,
-        ),
-        child: Column(
-          children: [
-            Row(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      _CachedNetworkImage(
-                        imageUrl: jogo['team_home_badge'] ?? '',
-                        width: 32,
-                        height: 32,
-                        placeholder: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          _CachedNetworkImage(
+                            imageUrl: jogo['team_home_badge'] ?? '',
+                            width: 32,
+                            height: 32,
+                            placeholder: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              jogo['match_hometeam_name'] ?? '',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          jogo['match_hometeam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.primary,
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          jogo['match_awayteam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      _CachedNetworkImage(
-                        imageUrl: jogo['team_away_badge'] ?? '',
-                        width: 32,
-                        height: 32,
-                        placeholder: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
+                    ),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              jogo['match_awayteam_name'] ?? '',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 10),
+                          _CachedNetworkImage(
+                            imageUrl: jogo['team_away_badge'] ?? '',
+                            width: 32,
+                            height: 32,
+                            placeholder: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const SizedBox(width: 40),
-                if (isPlaying) ...[
-                  AnimatedBuilder(
-                    animation: _blinkController,
-                    builder: (context, child) {
-                      return Text(
-                        isNumericStatus 
-                            ? "${status}${_blinkController.value > 0.5 ? "'" : ""}"
-                            : "${displayStatus.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
-                        style: const TextStyle(
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const SizedBox(width: 40),
+                    if (isPlaying) ...[
+                      AnimatedBuilder(
+                        animation: _blinkController,
+                        builder: (context, child) {
+                          return Text(
+                            isNumericStatus 
+                                ? "${status}${_blinkController.value > 0.5 ? "'" : ""}"
+                                : "${displayStatus.replaceAll("'", "")}${_blinkController.value > 0.5 ? "'" : ""}",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF00C853),
+                            ),
+                          );
+                        },
+                      ),
+                    ] else if (isHalfTime) ...[
+                      Text(
+                        'HT',
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF00C853),
-                        ),
-                      );
-                    },
-                  ),
-                ] else if (isHalfTime) ...[
-                  Text(
-                    'HT',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ] else if (isFinished) ...[
-                  Text(
-                    'Finalizado',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.red,
-                    ),
-                  ),
-                ] else ...[
-                  Text(
-                    jogo['match_time'] ?? '--:--',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (isPlaying)
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'LIVE',
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 40),
+                    ] else if (isFinished) ...[
+                      Text(
+                        'Finalizado',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        jogo['match_time'] ?? '--:--',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                    if (isPlaying)
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'LIVE',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const SizedBox(width: 40),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+          if (!isLast)
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            ),
+        ],
       ),
     );
   }
