@@ -17,17 +17,27 @@ class MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = context.read<AppState>();
+    final cs = Theme.of(context).colorScheme;
     final status = jogo['match_status'] ?? '';
+    
     Color badgeColor;
     String badgeText = formatarStatus(status);
-    
+
     if (status.contains('Finished') || status == 'FT' || status == 'AET') {
-      badgeColor = Theme.of(context).colorScheme.tertiary;
+      badgeColor = cs.tertiary;
     } else if (status.contains("'") || status == 'HT' || status == 'LIVE') {
-      badgeColor = Theme.of(context).colorScheme.error;
+      badgeColor = cs.error;
     } else {
-      badgeColor = Theme.of(context).colorScheme.secondary;
+      badgeColor = cs.secondary;
     }
+
+    // Obter logos das equipes da API
+    final homeTeamLogo = jogo['team_home_badge']?.toString() ?? '';
+    final awayTeamLogo = jogo['team_away_badge']?.toString() ?? '';
+    final homeTeamName = jogo['match_hometeam_name']?.toString() ?? 'Unknown';
+    final awayTeamName = jogo['match_awayteam_name']?.toString() ?? 'Unknown';
+    final homeScore = jogo['match_hometeam_score']?.toString() ?? '-';
+    final awayScore = jogo['match_awayteam_score']?.toString() ?? '-';
 
     return Column(
       children: [
@@ -35,7 +45,7 @@ class MatchCard extends StatelessWidget {
           onTap: () {
             appState.setJogoDetalhes(
               jogo['match_id'],
-              '${jogo['match_hometeam_name']} vs ${jogo['match_awayteam_name']}',
+              '$homeTeamName vs $awayTeamName',
             );
             appState.navegarPara('jogo-detalhes');
           },
@@ -44,6 +54,7 @@ class MatchCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                // Cabeçalho: Hora e Status
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -52,7 +63,7 @@ class MatchCard extends StatelessWidget {
                         Icon(
                           Symbols.schedule_rounded,
                           size: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: cs.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -80,73 +91,68 @@ class MatchCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
+                
+                // Corpo: Times e Placar
                 Row(
                   children: [
+                    // Time da Casa
                     Expanded(
                       child: Row(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              jogo['team_home_badge'] ?? 'https://via.placeholder.com/40x40?text=⚽',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Image.network('https://via.placeholder.com/40x40?text=⚽', width: 40, height: 40),
-                            ),
-                          ),
+                          _buildTeamLogo(homeTeamLogo, cs),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              jogo['match_hometeam_name'] ?? 'Unknown',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              homeTeamName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
                     ),
+                    
+                    // Placar
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
-                        '${jogo['match_hometeam_score'] ?? '-'} : ${jogo['match_awayteam_score'] ?? '-'}',
+                        '$homeScore : $awayScore',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: cs.primary,
                         ),
                       ),
                     ),
+                    
+                    // Time Visitante
                     Expanded(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Expanded(
                             child: Text(
-                              jogo['match_awayteam_name'] ?? 'Unknown',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              awayTeamName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.right,
                             ),
                           ),
                           const SizedBox(width: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              jogo['team_away_badge'] ?? 'https://via.placeholder.com/40x40?text=⚽',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Image.network('https://via.placeholder.com/40x40?text=⚽', width: 40, height: 40),
-                            ),
-                          ),
+                          _buildTeamLogo(awayTeamLogo, cs),
                         ],
                       ),
                     ),
                   ],
                 ),
+                
+                // Rodapé: Liga (se showLeague = true)
                 if (showLeague) ...[
                   const SizedBox(height: 12),
                   Row(
@@ -155,12 +161,15 @@ class MatchCard extends StatelessWidget {
                       Icon(
                         Symbols.emoji_events_rounded,
                         size: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: cs.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        '${jogo['league_name'] ?? ''} • ${jogo['country_name'] ?? ''}',
-                        style: Theme.of(context).textTheme.bodySmall,
+                      Flexible(
+                        child: Text(
+                          '${jogo['league_name'] ?? ''} • ${jogo['country_name'] ?? ''}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -171,6 +180,42 @@ class MatchCard extends StatelessWidget {
         ),
         const Divider(height: 1),
       ],
+    );
+  }
+
+  Widget _buildTeamLogo(String logoUrl, ColorScheme cs) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: cs.surfaceContainerHighest,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: logoUrl.isNotEmpty
+            ? Image.network(
+                logoUrl,
+                width: 40,
+                height: 40,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => _buildPlaceholderLogo(cs),
+              )
+            : _buildPlaceholderLogo(cs),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderLogo(ColorScheme cs) {
+    return Container(
+      width: 40,
+      height: 40,
+      color: cs.surfaceContainerHighest,
+      child: Icon(
+        Symbols.shield_rounded,
+        size: 24,
+        color: cs.onSurfaceVariant.withOpacity(0.5),
+      ),
     );
   }
 }
