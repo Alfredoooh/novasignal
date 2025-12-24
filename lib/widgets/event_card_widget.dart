@@ -266,7 +266,7 @@ class EventCard extends StatelessWidget {
               ? _buildEventDetails(isHome: true, cs: cs, type: type, icon: eventIcon)
               : const SizedBox(),
           ),
-          
+
           // Coluna central com minutos
           Container(
             width: 50,
@@ -287,7 +287,7 @@ class EventCard extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Coluna do time visitante
           Expanded(
             child: !isHome 
@@ -360,6 +360,99 @@ class EventCard extends StatelessWidget {
     }
   }
 
+  Widget _buildPlayerAvatarFromEventosTab({
+    required String? playerImageUrl,
+    required String? teamLogo,
+    required String player,
+    required ColorScheme cs,
+  }) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: Stack(
+        children: [
+          // Avatar do jogador
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: cs.surfaceContainerHighest,
+              border: Border.all(
+                color: cs.outline.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: ClipOval(
+              child: playerImageUrl != null && playerImageUrl.isNotEmpty
+                  ? Image.network(
+                      playerImageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/icons/player_placeholder.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Symbols.person_rounded,
+                          size: 18,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  : Image.asset(
+                      'assets/icons/player_placeholder.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(
+                        Symbols.person_rounded,
+                        size: 18,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+            ),
+          ),
+          // Badge do clube no canto inferior direito
+          if (teamLogo != null && teamLogo.isNotEmpty)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.network(
+                    teamLogo,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: cs.surfaceContainerHighest,
+                      child: Icon(
+                        Symbols.shield_rounded,
+                        size: 8,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEventDetails({
     required bool isHome,
     required ColorScheme cs,
@@ -375,7 +468,7 @@ class EventCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!isHome) const SizedBox(width: 4),
-        
+
         if (!isHome) ...[
           Expanded(
             child: _buildPlayerInfo(
@@ -409,7 +502,7 @@ class EventCard extends StatelessWidget {
             ),
           ),
         ],
-        
+
         if (isHome) const SizedBox(width: 4),
       ],
     );
@@ -426,7 +519,7 @@ class EventCard extends StatelessWidget {
     // Obter URL da imagem do jogador e do clube da API
     final playerImageUrl = event['player_image']?.toString();
     final teamLogo = isHome ? event['home_team_logo']?.toString() : event['away_team_logo']?.toString();
-    
+
     return Column(
       crossAxisAlignment: isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
