@@ -26,7 +26,7 @@ class OpcoesPage extends StatelessWidget {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: cs.surface,
+          color: Colors.transparent,
           border: Border(top: BorderSide(color: cs.surfaceVariant)),
         ),
         child: SafeArea(
