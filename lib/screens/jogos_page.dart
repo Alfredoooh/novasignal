@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:glassmorphism/glassmorphism.dart';
+import 'package:animations/animations.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
@@ -16,15 +17,20 @@ class JogosPage extends StatefulWidget {
 }
 
 class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  Future<List<dynamic>>? _futureJogos;
   late AnimationController _loadingController;
   late AnimationController _blinkController;
   late TabController _tabController;
-  List<dynamic>? _cachedJogos;
+  
+  // Cache otimizado por índice de tab
+  final Map<int, List<dynamic>> _cacheJogosPorTab = {};
+  
   String? _lastFiltro;
   Timer? _autoUpdateTimer;
   int _selectedTabIndex = 60;
   bool _isLoadingNewTab = false;
+  
+  // Key para forçar rebuild apenas do conteúdo
+  int _contentKey = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -44,15 +50,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
     _tabController = TabController(length: 121, vsync: this, initialIndex: 60);
 
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging && _tabController.index != _selectedTabIndex) {
-        setState(() {
-          _selectedTabIndex = _tabController.index;
-          _cachedJogos = null;
-        });
-        _loadJogosDoDia();
-      }
-    });
+    // Listener otimizado - apenas quando a animação terminar
+    _tabController.addListener(_handleTabChange);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadJogosDoDia();
@@ -60,10 +59,33 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     });
   }
 
+  void _handleTabChange() {
+    if (!_tabController.indexIsChanging && _tabController.index != _selectedTabIndex) {
+      final newIndex = _tabController.index;
+      
+      // Atualiza imediatamente se já tiver cache
+      if (_cacheJogosPorTab.containsKey(newIndex)) {
+        setState(() {
+          _selectedTabIndex = newIndex;
+          _contentKey++;
+        });
+      } else {
+        // Só mostra loading se não tiver cache
+        setState(() {
+          _selectedTabIndex = newIndex;
+          _isLoadingNewTab = true;
+          _contentKey++;
+        });
+        _loadJogosDoDia();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _loadingController.dispose();
     _blinkController.dispose();
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _autoUpdateTimer?.cancel();
     super.dispose();
@@ -75,7 +97,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     final appState = context.read<AppState>();
     if (_lastFiltro != appState.filtroJogos) {
       _lastFiltro = appState.filtroJogos;
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {
+          _contentKey++;
+        });
+      }
     }
   }
 
@@ -98,7 +124,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       if (!mounted) return;
 
       setState(() {
-        _cachedJogos = jogos;
+        _cacheJogosPorTab[_selectedTabIndex] = jogos;
+        _contentKey++;
       });
     } catch (e) {
       // Falha silenciosa
@@ -165,41 +192,51 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   int _contarJogosAoVivo() {
-    if (_cachedJogos == null) return 0;
-    return _cachedJogos!.where((jogo) => _isJogoAoVivo(jogo)).length;
+    final jogos = _cacheJogosPorTab[_selectedTabIndex];
+    if (jogos == null) return 0;
+    return jogos.where((jogo) => _isJogoAoVivo(jogo)).length;
   }
 
   void _loadJogosDoDia() async {
+    // Verifica se já tem cache para essa tab
+    if (_cacheJogosPorTab.containsKey(_selectedTabIndex)) {
+      if (mounted) {
+        setState(() {
+          _isLoadingNewTab = false;
+        });
+      }
+      return;
+    }
+
     final appState = context.read<AppState>();
     final resultado = _getDateAndFilterForIndex(_selectedTabIndex);
 
     appState.filtrarJogos(resultado['filter']);
 
-    setState(() {
-      _isLoadingNewTab = true;
-      _futureJogos = appState.carregarJogosDoDia(resultado['date']);
-    });
-
-    _futureJogos?.then((jogos) {
+    try {
+      final jogos = await appState.carregarJogosDoDia(resultado['date']);
+      
       if (mounted) {
         setState(() {
-          _cachedJogos = jogos;
+          _cacheJogosPorTab[_selectedTabIndex] = jogos;
+          _isLoadingNewTab = false;
+          _contentKey++;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
           _isLoadingNewTab = false;
         });
       }
-    }).catchError((e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingNewTab = false;
-        });
-      }
-    });
+    }
   }
 
   Widget _buildLoadingShimmer() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: 5,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 3,
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -226,100 +263,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 Theme.of(context).colorScheme.outline.withOpacity(0.1),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 120,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Container(
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Container(
-                          width: 50,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Container(
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            child: const SizedBox(),
           ),
         );
       },
@@ -354,21 +298,29 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
             padding: const EdgeInsets.symmetric(horizontal: 8),
+            tabAlignment: TabAlignment.start,
             tabs: List.generate(121, (index) => Tab(text: _getTabLabel(index))),
           ),
         ),
         Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: List.generate(121, (index) {
-              if (_isLoadingNewTab || _cachedJogos == null) {
-                return _buildLoadingShimmer();
-              }
-              return _buildCachedContent(_cachedJogos!, appState.filtroJogos);
-            }),
-          ),
+          child: _buildOptimizedContent(appState),
         ),
       ],
+    );
+  }
+
+  Widget _buildOptimizedContent(AppState appState) {
+    final jogos = _cacheJogosPorTab[_selectedTabIndex];
+    
+    // Usa AnimatedSwitcher para transição suave
+    return AnimatedSwitcher(
+      key: ValueKey(_contentKey),
+      duration: const Duration(milliseconds: 200),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: _isLoadingNewTab || jogos == null
+          ? _buildLoadingShimmer()
+          : _buildCachedContent(jogos, appState.filtroJogos),
     );
   }
 
@@ -458,10 +410,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
 
     return ListView.builder(
+      key: ValueKey('lista_$_selectedTabIndex'),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       itemCount: ligasOrdenadas.length,
-      addAutomaticKeepAlives: true,
-      cacheExtent: 1000,
+      physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
         final ligaNome = ligasOrdenadas[index];
         final jogosLiga = jogosPorLiga[ligaNome]!;
@@ -474,24 +426,38 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
-              InkWell(
-                onTap: () {
+              _AnimatedBouncyButton(
+                onPressed: () {
                   if (leagueId != null) {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => LigaDetalhesPage(
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => LigaDetalhesPage(
                           ligaId: leagueId.toString(),
                           ligaNome: ligaNome,
                           ligaLogo: leagueLogo,
                         ),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          return SharedAxisTransition(
+                            animation: animation,
+                            secondaryAnimation: secondaryAnimation,
+                            transitionType: SharedAxisTransitionType.horizontal,
+                            child: child,
+                          );
+                        },
                       ),
                     );
                   }
                 },
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -591,18 +557,14 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
-
     final isNumericStatus = int.tryParse(status.toString()) != null;
-
     final isLive = isNumericStatus || 
                    status.contains("'") || 
                    status == 'LIVE' ||
                    status == '1H' ||
                    status == '2H';
-
     final isHalfTime = status == 'HT' || status.toLowerCase() == 'half time';
     final isPlaying = isLive && !isHalfTime;
-
     final isFinished = status.contains('Finished') || 
                        status == 'FT' || 
                        status == 'AET' ||
@@ -614,17 +576,22 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       displayStatus = "$status'";
     }
 
-    return InkWell(
-      onTap: () {
+    return _AnimatedBouncyButton(
+      onPressed: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => JogoDetalhesPage(jogoId: jogo['match_id']),
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => 
+                JogoDetalhesPage(jogoId: jogo['match_id']),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeThroughTransition(
+                animation: animation,
+                secondaryAnimation: secondaryAnimation,
+                child: child,
+              );
+            },
           ),
         );
       },
-      borderRadius: isLast 
-          ? const BorderRadius.vertical(bottom: Radius.circular(16))
-          : BorderRadius.zero,
       child: Column(
         children: [
           Padding(
@@ -733,9 +700,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                         ),
                       ),
                     ] else if (isFinished) ...[
-                      Text(
+                      const Text(
                         'Finalizado',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Colors.red,
@@ -790,6 +757,73 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 }
 
+// ==================== ANIMATED BOUNCY BUTTON ====================
+class _AnimatedBouncyButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onPressed;
+
+  const _AnimatedBouncyButton({
+    required this.child,
+    required this.onPressed,
+  });
+
+  @override
+  State<_AnimatedBouncyButton> createState() => _AnimatedBouncyButtonState();
+}
+
+class _AnimatedBouncyButtonState extends State<_AnimatedBouncyButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.95)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.95, end: 1.0)
+            .chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 50,
+      ),
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    _controller.reset();
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      behavior: HitTestBehavior.opaque,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// ==================== CACHED NETWORK IMAGE ====================
 class _CachedNetworkImage extends StatefulWidget {
   final String imageUrl;
   final double width;
