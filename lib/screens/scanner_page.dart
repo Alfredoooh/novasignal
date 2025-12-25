@@ -1,9 +1,8 @@
 // ==================== scanner_page.dart ====================
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'qr_result_page.dart';
 
 class ScannerPage extends StatefulWidget {
   const ScannerPage({super.key});
@@ -13,8 +12,12 @@ class ScannerPage extends StatefulWidget {
 }
 
 class _ScannerPageState extends State<ScannerPage> {
-  MobileScannerController cameraController = MobileScannerController();
+  MobileScannerController cameraController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
   bool isScanning = false;
+  bool isTorchOn = false;
+  Barcode? detectedBarcode;
 
   @override
   void dispose() {
@@ -25,35 +28,55 @@ class _ScannerPageState extends State<ScannerPage> {
   Future<void> _pickImageFromGallery() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (image != null) {
       final BarcodeCapture? barcodes = await cameraController.analyzeImage(image.path);
       if (barcodes != null && barcodes.barcodes.isNotEmpty) {
         _handleBarcode(barcodes.barcodes.first);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Nenhum QR code encontrado na imagem'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
 
   void _handleBarcode(Barcode barcode) {
     if (isScanning) return;
-    
+
     setState(() {
       isScanning = true;
+      detectedBarcode = barcode;
     });
 
     final scannedCode = barcode.rawValue ?? 'Código não identificado';
 
-    // Mostra modal em tela cheia
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => CodigoQRModal(codigo: scannedCode),
-    ).then((_) {
-      setState(() {
-        isScanning = false;
+    // Navega para página de resultado
+    Future.delayed(const Duration(milliseconds: 500), () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => QRResultPage(codigo: scannedCode),
+        ),
+      ).then((_) {
+        setState(() {
+          isScanning = false;
+          detectedBarcode = null;
+        });
       });
     });
+  }
+
+  void _toggleTorch() {
+    setState(() {
+      isTorchOn = !isTorchOn;
+    });
+    cameraController.toggleTorch();
   }
 
   @override
@@ -73,9 +96,9 @@ class _ScannerPageState extends State<ScannerPage> {
             },
           ),
 
-          // Overlay com bordas amarelas
+          // Overlay com bordas amarelas e destaque do QR
           CustomPaint(
-            painter: ScannerOverlayPainter(),
+            painter: ScannerOverlayPainter(detectedBarcode: detectedBarcode),
             child: Container(),
           ),
 
@@ -83,12 +106,8 @@ class _ScannerPageState extends State<ScannerPage> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                  size: 28,
-                ),
+              child: _AnimatedIconButton(
+                icon: Icons.arrow_back_rounded,
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -107,7 +126,7 @@ class _ScannerPageState extends State<ScannerPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
-                  'Point your camera at a QR code and capture it.',
+                  'Aponte a câmera para o QR code',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -119,56 +138,29 @@ class _ScannerPageState extends State<ScannerPage> {
             ),
           ),
 
-          // Botão "Upload From Gallery"
-          Positioned(
-            bottom: 140,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: ElevatedButton.icon(
-                onPressed: _pickImageFromGallery,
-                icon: const Icon(Icons.upload_outlined, size: 20),
-                label: const Text(
-                  'Upload From Gallery',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  elevation: 4,
-                ),
-              ),
-            ),
-          ),
-
-          // Botão central de captura
+          // Botões inferiores
           Positioned(
             bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                  color: Colors.transparent,
+            left: 16,
+            right: 16,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Botão Lanterna
+                _AnimatedCircleButton(
+                  icon: isTorchOn ? Icons.flash_on : Icons.flash_off,
+                  onPressed: _toggleTorch,
+                  backgroundColor: isTorchOn ? Colors.amber : Colors.white,
+                  iconColor: isTorchOn ? Colors.white : Colors.black,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                    ),
-                  ),
+                // Botão Upload
+                _AnimatedCircleButton(
+                  icon: Icons.upload_outlined,
+                  onPressed: _pickImageFromGallery,
+                  backgroundColor: Colors.white,
+                  iconColor: Colors.black,
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -177,340 +169,270 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 }
 
-// Modal para mostrar código QR
-class CodigoQRModal extends StatefulWidget {
-  final String codigo;
+// Botão circular animado
+class _AnimatedCircleButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color backgroundColor;
+  final Color iconColor;
 
-  const CodigoQRModal({super.key, required this.codigo});
-
-  @override
-  State<CodigoQRModal> createState() => _CodigoQRModalState();
-}
-
-class _CodigoQRModalState extends State<CodigoQRModal> {
-  bool copiado = false;
-
-  void _copiarCodigo() {
-    Clipboard.setData(ClipboardData(text: widget.codigo));
-    setState(() {
-      copiado = true;
-    });
-  }
-
-  void _verificarCodigo() {
-    Navigator.pop(context);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const VerificacaoWebViewModal(),
-    );
-  }
+  const _AnimatedCircleButton({
+    required this.icon,
+    required this.onPressed,
+    required this.backgroundColor,
+    required this.iconColor,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 50 * (1 - value)),
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.95,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Código QR Detectado',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Código capturado:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                        ),
-                      ),
-                      child: SelectableText(
-                        widget.codigo,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: copiado ? _verificarCodigo : _copiarCodigo,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF444F),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(27),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        copiado ? 'Verificar' : 'Copiar',
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.onSurface,
-                        minimumSize: const Size(double.infinity, 54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(27),
-                        ),
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      child: const Text(
-                        'Fechar',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<_AnimatedCircleButton> createState() => _AnimatedCircleButtonState();
 }
 
-// Modal com WebView para verificação
-class VerificacaoWebViewModal extends StatefulWidget {
-  const VerificacaoWebViewModal({super.key});
-
-  @override
-  State<VerificacaoWebViewModal> createState() => _VerificacaoWebViewModalState();
-}
-
-class _VerificacaoWebViewModalState extends State<VerificacaoWebViewModal> {
-  late final WebViewController controller;
-  bool isLoading = true;
+class _AnimatedCircleButtonState extends State<_AnimatedCircleButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() {
-              isLoading = true;
-            });
-          },
-          onPageFinished: (String url) {
-            setState(() {
-              isLoading = false;
-            });
-          },
-        ),
-      )
-      ..loadRequest(Uri.parse('https://elephantbetzone.com/app/scanTicket/manualEntry'));
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onPressed();
   }
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 50 * (1 - value)),
-            child: child,
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: GestureDetector(
+        onTap: _handleTap,
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: widget.backgroundColor,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        );
-      },
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.95,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Verificação',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            if (isLoading)
-              const Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(),
-              ),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: WebViewWidget(controller: controller),
-              ),
-            ),
-          ],
+          child: Icon(
+            widget.icon,
+            color: widget.iconColor,
+            size: 28,
+          ),
         ),
       ),
     );
   }
 }
 
-// Custom Painter para o overlay com bordas amarelas
+// Botão de ícone animado
+class _AnimatedIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _AnimatedIconButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  State<_AnimatedIconButton> createState() => _AnimatedIconButtonState();
+}
+
+class _AnimatedIconButtonState extends State<_AnimatedIconButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: GestureDetector(
+        onTap: _handleTap,
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            widget.icon,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Custom Painter para o overlay com bordas amarelas e destaque do QR
 class ScannerOverlayPainter extends CustomPainter {
+  final Barcode? detectedBarcode;
+
+  ScannerOverlayPainter({this.detectedBarcode});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.black.withOpacity(0.5)
       ..style = PaintingStyle.fill;
 
-    final borderPaint = Paint()
-      ..color = const Color(0xFFFFC107)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
-
     const scanAreaWidth = 280.0;
     const scanAreaHeight = 360.0;
     final scanLeft = (size.width - scanAreaWidth) / 2;
     final scanTop = (size.height - scanAreaHeight) / 2;
 
-    final path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(scanLeft, scanTop, scanAreaWidth, scanAreaHeight),
-        const Radius.circular(16),
-      ))
-      ..fillType = PathFillType.evenOdd;
+    // Se QR detectado, destacar a área específica
+    if (detectedBarcode != null && detectedBarcode!.corners.isNotEmpty) {
+      final corners = detectedBarcode!.corners;
+      
+      // Desenha overlay escuro exceto na área do QR
+      final qrPath = Path()
+        ..moveTo(corners[0].dx, corners[0].dy);
+      
+      for (var i = 1; i < corners.length; i++) {
+        qrPath.lineTo(corners[i].dx, corners[i].dy);
+      }
+      qrPath.close();
 
-    canvas.drawPath(path, paint);
+      final overlayPath = Path()
+        ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..addPath(qrPath, Offset.zero)
+        ..fillType = PathFillType.evenOdd;
 
-    const cornerLength = 40.0;
-    const radius = 16.0;
+      canvas.drawPath(overlayPath, paint);
 
-    canvas.drawPath(
-      Path()
-        ..moveTo(scanLeft, scanTop + cornerLength)
-        ..lineTo(scanLeft, scanTop + radius)
-        ..arcToPoint(
-          Offset(scanLeft + radius, scanTop),
-          radius: const Radius.circular(radius),
-        )
-        ..lineTo(scanLeft + cornerLength, scanTop),
-      borderPaint,
-    );
+      // Desenha borda verde ao redor do QR detectado
+      final borderPaint = Paint()
+        ..color = Colors.green
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4;
 
-    canvas.drawPath(
-      Path()
-        ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop)
-        ..lineTo(scanLeft + scanAreaWidth - radius, scanTop)
-        ..arcToPoint(
-          Offset(scanLeft + scanAreaWidth, scanTop + radius),
-          radius: const Radius.circular(radius),
-        )
-        ..lineTo(scanLeft + scanAreaWidth, scanTop + cornerLength),
-      borderPaint,
-    );
+      canvas.drawPath(qrPath, borderPaint);
+    } else {
+      // Área de scan padrão
+      final path = Path()
+        ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..addRRect(RRect.fromRectAndRadius(
+          Rect.fromLTWH(scanLeft, scanTop, scanAreaWidth, scanAreaHeight),
+          const Radius.circular(16),
+        ))
+        ..fillType = PathFillType.evenOdd;
 
-    canvas.drawPath(
-      Path()
-        ..moveTo(scanLeft, scanTop + scanAreaHeight - cornerLength)
-        ..lineTo(scanLeft, scanTop + scanAreaHeight - radius)
-        ..arcToPoint(
-          Offset(scanLeft + radius, scanTop + scanAreaHeight),
-          radius: const Radius.circular(radius),
-        )
-        ..lineTo(scanLeft + cornerLength, scanTop + scanAreaHeight),
-      borderPaint,
-    );
+      canvas.drawPath(path, paint);
 
-    canvas.drawPath(
-      Path()
-        ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop + scanAreaHeight)
-        ..lineTo(scanLeft + scanAreaWidth - radius, scanTop + scanAreaHeight)
-        ..arcToPoint(
-          Offset(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - radius),
-          radius: const Radius.circular(radius),
-        )
-        ..lineTo(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - cornerLength),
-      borderPaint,
-    );
+      final borderPaint = Paint()
+        ..color = const Color(0xFFFFC107)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4;
+
+      const cornerLength = 40.0;
+      const radius = 16.0;
+
+      // Cantos superiores e inferiores
+      canvas.drawPath(
+        Path()
+          ..moveTo(scanLeft, scanTop + cornerLength)
+          ..lineTo(scanLeft, scanTop + radius)
+          ..arcToPoint(
+            Offset(scanLeft + radius, scanTop),
+            radius: const Radius.circular(radius),
+          )
+          ..lineTo(scanLeft + cornerLength, scanTop),
+        borderPaint,
+      );
+
+      canvas.drawPath(
+        Path()
+          ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop)
+          ..lineTo(scanLeft + scanAreaWidth - radius, scanTop)
+          ..arcToPoint(
+            Offset(scanLeft + scanAreaWidth, scanTop + radius),
+            radius: const Radius.circular(radius),
+          )
+          ..lineTo(scanLeft + scanAreaWidth, scanTop + cornerLength),
+        borderPaint,
+      );
+
+      canvas.drawPath(
+        Path()
+          ..moveTo(scanLeft, scanTop + scanAreaHeight - cornerLength)
+          ..lineTo(scanLeft, scanTop + scanAreaHeight - radius)
+          ..arcToPoint(
+            Offset(scanLeft + radius, scanTop + scanAreaHeight),
+            radius: const Radius.circular(radius),
+          )
+          ..lineTo(scanLeft + cornerLength, scanTop + scanAreaHeight),
+        borderPaint,
+      );
+
+      canvas.drawPath(
+        Path()
+          ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop + scanAreaHeight)
+          ..lineTo(scanLeft + scanAreaWidth - radius, scanTop + scanAreaHeight)
+          ..arcToPoint(
+            Offset(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - radius),
+            radius: const Radius.circular(radius),
+          )
+          ..lineTo(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - cornerLength),
+        borderPaint,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant ScannerOverlayPainter oldDelegate) {
+    return oldDelegate.detectedBarcode != detectedBarcode;
+  }
 }
