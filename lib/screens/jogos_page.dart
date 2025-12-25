@@ -20,15 +20,15 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   late AnimationController _loadingController;
   late AnimationController _blinkController;
   late TabController _tabController;
-  
+
   // Cache otimizado por índice de tab
   final Map<int, List<dynamic>> _cacheJogosPorTab = {};
-  
+
   String? _lastFiltro;
   Timer? _autoUpdateTimer;
   int _selectedTabIndex = 60;
   bool _isLoadingNewTab = false;
-  
+
   // Key para forçar rebuild apenas do conteúdo
   int _contentKey = 0;
 
@@ -53,6 +53,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     // Listener otimizado - apenas quando a animação terminar
     _tabController.addListener(_handleTabChange);
 
+    // ✅ CORREÇÃO: Carrega os dados imediatamente após o build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadJogosDoDia();
       _startAutoUpdate();
@@ -62,7 +63,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   void _handleTabChange() {
     if (!_tabController.indexIsChanging && _tabController.index != _selectedTabIndex) {
       final newIndex = _tabController.index;
-      
+
       // Atualiza imediatamente se já tiver cache
       if (_cacheJogosPorTab.containsKey(newIndex)) {
         setState(() {
@@ -128,7 +129,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         _contentKey++;
       });
     } catch (e) {
-      // Falha silenciosa
+      debugPrint('❌ Erro no silent update: $e');
     }
   }
 
@@ -197,7 +198,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     return jogos.where((jogo) => _isJogoAoVivo(jogo)).length;
   }
 
-  void _loadJogosDoDia() async {
+  // ✅ CORREÇÃO: Método refatorado para carregar corretamente
+  Future<void> _loadJogosDoDia() async {
+    if (!mounted) return;
+
     // Verifica se já tem cache para essa tab
     if (_cacheJogosPorTab.containsKey(_selectedTabIndex)) {
       if (mounted) {
@@ -208,14 +212,25 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       return;
     }
 
+    // ✅ Marca como loading ANTES de começar
+    if (mounted) {
+      setState(() {
+        _isLoadingNewTab = true;
+      });
+    }
+
     final appState = context.read<AppState>();
     final resultado = _getDateAndFilterForIndex(_selectedTabIndex);
 
     appState.filtrarJogos(resultado['filter']);
 
     try {
-      final jogos = await appState.carregarJogosDoDia(resultado['date']);
+      debugPrint('🔄 Carregando jogos para tab $_selectedTabIndex - Data: ${resultado['date']} - Filtro: ${resultado['filter']}');
       
+      final jogos = await appState.carregarJogosDoDia(resultado['date']);
+
+      debugPrint('✅ ${jogos.length} jogos carregados para tab $_selectedTabIndex');
+
       if (mounted) {
         setState(() {
           _cacheJogosPorTab[_selectedTabIndex] = jogos;
@@ -224,9 +239,12 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         });
       }
     } catch (e) {
+      debugPrint('❌ Erro ao carregar jogos: $e');
       if (mounted) {
         setState(() {
           _isLoadingNewTab = false;
+          // ✅ Salva lista vazia para evitar carregamento infinito
+          _cacheJogosPorTab[_selectedTabIndex] = [];
         });
       }
     }
@@ -263,7 +281,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 Theme.of(context).colorScheme.outline.withOpacity(0.1),
               ],
             ),
-            child: const SizedBox(),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
         );
       },
@@ -311,16 +333,45 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   Widget _buildOptimizedContent(AppState appState) {
     final jogos = _cacheJogosPorTab[_selectedTabIndex];
-    
+
+    // ✅ CORREÇÃO: Mostra loading enquanto carrega pela primeira vez
+    if (_isLoadingNewTab && jogos == null) {
+      return _buildLoadingShimmer();
+    }
+
+    // ✅ Se não tem dados e não está carregando, mostra vazio
+    if (jogos == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Symbols.error_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.error.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            const Text('Erro ao carregar jogos'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                _cacheJogosPorTab.remove(_selectedTabIndex);
+                _loadJogosDoDia();
+              },
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Usa AnimatedSwitcher para transição suave
     return AnimatedSwitcher(
       key: ValueKey(_contentKey),
       duration: const Duration(milliseconds: 200),
       switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
-      child: _isLoadingNewTab || jogos == null
-          ? _buildLoadingShimmer()
-          : _buildCachedContent(jogos, appState.filtroJogos),
+      child: _buildCachedContent(jogos, appState.filtroJogos),
     );
   }
 
@@ -514,9 +565,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           '${jogosLiga.length}',
