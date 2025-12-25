@@ -51,10 +51,10 @@ class AppState with ChangeNotifier {
   static const int _cacheStaleTime = 60; // 1 minuto
   static const int _cacheDurationNews = 30; // 30 minutos
 
-  // Intervalos OTIMIZADOS (não sobrecarregar)
-  static const int _updateIntervalJogosAoVivo = 30; // 30s (não 10s!)
+  // Intervalos OTIMIZADOS
+  static const int _updateIntervalJogosAoVivo = 30; // 30s
   static const int _updateIntervalJogosNormais = 60; // 1 min
-  static const int _updateIntervalDetalhes = 15; // 15s (não 5s!)
+  static const int _updateIntervalDetalhes = 15; // 15s
 
   final List<String> topClubs = [
     'Manchester United', 'Manchester City', 'Liverpool', 'Chelsea', 'Arsenal',
@@ -244,8 +244,11 @@ class AppState with ChangeNotifier {
       debugPrint('🚀 Request: $url');
 
       final response = await _httpClient.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15),
       );
+
+      debugPrint('📡 Status Code: ${response.statusCode}');
+      debugPrint('📦 Response Body (primeiros 200 chars): ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -260,7 +263,7 @@ class AppState with ChangeNotifier {
         throw Exception('HTTP ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ Erro: $e');
+      debugPrint('❌ Erro em _executeRequest: $e');
       rethrow;
     }
   }
@@ -341,52 +344,42 @@ class AppState with ChangeNotifier {
     const cacheKey = 'jogos_todos';
     final cached = _getFromCache(cacheKey);
 
-    if (cached == null) {
-      await _fetchTodosJogosBackground(cacheKey);
-      return _getFromCache(cacheKey) as List<dynamic>? ?? [];
+    if (cached != null && cached is List) {
+      if (_isCacheStale(cacheKey)) {
+        _fetchTodosJogosBackground(cacheKey);
+      }
+      return cached;
     }
 
-    if (_isCacheStale(cacheKey)) {
-      _fetchTodosJogosBackground(cacheKey);
-    }
-
-    return cached as List<dynamic>;
+    await _fetchTodosJogosBackground(cacheKey);
+    final result = _getFromCache(cacheKey);
+    return result is List ? result : [];
   }
 
   Future<void> _fetchTodosJogosBackground(String cacheKey) async {
     try {
-      // Busca dos 3 endpoints do worker em paralelo
-      final results = await Future.wait([
-        _makeRequest('/api/matches/live', 'live_raw'),
-        _makeRequest('/api/matches/today', 'today_raw'),
-        _makeRequest('/api/matches/tomorrow', 'tomorrow_raw'),
-      ]);
+      debugPrint('🔄 Carregando TODOS os jogos...');
 
-      List<dynamic> todosJogos = [];
+      // Usa o endpoint /api/matches que retorna tudo
+      final response = await _executeRequest('/api/matches');
 
-      // Combina todos os resultados
-      for (var result in results) {
-        if (result is Map && result.containsKey('matches')) {
-          todosJogos.addAll(result['matches'] as List<dynamic>);
-        }
+      debugPrint('📦 Tipo da resposta: ${response.runtimeType}');
+      debugPrint('📦 Conteúdo: $response');
+
+      List<dynamic> jogos = [];
+
+      // O Worker retorna: { "count": X, "matches": [...] }
+      if (response is Map && response.containsKey('matches')) {
+        jogos = response['matches'] as List<dynamic>;
+        debugPrint('✅ ${jogos.length} jogos carregados via /api/matches');
+      } else {
+        debugPrint('⚠️ Formato de resposta inesperado');
       }
 
-      // Remove duplicados por match_id
-      final Map<String, dynamic> uniqueMatches = {};
-      for (var jogo in todosJogos) {
-        final matchId = jogo['match_id']?.toString();
-        if (matchId != null) {
-          uniqueMatches[matchId] = jogo;
-        }
-      }
-
-      final jogosFinal = uniqueMatches.values.toList();
-      debugPrint('✅ ${jogosFinal.length} jogos carregados (total)');
-      
-      _saveToCache(cacheKey, jogosFinal);
+      _saveToCache(cacheKey, jogos);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Erro carregar jogos: $e');
+      debugPrint('❌ Erro ao carregar todos jogos: $e');
     }
   }
 
@@ -397,6 +390,8 @@ class AppState with ChangeNotifier {
     final amanha = DateFormat('yyyy-MM-dd').format(
       DateTime.now().add(const Duration(days: 1))
     );
+
+    debugPrint('📅 Carregando jogos para: $dataStr (hoje: $hoje, amanhã: $amanha)');
 
     // Determina qual endpoint usar
     String endpoint;
@@ -412,36 +407,42 @@ class AppState with ChangeNotifier {
     final cacheKey = 'jogos_$dataStr';
     final cached = _getFromCache(cacheKey);
 
-    if (cached == null) {
-      await _fetchJogosDoDiaBackground(endpoint, cacheKey);
-      return _getFromCache(cacheKey) as List<dynamic>? ?? [];
+    if (cached != null && cached is List) {
+      if (_isCacheStale(cacheKey)) {
+        _fetchJogosDoDiaBackground(endpoint, cacheKey);
+      }
+      return cached;
     }
 
-    if (_isCacheStale(cacheKey)) {
-      _fetchJogosDoDiaBackground(endpoint, cacheKey);
-    }
-
-    return cached as List<dynamic>;
+    await _fetchJogosDoDiaBackground(endpoint, cacheKey);
+    final result = _getFromCache(cacheKey);
+    return result is List ? result : [];
   }
 
   Future<void> _fetchJogosDoDiaBackground(String endpoint, String cacheKey) async {
     try {
-      final response = await _makeRequest(endpoint, cacheKey);
+      debugPrint('🔄 Buscando: $endpoint');
+      final response = await _executeRequest(endpoint);
+
+      List<dynamic> jogos = [];
 
       if (response is Map && response.containsKey('matches')) {
-        final jogos = response['matches'] as List<dynamic>;
-        debugPrint('✅ ${jogos.length} jogos do dia');
-        _saveToCache(cacheKey, jogos);
-        notifyListeners();
+        jogos = response['matches'] as List<dynamic>;
+        debugPrint('✅ ${jogos.length} jogos carregados');
+      } else {
+        debugPrint('⚠️ Formato inesperado na resposta');
       }
+
+      _saveToCache(cacheKey, jogos);
+      notifyListeners();
     } catch (e) {
-      debugPrint('❌ Erro jogos do dia: $e');
+      debugPrint('❌ Erro ao buscar jogos do dia: $e');
     }
   }
 
   Future<List<dynamic>> _filtrarJogosPorData(String dataStr) async {
     final todosJogos = await carregarTodosJogos();
-    
+
     return todosJogos.where((jogo) {
       final matchDate = jogo['match_date'] ?? '';
       return matchDate == dataStr;
@@ -460,7 +461,7 @@ class AppState with ChangeNotifier {
       (timer) {
         final cacheKey = 'jogos_$dataStr';
         final hoje = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        
+
         if (dataStr == hoje) {
           _fetchJogosDoDiaBackground('/api/matches/today', cacheKey);
         }
@@ -483,16 +484,16 @@ class AppState with ChangeNotifier {
     const cacheKey = 'destaque_jogos';
     final cached = _getFromCache(cacheKey);
 
-    if (cached == null) {
-      await _fetchJogosDestaqueBackground(cacheKey);
-      return _getFromCache(cacheKey) as List<dynamic>? ?? [];
+    if (cached != null && cached is List) {
+      if (_isCacheStale(cacheKey)) {
+        _fetchJogosDestaqueBackground(cacheKey);
+      }
+      return cached;
     }
 
-    if (_isCacheStale(cacheKey)) {
-      _fetchJogosDestaqueBackground(cacheKey);
-    }
-
-    return cached as List<dynamic>;
+    await _fetchJogosDestaqueBackground(cacheKey);
+    final result = _getFromCache(cacheKey);
+    return result is List ? result : [];
   }
 
   Future<void> _fetchJogosDestaqueBackground(String cacheKey) async {
@@ -532,9 +533,9 @@ class AppState with ChangeNotifier {
 
   bool _isJogoAoVivo(dynamic jogo) {
     final status = jogo['match_status'] ?? '';
-    
+
     if (int.tryParse(status.toString()) != null) return true;
-    
+
     return status.contains("'") || 
            status == 'HT' || 
            status == 'LIVE' ||
@@ -551,7 +552,7 @@ class AppState with ChangeNotifier {
       final home = (jogo['match_hometeam_name'] ?? '').toString().toLowerCase();
       final away = (jogo['match_awayteam_name'] ?? '').toString().toLowerCase();
       final league = (jogo['league_name'] ?? '').toString().toLowerCase();
-      
+
       return home.contains(termoLower) || 
              away.contains(termoLower) || 
              league.contains(termoLower);
@@ -574,7 +575,7 @@ class AppState with ChangeNotifier {
 
   Future<void> _fetchJogoDetalhesBackground(String jogoId, String cacheKey) async {
     try {
-      final response = await _makeRequest('/api/matches/$jogoId', cacheKey);
+      final response = await _executeRequest('/api/matches/$jogoId');
 
       if (response != null) {
         _saveToCache(cacheKey, response);
@@ -611,29 +612,28 @@ class AppState with ChangeNotifier {
     const cacheKey = 'ligas_todas';
     final cached = _getFromCache(cacheKey);
 
-    if (cached == null) {
-      await _fetchLigasBackground(cacheKey);
-      todasLigas = _getFromCache(cacheKey) as List<dynamic>? ?? [];
+    if (cached != null && cached is List) {
+      todasLigas = cached;
+      if (_isCacheStale(cacheKey)) {
+        _fetchLigasBackground(cacheKey);
+      }
       return todasLigas;
     }
 
-    todasLigas = cached as List<dynamic>;
-
-    if (_isCacheStale(cacheKey)) {
-      _fetchLigasBackground(cacheKey);
-    }
-
+    await _fetchLigasBackground(cacheKey);
+    final result = _getFromCache(cacheKey);
+    todasLigas = result is List ? result : [];
     return todasLigas;
   }
 
   Future<void> _fetchLigasBackground(String cacheKey) async {
     try {
-      // Busca do endpoint /api/leagues do worker
-      final response = await _makeRequest('/api/leagues', cacheKey);
+      debugPrint('🔄 Carregando ligas...');
+      final response = await _executeRequest('/api/leagues');
 
       if (response is Map && response.containsKey('leagues')) {
         final leagues = response['leagues'] as Map;
-        
+
         todasLigas = leagues.entries.map((entry) {
           return {
             'league_id': entry.value,
@@ -642,7 +642,7 @@ class AppState with ChangeNotifier {
         }).toList();
 
         _saveToCache(cacheKey, todasLigas);
-        debugPrint('✅ ${todasLigas.length} ligas');
+        debugPrint('✅ ${todasLigas.length} ligas carregadas');
         notifyListeners();
       }
     } catch (e) {
@@ -652,7 +652,7 @@ class AppState with ChangeNotifier {
 
   Future<List<dynamic>> carregarJogosPorLiga(String ligaId) async {
     final todosJogos = await carregarTodosJogos();
-    
+
     return todosJogos.where((jogo) {
       final jogoLigaId = jogo['league_id']?.toString();
       return jogoLigaId == ligaId;
