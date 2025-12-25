@@ -25,7 +25,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   List<dynamic> _jogosAoVivo = [];
   String? _error;
   Timer? _autoRefreshTimer;
-  final List<Map<String, dynamic>> _noticias = [];
+  List<Map<String, dynamic>> _noticias = []; // ✅ Removido 'final'
+  bool _loadingNews = false; // ✅ Adicionado
 
   @override
   bool get wantKeepAlive => true;
@@ -44,6 +45,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       }
     });
     _loadTopMatches();
+    _loadNews(); // ✅ ADICIONADO
     _startAutoRefresh();
   }
 
@@ -58,6 +60,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     _autoRefreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) {
         _loadTopMatches();
+        _loadNews(); // ✅ ADICIONADO
       }
     });
   }
@@ -90,6 +93,34 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
       setState(() {
         _error = e.toString();
+      });
+    }
+  }
+
+  // ✅ MÉTODO ADICIONADO
+  Future<void> _loadNews() async {
+    if (!mounted) return;
+
+    setState(() {
+      _loadingNews = true;
+    });
+
+    try {
+      final appState = context.read<AppState>();
+      final noticias = await appState.carregarNoticias();
+
+      if (!mounted) return;
+
+      setState(() {
+        _noticias = noticias;
+        _loadingNews = false;
+      });
+    } catch (e) {
+      debugPrint('❌ Erro ao carregar notícias: $e');
+      if (!mounted) return;
+      
+      setState(() {
+        _loadingNews = false;
       });
     }
   }
@@ -295,12 +326,25 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _buildNewsSection() {
+    // ✅ ADICIONADO loading state
+    if (_loadingNews) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    // ✅ MELHORADO mensagem de erro
     if (_noticias.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Center(
           child: Text(
-            'Error!',
+            'Nenhuma notícia disponível',
             style: TextStyle(
               fontSize: 16,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -336,6 +380,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     );
   }
 
+  // ✅ CORRIGIDO para usar os campos corretos da API
   Widget _buildNewsItem(Map<String, dynamic> noticia) {
     return Material(
       color: Theme.of(context).colorScheme.surface,
@@ -348,12 +393,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (noticia['color'] as Color?)?.withOpacity(0.15) ?? Colors.blue.withOpacity(0.15),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  noticia['icon'] ?? Symbols.article_rounded,
-                  color: noticia['color'] ?? Colors.blue,
+                  Symbols.article_rounded,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 24,
                 ),
               ),
@@ -371,13 +416,21 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      noticia['subtitle'] ?? '',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      ),
+                    ),
                     if (noticia['date'] != null && (noticia['date'] as String).isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         noticia['date'],
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
                         ),
                       ),
                     ],
