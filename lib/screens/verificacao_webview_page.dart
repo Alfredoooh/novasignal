@@ -18,6 +18,32 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   void initState() {
     super.initState();
     _initializeWebView();
+    
+    // Melhora a qualidade geral do WebView
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupWebViewQuality();
+    });
+  }
+
+  void _setupWebViewQuality() async {
+    // Aguarda um pouco para garantir que o WebView está pronto
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // Configura settings avançados do WebView
+    final settingsScript = '''
+      (function() {
+        // Force high DPI rendering
+        if (window.devicePixelRatio) {
+          document.documentElement.style.zoom = 1 / window.devicePixelRatio;
+        }
+      })();
+    ''';
+    
+    try {
+      controller.runJavaScript(settingsScript);
+    } catch (e) {
+      debugPrint('Erro ao configurar qualidade: $e');
+    }
   }
 
   void _initializeWebView() {
