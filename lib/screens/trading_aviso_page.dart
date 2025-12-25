@@ -1,8 +1,8 @@
-// ==================== trading_aviso_page.dart ====================
+// ==================== pagar_ficha_page.dart ====================
 import 'package:flutter/material.dart';
 
-class TradingAvisoPage extends StatelessWidget {
-  const TradingAvisoPage({super.key});
+class PagarFichaPage extends StatelessWidget {
+  const PagarFichaPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -36,22 +36,22 @@ class TradingAvisoPage extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const Spacer(),
-              
-              // Conteúdo central (você pode adicionar textos, avisos, etc.)
+
+              // Conteúdo central
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
                     const Icon(
-                      Icons.warning_rounded,
+                      Icons.payment_rounded,
                       color: Colors.white,
                       size: 80,
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'Aviso de Trading',
+                      'Pagar Ficha',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 28,
@@ -61,7 +61,7 @@ class TradingAvisoPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Trading envolve riscos significativos. Certifique-se de entender os riscos antes de continuar.',
+                      'Realize o pagamento da sua ficha de forma rápida e segura.',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 16,
@@ -72,7 +72,7 @@ class TradingAvisoPage extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const Spacer(),
             ],
           ),
@@ -91,7 +91,6 @@ class TradingAvisoPage extends StatelessWidget {
         child: SafeArea(
           child: ElevatedButton(
             onPressed: () {
-              // Aqui você pode navegar para a próxima tela ou fechar
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
@@ -104,7 +103,7 @@ class TradingAvisoPage extends StatelessWidget {
               elevation: 0,
             ),
             child: const Text(
-              'OK',
+              'Confirmar Pagamento',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
