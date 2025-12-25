@@ -13,7 +13,6 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   late final WebViewController controller;
   bool isLoading = true;
   double loadingProgress = 0.0;
-  String inspectorResult = '';
 
   @override
   void initState() {
@@ -25,7 +24,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
-      ..enableZoom(false)
+      ..enableZoom(true) // Habilita zoom para melhor qualidade
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
@@ -38,16 +37,11 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
               isLoading = true;
             });
           },
-          onPageFinished: (String url) async {
+          onPageFinished: (String url) {
             setState(() {
               isLoading = false;
             });
-            
-            // PASSO 1: Inspecionar o site PRIMEIRO
-            await _inspectWebsite();
-            
-            // PASSO 2: Depois aplicar customizações
-            // _injectCustomStyles(); // Descomente depois de ver os resultados
+            _injectCustomStyles();
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint('WebView error: ${error.description}');
@@ -67,258 +61,327 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
       );
   }
 
-  Future<void> _inspectWebsite() async {
-    final inspectorScript = '''
-      (function() {
-        const report = {
-          appBars: [],
-          bottomBars: [],
-          allElements: [],
-          fixedElements: [],
-          colors: new Set(),
-        };
-        
-        // Procura por todos os elementos no topo
-        document.querySelectorAll('*').forEach((el, index) => {
-          const styles = window.getComputedStyle(el);
-          const rect = el.getBoundingClientRect();
-          
-          // Elementos fixos ou sticky
-          if (styles.position === 'fixed' || styles.position === 'sticky') {
-            report.fixedElements.push({
-              index: index,
-              tag: el.tagName,
-              id: el.id || 'sem-id',
-              classes: Array.from(el.classList).join(' ') || 'sem-classes',
-              position: styles.position,
-              top: styles.top,
-              bottom: styles.bottom,
-              height: rect.height + 'px',
-              width: rect.width + 'px',
-              zIndex: styles.zIndex,
-              display: styles.display,
-            });
-          }
-          
-          // Elementos no topo (primeiros 100px)
-          if (rect.top >= 0 && rect.top <= 100 && rect.height > 30) {
-            report.appBars.push({
-              index: index,
-              tag: el.tagName,
-              id: el.id || 'sem-id',
-              classes: Array.from(el.classList).join(' ') || 'sem-classes',
-              top: rect.top + 'px',
-              height: rect.height + 'px',
-              position: styles.position,
-              background: styles.backgroundColor,
-            });
-          }
-          
-          // Elementos no fundo (últimos 100px)
-          const windowHeight = window.innerHeight;
-          if (rect.bottom >= windowHeight - 100 && rect.bottom <= windowHeight && rect.height > 30) {
-            report.bottomBars.push({
-              index: index,
-              tag: el.tagName,
-              id: el.id || 'sem-id',
-              classes: Array.from(el.classList).join(' ') || 'sem-classes',
-              bottom: (windowHeight - rect.bottom) + 'px',
-              height: rect.height + 'px',
-              position: styles.position,
-              background: styles.backgroundColor,
-            });
-          }
-          
-          // Coleta cores
-          if (styles.backgroundColor && styles.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-            report.colors.add(styles.backgroundColor);
-          }
-        });
-        
-        // Procura especificamente por nav, header, footer
-        const navs = document.querySelectorAll('nav, header, [role="banner"], [role="navigation"]');
-        const footers = document.querySelectorAll('footer, [role="contentinfo"]');
-        
-        report.navsFound = Array.from(navs).map(el => ({
-          tag: el.tagName,
-          id: el.id || 'sem-id',
-          classes: Array.from(el.classList).join(' ') || 'sem-classes',
-          html: el.outerHTML.substring(0, 200),
-        }));
-        
-        report.footersFound = Array.from(footers).map(el => ({
-          tag: el.tagName,
-          id: el.id || 'sem-id',
-          classes: Array.from(el.classList).join(' ') || 'sem-classes',
-          html: el.outerHTML.substring(0, 200),
-        }));
-        
-        report.colors = Array.from(report.colors);
-        report.pageTitle = document.title;
-        report.bodyClasses = Array.from(document.body.classList).join(' ');
-        
-        return JSON.stringify(report, null, 2);
-      })();
-    ''';
-
-    try {
-      final result = await controller.runJavaScriptReturningResult(inspectorScript);
-      setState(() {
-        inspectorResult = result.toString();
-      });
-      
-      // Mostra os resultados no console
-      debugPrint('\n==========================================');
-      debugPrint('🔍 INSPEÇÃO DO SITE');
-      debugPrint('==========================================');
-      debugPrint(result.toString());
-      debugPrint('==========================================\n');
-      
-      // Mostra dialog com os resultados
-      if (mounted) {
-        _showInspectorDialog();
-      }
-    } catch (e) {
-      debugPrint('❌ Erro ao inspecionar: $e');
-    }
-  }
-
-  void _showInspectorDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          constraints: const BoxConstraints(maxHeight: 600),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.search, color: Color(0xFF1E88E5)),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Inspeção do Site',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.copy),
-                    onPressed: () {
-                      // Aqui você pode copiar os resultados
-                      debugPrint('📋 Copiar resultados');
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: SelectableText(
-                    inspectorResult,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _injectCustomStyles();
-                  },
-                  icon: const Icon(Icons.brush),
-                  label: const Text('Aplicar Estilos Customizados'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF22C55E),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.all(16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _injectCustomStyles() {
-    // Este script será atualizado depois que você me passar os resultados do inspector
     final customScript = '''
       (function() {
+        // Define viewport para alta resolução
+        let viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+        } else {
+          viewport = document.createElement('meta');
+          viewport.name = 'viewport';
+          viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+          document.head.appendChild(viewport);
+        }
+        
+        // Remove classes que bloqueiam scroll
+        document.body.classList.remove('backdrop-no-scroll');
+        document.documentElement.style.overflow = 'auto';
+        document.body.style.overflow = 'auto';
+        document.body.style.position = 'static';
+        
         const style = document.createElement('style');
         style.textContent = \`
-          /* Remove scrollbars */
+          /* ========== REMOVE SCROLLBARS ========== */
           ::-webkit-scrollbar {
             display: none !important;
             width: 0 !important;
             height: 0 !important;
           }
           
-          * {
+          html, body, * {
             -ms-overflow-style: none !important;
             scrollbar-width: none !important;
           }
           
           html, body {
+            overflow-y: auto !important;
             overflow-x: hidden !important;
             -webkit-overflow-scrolling: touch !important;
             scroll-behavior: smooth !important;
+            position: static !important;
           }
           
-          /* TEMPORÁRIO - Remove elementos comuns de AppBar/BottomBar */
-          /* Você vai me dizer os seletores corretos depois da inspeção */
-          header, 
-          nav,
-          footer,
-          [role="banner"],
-          [role="navigation"],
-          [role="contentinfo"] {
+          /* ========== ESCONDE HEADER/TOOLBAR DO IONIC ========== */
+          ion-header,
+          ion-toolbar,
+          [class*="toolbar"],
+          [class*="header-md"],
+          [class*="header-ios"],
+          .header,
+          .toolbar {
             display: none !important;
             visibility: hidden !important;
             height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
           }
           
-          /* Estilo para cards */
-          .card, [class*="card"], [class*="Card"] {
+          /* ========== ESCONDE FOOTER/TABS DO IONIC ========== */
+          ion-footer,
+          ion-tabs,
+          ion-tab-bar,
+          [class*="footer"],
+          [class*="tabbar"],
+          [class*="tabs-md"],
+          [class*="tabs-ios"],
+          .footer,
+          .tabs {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+          }
+          
+          /* ========== AJUSTA ION-CONTENT PARA TELA CHEIA ========== */
+          ion-content {
+            --padding-top: 0 !important;
+            --padding-bottom: 0 !important;
+            --offset-top: 0 !important;
+            --offset-bottom: 0 !important;
+            top: 0 !important;
+            bottom: 0 !important;
+          }
+          
+          ion-app {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+          }
+          
+          /* ========== REMOVE BACKGROUND BACKDROP ========== */
+          .backdrop-no-scroll {
+            position: static !important;
+            overflow: auto !important;
+          }
+          
+          /* ========== ESTILO CARDS (Como o seu app) ========== */
+          ion-card,
+          .card, 
+          [class*="card"], 
+          [class*="Card"],
+          .ticket-card,
+          .bet-card {
             border-radius: 16px !important;
             border: 1px solid #E5E7EB !important;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-            margin: 12px !important;
+            margin: 12px 8px !important;
             padding: 16px !important;
             background: white !important;
+            overflow: visible !important;
           }
           
-          /* Botões verdes */
-          button, .button, .btn {
+          /* ========== BOTÕES ESTILO SEU APP ========== */
+          ion-button,
+          button, 
+          .button, 
+          .btn,
+          [class*="button"],
+          input[type="submit"],
+          input[type="button"] {
             border-radius: 12px !important;
             padding: 12px 24px !important;
             font-weight: 600 !important;
             border: none !important;
             cursor: pointer !important;
             transition: all 0.2s ease !important;
+            text-transform: none !important;
+            font-size: 14px !important;
+            min-height: 44px !important;
           }
           
-          /* Performance */
+          /* Botão Verde (Ganho/Sucesso) */
+          .btn-success,
+          .success,
+          [class*="success"],
+          [class*="green"],
+          [class*="win"],
+          ion-button[color="success"],
+          button.success {
+            --background: #22C55E !important;
+            background: #22C55E !important;
+            color: white !important;
+          }
+          
+          .btn-success:hover,
+          .success:hover {
+            --background: #16A34A !important;
+            background: #16A34A !important;
+            transform: scale(0.98) !important;
+          }
+          
+          /* Botão Vermelho (Primário) */
+          .btn-primary,
+          .primary,
+          [class*="primary"],
+          ion-button[color="primary"],
+          button.primary {
+            --background: #FF444F !important;
+            background: #FF444F !important;
+            color: white !important;
+          }
+          
+          /* Botão Azul (Secundário) */
+          .btn-secondary,
+          .secondary,
+          [class*="secondary"],
+          ion-button[color="secondary"] {
+            --background: #1E88E5 !important;
+            background: #1E88E5 !important;
+            color: white !important;
+          }
+          
+          /* ========== STATUS BADGES ========== */
+          ion-badge,
+          .badge,
+          .status,
+          [class*="badge"],
+          [class*="status"] {
+            border-radius: 8px !important;
+            padding: 6px 12px !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            display: inline-block !important;
+          }
+          
+          /* ========== INPUTS ESTILIZADOS ========== */
+          ion-input,
+          ion-textarea,
+          ion-select,
+          input:not([type="checkbox"]):not([type="radio"]),
+          textarea,
+          select {
+            border-radius: 12px !important;
+            border: 1px solid #E5E7EB !important;
+            padding: 12px 16px !important;
+            font-size: 14px !important;
+            transition: all 0.2s ease !important;
+            --border-radius: 12px !important;
+            --border-width: 1px !important;
+            --border-color: #E5E7EB !important;
+          }
+          
+          ion-input:focus-within,
+          input:focus,
+          textarea:focus,
+          select:focus {
+            --border-color: #FF444F !important;
+            border-color: #FF444F !important;
+            box-shadow: 0 0 0 3px rgba(255, 68, 79, 0.1) !important;
+            outline: none !important;
+          }
+          
+          /* ========== LISTA/ITEMS ========== */
+          ion-item {
+            --border-radius: 12px !important;
+            --padding-start: 16px !important;
+            --padding-end: 16px !important;
+            --inner-padding-end: 0 !important;
+            --min-height: 48px !important;
+          }
+          
+          ion-list {
+            padding: 8px !important;
+            background: transparent !important;
+          }
+          
+          /* ========== PERFORMANCE OTIMIZAÇÃO ========== */
           * {
             -webkit-tap-highlight-color: transparent !important;
+            -webkit-touch-callout: none !important;
+          }
+          
+          img, video, ion-img {
+            transform: translateZ(0) !important;
+            backface-visibility: hidden !important;
+          }
+          
+          *:focus {
+            outline: none !important;
+          }
+          
+          html {
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+          }
+          
+          /* ========== MELHORA QUALIDADE DE IMAGENS E TEXTOS ========== */
+          img, ion-img {
+            image-rendering: -webkit-optimize-contrast !important;
+            image-rendering: crisp-edges !important;
+            transform: translateZ(0) !important;
+            backface-visibility: hidden !important;
+          }
+          
+          * {
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+            font-smooth: always !important;
+            -webkit-backface-visibility: hidden !important;
+            -moz-backface-visibility: hidden !important;
+            backface-visibility: hidden !important;
+          }
+          
+          body, html {
+            -webkit-text-size-adjust: 100% !important;
+            text-size-adjust: 100% !important;
+          }
+          
+          /* ========== DIVIDERS ========== */
+          ion-item-divider,
+          hr,
+          .divider {
+            border: none !important;
+            border-top: 1px solid #E5E7EB !important;
+            margin: 12px 0 !important;
+            --border-width: 0 !important;
+            --border-style: none !important;
+            min-height: 0 !important;
+          }
+          
+          /* ========== LOADING/SPINNER ========== */
+          ion-spinner {
+            --color: #1E88E5 !important;
+          }
+          
+          ion-loading {
+            --spinner-color: #1E88E5 !important;
+          }
+          
+          /* ========== REMOVER ELEMENTOS ESPECÍFICOS DO IONIC ========== */
+          .toolbar-background,
+          .toolbar-container,
+          ion-back-button {
+            display: none !important;
           }
         \`;
         
         document.head.appendChild(style);
-        console.log('✅ Estilos aplicados (versão temporária)');
+        
+        // Remove elementos manualmente também
+        setTimeout(() => {
+          document.querySelectorAll('ion-header, ion-toolbar').forEach(el => {
+            el.style.display = 'none';
+            el.style.height = '0';
+          });
+          
+          document.querySelectorAll('ion-footer, ion-tabs, ion-tab-bar').forEach(el => {
+            el.style.display = 'none';
+            el.style.height = '0';
+          });
+          
+          document.querySelectorAll('ion-content').forEach(el => {
+            el.style.setProperty('--offset-top', '0', 'important');
+            el.style.setProperty('--offset-bottom', '0', 'important');
+          });
+        }, 100);
+        
+        console.log('✅ Estilos customizados aplicados!');
       })();
     ''';
 
@@ -335,38 +398,29 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: cs.background,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF1E88E5),
+          backgroundColor: cs.surface,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          leading: _AnimatedIconButton(
+            icon: Icons.arrow_back_rounded,
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
-            'Meu ingresso',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+            'Verificação',
+            style: TextStyle(fontWeight: FontWeight.w700),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.search, color: Colors.white),
-              onPressed: () async {
-                await _inspectWebsite();
-              },
-              tooltip: 'Inspecionar Site',
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white),
+            _AnimatedIconButton(
+              icon: Icons.refresh,
               onPressed: () {
                 controller.reload();
               },
-              tooltip: 'Recarregar',
             ),
           ],
           bottom: PreferredSize(
@@ -376,7 +430,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
                     value: loadingProgress,
                     backgroundColor: Colors.transparent,
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
+                      Color(0xFFFF444F),
                     ),
                   )
                 : const SizedBox.shrink(),
@@ -386,19 +440,76 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
           children: [
             WebViewWidget(controller: controller),
 
+            // Overlay de loading inicial
             if (isLoading && loadingProgress < 0.3)
               Container(
-                color: Colors.white,
+                color: cs.surface,
                 child: const Center(
                   child: CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFF1E88E5),
+                      Color(0xFFFF444F),
                     ),
                   ),
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Botão de ícone animado
+class _AnimatedIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _AnimatedIconButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  State<_AnimatedIconButton> createState() => _AnimatedIconButtonState();
+}
+
+class _AnimatedIconButtonState extends State<_AnimatedIconButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: IconButton(
+        icon: Icon(widget.icon),
+        onPressed: _handleTap,
       ),
     );
   }
