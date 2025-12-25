@@ -15,6 +15,7 @@ dependencies:
   mobile_scanner: any
   image_picker: any
   http: any
+  qr_flutter: any
   flutter_staggered_grid_view: any
   intl: ^0.18.1
   flutter_html: any
