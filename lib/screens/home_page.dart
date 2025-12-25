@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:animations/animations.dart';
 import '../core/app_state.dart';
 import 'home_tab.dart';
 import 'search_page.dart';
@@ -32,18 +33,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 300),
     );
 
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.88).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
 
     _slideAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: const Offset(0.7, 0.0),
     ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
 
     _animationController.addListener(() {
@@ -106,6 +107,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
             child: Stack(
               children: [
+                // Drawer background
                 Container(
                   color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
                   child: SafeArea(
@@ -176,6 +178,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     ),
                   ),
                 ),
+                // Main content
                 Transform.translate(
                   offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
                   child: Transform.scale(
@@ -184,7 +187,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     child: Stack(
                       children: [
                         GestureDetector(
-                          behavior: HitTestBehavior.opaque,
+                          behavior: HitTestBehavior.translucent,
                           onTap: _isDrawerOpen ? _closeDrawer : null,
                           onHorizontalDragUpdate: canSwipeDrawer ? (details) {
                             final width = MediaQuery.of(context).size.width;
@@ -220,8 +223,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         // Overlay escuro quando drawer está aberto
                         if (_animationController.value > 0)
                           Positioned.fill(
-                            child: IgnorePointer(
-                              ignoring: !_isDrawerOpen,
+                            child: GestureDetector(
+                              onTap: _closeDrawer,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(_animationController.value * 16),
                                 child: Container(
@@ -282,10 +285,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     Widget? leading;
     List<Widget>? actions;
 
-    final menuButton = IconButton(
-      icon: const Icon(Symbols.menu_rounded),
-      iconSize: 24,
+    final menuButton = _AnimatedMenuButton(
       onPressed: _toggleDrawer,
+      isOpen: _isDrawerOpen,
     );
 
     switch (appState.paginaAtual) {
@@ -293,15 +295,23 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         leading = menuButton;
         title = 'Elephantbet Club';
         actions = [
-          IconButton(
-            icon: const Icon(Symbols.search_rounded),
-            iconSize: 24,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const SearchPage(),
-              ),
-            ),
+          _AnimatedSearchButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) => const SearchPage(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return FadeScaleTransition(
+                      animation: animation,
+                      child: child,
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 400),
+                ),
+              );
+            },
           ),
+          const SizedBox(width: 8),
         ];
         break;
       case 'jogos':
@@ -403,25 +413,25 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildNavItem(
+                  _AnimatedNavItem(
                     icon: Symbols.home_rounded,
                     label: 'Home',
                     isSelected: currentIndex == 0,
                     onTap: () => appState.mudarTab('home'),
                   ),
-                  _buildNavItem(
+                  _AnimatedNavItem(
                     icon: Symbols.sports_soccer_rounded,
                     label: 'Jogos',
                     isSelected: currentIndex == 1,
                     onTap: () => appState.mudarTab('jogos'),
                   ),
-                  _buildNavItem(
-                    icon: Symbols.shapes_rounded,
-                    label: 'Opções',
+                  _AnimatedNavItem(
+                    icon: Symbols.category_rounded,
+                    label: 'Categorias',
                     isSelected: currentIndex == 2,
                     onTap: () => appState.mudarTab('opcoes'),
                   ),
-                  _buildNavItem(
+                  _AnimatedNavItem(
                     icon: Symbols.groups_rounded,
                     label: 'Comunidade',
                     isSelected: currentIndex == 3,
@@ -435,45 +445,257 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       ),
     );
   }
+}
 
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
+// ==================== ANIMATED NAV ITEM ====================
+class _AnimatedNavItem extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _AnimatedNavItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnimatedNavItem> createState() => _AnimatedNavItemState();
+}
+
+class _AnimatedNavItemState extends State<_AnimatedNavItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onTap();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        overlayColor: MaterialStateProperty.all(Colors.transparent),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 26,
-                fill: isSelected ? 1 : 0,
-                color: isSelected 
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected 
+      child: GestureDetector(
+        onTap: _handleTap,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  widget.icon,
+                  size: 26,
+                  fill: widget.isSelected ? 1 : 0,
+                  color: widget.isSelected 
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: widget.isSelected 
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== ANIMATED MENU BUTTON ====================
+class _AnimatedMenuButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final bool isOpen;
+
+  const _AnimatedMenuButton({
+    required this.onPressed,
+    required this.isOpen,
+  });
+
+  @override
+  State<_AnimatedMenuButton> createState() => _AnimatedMenuButtonState();
+}
+
+class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: IconButton(
+        icon: CustomPaint(
+          size: const Size(24, 24),
+          painter: _MenuIconPainter(isOpen: widget.isOpen),
+        ),
+        iconSize: 24,
+        onPressed: _handleTap,
+      ),
+    );
+  }
+}
+
+// ==================== MENU ICON PAINTER ====================
+class _MenuIconPainter extends CustomPainter {
+  final bool isOpen;
+
+  _MenuIconPainter({required this.isOpen});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+
+    final topY = size.height * 0.25;
+    final middleY = size.height * 0.5;
+    final bottomY = size.height * 0.75;
+
+    // Linha superior
+    canvas.drawLine(
+      Offset(0, topY),
+      Offset(size.width, topY),
+      paint,
+    );
+
+    // Linha do meio
+    canvas.drawLine(
+      Offset(0, middleY),
+      Offset(size.width, middleY),
+      paint,
+    );
+
+    // Linha inferior (mais curta)
+    canvas.drawLine(
+      Offset(0, bottomY),
+      Offset(size.width * 0.7, bottomY),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_MenuIconPainter oldDelegate) => isOpen != oldDelegate.isOpen;
+}
+
+// ==================== ANIMATED SEARCH BUTTON ====================
+class _AnimatedSearchButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _AnimatedSearchButton({required this.onPressed});
+
+  @override
+  State<_AnimatedSearchButton> createState() => _AnimatedSearchButtonState();
+}
+
+class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Symbols.search_rounded,
+            color: Colors.white,
+            size: 20,
           ),
         ),
       ),
