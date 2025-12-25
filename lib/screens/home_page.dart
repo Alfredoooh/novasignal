@@ -8,7 +8,7 @@ import 'home_tab.dart';
 import 'search_page.dart';
 import 'jogos_page.dart';
 import 'opcoes_page.dart';
-import 'inbox_page.dart';
+import 'comunidade_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
 
@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Football Live',
+                                      'Elephantbet Club',
                                       style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.w700,
@@ -131,7 +131,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Acompanhe seu futebol favorito',
+                                      'Powered by Nexa Group',
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -165,7 +165,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                               if (mounted) {
                                 showAboutDialog(
                                   context: context,
-                                  applicationName: 'Football Live',
+                                  applicationName: 'Elephantbet Club',
                                   applicationVersion: '1.0.0',
                                 );
                               }
@@ -181,39 +181,56 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   child: Transform.scale(
                     scale: _scaleAnimation.value,
                     alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _isDrawerOpen ? _closeDrawer : null,
-                      onHorizontalDragUpdate: canSwipeDrawer ? (details) {
-                        final width = MediaQuery.of(context).size.width;
-                        final delta = details.delta.dx / width;
-                        _animationController.value = (_animationController.value + delta).clamp(0.0, 1.0);
-                      } : null,
-                      onHorizontalDragEnd: canSwipeDrawer ? (details) {
-                        final velocity = details.primaryVelocity ?? 0;
-                        if (velocity > 700 || _animationController.value > 0.5) {
-                          _animationController.forward();
-                        } else {
-                          _animationController.reverse();
-                        }
-                      } : null,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(_animationController.value * 16),
-                        child: IgnorePointer(
-                          ignoring: _isDrawerOpen,
-                          child: Container(
-                            color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
-                            child: Column(
-                              children: [
-                                if (appState.paginaAtual != 'search')
-                                  _buildAppBar(context, appState),
-                                Expanded(child: _buildBody(appState)),
-                                _buildBottomNav(appState),
-                              ],
+                    child: Stack(
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _isDrawerOpen ? _closeDrawer : null,
+                          onHorizontalDragUpdate: canSwipeDrawer ? (details) {
+                            final width = MediaQuery.of(context).size.width;
+                            final delta = details.delta.dx / width;
+                            _animationController.value = (_animationController.value + delta).clamp(0.0, 1.0);
+                          } : null,
+                          onHorizontalDragEnd: canSwipeDrawer ? (details) {
+                            final velocity = details.primaryVelocity ?? 0;
+                            if (velocity > 700 || _animationController.value > 0.5) {
+                              _animationController.forward();
+                            } else {
+                              _animationController.reverse();
+                            }
+                          } : null,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(_animationController.value * 16),
+                            child: IgnorePointer(
+                              ignoring: _isDrawerOpen,
+                              child: Container(
+                                color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
+                                child: Column(
+                                  children: [
+                                    if (appState.paginaAtual != 'search')
+                                      _buildAppBar(context, appState),
+                                    Expanded(child: _buildBody(appState)),
+                                    _buildBottomNav(appState),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                        // Overlay escuro quando drawer está aberto
+                        if (_animationController.value > 0)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              ignoring: !_isDrawerOpen,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(_animationController.value * 16),
+                                child: Container(
+                                  color: Colors.black.withOpacity(_animationController.value * 0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -274,7 +291,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     switch (appState.paginaAtual) {
       case 'home':
         leading = menuButton;
-        title = 'Football Live';
+        title = 'Elephantbet Club';
         actions = [
           IconButton(
             icon: const Icon(Symbols.search_rounded),
@@ -295,13 +312,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         leading = menuButton;
         title = 'Opções';
         break;
-      case 'inbox':
+      case 'comunidade':
         leading = menuButton;
-        title = 'Caixa de Entrada';
+        title = 'Comunidade';
         break;
       default:
         leading = menuButton;
-        title = 'Football Live';
+        title = 'Elephantbet Club';
     }
 
     return Container(
@@ -339,7 +356,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       controller: _pageController,
       physics: const NeverScrollableScrollPhysics(),
       onPageChanged: (index) {
-        final tabs = ['home', 'jogos', 'opcoes', 'inbox'];
+        final tabs = ['home', 'jogos', 'opcoes', 'comunidade'];
         if (index < tabs.length) {
           appState.mudarTab(tabs[index]);
         }
@@ -348,13 +365,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         HomeTab(),
         JogosPage(),
         OpcoesPage(),
-        InboxPage(),
+        ComunidadePage(),
       ],
     );
   }
 
   Widget _buildBottomNav(AppState appState) {
-    int currentIndex = ['home', 'jogos', 'opcoes', 'inbox'].indexOf(appState.tabAtual);
+    int currentIndex = ['home', 'jogos', 'opcoes', 'comunidade'].indexOf(appState.tabAtual);
     if (currentIndex == -1) currentIndex = 0;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -405,10 +422,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     onTap: () => appState.mudarTab('opcoes'),
                   ),
                   _buildNavItem(
-                    icon: Symbols.inbox_rounded,
-                    label: 'Inbox',
+                    icon: Symbols.groups_rounded,
+                    label: 'Comunidade',
                     isSelected: currentIndex == 3,
-                    onTap: () => appState.mudarTab('inbox'),
+                    onTap: () => appState.mudarTab('comunidade'),
                   ),
                 ],
               ),
@@ -426,40 +443,37 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     required VoidCallback onTap,
   }) {
     return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-          highlightColor: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 26,
-                  fill: isSelected ? 1 : 0,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        overlayColor: MaterialStateProperty.all(Colors.transparent),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 26,
+                fill: isSelected ? 1 : 0,
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected 
                       ? Theme.of(context).colorScheme.primary
                       : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected 
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
