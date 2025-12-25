@@ -1,39 +1,47 @@
-// inbox_page.dart
+// ==================== comunidade_page.dart ====================
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
 
-class InboxPage extends StatelessWidget {
-  const InboxPage({super.key});
+class ComunidadePage extends StatelessWidget {
+  const ComunidadePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Symbols.inbox_rounded,
-            size: 80,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+    final cs = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: cs.background,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.groups_rounded,
+                size: 80,
+                color: cs.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Comunidade',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onBackground,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Conecte-se com outros membros da comunidade',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: cs.onBackground.withOpacity(0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Caixa de Entrada',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Nenhuma mensagem',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
