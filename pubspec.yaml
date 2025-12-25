@@ -12,6 +12,8 @@ dependencies:
 
   ionicons: any
   webview_flutter: any
+  mobile_scanner: any
+  image_picker: any
   http: any
   flutter_staggered_grid_view: any
   intl: ^0.18.1
