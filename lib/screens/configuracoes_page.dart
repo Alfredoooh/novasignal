@@ -9,6 +9,9 @@ class ConfiguracoesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.light
+          ? const Color(0xFFF5F5F5)
+          : Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: const Text('Configurações'),
         leading: IconButton(
@@ -19,22 +22,33 @@ class ConfiguracoesPage extends StatelessWidget {
       body: Consumer<AppState>(
         builder: (context, appState, child) {
           return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.all(16),
             children: [
+              // Seção: APARÊNCIA
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Text(
                   'APARÊNCIA',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.primary,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
               Container(
-                color: Theme.of(context).colorScheme.surface,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: Column(
                   children: [
                     SwitchListTile(
@@ -46,8 +60,15 @@ class ConfiguracoesPage extends StatelessWidget {
                       ),
                       value: appState.corDinamica,
                       onChanged: appState.alternarCorDinamica,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
                     ),
-                    Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                    Divider(
+                      height: 1,
+                      indent: 72,
+                      color: Theme.of(context).dividerColor.withOpacity(0.1),
+                    ),
                     SwitchListTile(
                       title: const Text('Tema Escuro'),
                       subtitle: const Text('Ativar modo escuro'),
@@ -63,15 +84,29 @@ class ConfiguracoesPage extends StatelessWidget {
                           appState.alternarTemaEscuroProfundo(false);
                         }
                       },
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                      ),
                     ),
                   ],
                 ),
               ),
+
               // Opções de tema escuro só aparecem se tema escuro estiver ativo
               if (appState.temaEscuro) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Container(
-                  color: Theme.of(context).colorScheme.surface,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     children: [
                       SwitchListTile(
@@ -88,8 +123,15 @@ class ConfiguracoesPage extends StatelessWidget {
                             appState.alternarTemaAmoled(false);
                           }
                         },
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        ),
                       ),
-                      Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.1)),
+                      Divider(
+                        height: 1,
+                        indent: 72,
+                        color: Theme.of(context).dividerColor.withOpacity(0.1),
+                      ),
                       SwitchListTile(
                         title: const Text('Tema AMOLED'),
                         subtitle: const Text('Preto puro para telas OLED'),
@@ -104,26 +146,42 @@ class ConfiguracoesPage extends StatelessWidget {
                             appState.alternarTemaEscuroProfundo(false);
                           }
                         },
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 32),
+
+              // Seção: NOTIFICAÇÕES
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Text(
                   'NOTIFICAÇÕES',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.primary,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
               Container(
-                color: Theme.of(context).colorScheme.surface,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: SwitchListTile(
                   title: const Text('Notificações Push'),
                   subtitle: const Text('Receber alertas de jogos'),
@@ -133,23 +191,39 @@ class ConfiguracoesPage extends StatelessWidget {
                   ),
                   value: appState.notificacoesAtivas,
                   onChanged: appState.alternarNotificacoes,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 32),
+
+              // Seção: SOBRE
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Text(
                   'SOBRE',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.primary,
-                    letterSpacing: 0.5,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
               Container(
-                color: Theme.of(context).colorScheme.surface,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
                 child: ListTile(
                   leading: Icon(
                     Symbols.info_rounded,
@@ -160,11 +234,17 @@ class ConfiguracoesPage extends StatelessWidget {
                     '1.0.0',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
+
+              const SizedBox(height: 16),
             ],
           );
         },
