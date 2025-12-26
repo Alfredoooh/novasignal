@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
-import 'package:animations/animations.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
@@ -139,6 +138,14 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     );
   }
 
+  void _openNewsPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => NewsPage(noticias: _noticias),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -246,29 +253,20 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ..._jogosAoVivo.map((jogo) => _buildLiveMatchCard(jogo)),
         ],
         const SizedBox(height: 32),
-        OpenContainer(
-          closedElevation: 0,
-          openElevation: 0,
-          closedColor: Colors.transparent,
-          openColor: Theme.of(context).colorScheme.surface,
-          transitionDuration: const Duration(milliseconds: 500),
-          transitionType: ContainerTransitionType.fadeThrough,
-          closedBuilder: (context, action) => _buildNewsPreview(action),
-          openBuilder: (context, action) => NewsPage(noticias: _noticias),
-        ),
+        _buildNewsPreview(),
         const SizedBox(height: 100),
       ],
     );
   }
 
-  Widget _buildNewsPreview(VoidCallback openContainer) {
+  Widget _buildNewsPreview() {
     return GestureDetector(
       onVerticalDragUpdate: (details) {
         if (details.primaryDelta! < -10) {
-          openContainer();
+          _openNewsPage();
         }
       },
-      onTap: openContainer,
+      onTap: _openNewsPage,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
