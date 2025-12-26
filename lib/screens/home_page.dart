@@ -313,6 +313,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             },
           ),
           const SizedBox(width: 8),
+          _AnimatedUserButton(
+            onPressed: () {
+              // Funcionalidade futura
+            },
+          ),
+          const SizedBox(width: 8),
         ];
         break;
       case 'jogos':
@@ -645,16 +651,84 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Center(
+            child: Icon(
+              Ionicons.search,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== ANIMATED USER BUTTON ====================
+class _AnimatedUserButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _AnimatedUserButton({required this.onPressed});
+
+  @override
+  State<_AnimatedUserButton> createState() => _AnimatedUserButtonState();
+}
+
+class _AnimatedUserButtonState extends State<_AnimatedUserButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(8),
+            color: Theme.of(context).colorScheme.primary,
+            shape: BoxShape.circle,
           ),
-          child: const Icon(
-            Ionicons.search,
-            color: Colors.white,
-            size: 20,
+          child: const Center(
+            child: Icon(
+              Ionicons.person,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
         ),
       ),
