@@ -664,26 +664,23 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     ],
                     if (isPlaying)
                       Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
                           color: Colors.red,
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        child: const Center(
-                          child: Text(
-                            'LIVE',
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 0.3,
-                            ),
+                        child: const Text(
+                          'AO VIVO',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       )
                     else
-                      const SizedBox(width: 40),
+                      const SizedBox(width: 8),
                   ],
                 ),
               ],
