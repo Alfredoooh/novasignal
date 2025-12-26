@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import 'package:animations/animations.dart';
 import '../core/app_state.dart';
@@ -585,58 +586,16 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
     return ScaleTransition(
       scale: _scaleAnimation,
       child: IconButton(
-        icon: CustomPaint(
-          size: const Size(24, 24),
-          painter: _MenuIconPainter(isOpen: widget.isOpen),
+        icon: Image.asset(
+          'assets/icon/menu_icon.png',
+          width: 24,
+          height: 24,
         ),
         iconSize: 24,
         onPressed: _handleTap,
       ),
     );
   }
-}
-
-// ==================== MENU ICON PAINTER ====================
-class _MenuIconPainter extends CustomPainter {
-  final bool isOpen;
-
-  _MenuIconPainter({required this.isOpen});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-
-    final topY = size.height * 0.25;
-    final middleY = size.height * 0.5;
-    final bottomY = size.height * 0.75;
-
-    // Linha superior
-    canvas.drawLine(
-      Offset(0, topY),
-      Offset(size.width, topY),
-      paint,
-    );
-
-    // Linha do meio
-    canvas.drawLine(
-      Offset(0, middleY),
-      Offset(size.width, middleY),
-      paint,
-    );
-
-    // Linha inferior (mais curta)
-    canvas.drawLine(
-      Offset(0, bottomY),
-      Offset(size.width * 0.7, bottomY),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_MenuIconPainter oldDelegate) => isOpen != oldDelegate.isOpen;
 }
 
 // ==================== ANIMATED SEARCH BUTTON ====================
@@ -693,7 +652,7 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Icon(
-            Symbols.search_rounded,
+            Ionicons.search,
             color: Colors.white,
             size: 20,
           ),
