@@ -6,6 +6,22 @@ import '../core/app_state.dart';
 class ConfiguracoesPage extends StatelessWidget {
   const ConfiguracoesPage({super.key});
 
+  void _mostrarDialogoIndisponivel(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Opção indisponível'),
+        content: const Text('Esta opção ainda não está disponível.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,17 +67,20 @@ class ConfiguracoesPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    SwitchListTile(
-                      title: const Text('Cor Dinâmica'),
-                      subtitle: const Text('Usar cor azul do Material Design ou vermelho Deriv'),
-                      secondary: Icon(
-                        Symbols.palette_rounded,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      value: appState.corDinamica,
-                      onChanged: appState.alternarCorDinamica,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    Opacity(
+                      opacity: 0.5,
+                      child: SwitchListTile(
+                        title: const Text('Cor Dinâmica'),
+                        subtitle: const Text('Usar cor azul do Material Design ou vermelho Deriv'),
+                        secondary: Icon(
+                          Symbols.palette_rounded,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        value: false,
+                        onChanged: (valor) => _mostrarDialogoIndisponivel(context),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        ),
                       ),
                     ),
                     Divider(
@@ -69,91 +88,25 @@ class ConfiguracoesPage extends StatelessWidget {
                       indent: 72,
                       color: Theme.of(context).dividerColor.withOpacity(0.1),
                     ),
-                    SwitchListTile(
-                      title: const Text('Tema Escuro'),
-                      subtitle: const Text('Ativar modo escuro'),
-                      secondary: Icon(
-                        Symbols.dark_mode_rounded,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      value: appState.temaEscuro,
-                      onChanged: (valor) {
-                        appState.alternarTema(valor);
-                        if (!valor) {
-                          appState.alternarTemaAmoled(false);
-                          appState.alternarTemaEscuroProfundo(false);
-                        }
-                      },
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                    Opacity(
+                      opacity: 0.5,
+                      child: SwitchListTile(
+                        title: const Text('Tema Escuro'),
+                        subtitle: const Text('Ativar modo escuro'),
+                        secondary: Icon(
+                          Symbols.dark_mode_rounded,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        value: false,
+                        onChanged: (valor) => _mostrarDialogoIndisponivel(context),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-
-              // Opções de tema escuro só aparecem se tema escuro estiver ativo
-              if (appState.temaEscuro) ...[
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        title: const Text('Tema Escuro Profundo'),
-                        subtitle: const Text('Tons mais escuros e contraste elevado'),
-                        secondary: Icon(
-                          Symbols.contrast_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        value: appState.temaEscuroProfundo,
-                        onChanged: (valor) {
-                          appState.alternarTemaEscuroProfundo(valor);
-                          if (valor) {
-                            appState.alternarTemaAmoled(false);
-                          }
-                        },
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                        ),
-                      ),
-                      Divider(
-                        height: 1,
-                        indent: 72,
-                        color: Theme.of(context).dividerColor.withOpacity(0.1),
-                      ),
-                      SwitchListTile(
-                        title: const Text('Tema AMOLED'),
-                        subtitle: const Text('Preto puro para telas OLED'),
-                        secondary: Icon(
-                          Symbols.brightness_1_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        value: appState.temaAmoled,
-                        onChanged: (valor) {
-                          appState.alternarTemaAmoled(valor);
-                          if (valor) {
-                            appState.alternarTemaEscuroProfundo(false);
-                          }
-                        },
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
 
               const SizedBox(height: 32),
 
