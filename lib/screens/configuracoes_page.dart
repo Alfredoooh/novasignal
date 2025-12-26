@@ -67,20 +67,17 @@ class ConfiguracoesPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Opacity(
-                      opacity: 0.5,
-                      child: SwitchListTile(
-                        title: const Text('Cor Dinâmica'),
-                        subtitle: const Text('Usar cor azul do Material Design ou vermelho Deriv'),
-                        secondary: Icon(
-                          Symbols.palette_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        value: false,
-                        onChanged: (valor) => _mostrarDialogoIndisponivel(context),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                        ),
+                    SwitchListTile(
+                      title: const Text('Cor Dinâmica'),
+                      subtitle: const Text('Usar cor azul do Material Design ou vermelho Deriv'),
+                      secondary: Icon(
+                        Symbols.palette_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      value: appState.corDinamica,
+                      onChanged: appState.alternarCorDinamica,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                       ),
                     ),
                     Divider(
