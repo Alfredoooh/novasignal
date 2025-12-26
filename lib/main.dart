@@ -5,7 +5,6 @@ import 'core/app_state.dart';
 import 'screens/home_page.dart';
 
 void main() {
-  // Configurar StatusBar para todas as telas
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -14,7 +13,7 @@ void main() {
       statusBarBrightness: Brightness.dark,
     ),
   );
-  
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
@@ -68,6 +67,12 @@ class MyApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: pureWhite,
         cardColor: pureWhite,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
         appBarTheme: const AppBarTheme(
           centerTitle: false,
           elevation: 0,
@@ -89,7 +94,6 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    // Tema sem cor dinâmica - cores próprias do app
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -97,6 +101,12 @@ class MyApp extends StatelessWidget {
       scaffoldBackgroundColor: pureWhite,
       cardColor: pureWhite,
       dividerColor: const Color(0xFFE0E0E0),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       colorScheme: const ColorScheme.light(
         primary: appleBlue,
         onPrimary: pureWhite,
@@ -167,12 +177,8 @@ class MyApp extends StatelessWidget {
 
   ThemeData _buildDarkTheme(bool usarCorDinamica, bool profundo) {
     const appleBlue = Color(0xFF007AFF);
-
-    // Tema normal escuro
     const surfaceColor = Color(0xFF1E1E1E);
     const backgroundColor = Color(0xFF161616);
-
-    // Tema escuro profundo
     const surfaceColorDeep = Color(0xFF0D0D0D);
     const backgroundColorDeep = Color(0xFF000000);
 
@@ -190,6 +196,12 @@ class MyApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: background,
         cardColor: surface,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
         appBarTheme: AppBarTheme(
           centerTitle: false,
           elevation: 0,
@@ -203,7 +215,6 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    // Tema sem cor dinâmica - cores próprias do app
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -211,6 +222,12 @@ class MyApp extends StatelessWidget {
       scaffoldBackgroundColor: background,
       cardColor: surface,
       dividerColor: profundo ? const Color(0xFF1A1A1A) : const Color(0xFF2A2A2A),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       colorScheme: ColorScheme.dark(
         primary: appleBlue,
         onPrimary: Colors.white,
@@ -298,6 +315,12 @@ class MyApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: pureBlack,
         cardColor: almostBlack,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
         appBarTheme: const AppBarTheme(
           centerTitle: false,
           elevation: 0,
@@ -311,7 +334,6 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    // Tema sem cor dinâmica - cores próprias do app
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -319,6 +341,12 @@ class MyApp extends StatelessWidget {
       scaffoldBackgroundColor: pureBlack,
       cardColor: almostBlack,
       dividerColor: const Color(0xFF1A1A1A),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       colorScheme: const ColorScheme.dark(
         primary: appleBlue,
         onPrimary: Colors.white,
