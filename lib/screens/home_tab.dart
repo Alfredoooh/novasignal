@@ -7,7 +7,7 @@ import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
 import 'home_config_page.dart';
 import 'news_detail_page.dart';
-import 'news_page.dart';
+import 'news_expanded_content.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -98,15 +98,20 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
 
     try {
       final appState = context.read<AppState>();
+      
+      // Carrega todos os jogos e filtra por data de hoje
+      final todosJogos = await appState.carregarJogosDestaque([]);
       final hoje = DateTime.now();
       final dataHoje = '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
-      
-      final jogos = await appState.carregarJogosPorData(dataHoje);
+
+      final jogosHoje = todosJogos.where((jogo) {
+        return jogo['match_date'] == dataHoje;
+      }).toList();
 
       if (!mounted) return;
 
       setState(() {
-        _todosJogosHoje = jogos;
+        _todosJogosHoje = jogosHoje;
       });
     } catch (e) {
       debugPrint('❌ Erro ao carregar jogos de hoje: $e');
@@ -128,10 +133,19 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
       final dataHoje = '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
       final dataAmanha = '${amanha.year}-${amanha.month.toString().padLeft(2, '0')}-${amanha.day.toString().padLeft(2, '0')}';
 
-      final jogosHoje = await appState.carregarJogosDestaque(appState.topClubs, data: dataHoje);
-      final jogosAmanha = await appState.carregarJogosDestaque(appState.topClubs, data: dataAmanha);
+      final todosJogos = await appState.carregarJogosDestaque(appState.topClubs);
 
       if (!mounted) return;
+
+      // Filtra jogos de hoje
+      final jogosHoje = todosJogos.where((jogo) {
+        return jogo['match_date'] == dataHoje;
+      }).toList();
+
+      // Filtra jogos de amanhã
+      final jogosAmanha = todosJogos.where((jogo) {
+        return jogo['match_date'] == dataAmanha;
+      }).toList();
 
       final liveMatches = jogosHoje.where((jogo) {
         final status = jogo['match_status'] ?? '';
@@ -259,7 +273,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
       body: TabBarView(
         controller: _tabController,
         children: [
-          NewsPage(noticias: _noticias),
+          NewsExpandedContent(noticias: _noticias),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
