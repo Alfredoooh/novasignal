@@ -7,7 +7,7 @@ import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
 import 'home_config_page.dart';
 import 'news_detail_page.dart';
-import 'news_expanded_content.dart';
+import 'news_page.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -273,7 +273,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
       body: TabBarView(
         controller: _tabController,
         children: [
-          NewsExpandedContent(noticias: _noticias),
+          NewsPage(noticias: _noticias),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
