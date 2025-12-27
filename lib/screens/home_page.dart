@@ -592,10 +592,9 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
     return ScaleTransition(
       scale: _scaleAnimation,
       child: IconButton(
-        icon: Image.asset(
-          'assets/icon/menu_icon.png',
-          width: 24,
-          height: 24,
+        icon: const Icon(
+          Ionicons.radio_button_on_outline,
+          size: 24,
         ),
         iconSize: 24,
         onPressed: _handleTap,
@@ -618,6 +617,7 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _borderRadiusAnimation;
 
   @override
   void initState() {
@@ -628,6 +628,10 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
     );
 
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _borderRadiusAnimation = Tween<double>(begin: 20.0, end: 12.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -650,20 +654,25 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
       onTap: _handleTap,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Center(
-            child: Icon(
-              Ionicons.search,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
+        child: AnimatedBuilder(
+          animation: _borderRadiusAnimation,
+          builder: (context, child) {
+            return Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(_borderRadiusAnimation.value),
+              ),
+              child: const Center(
+                child: Icon(
+                  Ionicons.search,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
