@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'news_detail_page.dart';
 
-class NewsExpandedContent extends StatelessWidget {
+class NewsPage extends StatelessWidget {
   final List<Map<String, dynamic>> noticias;
 
-  const NewsExpandedContent({
+  const NewsPage({
     super.key,
     required this.noticias,
   });
