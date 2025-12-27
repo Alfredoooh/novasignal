@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
-import 'package:animations/animations.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
@@ -17,7 +16,8 @@ class JogosPage extends StatefulWidget {
 
 class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _blinkController;
-  late TabController _tabController;
+  late PageController _pageController;
+  Timer? _autoRefreshTimer;
 
   final Map<int, List<dynamic>> _cacheJogosPorTab = {};
 
@@ -38,39 +38,33 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
-    _tabController = TabController(length: 121, vsync: this, initialIndex: 60);
-    _tabController.addListener(_handleTabChange);
+    _pageController = PageController(initialPage: 60);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadJogosDoDia();
+      _startAutoRefresh();
     });
   }
 
-  void _handleTabChange() {
-    if (!_tabController.indexIsChanging && _tabController.index != _selectedTabIndex) {
-      final newIndex = _tabController.index;
-
-      if (_cacheJogosPorTab.containsKey(newIndex)) {
-        setState(() {
-          _selectedTabIndex = newIndex;
-          _contentKey++;
-        });
-      } else {
-        setState(() {
-          _selectedTabIndex = newIndex;
-          _isLoadingNewTab = true;
-          _contentKey++;
-        });
-        _loadJogosDoDia();
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) {
+        _refreshCurrentTab();
       }
-    }
+    });
+  }
+
+  Future<void> _refreshCurrentTab() async {
+    _cacheJogosPorTab.remove(_selectedTabIndex);
+    await _loadJogosDoDia();
   }
 
   @override
   void dispose() {
     _blinkController.dispose();
-    _tabController.removeListener(_handleTabChange);
-    _tabController.dispose();
+    _pageController.dispose();
+    _autoRefreshTimer?.cancel();
     super.dispose();
   }
 
@@ -202,6 +196,27 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     await _loadJogosDoDia();
   }
 
+  void _onPageChanged(int index) {
+    if (_selectedTabIndex == index) return;
+
+    final resultado = _getDateAndFilterForIndex(index);
+    context.read<AppState>().filtrarJogos(resultado['filter']);
+
+    if (_cacheJogosPorTab.containsKey(index)) {
+      setState(() {
+        _selectedTabIndex = index;
+        _contentKey++;
+      });
+    } else {
+      setState(() {
+        _selectedTabIndex = index;
+        _isLoadingNewTab = true;
+        _contentKey++;
+      });
+      _loadJogosDoDia();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -220,31 +235,66 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               ),
             ],
           ),
-          child: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            indicatorWeight: 3,
-            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            tabAlignment: TabAlignment.start,
-            tabs: List.generate(121, (index) => Tab(text: _getTabLabel(index))),
+            child: Row(
+              children: List.generate(121, (index) {
+                final isSelected = _selectedTabIndex == index;
+                return GestureDetector(
+                  onTap: () {
+                    _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isSelected 
+                              ? Theme.of(context).colorScheme.primary 
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      _getTabLabel(index),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
           ),
         ),
         Expanded(
-          child: _buildOptimizedContent(appState),
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            itemCount: 121,
+            itemBuilder: (context, index) {
+              return _buildOptimizedContent(appState, index);
+            },
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildOptimizedContent(AppState appState) {
-    final jogos = _cacheJogosPorTab[_selectedTabIndex];
+  Widget _buildOptimizedContent(AppState appState, int index) {
+    final jogos = _cacheJogosPorTab[index];
 
-    if (_isLoadingNewTab && jogos == null) {
+    if (_isLoadingNewTab && jogos == null && index == _selectedTabIndex) {
       return Center(
         child: CircularProgressIndicator(
           color: Theme.of(context).colorScheme.primary,
@@ -252,37 +302,21 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       );
     }
 
-    if (jogos == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Symbols.error_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.error.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            const Text('Erro ao carregar jogos'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _handleRefresh,
-              child: const Text('Tentar novamente'),
-            ),
-          ],
+    if (jogos == null && index == _selectedTabIndex) {
+      return const Center(
+        child: Text(
+          'Sem ligação à rede\nPor favor, tente mais tarde',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14),
         ),
       );
     }
 
+    if (jogos == null) return const SizedBox.shrink();
+
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      child: AnimatedSwitcher(
-        key: ValueKey(_contentKey),
-        duration: const Duration(milliseconds: 200),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        child: _buildCachedContent(jogos, appState.filtroJogos),
-      ),
+      child: _buildCachedContent(jogos, appState.filtroJogos),
     );
   }
 
@@ -290,19 +324,25 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     final jogosFiltrados = _filtrarJogos(jogos, filtro);
 
     if (jogosFiltrados.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Symbols.sports_soccer_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Symbols.sports_soccer_rounded,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                Text('Nenhum jogo ${_getTituloFiltro(filtro)}'),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text('Nenhum jogo ${_getTituloFiltro(filtro)}'),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -387,6 +427,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         final ligaInfo = ligasInfo[ligaNome]!;
         final leagueLogo = ligaInfo['logo'];
         final leagueId = ligaInfo['id'];
+        final isLastLiga = index == ligasOrdenadas.length - 1;
 
         return Column(
           children: [
@@ -394,20 +435,12 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               onPressed: () {
                 if (leagueId != null) {
                   Navigator.of(context).push(
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => LigaDetalhesPage(
+                    MaterialPageRoute(
+                      builder: (context) => LigaDetalhesPage(
                         ligaId: leagueId.toString(),
                         ligaNome: ligaNome,
                         ligaLogo: leagueLogo,
                       ),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        return SharedAxisTransition(
-                          animation: animation,
-                          secondaryAnimation: secondaryAnimation,
-                          transitionType: SharedAxisTransitionType.horizontal,
-                          child: child,
-                        );
-                      },
                     ),
                   );
                 }
@@ -492,6 +525,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               final isLast = idx == jogosLiga.length - 1;
               return _buildMatchItem(jogo, isLast);
             }),
+            if (!isLastLiga)
+              Container(
+                height: 8,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              ),
           ],
         );
       },
@@ -519,19 +557,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       displayStatus = "$status'";
     }
 
+    final isAoVivoTab = _selectedTabIndex == 61;
+
     return _AnimatedBouncyButton(
       onPressed: () {
         Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => 
-                JogoDetalhesPage(jogoId: jogo['match_id']),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeThroughTransition(
-                animation: animation,
-                secondaryAnimation: secondaryAnimation,
-                child: child,
-              );
-            },
+          MaterialPageRoute(
+            builder: (context) => JogoDetalhesPage(jogoId: jogo['match_id']),
           ),
         );
       },
@@ -615,9 +647,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 ),
                 const SizedBox(height: 8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(width: 40),
                     if (isPlaying) ...[
                       AnimatedBuilder(
                         animation: _blinkController,
@@ -634,6 +665,39 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           );
                         },
                       ),
+                      if (!isAoVivoTab) ...[
+                        const SizedBox(width: 8),
+                        AnimatedBuilder(
+                          animation: _blinkController,
+                          builder: (context, child) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(100),
+                                boxShadow: _blinkController.value > 0.5
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.red.withOpacity(0.7),
+                                          blurRadius: 8,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                    : [],
+                              ),
+                              child: const Text(
+                                'AO VIVO',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ] else if (isHalfTime) ...[
                       Text(
                         'HT',
@@ -662,25 +726,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                         ),
                       ),
                     ],
-                    if (isPlaying)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: const Text(
-                          'AO VIVO',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      )
-                    else
-                      const SizedBox(width: 8),
                   ],
                 ),
               ],
