@@ -18,77 +18,77 @@ class _HomeConfigPageState extends State<HomeConfigPage> {
 
   final List<Map<String, dynamic>> _availableClubs = [
     // Inglaterra - Premier League
-    {'name': 'Manchester City', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': true},
-    {'name': 'Liverpool', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': true},
-    {'name': 'Arsenal', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': true},
-    {'name': 'Chelsea', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': true},
-    {'name': 'Manchester United', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': true},
-    {'name': 'Tottenham', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': true},
-    {'name': 'Newcastle', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': false},
-    {'name': 'Aston Villa', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': false},
-    {'name': 'West Ham', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': false},
-    {'name': 'Brighton', 'league': 'Premier League', 'flag': 'assets/flags/gb.png', 'enabled': false},
+    {'name': 'Manchester City', 'league': 'Premier League', 'badge': 'assets/badges/manchester_city.png', 'enabled': true},
+    {'name': 'Liverpool', 'league': 'Premier League', 'badge': 'assets/badges/liverpool.png', 'enabled': true},
+    {'name': 'Arsenal', 'league': 'Premier League', 'badge': 'assets/badges/arsenal.png', 'enabled': true},
+    {'name': 'Chelsea', 'league': 'Premier League', 'badge': 'assets/badges/chelsea.png', 'enabled': true},
+    {'name': 'Manchester United', 'league': 'Premier League', 'badge': 'assets/badges/manchester_united.png', 'enabled': true},
+    {'name': 'Tottenham', 'league': 'Premier League', 'badge': 'assets/badges/tottenham.png', 'enabled': true},
+    {'name': 'Newcastle', 'league': 'Premier League', 'badge': 'assets/badges/newcastle.png', 'enabled': false},
+    {'name': 'Aston Villa', 'league': 'Premier League', 'badge': 'assets/badges/aston_villa.png', 'enabled': false},
+    {'name': 'West Ham', 'league': 'Premier League', 'badge': 'assets/badges/west_ham.png', 'enabled': false},
+    {'name': 'Brighton', 'league': 'Premier League', 'badge': 'assets/badges/brighton.png', 'enabled': false},
 
     // Espanha - La Liga
-    {'name': 'Real Madrid', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': true},
-    {'name': 'Barcelona', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': true},
-    {'name': 'Atlético Madrid', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': true},
-    {'name': 'Sevilla', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': false},
-    {'name': 'Real Sociedad', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': false},
-    {'name': 'Villarreal', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': false},
-    {'name': 'Athletic Bilbao', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': false},
-    {'name': 'Real Betis', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': false},
-    {'name': 'Valencia', 'league': 'La Liga', 'flag': 'assets/flags/es.png', 'enabled': false},
+    {'name': 'Real Madrid', 'league': 'La Liga', 'badge': 'assets/badges/real_madrid.png', 'enabled': true},
+    {'name': 'Barcelona', 'league': 'La Liga', 'badge': 'assets/badges/barcelona.png', 'enabled': true},
+    {'name': 'Atlético Madrid', 'league': 'La Liga', 'badge': 'assets/badges/atletico_madrid.png', 'enabled': true},
+    {'name': 'Sevilla', 'league': 'La Liga', 'badge': 'assets/badges/sevilla.png', 'enabled': false},
+    {'name': 'Real Sociedad', 'league': 'La Liga', 'badge': 'assets/badges/real_sociedad.png', 'enabled': false},
+    {'name': 'Villarreal', 'league': 'La Liga', 'badge': 'assets/badges/villarreal.png', 'enabled': false},
+    {'name': 'Athletic Bilbao', 'league': 'La Liga', 'badge': 'assets/badges/athletic_bilbao.png', 'enabled': false},
+    {'name': 'Real Betis', 'league': 'La Liga', 'badge': 'assets/badges/real_betis.png', 'enabled': false},
+    {'name': 'Valencia', 'league': 'La Liga', 'badge': 'assets/badges/valencia.png', 'enabled': false},
 
     // Itália - Serie A
-    {'name': 'Inter Milan', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': true},
-    {'name': 'AC Milan', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': true},
-    {'name': 'Juventus', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': true},
-    {'name': 'Napoli', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': true},
-    {'name': 'AS Roma', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': false},
-    {'name': 'Lazio', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': false},
-    {'name': 'Atalanta', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': false},
-    {'name': 'Fiorentina', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': false},
-    {'name': 'Torino', 'league': 'Serie A', 'flag': 'assets/flags/it.png', 'enabled': false},
+    {'name': 'Inter Milan', 'league': 'Serie A', 'badge': 'assets/badges/inter_milan.png', 'enabled': true},
+    {'name': 'AC Milan', 'league': 'Serie A', 'badge': 'assets/badges/ac_milan.png', 'enabled': true},
+    {'name': 'Juventus', 'league': 'Serie A', 'badge': 'assets/badges/juventus.png', 'enabled': true},
+    {'name': 'Napoli', 'league': 'Serie A', 'badge': 'assets/badges/napoli.png', 'enabled': true},
+    {'name': 'AS Roma', 'league': 'Serie A', 'badge': 'assets/badges/as_roma.png', 'enabled': false},
+    {'name': 'Lazio', 'league': 'Serie A', 'badge': 'assets/badges/lazio.png', 'enabled': false},
+    {'name': 'Atalanta', 'league': 'Serie A', 'badge': 'assets/badges/atalanta.png', 'enabled': false},
+    {'name': 'Fiorentina', 'league': 'Serie A', 'badge': 'assets/badges/fiorentina.png', 'enabled': false},
+    {'name': 'Torino', 'league': 'Serie A', 'badge': 'assets/badges/torino.png', 'enabled': false},
 
     // Alemanha - Bundesliga
-    {'name': 'Bayern Munich', 'league': 'Bundesliga', 'flag': 'assets/flags/de.png', 'enabled': true},
-    {'name': 'Borussia Dortmund', 'league': 'Bundesliga', 'flag': 'assets/flags/de.png', 'enabled': true},
-    {'name': 'RB Leipzig', 'league': 'Bundesliga', 'flag': 'assets/flags/de.png', 'enabled': false},
-    {'name': 'Bayer Leverkusen', 'league': 'Bundesliga', 'flag': 'assets/flags/de.png', 'enabled': false},
-    {'name': 'Borussia Monchengladbach', 'league': 'Bundesliga', 'flag': 'assets/flags/de.png', 'enabled': false},
-    {'name': 'Eintracht Frankfurt', 'league': 'Bundesliga', 'flag': 'assets/flags/de.png', 'enabled': false},
-    {'name': 'VfB Stuttgart', 'league': 'Bundesliga', 'flag': 'assets/flags/de.png', 'enabled': false},
+    {'name': 'Bayern Munich', 'league': 'Bundesliga', 'badge': 'assets/badges/bayern_munich.png', 'enabled': true},
+    {'name': 'Borussia Dortmund', 'league': 'Bundesliga', 'badge': 'assets/badges/borussia_dortmund.png', 'enabled': true},
+    {'name': 'RB Leipzig', 'league': 'Bundesliga', 'badge': 'assets/badges/rb_leipzig.png', 'enabled': false},
+    {'name': 'Bayer Leverkusen', 'league': 'Bundesliga', 'badge': 'assets/badges/bayer_leverkusen.png', 'enabled': false},
+    {'name': 'Borussia Monchengladbach', 'league': 'Bundesliga', 'badge': 'assets/badges/borussia_monchengladbach.png', 'enabled': false},
+    {'name': 'Eintracht Frankfurt', 'league': 'Bundesliga', 'badge': 'assets/badges/eintracht_frankfurt.png', 'enabled': false},
+    {'name': 'VfB Stuttgart', 'league': 'Bundesliga', 'badge': 'assets/badges/vfb_stuttgart.png', 'enabled': false},
 
     // França - Ligue 1
-    {'name': 'Paris Saint-Germain', 'league': 'Ligue 1', 'flag': 'assets/flags/fr.png', 'enabled': true},
-    {'name': 'Marseille', 'league': 'Ligue 1', 'flag': 'assets/flags/fr.png', 'enabled': false},
-    {'name': 'Lyon', 'league': 'Ligue 1', 'flag': 'assets/flags/fr.png', 'enabled': false},
-    {'name': 'Monaco', 'league': 'Ligue 1', 'flag': 'assets/flags/fr.png', 'enabled': false},
-    {'name': 'Lille', 'league': 'Ligue 1', 'flag': 'assets/flags/fr.png', 'enabled': false},
-    {'name': 'Nice', 'league': 'Ligue 1', 'flag': 'assets/flags/fr.png', 'enabled': false},
+    {'name': 'Paris Saint-Germain', 'league': 'Ligue 1', 'badge': 'assets/badges/psg.png', 'enabled': true},
+    {'name': 'Marseille', 'league': 'Ligue 1', 'badge': 'assets/badges/marseille.png', 'enabled': false},
+    {'name': 'Lyon', 'league': 'Ligue 1', 'badge': 'assets/badges/lyon.png', 'enabled': false},
+    {'name': 'Monaco', 'league': 'Ligue 1', 'badge': 'assets/badges/monaco.png', 'enabled': false},
+    {'name': 'Lille', 'league': 'Ligue 1', 'badge': 'assets/badges/lille.png', 'enabled': false},
+    {'name': 'Nice', 'league': 'Ligue 1', 'badge': 'assets/badges/nice.png', 'enabled': false},
 
     // Portugal - Primeira Liga
-    {'name': 'Benfica', 'league': 'Primeira Liga', 'flag': 'assets/flags/pt.png', 'enabled': true},
-    {'name': 'Porto', 'league': 'Primeira Liga', 'flag': 'assets/flags/pt.png', 'enabled': true},
-    {'name': 'Sporting CP', 'league': 'Primeira Liga', 'flag': 'assets/flags/pt.png', 'enabled': true},
-    {'name': 'Braga', 'league': 'Primeira Liga', 'flag': 'assets/flags/pt.png', 'enabled': false},
+    {'name': 'Benfica', 'league': 'Primeira Liga', 'badge': 'assets/badges/benfica.png', 'enabled': true},
+    {'name': 'Porto', 'league': 'Primeira Liga', 'badge': 'assets/badges/porto.png', 'enabled': true},
+    {'name': 'Sporting CP', 'league': 'Primeira Liga', 'badge': 'assets/badges/sporting_cp.png', 'enabled': true},
+    {'name': 'Braga', 'league': 'Primeira Liga', 'badge': 'assets/badges/braga.png', 'enabled': false},
 
     // Holanda - Eredivisie
-    {'name': 'Ajax', 'league': 'Eredivisie', 'flag': 'assets/flags/nl.png', 'enabled': false},
-    {'name': 'PSV Eindhoven', 'league': 'Eredivisie', 'flag': 'assets/flags/nl.png', 'enabled': false},
-    {'name': 'Feyenoord', 'league': 'Eredivisie', 'flag': 'assets/flags/nl.png', 'enabled': false},
+    {'name': 'Ajax', 'league': 'Eredivisie', 'badge': 'assets/badges/ajax.png', 'enabled': false},
+    {'name': 'PSV Eindhoven', 'league': 'Eredivisie', 'badge': 'assets/badges/psv.png', 'enabled': false},
+    {'name': 'Feyenoord', 'league': 'Eredivisie', 'badge': 'assets/badges/feyenoord.png', 'enabled': false},
 
     // Brasil - Brasileirão
-    {'name': 'Flamengo', 'league': 'Brasileirão', 'flag': 'assets/flags/br.png', 'enabled': false},
-    {'name': 'Palmeiras', 'league': 'Brasileirão', 'flag': 'assets/flags/br.png', 'enabled': false},
-    {'name': 'Corinthians', 'league': 'Brasileirão', 'flag': 'assets/flags/br.png', 'enabled': false},
-    {'name': 'São Paulo', 'league': 'Brasileirão', 'flag': 'assets/flags/br.png', 'enabled': false},
-    {'name': 'Santos', 'league': 'Brasileirão', 'flag': 'assets/flags/br.png', 'enabled': false},
+    {'name': 'Flamengo', 'league': 'Brasileirão', 'badge': 'assets/badges/flamengo.png', 'enabled': false},
+    {'name': 'Palmeiras', 'league': 'Brasileirão', 'badge': 'assets/badges/palmeiras.png', 'enabled': false},
+    {'name': 'Corinthians', 'league': 'Brasileirão', 'badge': 'assets/badges/corinthians.png', 'enabled': false},
+    {'name': 'São Paulo', 'league': 'Brasileirão', 'badge': 'assets/badges/sao_paulo.png', 'enabled': false},
+    {'name': 'Santos', 'league': 'Brasileirão', 'badge': 'assets/badges/santos.png', 'enabled': false},
 
     // Argentina - Liga Profesional
-    {'name': 'Boca Juniors', 'league': 'Liga Profesional', 'flag': 'assets/flags/ar.png', 'enabled': false},
-    {'name': 'River Plate', 'league': 'Liga Profesional', 'flag': 'assets/flags/ar.png', 'enabled': false},
+    {'name': 'Boca Juniors', 'league': 'Liga Profesional', 'badge': 'assets/badges/boca_juniors.png', 'enabled': false},
+    {'name': 'River Plate', 'league': 'Liga Profesional', 'badge': 'assets/badges/river_plate.png', 'enabled': false},
   ];
 
   @override
@@ -221,13 +221,15 @@ class _HomeConfigPageState extends State<HomeConfigPage> {
   }
 
   Widget _buildLeagueSection(String league, List<Map<String, dynamic>> clubs, ColorScheme cs) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
             child: Text(
               league,
               style: TextStyle(
@@ -239,8 +241,23 @@ class _HomeConfigPageState extends State<HomeConfigPage> {
           ),
           Container(
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(12),
+              color: isDark ? cs.surface : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark 
+                  ? cs.outlineVariant.withOpacity(0.3)
+                  : cs.outlineVariant.withOpacity(0.15),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark 
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               children: clubs.asMap().entries.map((entry) {
@@ -255,8 +272,8 @@ class _HomeConfigPageState extends State<HomeConfigPage> {
                         ? Border(bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.3)))
                         : null,
                     borderRadius: BorderRadius.vertical(
-                      top: isFirst ? const Radius.circular(12) : Radius.zero,
-                      bottom: isLast ? const Radius.circular(12) : Radius.zero,
+                      top: isFirst ? const Radius.circular(16) : Radius.zero,
+                      bottom: isLast ? const Radius.circular(16) : Radius.zero,
                     ),
                   ),
                   child: Material(
@@ -269,20 +286,33 @@ class _HomeConfigPageState extends State<HomeConfigPage> {
                         });
                       },
                       borderRadius: BorderRadius.vertical(
-                        top: isFirst ? const Radius.circular(12) : Radius.zero,
-                        bottom: isLast ? const Radius.circular(12) : Radius.zero,
+                        top: isFirst ? const Radius.circular(16) : Radius.zero,
+                        bottom: isLast ? const Radius.circular(16) : Radius.zero,
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(8),
                               child: Image.asset(
-                                club['flag'] as String,
-                                width: 32,
-                                height: 24,
-                                fit: BoxFit.cover,
+                                club['badge'] as String,
+                                width: 36,
+                                height: 36,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: cs.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Symbols.shield_rounded,
+                                    size: 20,
+                                    color: cs.onSurfaceVariant.withOpacity(0.5),
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -399,6 +429,7 @@ class ClubSearchDelegate extends SearchDelegate<String> {
 
   Widget _buildSearchResults(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final results = clubs.where((club) {
       return club['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
              club['league'].toString().toLowerCase().contains(query.toLowerCase());
@@ -428,8 +459,23 @@ class ClubSearchDelegate extends SearchDelegate<String> {
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(12),
+            color: isDark ? cs.surface : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark 
+                ? cs.outlineVariant.withOpacity(0.3)
+                : cs.outlineVariant.withOpacity(0.15),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark 
+                  ? Colors.black.withOpacity(0.2)
+                  : Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Material(
             color: Colors.transparent,
@@ -438,18 +484,31 @@ class ClubSearchDelegate extends SearchDelegate<String> {
                 onToggle(club, !(club['enabled'] as bool));
                 close(context, '');
               },
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(8),
                       child: Image.asset(
-                        club['flag'] as String,
-                        width: 32,
-                        height: 24,
-                        fit: BoxFit.cover,
+                        club['badge'] as String,
+                        width: 36,
+                        height: 36,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Symbols.shield_rounded,
+                            size: 20,
+                            color: cs.onSurfaceVariant.withOpacity(0.5),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
