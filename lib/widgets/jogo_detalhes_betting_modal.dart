@@ -22,7 +22,7 @@ class JogoDetalhesBettingModal extends StatelessWidget {
         height: MediaQuery.of(context).size.height * 0.95,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
         ),
         child: Column(
           children: [
@@ -41,31 +41,15 @@ class JogoDetalhesBettingModal extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Começar Aposta',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Selecione suas opções de aposta',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                     const Spacer(),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red.shade600,
                         foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 54),
+                        minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(27),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         elevation: 0,
                       ),
