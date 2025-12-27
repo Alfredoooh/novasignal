@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  url_launcher: any
   ionicons: any
   webview_flutter: any
   mobile_scanner: any
