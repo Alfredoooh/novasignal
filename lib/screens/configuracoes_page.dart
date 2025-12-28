@@ -50,6 +50,24 @@ class ConfiguracoesPage extends StatelessWidget {
                 child: Column(
                   children: [
                     SwitchListTile(
+                      title: const Text('Cor Dinâmica'),
+                      subtitle: const Text('Usar vermelho ao invés de azul'),
+                      secondary: Icon(
+                        Symbols.palette_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      value: appState.corDinamica,
+                      onChanged: (_) => appState.alternarCorDinamica(),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                      ),
+                    ),
+                    Divider(
+                      height: 1,
+                      indent: 72,
+                      color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                    ),
+                    SwitchListTile(
                       title: const Text('Tema Escuro'),
                       subtitle: const Text('Ativar modo escuro'),
                       secondary: Icon(
@@ -59,7 +77,9 @@ class ConfiguracoesPage extends StatelessWidget {
                       value: appState.temaEscuro,
                       onChanged: (_) => appState.alternarTemaEscuro(),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: appState.temaEscuro 
+                            ? BorderRadius.zero 
+                            : const BorderRadius.vertical(bottom: Radius.circular(12)),
                       ),
                     ),
                     if (appState.temaEscuro) ...[
