@@ -38,8 +38,8 @@ class MyApp extends StatelessWidget {
           child: MaterialApp(
             title: 'Football Live',
             debugShowCheckedModeBanner: false,
-            theme: _buildLightTheme(),
-            darkTheme: _buildDarkTheme(appState.temaEscuroProfundo),
+            theme: _buildLightTheme(appState.corDinamica),
+            darkTheme: _buildDarkTheme(appState.temaEscuroProfundo, appState.corDinamica),
             themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
             home: const HomePage(),
           ),
@@ -48,11 +48,13 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  ThemeData _buildLightTheme() {
+  ThemeData _buildLightTheme(bool usarCorDinamica) {
+    final primaryColor = usarCorDinamica ? const Color(0xFFEF4444) : const Color(0xFF3B82F6);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: const Color(0xFF3B82F6),
+      primaryColor: primaryColor,
       scaffoldBackgroundColor: const Color(0xFFF8F9FA),
       cardColor: const Color(0xFFFFFFFF),
       dividerColor: const Color(0xFFE0E0E0),
@@ -62,25 +64,25 @@ class MyApp extends StatelessWidget {
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
-      colorScheme: const ColorScheme.light(
-        primary: Color(0xFF3B82F6),
-        onPrimary: Color(0xFFFFFFFF),
-        secondary: Color(0xFF3B82F6),
-        onSecondary: Color(0xFFFFFFFF),
-        surface: Color(0xFFFFFFFF),
-        onSurface: Color(0xFF202124),
-        background: Color(0xFFF8F9FA),
-        onBackground: Color(0xFF202124),
-        error: Color(0xFFEF4444),
-        onError: Color(0xFFFFFFFF),
-        surfaceContainerLowest: Color(0xFFFFFFFF),
-        surfaceContainerLow: Color(0xFFFAFAFA),
-        surfaceContainer: Color(0xFFF5F5F5),
-        surfaceContainerHigh: Color(0xFFF0F0F0),
-        surfaceContainerHighest: Color(0xFFEBEBEB),
-        onSurfaceVariant: Color(0xFF5F6368),
-        outline: Color(0xFFE0E0E0),
-        outlineVariant: Color(0xFFF0F0F0),
+      colorScheme: ColorScheme.light(
+        primary: primaryColor,
+        onPrimary: const Color(0xFFFFFFFF),
+        secondary: primaryColor,
+        onSecondary: const Color(0xFFFFFFFF),
+        surface: const Color(0xFFFFFFFF),
+        onSurface: const Color(0xFF202124),
+        background: const Color(0xFFF8F9FA),
+        onBackground: const Color(0xFF202124),
+        error: const Color(0xFFEF4444),
+        onError: const Color(0xFFFFFFFF),
+        surfaceContainerLowest: const Color(0xFFFFFFFF),
+        surfaceContainerLow: const Color(0xFFFAFAFA),
+        surfaceContainer: const Color(0xFFF5F5F5),
+        surfaceContainerHigh: const Color(0xFFF0F0F0),
+        surfaceContainerHighest: const Color(0xFFEBEBEB),
+        onSurfaceVariant: const Color(0xFF5F6368),
+        outline: const Color(0xFFE0E0E0),
+        outlineVariant: const Color(0xFFF0F0F0),
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
@@ -130,7 +132,8 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  ThemeData _buildDarkTheme(bool profundo) {
+  ThemeData _buildDarkTheme(bool profundo, bool usarCorDinamica) {
+    final primaryColor = usarCorDinamica ? const Color(0xFFFFB4AB) : const Color(0xFFA8C7FA);
     final surfaceColor = profundo ? const Color(0xFF0D0D0D) : const Color(0xFF1D2024);
     final backgroundColor = profundo ? const Color(0xFF000000) : const Color(0xFF111318);
     final surfaceContainerColor = profundo ? const Color(0xFF1A1A1A) : const Color(0xFF282A2F);
@@ -138,7 +141,7 @@ class MyApp extends StatelessWidget {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: const Color(0xFFA8C7FA),
+      primaryColor: primaryColor,
       scaffoldBackgroundColor: backgroundColor,
       cardColor: surfaceColor,
       dividerColor: profundo ? const Color(0xFF1A1A1A) : const Color(0xFF444746),
@@ -149,7 +152,7 @@ class MyApp extends StatelessWidget {
         },
       ),
       colorScheme: ColorScheme.dark(
-        primary: const Color(0xFFA8C7FA),
+        primary: primaryColor,
         onPrimary: const Color(0xFF003062),
         secondary: const Color(0xFFBFC6DC),
         onSecondary: const Color(0xFF003062),
