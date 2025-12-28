@@ -9,6 +9,7 @@ class AppState with ChangeNotifier {
   // Configurações de tema e notificações
   bool _temaEscuro = false;
   bool _temaEscuroProfundo = false;
+  bool _corDinamica = false;
   bool _notificacoesAtivas = true;
 
   // Estado de navegação
@@ -36,6 +37,7 @@ class AppState with ChangeNotifier {
   // Getters
   bool get temaEscuro => _temaEscuro;
   bool get temaEscuroProfundo => _temaEscuroProfundo;
+  bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
 
   // ========== CONFIGURAÇÃO DA API ==========
@@ -89,6 +91,7 @@ class AppState with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _temaEscuro = prefs.getBool('tema_escuro') ?? false;
       _temaEscuroProfundo = prefs.getBool('tema_escuro_profundo') ?? false;
+      _corDinamica = prefs.getBool('cor_dinamica') ?? false;
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
       notifyListeners();
     } catch (e) {
@@ -111,6 +114,13 @@ class AppState with ChangeNotifier {
     _temaEscuroProfundo = !_temaEscuroProfundo;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('tema_escuro_profundo', _temaEscuroProfundo);
+    notifyListeners();
+  }
+
+  Future<void> alternarCorDinamica() async {
+    _corDinamica = !_corDinamica;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('cor_dinamica', _corDinamica);
     notifyListeners();
   }
 
