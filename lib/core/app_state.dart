@@ -8,9 +8,7 @@ import 'dart:async';
 class AppState with ChangeNotifier {
   // Configurações de tema e notificações
   bool _temaEscuro = false;
-  bool _temaAmoled = false;
   bool _temaEscuroProfundo = false;
-  bool _corDinamica = true;
   bool _notificacoesAtivas = true;
 
   // Estado de navegação
@@ -37,9 +35,7 @@ class AppState with ChangeNotifier {
 
   // Getters
   bool get temaEscuro => _temaEscuro;
-  bool get temaAmoled => _temaAmoled;
   bool get temaEscuroProfundo => _temaEscuroProfundo;
-  bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
 
   // ========== CONFIGURAÇÃO DA API ==========
@@ -49,7 +45,7 @@ class AppState with ChangeNotifier {
 
   // Cache e intervalos otimizados
   static const int _cacheStaleTime = 60; // 1 minuto
-  static const int _cacheDurationNews = 30; // 30 minutos
+  static const int _cacheDurationNews = 1800; // 30 minutos
 
   // Intervalos OTIMIZADOS
   static const int _updateIntervalJogosAoVivo = 30; // 30s
@@ -92,9 +88,7 @@ class AppState with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _temaEscuro = prefs.getBool('tema_escuro') ?? false;
-      _temaAmoled = prefs.getBool('tema_amoled') ?? false;
       _temaEscuroProfundo = prefs.getBool('tema_escuro_profundo') ?? false;
-      _corDinamica = prefs.getBool('cor_dinamica') ?? true;
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
       notifyListeners();
     } catch (e) {
@@ -102,31 +96,21 @@ class AppState with ChangeNotifier {
     }
   }
 
-  Future<void> alternarTema(bool valor) async {
-    _temaEscuro = valor;
+  Future<void> alternarTemaEscuro() async {
+    _temaEscuro = !_temaEscuro;
+    if (!_temaEscuro) {
+      _temaEscuroProfundo = false;
+    }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tema_escuro', valor);
+    await prefs.setBool('tema_escuro', _temaEscuro);
+    await prefs.setBool('tema_escuro_profundo', _temaEscuroProfundo);
     notifyListeners();
   }
 
-  Future<void> alternarTemaAmoled(bool valor) async {
-    _temaAmoled = valor;
+  Future<void> alternarTemaEscuroProfundo() async {
+    _temaEscuroProfundo = !_temaEscuroProfundo;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tema_amoled', valor);
-    notifyListeners();
-  }
-
-  Future<void> alternarTemaEscuroProfundo(bool valor) async {
-    _temaEscuroProfundo = valor;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tema_escuro_profundo', valor);
-    notifyListeners();
-  }
-
-  Future<void> alternarCorDinamica(bool valor) async {
-    _corDinamica = valor;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('cor_dinamica', valor);
+    await prefs.setBool('tema_escuro_profundo', _temaEscuroProfundo);
     notifyListeners();
   }
 
@@ -189,6 +173,19 @@ class AppState with ChangeNotifier {
     final entry = _cache[key];
     if (entry != null) {
       final age = DateTime.now().difference(entry.timestamp).inSeconds;
+      
+      // Cache especial para notícias (30 minutos)
+      if (key.contains('noticias')) {
+        if (age < _cacheDurationNews) {
+          debugPrint('✅ Cache FRESH (notícias): $key (${age}s)');
+          return entry.data;
+        } else {
+          debugPrint('⚠️ Cache STALE (notícias): $key (${age}s)');
+          return null;
+        }
+      }
+      
+      // Cache normal (1 minuto)
       if (age < _cacheStaleTime) {
         debugPrint('✅ Cache FRESH: $key (${age}s)');
         return entry.data;
@@ -211,6 +208,12 @@ class AppState with ChangeNotifier {
     final entry = _cache[key];
     if (entry == null) return true;
     final age = DateTime.now().difference(entry.timestamp).inSeconds;
+    
+    // Cache especial para notícias
+    if (key.contains('noticias')) {
+      return age >= _cacheDurationNews;
+    }
+    
     return age >= _cacheStaleTime;
   }
 
@@ -248,7 +251,6 @@ class AppState with ChangeNotifier {
       );
 
       debugPrint('📡 Status Code: ${response.statusCode}');
-      debugPrint('📦 Response Body (primeiros 200 chars): ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -268,78 +270,144 @@ class AppState with ChangeNotifier {
     }
   }
 
-  // ========== NEWS API ==========
+  // ========== NEWS API - CORRIGIDO ==========
 
   Future<List<Map<String, dynamic>>> carregarNoticias() async {
     const cacheKey = 'noticias_sports';
     final cached = _getFromCache(cacheKey);
 
+    // Retorna cache se ainda for válido (30 minutos)
     if (cached != null) {
+      debugPrint('📰 Retornando ${(cached as List).length} notícias do cache');
+      
+      // Atualiza em background se stale
       if (_isCacheStale(cacheKey)) {
         _fetchNoticiasBackground(cacheKey);
       }
+      
       return List<Map<String, dynamic>>.from(cached);
     }
 
-    await _fetchNoticiasBackground(cacheKey);
-    final result = _getFromCache(cacheKey);
-    return result != null ? List<Map<String, dynamic>>.from(result) : [];
+    // Busca pela primeira vez
+    debugPrint('📰 Buscando notícias pela primeira vez...');
+    try {
+      await _fetchNoticiasSync(cacheKey);
+      final result = _getFromCache(cacheKey);
+      return result != null ? List<Map<String, dynamic>>.from(result) : [];
+    } catch (e) {
+      debugPrint('❌ Erro ao buscar notícias: $e');
+      return [];
+    }
+  }
+
+  Future<void> _fetchNoticiasSync(String cacheKey) async {
+    try {
+      // Tenta múltiplas categorias e idiomas para melhorar resultados
+      final queries = [
+        'category=sports&language=pt&country=br',
+        'q=futebol&language=pt',
+        'q=football OR soccer&language=en',
+      ];
+
+      for (var query in queries) {
+        try {
+          final url = '$newsApiBase/top-headlines?$query&pageSize=20&apiKey=$newsApiKey';
+          debugPrint('🚀 News Request: $query');
+
+          final response = await _httpClient.get(Uri.parse(url)).timeout(
+            const Duration(seconds: 10),
+          );
+
+          debugPrint('📡 News Status: ${response.statusCode}');
+
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body);
+
+            if (data['status'] == 'ok' && data['articles'] != null) {
+              final articles = data['articles'] as List;
+              
+              if (articles.isEmpty) {
+                debugPrint('⚠️ Nenhuma notícia encontrada com: $query');
+                continue;
+              }
+
+              final noticias = articles
+                  .where((article) => 
+                      article['title'] != null && 
+                      article['title'].toString().isNotEmpty &&
+                      article['title'] != '[Removed]')
+                  .map((article) {
+                return {
+                  'title': article['title'] ?? 'Sem título',
+                  'subtitle': article['source']?['name'] ?? 'Fonte desconhecida',
+                  'description': article['description'] ?? '',
+                  'date': _formatNewsDate(article['publishedAt']),
+                  'url': article['url'] ?? '',
+                  'imageUrl': article['urlToImage'] ?? '',
+                };
+              }).toList();
+
+              if (noticias.isNotEmpty) {
+                _saveToCache(cacheKey, noticias);
+                debugPrint('✅ ${noticias.length} notícias salvas no cache');
+                notifyListeners();
+                return;
+              }
+            }
+          } else if (response.statusCode == 426) {
+            debugPrint('⚠️ API Key inválida ou limite excedido');
+            throw Exception('API Key issue');
+          } else if (response.statusCode == 429) {
+            debugPrint('⚠️ Limite de requisições excedido');
+            throw Exception('Rate limit exceeded');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Erro com query "$query": $e');
+          continue;
+        }
+      }
+
+      // Se chegou aqui, nenhuma query funcionou
+      debugPrint('❌ Nenhuma notícia pôde ser carregada');
+      
+      // Salva lista vazia no cache para evitar múltiplas tentativas
+      _saveToCache(cacheKey, []);
+      
+    } catch (e) {
+      debugPrint('❌ Erro fatal ao buscar notícias: $e');
+      rethrow;
+    }
   }
 
   Future<void> _fetchNoticiasBackground(String cacheKey) async {
     try {
-      final url = '$newsApiBase/top-headlines?category=sports&language=pt&apiKey=$newsApiKey';
-      debugPrint('🚀 News Request');
-
-      final response = await _httpClient.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 10),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['status'] == 'ok' && data['articles'] != null) {
-          final articles = data['articles'] as List;
-          final noticias = articles.map((article) {
-            return {
-              'title': article['title'] ?? '',
-              'subtitle': article['source']?['name'] ?? '',
-              'description': article['description'] ?? '',
-              'date': _formatNewsDate(article['publishedAt']),
-              'url': article['url'] ?? '',
-              'imageUrl': article['urlToImage'] ?? '',
-            };
-          }).toList();
-
-          _saveToCache(cacheKey, noticias);
-          debugPrint('✅ ${noticias.length} notícias');
-          notifyListeners();
-        }
-      }
+      await _fetchNoticiasSync(cacheKey);
     } catch (e) {
-      debugPrint('❌ Erro notícias: $e');
+      debugPrint('❌ Erro ao atualizar notícias em background: $e');
     }
   }
 
   String _formatNewsDate(String? dateStr) {
-    if (dateStr == null) return '';
+    if (dateStr == null || dateStr.isEmpty) return '';
     try {
       final date = DateTime.parse(dateStr);
       final now = DateTime.now();
       final diff = now.difference(date);
 
+      if (diff.inMinutes < 1) return 'Agora';
       if (diff.inMinutes < 60) return 'Há ${diff.inMinutes} min';
       if (diff.inHours < 24) return 'Há ${diff.inHours}h';
+      if (diff.inDays == 1) return 'Ontem';
       if (diff.inDays < 7) return 'Há ${diff.inDays}d';
       return DateFormat('dd/MM/yyyy').format(date);
     } catch (e) {
+      debugPrint('❌ Erro ao formatar data: $dateStr');
       return '';
     }
   }
 
   // ========== JOGOS - INTEGRADO COM WORKER ==========
 
-  // Carrega TODOS os jogos (live + today + tomorrow)
   Future<List<dynamic>> carregarTodosJogos() async {
     const cacheKey = 'jogos_todos';
     final cached = _getFromCache(cacheKey);
@@ -360,20 +428,13 @@ class AppState with ChangeNotifier {
     try {
       debugPrint('🔄 Carregando TODOS os jogos...');
 
-      // Usa o endpoint /api/matches que retorna tudo
       final response = await _executeRequest('/api/matches');
-
-      debugPrint('📦 Tipo da resposta: ${response.runtimeType}');
-      debugPrint('📦 Conteúdo: $response');
 
       List<dynamic> jogos = [];
 
-      // O Worker retorna: { "count": X, "matches": [...] }
       if (response is Map && response.containsKey('matches')) {
         jogos = response['matches'] as List<dynamic>;
         debugPrint('✅ ${jogos.length} jogos carregados via /api/matches');
-      } else {
-        debugPrint('⚠️ Formato de resposta inesperado');
       }
 
       _saveToCache(cacheKey, jogos);
@@ -383,7 +444,6 @@ class AppState with ChangeNotifier {
     }
   }
 
-  // Carrega jogos de uma data específica
   Future<List<dynamic>> carregarJogosDoDia(DateTime data) async {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
     final hoje = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -391,16 +451,14 @@ class AppState with ChangeNotifier {
       DateTime.now().add(const Duration(days: 1))
     );
 
-    debugPrint('📅 Carregando jogos para: $dataStr (hoje: $hoje, amanhã: $amanha)');
+    debugPrint('📅 Carregando jogos para: $dataStr');
 
-    // Determina qual endpoint usar
     String endpoint;
     if (dataStr == hoje) {
       endpoint = '/api/matches/today';
     } else if (dataStr == amanha) {
       endpoint = '/api/matches/tomorrow';
     } else {
-      // Para outras datas, usa todos e filtra
       return _filtrarJogosPorData(dataStr);
     }
 
@@ -421,7 +479,6 @@ class AppState with ChangeNotifier {
 
   Future<void> _fetchJogosDoDiaBackground(String endpoint, String cacheKey) async {
     try {
-      debugPrint('🔄 Buscando: $endpoint');
       final response = await _executeRequest(endpoint);
 
       List<dynamic> jogos = [];
@@ -429,8 +486,6 @@ class AppState with ChangeNotifier {
       if (response is Map && response.containsKey('matches')) {
         jogos = response['matches'] as List<dynamic>;
         debugPrint('✅ ${jogos.length} jogos carregados');
-      } else {
-        debugPrint('⚠️ Formato inesperado na resposta');
       }
 
       _saveToCache(cacheKey, jogos);
@@ -449,7 +504,6 @@ class AppState with ChangeNotifier {
     }).toList();
   }
 
-  // Auto-atualização otimizada
   void iniciarAutoAtualizacaoJogos(DateTime data) {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
     final timerId = 'jogos_$dataStr';
@@ -479,7 +533,6 @@ class AppState with ChangeNotifier {
     debugPrint('⏸️ Auto-atualização pausada: $dataStr');
   }
 
-  // Jogos em destaque
   Future<List<dynamic>> carregarJogosDestaque(List<String> topTeams) async {
     const cacheKey = 'destaque_jogos';
     final cached = _getFromCache(cacheKey);
@@ -513,7 +566,6 @@ class AppState with ChangeNotifier {
         return false;
       }).toList();
 
-      // Ordena: jogos ao vivo primeiro
       jogosFiltrados.sort((a, b) {
         final aIsLive = _isJogoAoVivo(a);
         final bIsLive = _isJogoAoVivo(b);
@@ -543,7 +595,6 @@ class AppState with ChangeNotifier {
            status == '2H';
   }
 
-  // Pesquisa
   Future<List<dynamic>> pesquisarJogos(String termo) async {
     final termoLower = termo.toLowerCase();
     final todosJogos = await carregarTodosJogos();
@@ -559,7 +610,6 @@ class AppState with ChangeNotifier {
     }).toList();
   }
 
-  // Detalhes do jogo
   Future<dynamic> carregarJogoDetalhes(String jogoId) async {
     final cacheKey = 'detalhes_$jogoId';
     final cached = _getFromCache(cacheKey);
@@ -607,7 +657,6 @@ class AppState with ChangeNotifier {
     _autoUpdateTimers.remove(timerId);
   }
 
-  // Ligas
   Future<List<dynamic>> carregarLigas() async {
     const cacheKey = 'ligas_todas';
     final cached = _getFromCache(cacheKey);
@@ -660,7 +709,6 @@ class AppState with ChangeNotifier {
   }
 
   Future<List<dynamic>> carregarClassificacao(String ligaId) async {
-    // Classificação pode ser implementada no futuro
     return [];
   }
 
@@ -668,7 +716,6 @@ class AppState with ChangeNotifier {
     return carregarJogosPorLiga(ligaId);
   }
 
-  // Pré-carregamento
   Future<void> precarregarDadosHome() async {
     debugPrint('🔥 Pré-carregando Home...');
 
