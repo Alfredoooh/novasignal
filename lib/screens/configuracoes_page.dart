@@ -6,28 +6,10 @@ import '../core/app_state.dart';
 class ConfiguracoesPage extends StatelessWidget {
   const ConfiguracoesPage({super.key});
 
-  void _mostrarDialogoIndisponivel(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Opção indisponível'),
-        content: const Text('Esta opção ainda não está disponível.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.light
-          ? const Color(0xFFF5F5F5)
-          : Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: const Text('Configurações'),
         leading: IconButton(
@@ -56,10 +38,10 @@ class ConfiguracoesPage extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -68,39 +50,38 @@ class ConfiguracoesPage extends StatelessWidget {
                 child: Column(
                   children: [
                     SwitchListTile(
-                      title: const Text('Cor Dinâmica'),
-                      subtitle: const Text('Usar cor azul do Material Design ou vermelho Deriv'),
+                      title: const Text('Tema Escuro'),
+                      subtitle: const Text('Ativar modo escuro'),
                       secondary: Icon(
-                        Symbols.palette_rounded,
+                        Symbols.dark_mode_rounded,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      value: appState.corDinamica,
-                      onChanged: appState.alternarCorDinamica,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      value: appState.temaEscuro,
+                      onChanged: (_) => appState.alternarTemaEscuro(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    Divider(
-                      height: 1,
-                      indent: 72,
-                      color: Theme.of(context).dividerColor.withOpacity(0.1),
-                    ),
-                    Opacity(
-                      opacity: 0.5,
-                      child: SwitchListTile(
-                        title: const Text('Tema Escuro'),
-                        subtitle: const Text('Ativar modo escuro'),
+                    if (appState.temaEscuro) ...[
+                      Divider(
+                        height: 1,
+                        indent: 72,
+                        color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                      ),
+                      SwitchListTile(
+                        title: const Text('Escuro Profundo'),
+                        subtitle: const Text('Usar tema preto puro'),
                         secondary: Icon(
-                          Symbols.dark_mode_rounded,
+                          Symbols.brightness_low_rounded,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        value: false,
-                        onChanged: (valor) => _mostrarDialogoIndisponivel(context),
+                        value: appState.temaEscuroProfundo,
+                        onChanged: (_) => appState.alternarTemaEscuroProfundo(),
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -123,10 +104,10 @@ class ConfiguracoesPage extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -142,7 +123,7 @@ class ConfiguracoesPage extends StatelessWidget {
                   value: appState.notificacoesAtivas,
                   onChanged: appState.alternarNotificacoes,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
@@ -165,10 +146,10 @@ class ConfiguracoesPage extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -189,7 +170,7 @@ class ConfiguracoesPage extends StatelessWidget {
                     ),
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
