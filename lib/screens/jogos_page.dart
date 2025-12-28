@@ -43,6 +43,27 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadJogosDoDia();
       _startAutoRefresh();
+      
+      // Scroll para a aba "Hoje" ao iniciar
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox != null) {
+        // Calcula a posição aproximada da aba 60 (Hoje)
+        final tabWidth = 80.0; // largura aproximada de cada tab
+        final targetScroll = (60 * tabWidth) - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
+        
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            final scrollController = PrimaryScrollController.of(context);
+            if (scrollController != null && scrollController.hasClients) {
+              scrollController.animateTo(
+                targetScroll.clamp(0.0, scrollController.position.maxScrollExtent),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          }
+        });
+      }
     });
   }
 
@@ -235,46 +256,16 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               ),
             ],
           ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: List.generate(121, (index) {
-                final isSelected = _selectedTabIndex == index;
-                return GestureDetector(
-                  onTap: () {
-                    _pageController.animateToPage(
-                      index,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isSelected 
-                              ? Theme.of(context).colorScheme.primary 
-                              : Colors.transparent,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      _getTabLabel(index),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
+          child: _TabBarWithAutoScroll(
+            selectedIndex: _selectedTabIndex,
+            onTabTap: (index) {
+              _pageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            getTabLabel: _getTabLabel,
           ),
         ),
         Expanded(
@@ -665,42 +656,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                           );
                         },
                       ),
-                      if (!isAoVivoTab) ...[
-                        const SizedBox(width: 8),
-                        AnimatedBuilder(
-                          animation: _blinkController,
-                          builder: (context, child) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(100),
-                                boxShadow: _blinkController.value > 0.5
-                                    ? [
-                                        BoxShadow(
-                                          color: Colors.red.withOpacity(0.7),
-                                          blurRadius: 8,
-                                          spreadRadius: 2,
-                                        ),
-                                      ]
-                                    : [],
-                              ),
-                              child: const Text(
-                                'AO VIVO',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
                     ] else if (isHalfTime) ...[
                       Text(
-                        'HT',
+                        'INT',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -728,6 +686,38 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     ],
                   ],
                 ),
+                if (isPlaying && !isAoVivoTab) ...[
+                  const SizedBox(height: 4),
+                  AnimatedBuilder(
+                    animation: _blinkController,
+                    builder: (context, child) {
+                      final opacity = _blinkController.value > 0.5 ? 0.7 : 0.0;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(opacity),
+                              blurRadius: 6,
+                              spreadRadius: opacity > 0 ? 3 : 0,
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'AO VIVO',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -738,6 +728,115 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _TabBarWithAutoScroll extends StatefulWidget {
+  final int selectedIndex;
+  final Function(int) onTabTap;
+  final String Function(int) getTabLabel;
+
+  const _TabBarWithAutoScroll({
+    required this.selectedIndex,
+    required this.onTabTap,
+    required this.getTabLabel,
+  });
+
+  @override
+  State<_TabBarWithAutoScroll> createState() => _TabBarWithAutoScrollState();
+}
+
+class _TabBarWithAutoScrollState extends State<_TabBarWithAutoScroll> {
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _tabKeys = {};
+
+  @override
+  void initState() {
+    super.initState();
+    for (int i = 0; i < 121; i++) {
+      _tabKeys[i] = GlobalKey();
+    }
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToTab(widget.selectedIndex, animate: false);
+    });
+  }
+
+  @override
+  void didUpdateWidget(_TabBarWithAutoScroll oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedIndex != oldWidget.selectedIndex) {
+      _scrollToTab(widget.selectedIndex);
+    }
+  }
+
+  void _scrollToTab(int index, {bool animate = true}) {
+    final key = _tabKeys[index];
+    if (key?.currentContext != null) {
+      final box = key!.currentContext!.findRenderObject() as RenderBox;
+      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      final screenWidth = MediaQuery.of(context).size.width;
+      final targetScroll = _scrollController.offset + position.dx - (screenWidth / 2) + (box.size.width / 2);
+      
+      if (animate) {
+        _scrollController.animateTo(
+          targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(
+          targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: List.generate(121, (index) {
+          final isSelected = widget.selectedIndex == index;
+          return GestureDetector(
+            key: _tabKeys[index],
+            onTap: () => widget.onTabTap(index),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected 
+                        ? Theme.of(context).colorScheme.primary 
+                        : Colors.transparent,
+                    width: 3,
+                  ),
+                ),
+              ),
+              child: Text(
+                widget.getTabLabel(index),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
