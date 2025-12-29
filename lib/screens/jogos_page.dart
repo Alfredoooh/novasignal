@@ -16,13 +16,12 @@ class JogosPage extends StatefulWidget {
 
 class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _blinkController;
-  late PageController _pageController;
   Timer? _autoRefreshTimer;
 
-  final Map<int, List<dynamic>> _cacheJogosPorTab = {};
-
+  final Map<String, List<dynamic>> _cacheJogosPorFiltro = {};
+  
+  String _selectedFilter = 'hoje';
   String? _lastFiltro;
-  int _selectedTabIndex = 60;
   bool _isLoadingNewTab = false;
   int _contentKey = 0;
 
@@ -38,32 +37,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
-    _pageController = PageController(initialPage: 60);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadJogosDoDia();
       _startAutoRefresh();
-      
-      // Scroll para a aba "Hoje" ao iniciar
-      final renderBox = context.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        // Calcula a posição aproximada da aba 60 (Hoje)
-        final tabWidth = 80.0; // largura aproximada de cada tab
-        final targetScroll = (60 * tabWidth) - (MediaQuery.of(context).size.width / 2) + (tabWidth / 2);
-        
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            final scrollController = PrimaryScrollController.of(context);
-            if (scrollController != null && scrollController.hasClients) {
-              scrollController.animateTo(
-                targetScroll.clamp(0.0, scrollController.position.maxScrollExtent),
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          }
-        });
-      }
     });
   }
 
@@ -77,14 +53,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   Future<void> _refreshCurrentTab() async {
-    _cacheJogosPorTab.remove(_selectedTabIndex);
+    _cacheJogosPorFiltro.remove(_selectedFilter);
     await _loadJogosDoDia();
   }
 
   @override
   void dispose() {
     _blinkController.dispose();
-    _pageController.dispose();
     _autoRefreshTimer?.cancel();
     super.dispose();
   }
@@ -103,67 +78,21 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
   }
 
-  Map<String, dynamic> _getDateAndFilterForIndex(int index) {
+  DateTime _getDateForFilter(String filter) {
     final hoje = DateTime.now();
-
-    if (index < 60) {
-      final diferencaDias = index - 60;
-      return {
-        'date': hoje.add(Duration(days: diferencaDias)),
-        'filter': 'hoje',
-      };
+    
+    switch (filter) {
+      case 'ontem':
+        return hoje.subtract(const Duration(days: 1));
+      case 'amanha':
+        return hoje.add(const Duration(days: 1));
+      default:
+        return hoje;
     }
-
-    if (index == 60) {
-      return {'date': hoje, 'filter': 'hoje'};
-    }
-
-    if (index == 61) {
-      return {'date': hoje, 'filter': 'direto'};
-    }
-
-    if (index == 62) {
-      return {'date': hoje, 'filter': 'terminados'};
-    }
-
-    final diferencaDias = index - 62;
-    return {
-      'date': hoje.add(Duration(days: diferencaDias)),
-      'filter': 'hoje',
-    };
-  }
-
-  String _getTabLabel(int index) {
-    if (index < 60) {
-      final data = DateTime.now().add(Duration(days: index - 60));
-      final diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-      final diaSemana = diasSemana[data.weekday % 7];
-
-      if (index == 58) return 'Anteontem';
-      if (index == 59) return 'Ontem';
-
-      return '$diaSemana/${data.day}';
-    }
-
-    if (index == 60) return 'Hoje';
-
-    if (index == 61) {
-      final jogosAoVivo = _contarJogosAoVivo();
-      return jogosAoVivo > 0 ? 'Ao Vivo ($jogosAoVivo)' : 'Ao Vivo';
-    }
-    if (index == 62) return 'Terminados';
-
-    final data = DateTime.now().add(Duration(days: index - 62));
-    final diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    final diaSemana = diasSemana[data.weekday % 7];
-
-    if (index == 63) return 'Amanhã';
-
-    return '$diaSemana/${data.day}';
   }
 
   int _contarJogosAoVivo() {
-    final jogos = _cacheJogosPorTab[_selectedTabIndex];
+    final jogos = _cacheJogosPorFiltro[_selectedFilter];
     if (jogos == null) return 0;
     return jogos.where((jogo) => _isJogoAoVivo(jogo)).length;
   }
@@ -171,7 +100,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   Future<void> _loadJogosDoDia() async {
     if (!mounted) return;
 
-    if (_cacheJogosPorTab.containsKey(_selectedTabIndex)) {
+    if (_cacheJogosPorFiltro.containsKey(_selectedFilter)) {
       if (mounted) {
         setState(() {
           _isLoadingNewTab = false;
@@ -187,16 +116,16 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
 
     final appState = context.read<AppState>();
-    final resultado = _getDateAndFilterForIndex(_selectedTabIndex);
+    final date = _getDateForFilter(_selectedFilter);
 
-    appState.filtrarJogos(resultado['filter']);
+    appState.filtrarJogos(_selectedFilter);
 
     try {
-      final jogos = await appState.carregarJogosDoDia(resultado['date']);
+      final jogos = await appState.carregarJogosDoDia(date);
 
       if (mounted) {
         setState(() {
-          _cacheJogosPorTab[_selectedTabIndex] = jogos;
+          _cacheJogosPorFiltro[_selectedFilter] = jogos;
           _isLoadingNewTab = false;
           _contentKey++;
         });
@@ -206,31 +135,30 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       if (mounted) {
         setState(() {
           _isLoadingNewTab = false;
-          _cacheJogosPorTab[_selectedTabIndex] = [];
+          _cacheJogosPorFiltro[_selectedFilter] = [];
         });
       }
     }
   }
 
   Future<void> _handleRefresh() async {
-    _cacheJogosPorTab.remove(_selectedTabIndex);
+    _cacheJogosPorFiltro.remove(_selectedFilter);
     await _loadJogosDoDia();
   }
 
-  void _onPageChanged(int index) {
-    if (_selectedTabIndex == index) return;
+  void _onFilterChanged(String newFilter) {
+    if (_selectedFilter == newFilter) return;
 
-    final resultado = _getDateAndFilterForIndex(index);
-    context.read<AppState>().filtrarJogos(resultado['filter']);
+    context.read<AppState>().filtrarJogos(newFilter);
 
-    if (_cacheJogosPorTab.containsKey(index)) {
+    if (_cacheJogosPorFiltro.containsKey(newFilter)) {
       setState(() {
-        _selectedTabIndex = index;
+        _selectedFilter = newFilter;
         _contentKey++;
       });
     } else {
       setState(() {
-        _selectedTabIndex = index;
+        _selectedFilter = newFilter;
         _isLoadingNewTab = true;
         _contentKey++;
       });
@@ -256,36 +184,63 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               ),
             ],
           ),
-          child: _TabBarWithAutoScroll(
-            selectedIndex: _selectedTabIndex,
-            onTabTap: (index) {
-              _pageController.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            getTabLabel: _getTabLabel,
-          ),
+          child: _buildToggleButtons(),
         ),
         Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: _onPageChanged,
-            itemCount: 121,
-            itemBuilder: (context, index) {
-              return _buildOptimizedContent(appState, index);
-            },
-          ),
+          child: _buildContent(appState),
         ),
       ],
     );
   }
 
-  Widget _buildOptimizedContent(AppState appState, int index) {
-    final jogos = _cacheJogosPorTab[index];
+  Widget _buildToggleButtons() {
+    final aoVivoCount = _selectedFilter == 'direto' ? _contarJogosAoVivo() : 0;
 
-    if (_isLoadingNewTab && jogos == null && index == _selectedTabIndex) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ToggleButton(
+              label: 'Ontem',
+              isSelected: _selectedFilter == 'ontem',
+              onTap: () => _onFilterChanged('ontem'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ToggleButton(
+              label: 'Hoje',
+              isSelected: _selectedFilter == 'hoje',
+              onTap: () => _onFilterChanged('hoje'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ToggleButton(
+              label: aoVivoCount > 0 ? 'Ao Vivo ($aoVivoCount)' : 'Ao Vivo',
+              isSelected: _selectedFilter == 'direto',
+              onTap: () => _onFilterChanged('direto'),
+              isLive: true,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ToggleButton(
+              label: 'Amanhã',
+              isSelected: _selectedFilter == 'amanha',
+              onTap: () => _onFilterChanged('amanha'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(AppState appState) {
+    final jogos = _cacheJogosPorFiltro[_selectedFilter];
+
+    if (_isLoadingNewTab && jogos == null) {
       return Center(
         child: CircularProgressIndicator(
           color: Theme.of(context).colorScheme.primary,
@@ -293,7 +248,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       );
     }
 
-    if (jogos == null && index == _selectedTabIndex) {
+    if (jogos == null) {
       return const Center(
         child: Text(
           'Sem ligação à rede\nPor favor, tente mais tarde',
@@ -302,8 +257,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         ),
       );
     }
-
-    if (jogos == null) return const SizedBox.shrink();
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
@@ -389,6 +342,59 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     return '${nome.substring(0, 27)}...';
   }
 
+  void _showQuickMatchDetails(BuildContext context, dynamic jogo) {
+    final homeYellowCards = int.tryParse(jogo['match_hometeam_yellow_cards']?.toString() ?? '0') ?? 0;
+    final homeRedCards = int.tryParse(jogo['match_hometeam_red_cards']?.toString() ?? '0') ?? 0;
+    final awayYellowCards = int.tryParse(jogo['match_awayteam_yellow_cards']?.toString() ?? '0') ?? 0;
+    final awayRedCards = int.tryParse(jogo['match_awayteam_red_cards']?.toString() ?? '0') ?? 0;
+
+    int homePercent = 50;
+    int awayPercent = 50;
+    int homePasses = 0;
+    int awayPasses = 0;
+
+    try {
+      final statistics = jogo['statistics'];
+      if (statistics != null && statistics is List && statistics.isNotEmpty) {
+        for (var stat in statistics) {
+          if (stat != null && stat is Map) {
+            final type = stat['type']?.toString() ?? '';
+            if (type == 'Ball Possession' || type.toLowerCase().contains('possession')) {
+              final homeValue = stat['home']?.toString() ?? '';
+              final cleanValue = homeValue.replaceAll('%', '').replaceAll(' ', '').trim();
+              if (cleanValue.isNotEmpty) {
+                homePercent = int.tryParse(cleanValue) ?? 50;
+                awayPercent = 100 - homePercent;
+              }
+            } else if (type == 'Passes %' || type.toLowerCase().contains('passes')) {
+              homePasses = int.tryParse(stat['home']?.toString().replaceAll('%', '').trim() ?? '0') ?? 0;
+              awayPasses = int.tryParse(stat['away']?.toString().replaceAll('%', '').trim() ?? '0') ?? 0;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Erro ao carregar estatísticas: $e');
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _QuickMatchDetailsModal(
+        jogo: jogo,
+        homePercent: homePercent,
+        awayPercent: awayPercent,
+        homePasses: homePasses,
+        awayPasses: awayPasses,
+        homeYellowCards: homeYellowCards,
+        homeRedCards: homeRedCards,
+        awayYellowCards: awayYellowCards,
+        awayRedCards: awayRedCards,
+      ),
+    );
+  }
+
   Widget _buildJogosList(List<dynamic> jogos) {
     Map<String, List<dynamic>> jogosPorLiga = {};
     Map<String, Map<String, dynamic>> ligasInfo = {};
@@ -408,7 +414,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     }
 
     return ListView.builder(
-      key: ValueKey('lista_$_selectedTabIndex'),
+      key: ValueKey('lista_$_selectedFilter'),
       padding: EdgeInsets.zero,
       itemCount: ligasOrdenadas.length,
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -438,7 +444,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               },
               child: Container(
                 color: Theme.of(context).colorScheme.surface,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
                   children: [
                     if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
@@ -526,7 +532,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       },
     );
   }
-
   Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
     final isNumericStatus = int.tryParse(status.toString()) != null;
@@ -548,21 +553,27 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       displayStatus = "$status'";
     }
 
-    final isAoVivoTab = _selectedTabIndex == 61;
+    final isAoVivoTab = _selectedFilter == 'direto';
 
-    return _AnimatedBouncyButton(
-      onPressed: () {
+    return GestureDetector(
+      onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => JogoDetalhesPage(jogoId: jogo['match_id']),
           ),
         );
       },
+      onLongPress: () {
+        _showQuickMatchDetails(context, jogo);
+      },
       child: Column(
         children: [
           Container(
             color: Theme.of(context).colorScheme.surface,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Column(
               children: [
                 Row(
@@ -583,7 +594,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               jogo['match_hometeam_name'] ?? '',
@@ -617,7 +628,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                               textAlign: TextAlign.right,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           _CachedNetworkImage(
                             imageUrl: jogo['team_away_badge'] ?? '',
                             width: 32,
@@ -733,111 +744,415 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 }
 
-class _TabBarWithAutoScroll extends StatefulWidget {
-  final int selectedIndex;
-  final Function(int) onTabTap;
-  final String Function(int) getTabLabel;
+class _ToggleButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final bool isLive;
 
-  const _TabBarWithAutoScroll({
-    required this.selectedIndex,
-    required this.onTabTap,
-    required this.getTabLabel,
+  const _ToggleButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.isLive = false,
   });
 
   @override
-  State<_TabBarWithAutoScroll> createState() => _TabBarWithAutoScrollState();
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? Theme.of(context).colorScheme.primaryContainer 
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? Theme.of(context).colorScheme.primary 
+                : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _TabBarWithAutoScrollState extends State<_TabBarWithAutoScroll> {
-  final ScrollController _scrollController = ScrollController();
-  final Map<int, GlobalKey> _tabKeys = {};
+class _QuickMatchDetailsModal extends StatelessWidget {
+  final dynamic jogo;
+  final int homePercent;
+  final int awayPercent;
+  final int homePasses;
+  final int awayPasses;
+  final int homeYellowCards;
+  final int homeRedCards;
+  final int awayYellowCards;
+  final int awayRedCards;
 
-  @override
-  void initState() {
-    super.initState();
-    for (int i = 0; i < 121; i++) {
-      _tabKeys[i] = GlobalKey();
-    }
-    
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToTab(widget.selectedIndex, animate: false);
-    });
-  }
-
-  @override
-  void didUpdateWidget(_TabBarWithAutoScroll oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selectedIndex != oldWidget.selectedIndex) {
-      _scrollToTab(widget.selectedIndex);
-    }
-  }
-
-  void _scrollToTab(int index, {bool animate = true}) {
-    final key = _tabKeys[index];
-    if (key?.currentContext != null) {
-      final box = key!.currentContext!.findRenderObject() as RenderBox;
-      final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
-      final screenWidth = MediaQuery.of(context).size.width;
-      final targetScroll = _scrollController.offset + position.dx - (screenWidth / 2) + (box.size.width / 2);
-      
-      if (animate) {
-        _scrollController.animateTo(
-          targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent),
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      } else {
-        _scrollController.jumpTo(
-          targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent),
-        );
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
+  const _QuickMatchDetailsModal({
+    required this.jogo,
+    required this.homePercent,
+    required this.awayPercent,
+    required this.homePasses,
+    required this.awayPasses,
+    required this.homeYellowCards,
+    required this.homeRedCards,
+    required this.awayYellowCards,
+    required this.awayRedCards,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        children: List.generate(121, (index) {
-          final isSelected = widget.selectedIndex == index;
-          return GestureDetector(
-            key: _tabKeys[index],
-            onTap: () => widget.onTabTap(index),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: isSelected 
-                        ? Theme.of(context).colorScheme.primary 
-                        : Colors.transparent,
-                    width: 3,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Detalhes Rápidos',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Symbols.close_rounded),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: Theme.of(context).dividerColor),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Image.network(
+                            jogo['team_home_badge'] ?? '',
+                            width: 56,
+                            height: 56,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Symbols.shield_rounded,
+                              size: 56,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            jogo['match_hometeam_name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '${jogo['match_hometeam_score'] ?? '0'} : ${jogo['match_awayteam_score'] ?? '0'}',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Image.network(
+                            jogo['team_away_badge'] ?? '',
+                            width: 56,
+                            height: 56,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Symbols.shield_rounded,
+                              size: 56,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            jogo['match_awayteam_name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _StatRow(
+                  label: 'Posse de Bola',
+                  homeValue: homePercent,
+                  awayValue: awayPercent,
+                  isPercentage: true,
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 20),
+                if (homePasses > 0 || awayPasses > 0)
+                  _StatRow(
+                    label: 'Passes Certos',
+                    homeValue: homePasses,
+                    awayValue: awayPasses,
+                    isPercentage: true,
+                    isDark: isDark,
+                  ),
+                if (homePasses > 0 || awayPasses > 0) const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Cartões',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (homeYellowCards > 0) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFD700),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '$homeYellowCards',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              if (homeRedCards > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE53935),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '$homeRedCards',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              if (homeYellowCards == 0 && homeRedCards == 0)
+                                const Text(
+                                  '-',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Cartões',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (awayYellowCards > 0) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFD700),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '$awayYellowCards',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              if (awayRedCards > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE53935),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '$awayRedCards',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              if (awayYellowCards == 0 && awayRedCards == 0)
+                                const Text(
+                                  '-',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatRow extends StatelessWidget {
+  final String label;
+  final int homeValue;
+  final int awayValue;
+  final bool isPercentage;
+  final bool isDark;
+
+  const _StatRow({
+    required this.label,
+    required this.homeValue,
+    required this.awayValue,
+    this.isPercentage = false,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Text(
+              isPercentage ? '$homeValue%' : '$homeValue',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
               ),
-              child: Text(
-                widget.getTabLabel(index),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: homeValue / (homeValue + awayValue),
+                  backgroundColor: isDark ? const Color(0xFFFF7043) : const Color(0xFFFF6F00),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? const Color(0xFF42A5F5) : const Color(0xFF1976D2),
+                  ),
+                  minHeight: 8,
                 ),
               ),
             ),
-          );
-        }),
-      ),
+            const SizedBox(width: 8),
+            Text(
+              isPercentage ? '$awayValue%' : '$awayValue',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
