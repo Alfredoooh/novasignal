@@ -7,7 +7,6 @@ import '../utils/formatters.dart';
 import 'jogo_detalhes_page.dart';
 import 'home_config_page.dart';
 import 'news_detail_page.dart';
-import 'news_page.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -16,10 +15,8 @@ class HomeTab extends StatefulWidget {
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
+class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
-  final ScrollController _horizontalScrollController = ScrollController();
-  late TabController _tabController;
   List<dynamic> _jogosHoje = [];
   List<dynamic> _jogosAmanha = [];
   List<dynamic> _jogosAoVivo = [];
@@ -28,9 +25,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
   Timer? _autoRefreshTimer;
   List<Map<String, dynamic>> _noticias = [];
   bool _loadingNews = false;
-  bool _showExpandedNews = false;
+  bool _newsExpanded = false;
   bool _isLoading = true;
-  double _scrollOffset = 0.0;
 
   @override
   bool get wantKeepAlive => true;
@@ -38,46 +34,13 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _scrollController.addListener(_onScroll);
     _loadInitialData();
     _startAutoRefresh();
-  }
-
-  void _onScroll() {
-    if (_scrollController.hasClients) {
-      final maxScroll = _scrollController.position.maxScrollExtent;
-      final currentScroll = _scrollController.position.pixels;
-      final threshold = maxScroll * 0.65;
-
-      setState(() {
-        _scrollOffset = currentScroll;
-      });
-
-      if (currentScroll > threshold && !_showExpandedNews) {
-        setState(() {
-          _showExpandedNews = true;
-        });
-      }
-    }
-  }
-
-  void _collapseNews() {
-    setState(() {
-      _showExpandedNews = false;
-    });
-    _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _horizontalScrollController.dispose();
-    _tabController.dispose();
     _autoRefreshTimer?.cancel();
     super.dispose();
   }
@@ -243,324 +206,336 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
       );
     }
 
-    if (_showExpandedNews) {
-      return _buildExpandedView();
-    }
-
-    return _buildCollapsedView();
-  }
-
-  Widget _buildExpandedView() {
-    return NestedScrollView(
-      controller: _scrollController,
-      headerSliverBuilder: (context, innerBoxIsScrolled) {
-        return [
-          SliverOverlapAbsorber(
-            handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-            sliver: SliverAppBar(
-              pinned: true,
-              floating: true,
-              snap: false,
-              expandedHeight: 0,
-              forceElevated: innerBoxIsScrolled,
-              automaticallyImplyLeading: false,
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              title: const Text(
-                'Atualidades',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Symbols.close_rounded),
-                  onPressed: _collapseNews,
-                ),
-              ],
-              bottom: TabBar(
-                controller: _tabController,
-                labelColor: Theme.of(context).colorScheme.primary,
-                unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                indicatorWeight: 3,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                tabs: const [
-                  Tab(text: 'Todas'),
-                  Tab(text: 'Categorias'),
-                ],
-              ),
-            ),
-          ),
-        ];
-      },
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          NewsPage(noticias: _noticias),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Symbols.category_rounded,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Categorias em breve',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCollapsedView() {
-    final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
-
     return RefreshIndicator(
       onRefresh: _loadInitialData,
       child: CustomScrollView(
         controller: _scrollController,
         slivers: [
-          if (temGrandesClubes) ...[
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Grandes Clubes',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                        ),
-                        IconButton(
-                          onPressed: _openHomeConfig,
-                          icon: const Icon(Symbols.more_horiz_rounded),
-                          padding: const EdgeInsets.all(12),
-                          tooltip: 'Configurar Tela Inicial',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  controller: _horizontalScrollController,
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _jogosHoje.length + (_jogosAmanha.isEmpty ? 0 : _jogosAmanha.length + 1),
-                  itemBuilder: (context, index) {
-                    if (index < _jogosHoje.length) {
-                      return _buildHorizontalGameCard(_jogosHoje[index]);
-                    } else if (index == _jogosHoje.length && _jogosAmanha.isNotEmpty) {
-                      return _buildDividerCard();
-                    } else {
-                      final amanhaIndex = index - _jogosHoje.length - 1;
-                      return _buildHorizontalGameCard(_jogosAmanha[amanhaIndex]);
-                    }
-                  },
-                ),
-              ),
-            ),
-            if (_jogosAoVivo.isNotEmpty) ...[
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      _BlinkingDot(),
-                      const SizedBox(width: 8),
-                      const Text('Em Direto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildLiveMatchCard(_jogosAoVivo[index]),
-                  childCount: _jogosAoVivo.length,
-                ),
-              ),
-            ],
-          ],
-
-          if (!temGrandesClubes && _todosJogosHoje.isNotEmpty) ...[
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Icon(
-                      Symbols.sports_soccer_rounded,
-                      size: 28,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Jogos de Hoje',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildMatchCard(_todosJogosHoje[index]),
-                childCount: _todosJogosHoje.take(10).length,
-              ),
-            ),
-          ],
-
-          if (!temGrandesClubes && _todosJogosHoje.isEmpty) ...[
-            SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Symbols.sports_soccer_rounded,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Nenhum jogo disponível',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-
-          SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: Offset(0, -_scrollOffset * 0.3),
-              child: Opacity(
-                opacity: (1 - (_scrollOffset / 300)).clamp(0.0, 1.0),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Atualidades',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                      ),
-                      Icon(
-                        Symbols.expand_less_rounded,
-                        size: 24,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-          if (_loadingNews)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            )
-          else if (_noticias.isEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                child: Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Symbols.article_rounded,
-                        size: 64,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Nenhuma notícia disponível',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else ...[
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final noticia = _noticias[index];
-                  return Transform.translate(
-                    offset: Offset(0, -_scrollOffset * 0.15 * (index + 1)),
-                    child: _buildNewsItem(noticia),
-                  );
-                },
-                childCount: _noticias.take(3).length,
-              ),
-            ),
-            if (_noticias.length > 3)
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Center(
-                      child: Text(
-                        'Deslize para cima para ver mais',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-
+          _buildGrandesClubesSection(),
+          _buildJogosAoVivoSection(),
+          _buildJogosDeHojeSection(),
+          _buildNewsSection(),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
   }
 
+  Widget _buildGrandesClubesSection() {
+    final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
+    
+    if (!temGrandesClubes) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final todosJogos = [..._jogosHoje];
+    if (_jogosAmanha.isNotEmpty) {
+      todosJogos.add({'divider': true});
+      todosJogos.addAll(_jogosAmanha);
+    }
+
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Grandes Clubes',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                ),
+                IconButton(
+                  onPressed: _openHomeConfig,
+                  icon: const Icon(Symbols.more_horiz_rounded),
+                  padding: const EdgeInsets.all(12),
+                  tooltip: 'Configurar Tela Inicial',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: todosJogos.length,
+              itemBuilder: (context, index) {
+                final item = todosJogos[index];
+                if (item['divider'] == true) {
+                  return _buildDividerCard();
+                }
+                return _buildHorizontalGameCard(item);
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJogosAoVivoSection() {
+    if (_jogosAoVivo.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _BlinkingDot(),
+                const SizedBox(width: 8),
+                const Text('Em Direto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _jogosAoVivo.length,
+              itemBuilder: (context, index) {
+                return _buildHorizontalGameCard(_jogosAoVivo[index]);
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJogosDeHojeSection() {
+    final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
+    
+    if (temGrandesClubes || _todosJogosHoje.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Icon(
+                  Symbols.sports_soccer_rounded,
+                  size: 28,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Jogos de Hoje',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _todosJogosHoje.take(10).length,
+              itemBuilder: (context, index) {
+                return _buildHorizontalGameCard(_todosJogosHoje[index]);
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewsSection() {
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _newsExpanded = !_newsExpanded;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Atualidades',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  ),
+                  Icon(
+                    _newsExpanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: _newsExpanded ? _buildExpandedNews() : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandedNews() {
+    if (_loadingNews) {
+      return Padding(
+        padding: const EdgeInsets.all(40),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      );
+    }
+
+    if (_noticias.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(40),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Symbols.article_rounded,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nenhuma notícia disponível',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: _noticias.map((noticia) => _buildNewsItem(noticia)).toList(),
+    );
+  }
+
+  Widget _buildNewsItem(Map<String, dynamic> noticia) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: _getCardColor(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openNewsDetail(noticia),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Symbols.article_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        noticia['title'] ?? '',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        noticia['subtitle'] ?? '',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (noticia['date'] != null && (noticia['date'] as String).isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          noticia['date'],
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(
+                  Symbols.chevron_right_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDividerCard() {
     return Container(
-      width: 320,
+      width: 280,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1036,441 +1011,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin, S
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMatchCard(dynamic jogo) {
-    final status = jogo['match_status'] ?? '';
-    final isNumeric = int.tryParse(status.toString()) != null;
-    final isLive = isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
-    final leagueName = jogo['league_name'] ?? '';
-    final leagueLogo = jogo['league_logo'];
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => JogoDetalhesPage(jogoId: jogo['match_id']),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _getCardColor(context),
-          borderRadius: BorderRadius.circular(20),
-          border: isLive
-              ? null
-              : Border.all(
-                  color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
-                  width: 1,
-                ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
-                  Image.network(
-                    leagueLogo,
-                    width: 18,
-                    height: 18,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: Text(
-                    leagueName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isLive) _BlinkingDot(),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Image.network(
-                        jogo['team_home_badge'] ?? '',
-                        width: 32,
-                        height: 32,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          jogo['match_hometeam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      _LiveTimeIndicator(status: status, compact: true),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${jogo['match_hometeam_score'] ?? '0'} - ${jogo['match_awayteam_score'] ?? '0'}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          jogo['match_awayteam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Image.network(
-                        jogo['team_away_badge'] ?? '',
-                        width: 32,
-                        height: 32,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewsItem(Map<String, dynamic> noticia) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: _getCardColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _openNewsDetail(noticia),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Symbols.article_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        noticia['title'] ?? '',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        noticia['subtitle'] ?? '',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (noticia['date'] != null && (noticia['date'] as String).isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          noticia['date'],
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Icon(
-                  Symbols.chevron_right_rounded,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLiveMatchCard(dynamic jogo) {
-    final status = jogo['match_status'] ?? '';
-    final leagueName = jogo['league_name'] ?? '';
-    final leagueLogo = jogo['league_logo'];
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => JogoDetalhesPage(jogoId: jogo['match_id']),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _getCardColor(context),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.red.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
-                  Image.network(
-                    leagueLogo,
-                    width: 18,
-                    height: 18,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: Text(
-                    leagueName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Image.network(
-                        jogo['team_home_badge'] ?? '',
-                        width: 32,
-                        height: 32,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          jogo['match_hometeam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      _LiveTimeIndicator(status: status, compact: true),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${jogo['match_hometeam_score'] ?? '0'} - ${jogo['match_awayteam_score'] ?? '0'}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          jogo['match_awayteam_name'] ?? '',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Image.network(
-                        jogo['team_away_badge'] ?? '',
-                        width: 32,
-                        height: 32,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LiveTimeIndicator extends StatefulWidget {
-  final String status;
-  final bool compact;
-
-  const _LiveTimeIndicator({required this.status, this.compact = false});
-
-  @override
-  State<_LiveTimeIndicator> createState() => _LiveTimeIndicatorState();
-}
-
-class _LiveTimeIndicatorState extends State<_LiveTimeIndicator> {
-  late Timer _timer;
-  bool _showApostrophe = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (mounted) {
-        setState(() {
-          _showApostrophe = !_showApostrophe;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isNumeric = int.tryParse(widget.status.toString()) != null;
-    final isLive = isNumeric || widget.status.contains("'") || widget.status == 'LIVE' || widget.status == '1H' || widget.status == '2H';
-    final isHT = widget.status == 'HT';
-
-    Color timeColor = isHT
-        ? Theme.of(context).colorScheme.onSurfaceVariant
-        : isLive
-            ? const Color(0xFF00C853)
-            : Theme.of(context).colorScheme.onSurfaceVariant;
-
-    String displayText = widget.status;
-    if (isNumeric) {
-      displayText = isLive && _showApostrophe ? "${widget.status}'" : widget.status;
-    } else if (isLive && !isHT) {
-      displayText = _showApostrophe ? "${widget.status}'" : widget.status;
-    }
-
-    return Text(
-      displayText,
-      style: TextStyle(
-        fontSize: widget.compact ? 11 : 13,
-        fontWeight: FontWeight.w700,
-        color: timeColor,
       ),
     );
   }
