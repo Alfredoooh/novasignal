@@ -16,7 +16,11 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _mainScrollController = ScrollController();
+  final ScrollController _grandesClubesScrollController = ScrollController();
+  final ScrollController _aoVivoScrollController = ScrollController();
+  final ScrollController _jogosHojeScrollController = ScrollController();
+  
   List<dynamic> _jogosHoje = [];
   List<dynamic> _jogosAmanha = [];
   List<dynamic> _jogosAoVivo = [];
@@ -27,6 +31,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   bool _loadingNews = false;
   bool _newsExpanded = false;
   bool _isLoading = true;
+  
+  int _grandesClubesCurrentPage = 0;
+  int _aoVivoCurrentPage = 0;
+  int _jogosHojeCurrentPage = 0;
+  double _newsScrollThreshold = 0.0;
 
   @override
   bool get wantKeepAlive => true;
@@ -36,11 +45,73 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     super.initState();
     _loadInitialData();
     _startAutoRefresh();
+    _setupScrollListeners();
+    _mainScrollController.addListener(_onMainScroll);
+  }
+
+  void _setupScrollListeners() {
+    _grandesClubesScrollController.addListener(() {
+      final maxScroll = _grandesClubesScrollController.position.maxScrollExtent;
+      final currentScroll = _grandesClubesScrollController.position.pixels;
+      final cardWidth = 332.0;
+      final currentPage = (currentScroll / cardWidth).round();
+      if (_grandesClubesCurrentPage != currentPage) {
+        setState(() {
+          _grandesClubesCurrentPage = currentPage;
+        });
+      }
+    });
+
+    _aoVivoScrollController.addListener(() {
+      final currentScroll = _aoVivoScrollController.position.pixels;
+      final cardWidth = 332.0;
+      final currentPage = (currentScroll / cardWidth).round();
+      if (_aoVivoCurrentPage != currentPage) {
+        setState(() {
+          _aoVivoCurrentPage = currentPage;
+        });
+      }
+    });
+
+    _jogosHojeScrollController.addListener(() {
+      final currentScroll = _jogosHojeScrollController.position.pixels;
+      final cardWidth = 332.0;
+      final currentPage = (currentScroll / cardWidth).round();
+      if (_jogosHojeCurrentPage != currentPage) {
+        setState(() {
+          _jogosHojeCurrentPage = currentPage;
+        });
+      }
+    });
+  }
+
+  void _onMainScroll() {
+    if (_mainScrollController.hasClients) {
+      final currentScroll = _mainScrollController.position.pixels;
+      final maxScroll = _mainScrollController.position.maxScrollExtent;
+      
+      if (_newsScrollThreshold == 0.0 && maxScroll > 0) {
+        _newsScrollThreshold = maxScroll * 0.65;
+      }
+      
+      if (currentScroll > _newsScrollThreshold && !_newsExpanded) {
+        setState(() {
+          _newsExpanded = true;
+        });
+      } else if (currentScroll < _newsScrollThreshold * 0.5 && _newsExpanded) {
+        setState(() {
+          _newsExpanded = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _mainScrollController.dispose();
+    _grandesClubesScrollController.dispose();
+    _aoVivoScrollController.dispose();
+    _jogosHojeScrollController.dispose();
     _autoRefreshTimer?.cancel();
     super.dispose();
   }
@@ -209,7 +280,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     return RefreshIndicator(
       onRefresh: _loadInitialData,
       child: CustomScrollView(
-        controller: _scrollController,
+        controller: _mainScrollController,
         slivers: [
           _buildGrandesClubesSection(),
           _buildJogosAoVivoSection(),
@@ -261,6 +332,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           SizedBox(
             height: 200,
             child: ListView.builder(
+              controller: _grandesClubesScrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: todosJogos.length,
@@ -271,6 +343,27 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                 }
                 return _buildHorizontalGameCard(item);
               },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                todosJogos.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _grandesClubesCurrentPage == index ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _grandesClubesCurrentPage == index
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -302,12 +395,34 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           SizedBox(
             height: 200,
             child: ListView.builder(
+              controller: _aoVivoScrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _jogosAoVivo.length,
               itemBuilder: (context, index) {
                 return _buildHorizontalGameCard(_jogosAoVivo[index]);
               },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                _jogosAoVivo.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _aoVivoCurrentPage == index ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _aoVivoCurrentPage == index
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -348,12 +463,34 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           SizedBox(
             height: 200,
             child: ListView.builder(
+              controller: _jogosHojeScrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _todosJogosHoje.take(10).length,
               itemBuilder: (context, index) {
                 return _buildHorizontalGameCard(_todosJogosHoje[index]);
               },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                _todosJogosHoje.take(10).length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _jogosHojeCurrentPage == index ? 24 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _jogosHojeCurrentPage == index
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -368,29 +505,34 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          InkWell(
-            onTap: () {
-              setState(() {
-                _newsExpanded = !_newsExpanded;
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Atualidades',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                  ),
-                  Icon(
-                    _newsExpanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded,
-                    size: 24,
-                  ),
-                ],
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Atualidades',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+                Icon(
+                  _newsExpanded ? Symbols.expand_less_rounded : Symbols.expand_more_rounded,
+                  size: 24,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                ),
+              ],
             ),
           ),
+          if (!_newsExpanded)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Deslize para cima para ver mais',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                ),
+              ),
+            ),
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
@@ -619,18 +761,27 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     
     try {
       final statistics = jogo['statistics'];
-      if (statistics != null && statistics is List) {
+      if (statistics != null && statistics is List && statistics.isNotEmpty) {
         for (var stat in statistics) {
-          if (stat['type'] == 'Ball Possession') {
-            final homeValue = stat['home']?.toString().replaceAll('%', '') ?? '50';
-            homePercent = int.tryParse(homeValue) ?? 50;
-            awayPercent = 100 - homePercent;
-            break;
+          if (stat != null && stat is Map) {
+            final type = stat['type']?.toString() ?? '';
+            if (type == 'Ball Possession' || type.toLowerCase().contains('possession')) {
+              final homeValue = stat['home']?.toString() ?? '';
+              final cleanValue = homeValue.replaceAll('%', '').replaceAll(' ', '').trim();
+              if (cleanValue.isNotEmpty) {
+                homePercent = int.tryParse(cleanValue) ?? 50;
+                awayPercent = 100 - homePercent;
+                debugPrint('✅ Posse de bola encontrada: Casa $homePercent% - Fora $awayPercent%');
+                break;
+              }
+            }
           }
         }
+      } else {
+        debugPrint('⚠️ Estatísticas não disponíveis para ${jogo['match_hometeam_name']} vs ${jogo['match_awayteam_name']}');
       }
     } catch (e) {
-      debugPrint('Erro ao carregar estatísticas: $e');
+      debugPrint('❌ Erro ao carregar estatísticas: $e');
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -650,9 +801,15 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         decoration: BoxDecoration(
           color: _getCardColor(context),
           borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: isDark 
+                ? Colors.transparent 
+                : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
