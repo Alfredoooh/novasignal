@@ -17,9 +17,9 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
-  final PageController _grandesClubesController = PageController(viewportFraction: 0.85);
-  final PageController _aoVivoController = PageController(viewportFraction: 0.85);
-  final PageController _jogosHojeController = PageController(viewportFraction: 0.85);
+  final PageController _grandesClubesController = PageController(viewportFraction: 0.88);
+  final PageController _aoVivoController = PageController(viewportFraction: 0.88);
+  final PageController _jogosHojeController = PageController(viewportFraction: 0.88);
   
   List<dynamic> _jogosHoje = [];
   List<dynamic> _jogosAmanha = [];
@@ -237,7 +237,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     if (isDark) {
       return const Color(0xFF2C2C2E);
     }
-    return Colors.white;
+    return const Color(0xFFF3F3F3);
   }
 
   @override
@@ -301,7 +301,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 220,
             child: PageView.builder(
               controller: _grandesClubesController,
               itemCount: todosJogos.length,
@@ -358,7 +358,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 220,
             child: PageView.builder(
               controller: _aoVivoController,
               itemCount: _jogosAoVivo.length,
@@ -424,7 +424,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 200,
+            height: 220,
             child: PageView.builder(
               controller: _jogosHojeController,
               itemCount: _todosJogosHoje.take(10).length,
@@ -478,104 +478,116 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
-    return SliverToBoxAdapter(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          ..._noticias.take(5).map((noticia) => _buildNewsItem(noticia)),
-          const SizedBox(height: 16),
-        ],
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final noticia = _noticias[index];
+          final isLast = index == _noticias.length - 1;
+          return _buildNewsItem(noticia, isLast);
+        },
+        childCount: _noticias.take(10).length,
       ),
     );
   }
 
-  Widget _buildNewsItem(Map<String, dynamic> noticia) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: _getCardColor(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _openNewsDetail(noticia),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(14),
+  Widget _buildNewsItem(Map<String, dynamic> noticia, bool isLast) {
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _openNewsDetail(noticia),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      child: noticia['image'] != null && noticia['image'].toString().isNotEmpty
+                          ? Image.network(
+                              noticia['image'],
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Symbols.article_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 32,
+                              ),
+                            )
+                          : Icon(
+                              Symbols.article_rounded,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 32,
+                            ),
+                    ),
                   ),
-                  child: Icon(
-                    Symbols.article_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        noticia['title'] ?? '',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        noticia['subtitle'] ?? '',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (noticia['date'] != null && (noticia['date'] as String).isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          noticia['date'],
+                          noticia['title'] ?? '',
                           style: TextStyle(
-                            fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 6),
+                        Text(
+                          noticia['subtitle'] ?? '',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (noticia['date'] != null && (noticia['date'] as String).isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(
+                                'Euronews.com',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                                ),
+                              ),
+                              Text(
+                                ' · ${noticia['date']}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                Icon(
-                  Symbols.chevron_right_rounded,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
-                  size: 20,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            thickness: 1,
+            indent: 20,
+            endIndent: 20,
+            color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+          ),
+      ],
     );
   }
 
@@ -628,14 +640,16 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       animation: controller,
       builder: (context, child) {
         double value = 1.0;
+        double scale = 1.0;
+        
         if (controller.position.haveDimensions) {
           value = controller.page! - index;
-          value = (1 - (value.abs() * 0.15)).clamp(0.85, 1.0);
+          scale = (1 - (value.abs() * 0.12)).clamp(0.88, 1.0);
         }
 
         return Center(
-          child: SizedBox(
-            height: Curves.easeOut.transform(value) * 200,
+          child: Transform.scale(
+            scale: scale,
             child: child,
           ),
         );
@@ -649,17 +663,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           );
         },
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: _getCardColor(context),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: isDark 
-                  ? Colors.transparent 
-                  : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
-              width: 1,
-            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
@@ -680,11 +688,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       children: [
                         Image.network(
                           jogo['team_home_badge'] ?? '',
-                          width: 52,
-                          height: 52,
+                          width: 56,
+                          height: 56,
                           errorBuilder: (_, __, ___) => Icon(
                             Symbols.shield_rounded,
-                            size: 52,
+                            size: 56,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -692,7 +700,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         Text(
                           jogo['match_hometeam_name'] ?? '',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
@@ -730,8 +738,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                             children: [
                               if (homeYellowCards > 0) ...[
                                 Container(
-                                  width: 16,
-                                  height: 20,
+                                  width: 18,
+                                  height: 22,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD700),
                                     borderRadius: BorderRadius.circular(3),
@@ -747,7 +755,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                                     child: Text(
                                       '$homeYellowCards',
                                       style: const TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.black,
                                       ),
@@ -758,8 +766,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                               ],
                               if (homeRedCards > 0)
                                 Container(
-                                  width: 16,
-                                  height: 20,
+                                  width: 18,
+                                  height: 22,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE53935),
                                     borderRadius: BorderRadius.circular(3),
@@ -775,7 +783,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                                     child: Text(
                                       '$homeRedCards',
                                       style: const TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white,
                                       ),
@@ -787,22 +795,22 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Column(
                     children: [
                       Text(
                         '$homeScore : $awayScore',
                         style: TextStyle(
-                          fontSize: 36,
+                          fontSize: 40,
                           fontWeight: FontWeight.w900,
                           color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: 3,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       if (isLive)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE53935),
                             borderRadius: BorderRadius.circular(16),
@@ -826,7 +834,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
                           borderRadius: BorderRadius.circular(8),
@@ -844,17 +852,17 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       ),
                     ],
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       children: [
                         Image.network(
                           jogo['team_away_badge'] ?? '',
-                          width: 52,
-                          height: 52,
+                          width: 56,
+                          height: 56,
                           errorBuilder: (_, __, ___) => Icon(
                             Symbols.shield_rounded,
-                            size: 52,
+                            size: 56,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -862,7 +870,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         Text(
                           jogo['match_awayteam_name'] ?? '',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
@@ -900,8 +908,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                             children: [
                               if (awayYellowCards > 0) ...[
                                 Container(
-                                  width: 16,
-                                  height: 20,
+                                  width: 18,
+                                  height: 22,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD700),
                                     borderRadius: BorderRadius.circular(3),
@@ -917,7 +925,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                                     child: Text(
                                       '$awayYellowCards',
                                       style: const TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.black,
                                       ),
@@ -928,8 +936,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                               ],
                               if (awayRedCards > 0)
                                 Container(
-                                  width: 16,
-                                  height: 20,
+                                  width: 18,
+                                  height: 22,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE53935),
                                     borderRadius: BorderRadius.circular(3),
@@ -945,7 +953,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                                     child: Text(
                                       '$awayRedCards',
                                       style: const TextStyle(
-                                        fontSize: 11,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white,
                                       ),
@@ -959,7 +967,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Row(
                 children: [
                   Expanded(
