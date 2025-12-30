@@ -8,8 +8,9 @@ import 'dart:async';
 class AppState with ChangeNotifier {
   // Configurações de tema e notificações
   bool _temaEscuro = false;
+  bool _temaAmoled = false;
   bool _temaEscuroProfundo = false;
-  bool _corDinamica = false;
+  bool _corDinamica = true;
   bool _notificacoesAtivas = true;
 
   // Estado de navegação
@@ -36,6 +37,7 @@ class AppState with ChangeNotifier {
 
   // Getters
   bool get temaEscuro => _temaEscuro;
+  bool get temaAmoled => _temaAmoled;
   bool get temaEscuroProfundo => _temaEscuroProfundo;
   bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
@@ -90,8 +92,9 @@ class AppState with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _temaEscuro = prefs.getBool('tema_escuro') ?? false;
+      _temaAmoled = prefs.getBool('tema_amoled') ?? false;
       _temaEscuroProfundo = prefs.getBool('tema_escuro_profundo') ?? false;
-      _corDinamica = prefs.getBool('cor_dinamica') ?? false;
+      _corDinamica = prefs.getBool('cor_dinamica') ?? true;
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
       notifyListeners();
     } catch (e) {
@@ -99,28 +102,31 @@ class AppState with ChangeNotifier {
     }
   }
 
-  Future<void> alternarTemaEscuro() async {
-    _temaEscuro = !_temaEscuro;
-    if (!_temaEscuro) {
-      _temaEscuroProfundo = false;
-    }
+  Future<void> alternarTema(bool valor) async {
+    _temaEscuro = valor;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tema_escuro', _temaEscuro);
-    await prefs.setBool('tema_escuro_profundo', _temaEscuroProfundo);
+    await prefs.setBool('tema_escuro', valor);
     notifyListeners();
   }
 
-  Future<void> alternarTemaEscuroProfundo() async {
-    _temaEscuroProfundo = !_temaEscuroProfundo;
+  Future<void> alternarTemaAmoled(bool valor) async {
+    _temaAmoled = valor;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('tema_escuro_profundo', _temaEscuroProfundo);
+    await prefs.setBool('tema_amoled', valor);
     notifyListeners();
   }
 
-  Future<void> alternarCorDinamica() async {
-    _corDinamica = !_corDinamica;
+  Future<void> alternarTemaEscuroProfundo(bool valor) async {
+    _temaEscuroProfundo = valor;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('cor_dinamica', _corDinamica);
+    await prefs.setBool('tema_escuro_profundo', valor);
+    notifyListeners();
+  }
+
+  Future<void> alternarCorDinamica(bool valor) async {
+    _corDinamica = valor;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('cor_dinamica', valor);
     notifyListeners();
   }
 
