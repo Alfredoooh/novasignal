@@ -301,7 +301,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 220,
+            height: 180,
             child: PageView.builder(
               controller: _grandesClubesController,
               itemCount: todosJogos.length,
@@ -358,7 +358,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 220,
+            height: 180,
             child: PageView.builder(
               controller: _aoVivoController,
               itemCount: _jogosAoVivo.length,
@@ -405,26 +405,16 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Icon(
-                  Symbols.sports_soccer_rounded,
-                  size: 28,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Jogos de Hoje',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                ),
-              ],
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Hoje',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 220,
+            height: 180,
             child: PageView.builder(
               controller: _jogosHojeController,
               itemCount: _todosJogosHoje.take(10).length,
@@ -596,6 +586,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final isNumeric = int.tryParse(status.toString()) != null;
     final isLive = isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
     final isHT = status == 'HT';
+    final isFinished = status.contains('Finished') || status == 'FT' || status == 'AET' || status == 'AP';
     final isNotStarted = status == '' || status == 'NS' || status.contains('Not Started');
     
     final homeYellowCards = int.tryParse(jogo['match_hometeam_yellow_cards']?.toString() ?? '0') ?? 0;
@@ -606,11 +597,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
     final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
 
-    int homePercent = isNotStarted ? 0 : 50;
-    int awayPercent = isNotStarted ? 0 : 50;
+    int homePercent = 0;
+    int awayPercent = 0;
     
-    try {
-      if (!isNotStarted) {
+    if (!isNotStarted) {
+      try {
         final statistics = jogo['statistics'];
         if (statistics != null && statistics is List && statistics.isNotEmpty) {
           for (var stat in statistics) {
@@ -620,21 +611,22 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                 final homeValue = stat['home']?.toString() ?? '';
                 final cleanValue = homeValue.replaceAll('%', '').replaceAll(' ', '').trim();
                 if (cleanValue.isNotEmpty) {
-                  homePercent = int.tryParse(cleanValue) ?? 50;
+                  homePercent = int.tryParse(cleanValue) ?? 0;
                   awayPercent = 100 - homePercent;
-                  debugPrint('✅ Posse de bola encontrada: Casa $homePercent% - Fora $awayPercent%');
                   break;
                 }
               }
             }
           }
         }
+      } catch (e) {
+        debugPrint('❌ Erro ao carregar estatísticas: $e');
       }
-    } catch (e) {
-      debugPrint('❌ Erro ao carregar estatísticas: $e');
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final homeWon = isFinished && homeScore > awayScore;
+    final awayWon = isFinished && awayScore > homeScore;
 
     return AnimatedBuilder(
       animation: controller,
@@ -664,17 +656,10 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         },
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 12),
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: _getCardColor(context),
             borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -686,21 +671,33 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   Expanded(
                     child: Column(
                       children: [
-                        Image.network(
-                          jogo['team_home_badge'] ?? '',
-                          width: 56,
-                          height: 56,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Symbols.shield_rounded,
-                            size: 56,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.network(
+                              jogo['team_home_badge'] ?? '',
+                              width: 48,
+                              height: 48,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Symbols.shield_rounded,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            if (homeWon)
+                              Image.asset(
+                                'assets/winner.gif',
+                                width: 70,
+                                height: 70,
+                                errorBuilder: (_, __, ___) => const SizedBox(),
+                              ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           jogo['match_hometeam_name'] ?? '',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
@@ -708,82 +705,68 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 6,
-                              height: 6,
+                              width: 5,
+                              height: 5,
                               decoration: BoxDecoration(
                                 color: Colors.green.shade500,
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 3),
                             Text(
                               'Casa',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: 9,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         if (homeYellowCards > 0 || homeRedCards > 0)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (homeYellowCards > 0) ...[
                                 Container(
-                                  width: 18,
-                                  height: 22,
+                                  width: 14,
+                                  height: 18,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD700),
-                                    borderRadius: BorderRadius.circular(3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 3,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
                                   child: Center(
                                     child: Text(
                                       '$homeYellowCards',
                                       style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.black,
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 3),
                               ],
                               if (homeRedCards > 0)
                                 Container(
-                                  width: 18,
-                                  height: 22,
+                                  width: 14,
+                                  height: 18,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 3,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
                                   child: Center(
                                     child: Text(
                                       '$homeRedCards',
                                       style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white,
                                       ),
@@ -795,54 +778,47 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Column(
                     children: [
                       Text(
                         '$homeScore : $awayScore',
                         style: TextStyle(
-                          fontSize: 40,
+                          fontSize: 34,
                           fontWeight: FontWeight.w900,
                           color: Theme.of(context).colorScheme.onSurface,
-                          letterSpacing: 3,
+                          letterSpacing: 2,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       if (isLive)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE53935),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.red.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: const Text(
                             'Ao Vivo',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
-                              letterSpacing: 0.5,
+                              letterSpacing: 0.3,
                             ),
                           ),
                         ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           isHT ? 'INT' : status,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: isLive && !isHT
                                 ? const Color(0xFF00C853)
@@ -852,25 +828,37 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       ),
                     ],
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       children: [
-                        Image.network(
-                          jogo['team_away_badge'] ?? '',
-                          width: 56,
-                          height: 56,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Symbols.shield_rounded,
-                            size: 56,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.network(
+                              jogo['team_away_badge'] ?? '',
+                              width: 48,
+                              height: 48,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Symbols.shield_rounded,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            if (awayWon)
+                              Image.asset(
+                                'assets/winner.gif',
+                                width: 70,
+                                height: 70,
+                                errorBuilder: (_, __, ___) => const SizedBox(),
+                              ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           jogo['match_awayteam_name'] ?? '',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
@@ -878,82 +866,68 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 6,
-                              height: 6,
+                              width: 5,
+                              height: 5,
                               decoration: BoxDecoration(
                                 color: Colors.orange.shade500,
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 3),
                             Text(
                               'Fora',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: 9,
                                 fontWeight: FontWeight.w600,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         if (awayYellowCards > 0 || awayRedCards > 0)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (awayYellowCards > 0) ...[
                                 Container(
-                                  width: 18,
-                                  height: 22,
+                                  width: 14,
+                                  height: 18,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD700),
-                                    borderRadius: BorderRadius.circular(3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 3,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
                                   child: Center(
                                     child: Text(
                                       '$awayYellowCards',
                                       style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.black,
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 3),
                               ],
                               if (awayRedCards > 0)
                                 Container(
-                                  width: 18,
-                                  height: 22,
+                                  width: 14,
+                                  height: 18,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 3,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
                                   child: Center(
                                     child: Text(
                                       '$awayRedCards',
                                       style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white,
                                       ),
@@ -967,7 +941,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Expanded(
@@ -977,27 +951,34 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         Text(
                           '$homePercent%',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: isNotStarted ? 0 : (homePercent / 100),
-                            backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isDark ? const Color(0xFF42A5F5) : const Color(0xFF1976D2),
-                            ),
-                            minHeight: 8,
-                          ),
+                        const SizedBox(height: 5),
+                        TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOut,
+                          tween: Tween(begin: 0, end: homePercent / 100),
+                          builder: (context, value, child) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: value,
+                                backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isDark ? const Color(0xFF42A5F5) : const Color(0xFF1976D2),
+                                ),
+                                minHeight: 6,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -1005,22 +986,29 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         Text(
                           '$awayPercent%',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: isNotStarted ? 0 : (awayPercent / 100),
-                            backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isDark ? const Color(0xFFFF7043) : const Color(0xFFFF6F00),
-                            ),
-                            minHeight: 8,
-                          ),
+                        const SizedBox(height: 5),
+                        TweenAnimationBuilder<double>(
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOut,
+                          tween: Tween(begin: 0, end: awayPercent / 100),
+                          builder: (context, value, child) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: value,
+                                backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isDark ? const Color(0xFFFF7043) : const Color(0xFFFF6F00),
+                                ),
+                                minHeight: 6,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
