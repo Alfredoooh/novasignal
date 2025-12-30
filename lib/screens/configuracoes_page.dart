@@ -57,7 +57,7 @@ class ConfiguracoesPage extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       value: appState.corDinamica,
-                      onChanged: (_) => appState.alternarCorDinamica(),
+                      onChanged: (v) => appState.alternarCorDinamica(v),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                       ),
@@ -75,7 +75,8 @@ class ConfiguracoesPage extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       value: appState.temaEscuro,
-                      onChanged: (_) => appState.alternarTemaEscuro(),
+                      // AppState tem alternarTema(bool)
+                      onChanged: (v) => appState.alternarTema(v),
                       shape: RoundedRectangleBorder(
                         borderRadius: appState.temaEscuro 
                             ? BorderRadius.zero 
@@ -96,7 +97,44 @@ class ConfiguracoesPage extends StatelessWidget {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         value: appState.temaEscuroProfundo,
-                        onChanged: (_) => appState.alternarTemaEscuroProfundo(),
+                        onChanged: (v) => appState.alternarTemaEscuroProfundo(v),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                        ),
+                      ),
+
+                      // Divider separador entre os switches adicionais
+                      Divider(
+                        height: 1,
+                        indent: 72,
+                        color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+                      ),
+
+                      // Novo switch: AMOLED (preto absoluto)
+                      SwitchListTile(
+                        title: const Text('AMOLED (Preto Puro)'),
+                        subtitle: const Text('Usa preto absoluto para reduzir brilho em OLED'),
+                        secondary: Icon(
+                          Icons.brightness_6,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        value: appState.temaAmoled,
+                        onChanged: (v) => appState.alternarTemaAmoled(v),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                        ),
+                      ),
+
+                      // Switch adicional reaproveitando a flag de escuro profundo (variante)
+                      SwitchListTile(
+                        title: const Text('Escuro Profundo (variante)'),
+                        subtitle: const Text('Variação de contraste do modo escuro'),
+                        secondary: Icon(
+                          Icons.nights_stay,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        value: appState.temaEscuroProfundo,
+                        onChanged: (v) => appState.alternarTemaEscuroProfundo(v),
                         shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
                         ),
@@ -141,7 +179,7 @@ class ConfiguracoesPage extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   value: appState.notificacoesAtivas,
-                  onChanged: appState.alternarNotificacoes,
+                  onChanged: (v) => appState.alternarNotificacoes(v),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
