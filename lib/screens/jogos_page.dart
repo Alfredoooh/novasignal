@@ -19,7 +19,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   Timer? _autoRefreshTimer;
 
   final Map<String, List<dynamic>> _cacheJogosPorFiltro = {};
-  
+
   String _selectedFilter = 'hoje';
   String? _lastFiltro;
   bool _isLoadingNewTab = false;
@@ -80,7 +80,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   DateTime _getDateForFilter(String filter) {
     final hoje = DateTime.now();
-    
+
     switch (filter) {
       case 'ontem':
         return hoje.subtract(const Duration(days: 1));
@@ -194,7 +194,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   Widget _buildToggleButtons() {
-    final aoVivoCount = _selectedFilter == 'direto' ? _contarJogosAoVivo() : 0;
+    // Conta jogos ao vivo sempre que necessário
+    final aoVivoCount = _contarJogosAoVivo();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -532,6 +533,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       },
     );
   }
+  
   Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
     final isNumericStatus = int.tryParse(status.toString()) != null;
@@ -697,36 +699,24 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     ],
                   ],
                 ),
+                // CARD "AO VIVO" SEM ANIMAÇÃO
                 if (isPlaying && !isAoVivoTab) ...[
                   const SizedBox(height: 4),
-                  AnimatedBuilder(
-                    animation: _blinkController,
-                    builder: (context, child) {
-                      final opacity = _blinkController.value > 0.5 ? 0.7 : 0.0;
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(100),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(opacity),
-                              blurRadius: 6,
-                              spreadRadius: opacity > 0 ? 3 : 0,
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          'AO VIVO',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      );
-                    },
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Text(
+                      'AO VIVO',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
                 ],
               ],
@@ -763,12 +753,12 @@ class _ToggleButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 8), // Reduzido de 12 para 8
         decoration: BoxDecoration(
           color: isSelected 
               ? Theme.of(context).colorScheme.primaryContainer 
               : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(100), // Bordas 100% curvas
           border: Border.all(
             color: isSelected 
                 ? Theme.of(context).colorScheme.primary 
