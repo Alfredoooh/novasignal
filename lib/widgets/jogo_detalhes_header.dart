@@ -178,7 +178,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                         '${widget.jogo['match_date'] ?? ''} • ${widget.jogo['match_time'] ?? ''}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: cs.onPrimaryContainer.withOpacity(0.85),
+                          color: cs.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -187,7 +187,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                         widget.jogo['league_name'] ?? '',
                         style: TextStyle(
                           fontSize: 13,
-                          color: cs.onPrimaryContainer.withOpacity(0.9),
+                          color: cs.primary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -212,7 +212,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   child: AnimatedBadge(
                                     badgeUrl: widget.jogo['team_home_badge'],
                                     delay: 100,
-                                    color: cs.onPrimaryContainer,
+                                    color: cs.primary,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -223,7 +223,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: cs.onPrimaryContainer,
+                                      color: cs.primary,
                                     ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
@@ -242,7 +242,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   style: TextStyle(
                                     fontSize: 44,
                                     fontWeight: FontWeight.w900,
-                                    color: cs.onPrimaryContainer,
+                                    color: cs.primary,
                                     height: 1,
                                   ),
                                 ),
@@ -299,7 +299,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   child: AnimatedBadge(
                                     badgeUrl: widget.jogo['team_away_badge'],
                                     delay: 200,
-                                    color: cs.onPrimaryContainer,
+                                    color: cs.primary,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -310,7 +310,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: cs.onPrimaryContainer,
+                                      color: cs.primary,
                                     ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
@@ -343,7 +343,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesAmareloCasa}',
                                     style: TextStyle(
-                                      color: cs.onPrimaryContainer,
+                                      color: cs.primary,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -363,7 +363,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesVermelhoCasa}',
                                     style: TextStyle(
-                                      color: cs.onPrimaryContainer,
+                                      color: cs.primary,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -377,7 +377,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesAmareloFora}',
                                     style: TextStyle(
-                                      color: cs.onPrimaryContainer,
+                                      color: cs.primary,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -397,7 +397,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesVermelhoFora}',
                                     style: TextStyle(
-                                      color: cs.onPrimaryContainer,
+                                      color: cs.primary,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -452,29 +452,30 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
   }
 }
 
-// Custom clipper para bordas curvas
+// Custom clipper para bordas curvas na parte inferior
 class CurvedBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(0, size.height - 30);
-    
-    final firstControlPoint = Offset(size.width / 4, size.height);
-    final firstEndPoint = Offset(size.width / 2, size.height);
+    path.lineTo(0, size.height - 40);
+
+    // Curva suave na parte inferior
+    final controlPoint1 = Offset(size.width * 0.25, size.height - 20);
+    final endPoint1 = Offset(size.width * 0.5, size.height - 15);
     path.quadraticBezierTo(
-      firstControlPoint.dx,
-      firstControlPoint.dy,
-      firstEndPoint.dx,
-      firstEndPoint.dy,
+      controlPoint1.dx,
+      controlPoint1.dy,
+      endPoint1.dx,
+      endPoint1.dy,
     );
 
-    final secondControlPoint = Offset(size.width * 3 / 4, size.height);
-    final secondEndPoint = Offset(size.width, size.height - 30);
+    final controlPoint2 = Offset(size.width * 0.75, size.height - 10);
+    final endPoint2 = Offset(size.width, size.height - 40);
     path.quadraticBezierTo(
-      secondControlPoint.dx,
-      secondControlPoint.dy,
-      secondEndPoint.dx,
-      secondEndPoint.dy,
+      controlPoint2.dx,
+      controlPoint2.dy,
+      endPoint2.dx,
+      endPoint2.dy,
     );
 
     path.lineTo(size.width, 0);
