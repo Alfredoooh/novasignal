@@ -17,10 +17,11 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
-  final PageController _grandesClubesController = PageController(viewportFraction: 0.88);
-  final PageController _aoVivoController = PageController(viewportFraction: 0.88);
-  final PageController _jogosHojeController = PageController(viewportFraction: 0.88);
-  
+  // Aumentado ligeiramente para deixar os cards um pouco mais compridos
+  final PageController _grandesClubesController = PageController(viewportFraction: 0.92);
+  final PageController _aoVivoController = PageController(viewportFraction: 0.92);
+  final PageController _jogosHojeController = PageController(viewportFraction: 0.92);
+
   List<dynamic> _jogosHoje = [];
   List<dynamic> _jogosAmanha = [];
   List<dynamic> _jogosAoVivo = [];
@@ -30,7 +31,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   List<Map<String, dynamic>> _noticias = [];
   bool _loadingNews = false;
   bool _isLoading = true;
-  
+
   int _grandesClubesCurrentPage = 0;
   int _aoVivoCurrentPage = 0;
   int _jogosHojeCurrentPage = 0;
@@ -269,7 +270,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
   Widget _buildGrandesClubesSection() {
     final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
-    
+
     if (!temGrandesClubes) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -300,8 +301,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             ),
           ),
           const SizedBox(height: 16),
+          // Altura ligeiramente reduzida para "um pouquinho" menor
           SizedBox(
-            height: 180,
+            height: 170,
             child: PageView.builder(
               controller: _grandesClubesController,
               itemCount: todosJogos.length,
@@ -357,8 +359,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             ),
           ),
           const SizedBox(height: 16),
+          // Altura ligeiramente reduzida
           SizedBox(
-            height: 180,
+            height: 170,
             child: PageView.builder(
               controller: _aoVivoController,
               itemCount: _jogosAoVivo.length,
@@ -396,7 +399,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
   Widget _buildJogosDeHojeSection() {
     final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
-    
+
     if (temGrandesClubes || _todosJogosHoje.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -413,8 +416,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             ),
           ),
           const SizedBox(height: 16),
+          // Altura ligeiramente reduzida
           SizedBox(
-            height: 180,
+            height: 170,
             child: PageView.builder(
               controller: _jogosHojeController,
               itemCount: _todosJogosHoje.take(10).length,
@@ -588,7 +592,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final isHT = status == 'HT';
     final isFinished = status.contains('Finished') || status == 'FT' || status == 'AET' || status == 'AP';
     final isNotStarted = status == '' || status == 'NS' || status.contains('Not Started');
-    
+
     final homeYellowCards = int.tryParse(jogo['match_hometeam_yellow_cards']?.toString() ?? '0') ?? 0;
     final homeRedCards = int.tryParse(jogo['match_hometeam_red_cards']?.toString() ?? '0') ?? 0;
     final awayYellowCards = int.tryParse(jogo['match_awayteam_yellow_cards']?.toString() ?? '0') ?? 0;
@@ -599,7 +603,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
     int homePercent = 0;
     int awayPercent = 0;
-    
+
     if (!isNotStarted) {
       try {
         final statistics = jogo['statistics'];
@@ -633,7 +637,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       builder: (context, child) {
         double value = 1.0;
         double scale = 1.0;
-        
+
         if (controller.position.haveDimensions) {
           value = controller.page! - index;
           scale = (1 - (value.abs() * 0.12)).clamp(0.88, 1.0);
