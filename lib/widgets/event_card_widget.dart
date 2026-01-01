@@ -29,18 +29,18 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    
+
     // Animação de fade para os cards
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-    
+
     // Criar controladores para cada estatística
     _statControllers = List.generate(
       widget.statistics.length,
@@ -49,7 +49,7 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
         vsync: this,
       ),
     );
-    
+
     _statAnimations = _statControllers.map((controller) {
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
@@ -58,7 +58,7 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
         ),
       );
     }).toList();
-    
+
     // Iniciar animações
     _fadeController.forward();
     Future.delayed(const Duration(milliseconds: 200), () {
@@ -154,7 +154,7 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    ...widget.statistics.take(8).asMap().entries.map((entry) {
+                   ...widget.statistics.take(8).toList().asMap().entries.map((entry) {
                       final index = entry.key;
                       final stat = entry.value;
                       return index < _statAnimations.length
@@ -844,7 +844,7 @@ class EventCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-        
+
         // Assistência
         if (assist.isNotEmpty)
           Padding(
@@ -899,7 +899,7 @@ class EventCard extends StatelessWidget {
                     ],
             ),
           ),
-        
+
         // VAR ou método
         if (method.isNotEmpty && method.toLowerCase().contains('var'))
           Padding(
@@ -989,7 +989,7 @@ class EventCard extends StatelessWidget {
               textAlign: isHome ? TextAlign.left : TextAlign.right,
             ),
           ),
-        
+
         // Substituições
         if (type == 'substitution' && event['playerIn'] != null) ...[
           const SizedBox(height: 8),
