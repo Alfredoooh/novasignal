@@ -189,7 +189,7 @@ class AppState with ChangeNotifier {
     final entry = _cache[key];
     if (entry != null) {
       final age = DateTime.now().difference(entry.timestamp).inSeconds;
-      
+
       // Cache especial para notícias (30 minutos)
       if (key.contains('noticias')) {
         if (age < _cacheDurationNews) {
@@ -200,7 +200,7 @@ class AppState with ChangeNotifier {
           return null;
         }
       }
-      
+
       // Cache normal (1 minuto)
       if (age < _cacheStaleTime) {
         debugPrint('✅ Cache FRESH: $key (${age}s)');
@@ -224,12 +224,12 @@ class AppState with ChangeNotifier {
     final entry = _cache[key];
     if (entry == null) return true;
     final age = DateTime.now().difference(entry.timestamp).inSeconds;
-    
+
     // Cache especial para notícias
     if (key.contains('noticias')) {
       return age >= _cacheDurationNews;
     }
-    
+
     return age >= _cacheStaleTime;
   }
 
@@ -295,12 +295,12 @@ class AppState with ChangeNotifier {
     // Retorna cache se ainda for válido (30 minutos)
     if (cached != null) {
       debugPrint('📰 Retornando ${(cached as List).length} notícias do cache');
-      
+
       // Atualiza em background se stale
       if (_isCacheStale(cacheKey)) {
         _fetchNoticiasBackground(cacheKey);
       }
-      
+
       return List<Map<String, dynamic>>.from(cached);
     }
 
@@ -341,7 +341,7 @@ class AppState with ChangeNotifier {
 
             if (data['status'] == 'ok' && data['articles'] != null) {
               final articles = data['articles'] as List;
-              
+
               if (articles.isEmpty) {
                 debugPrint('⚠️ Nenhuma notícia encontrada com: $query');
                 continue;
@@ -385,10 +385,10 @@ class AppState with ChangeNotifier {
 
       // Se chegou aqui, nenhuma query funcionou
       debugPrint('❌ Nenhuma notícia pôde ser carregada');
-      
+
       // Salva lista vazia no cache para evitar múltiplas tentativas
       _saveToCache(cacheKey, []);
-      
+
     } catch (e) {
       debugPrint('❌ Erro fatal ao buscar notícias: $e');
       rethrow;
@@ -673,6 +673,8 @@ class AppState with ChangeNotifier {
     _autoUpdateTimers.remove(timerId);
   }
 
+  // ========== LIGAS ==========
+
   Future<List<dynamic>> carregarLigas() async {
     const cacheKey = 'ligas_todas';
     final cached = _getFromCache(cacheKey);
@@ -716,21 +718,80 @@ class AppState with ChangeNotifier {
   }
 
   Future<List<dynamic>> carregarJogosPorLiga(String ligaId) async {
-    final todosJogos = await carregarTodosJogos();
+    final cacheKey = 'jogos_liga_$ligaId';
+    final cached = _getFromCache(cacheKey);
 
-    return todosJogos.where((jogo) {
-      final jogoLigaId = jogo['league_id']?.toString();
-      return jogoLigaId == ligaId;
-    }).toList();
+    if (cached != null && cached is List) {
+      if (_isCacheStale(cacheKey)) {
+        _fetchJogosPorLigaBackground(ligaId, cacheKey);
+      }
+      return cached;
+    }
+
+    await _fetchJogosPorLigaBackground(ligaId, cacheKey);
+    final result = _getFromCache(cacheKey);
+    return result is List ? result : [];
+  }
+
+  Future<void> _fetchJogosPorLigaBackground(String ligaId, String cacheKey) async {
+    try {
+      debugPrint('🔄 Carregando jogos da liga: $ligaId');
+      final response = await _executeRequest('/api/matches/league/$ligaId');
+
+      List<dynamic> jogos = [];
+
+      if (response is Map && response.containsKey('matches')) {
+        jogos = response['matches'] as List<dynamic>;
+        debugPrint('✅ ${jogos.length} jogos da liga carregados');
+      }
+
+      _saveToCache(cacheKey, jogos);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Erro ao carregar jogos da liga: $e');
+    }
   }
 
   Future<List<dynamic>> carregarClassificacao(String ligaId) async {
-    return [];
+    final cacheKey = 'classificacao_$ligaId';
+    final cached = _getFromCache(cacheKey);
+
+    if (cached != null && cached is List) {
+      if (_isCacheStale(cacheKey)) {
+        _fetchClassificacaoBackground(ligaId, cacheKey);
+      }
+      return cached;
+    }
+
+    await _fetchClassificacaoBackground(ligaId, cacheKey);
+    final result = _getFromCache(cacheKey);
+    return result is List ? result : [];
+  }
+
+  Future<void> _fetchClassificacaoBackground(String ligaId, String cacheKey) async {
+    try {
+      debugPrint('🔄 Carregando classificação da liga: $ligaId');
+      final response = await _executeRequest('/api/leagues/$ligaId/standings');
+
+      List<dynamic> standings = [];
+
+      if (response is Map && response.containsKey('standings')) {
+        standings = response['standings'] as List<dynamic>;
+        debugPrint('✅ ${standings.length} times na classificação');
+      }
+
+      _saveToCache(cacheKey, standings);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Erro ao carregar classificação: $e');
+    }
   }
 
   Future<List<dynamic>> carregarUltimosJogosLiga(String ligaId) async {
     return carregarJogosPorLiga(ligaId);
   }
+
+  // ========== UTILIDADES ==========
 
   Future<void> precarregarDadosHome() async {
     debugPrint('🔥 Pré-carregando Home...');
