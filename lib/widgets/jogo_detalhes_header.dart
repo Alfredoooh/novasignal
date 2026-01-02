@@ -25,6 +25,18 @@ class JogoDetalhesHeader extends StatefulWidget {
     required this.innerScrolled,
   });
 
+  String _getProxiedImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    
+    // Se for web, usa um proxy CORS
+    if (kIsWeb) {
+      // Usa o proxy CORS público
+      return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
+    }
+    
+    return url;
+  }
+
   @override
   State<JogoDetalhesHeader> createState() => _JogoDetalhesHeaderState();
 }
@@ -561,8 +573,23 @@ class _AnimatedBadgeState extends State<AnimatedBadge>
     super.dispose();
   }
 
+  String _getProxiedImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    
+    // Se for web, usa um proxy CORS
+    if (kIsWeb) {
+      return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
+    }
+    
+    return url;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final proxiedUrl = _getProxiedImageUrl(widget.badgeUrl);
+    final hasValidUrl = proxiedUrl.isNotEmpty && 
+                        Uri.tryParse(proxiedUrl)?.hasAbsolutePath == true;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -574,16 +601,40 @@ class _AnimatedBadgeState extends State<AnimatedBadge>
           ),
         );
       },
-      child: (widget.badgeUrl ?? '').toString().isNotEmpty
+      child: hasValidUrl
           ? Image.network(
-              widget.badgeUrl!,
+              proxiedUrl,
               width: 60,
               height: 60,
-              errorBuilder: (_, __, ___) => Icon(
-                Icons.shield,
-                size: 60,
-                color: widget.color,
-              ),
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                      strokeWidth: 2,
+                      color: widget.color.withOpacity(0.5),
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('❌ Erro ao carregar badge: ${widget.badgeUrl}');
+                debugPrint('❌ URL proxied: $proxiedUrl');
+                debugPrint('❌ Erro: $error');
+                return Icon(
+                  Icons.shield,
+                  size: 60,
+                  color: widget.color,
+                );
+              },
             )
           : Icon(
               Icons.shield,
