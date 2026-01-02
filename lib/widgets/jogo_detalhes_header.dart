@@ -87,7 +87,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
     final minutosJogo = _getMinutosJogo();
 
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: 280,
       pinned: true,
       stretch: true,
       backgroundColor: cs.surface,
@@ -155,17 +155,17 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                     ),
                 ],
               )
-            : Text(
-                widget.jogo['league_name'] ?? 'Liga',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: cs.onSurface),
-              ),
+            : null,
         titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
         centerTitle: false,
         background: ClipPath(
-          clipper: CurvedBottomClipper(),
+          clipper: CurvedTopAndBottomClipper(),
           child: Container(
-            color: cs.primaryContainer,
+            decoration: BoxDecoration(
+              color: cs.primaryContainer,
+            ),
             child: SafeArea(
+              bottom: false,
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: SlideTransition(
@@ -173,7 +173,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                       Text(
                         '${widget.jogo['match_date'] ?? ''} • ${widget.jogo['match_time'] ?? ''}',
                         style: TextStyle(
@@ -182,16 +182,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.jogo['league_name'] ?? '',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: cs.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -452,31 +443,57 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
   }
 }
 
-class CurvedBottomClipper extends CustomClipper<Path> {
+class CurvedTopAndBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(0, size.height - 40);
-
-    final controlPoint1 = Offset(size.width * 0.25, size.height - 20);
-    final endPoint1 = Offset(size.width * 0.5, size.height - 15);
+    
+    // Começa com curva no topo
+    path.moveTo(0, 30);
+    
+    // Curva superior esquerda
+    final topControlPoint1 = Offset(size.width * 0.25, 5);
+    final topEndPoint1 = Offset(size.width * 0.5, 0);
     path.quadraticBezierTo(
-      controlPoint1.dx,
-      controlPoint1.dy,
-      endPoint1.dx,
-      endPoint1.dy,
+      topControlPoint1.dx,
+      topControlPoint1.dy,
+      topEndPoint1.dx,
+      topEndPoint1.dy,
+    );
+    
+    // Curva superior direita
+    final topControlPoint2 = Offset(size.width * 0.75, -5);
+    final topEndPoint2 = Offset(size.width, 30);
+    path.quadraticBezierTo(
+      topControlPoint2.dx,
+      topControlPoint2.dy,
+      topEndPoint2.dx,
+      topEndPoint2.dy,
+    );
+    
+    // Linha direita
+    path.lineTo(size.width, size.height - 40);
+
+    // Curva inferior direita
+    final bottomControlPoint1 = Offset(size.width * 0.75, size.height - 10);
+    final bottomEndPoint1 = Offset(size.width * 0.5, size.height - 15);
+    path.quadraticBezierTo(
+      bottomControlPoint1.dx,
+      bottomControlPoint1.dy,
+      bottomEndPoint1.dx,
+      bottomEndPoint1.dy,
     );
 
-    final controlPoint2 = Offset(size.width * 0.75, size.height - 10);
-    final endPoint2 = Offset(size.width, size.height - 40);
+    // Curva inferior esquerda
+    final bottomControlPoint2 = Offset(size.width * 0.25, size.height - 20);
+    final bottomEndPoint2 = Offset(0, size.height - 40);
     path.quadraticBezierTo(
-      controlPoint2.dx,
-      controlPoint2.dy,
-      endPoint2.dx,
-      endPoint2.dy,
+      bottomControlPoint2.dx,
+      bottomControlPoint2.dy,
+      bottomEndPoint2.dx,
+      bottomEndPoint2.dy,
     );
 
-    path.lineTo(size.width, 0);
     path.close();
     return path;
   }
