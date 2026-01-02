@@ -562,41 +562,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     );
   }
 
-  // CONTINUA NA PARTE 2
-  Widget _buildJogosTab() => Container();
-  Widget _buildEstatisticasTab() => Container();
-  List<Map<String, dynamic>> _calcularArtilheiros() => [];
-  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro, BuildContext context) => Container();
-  Widget _buildPodium(List<dynamic> top3, BuildContext context) => Container();
-  String _abreviarNome(String nomeCompleto) => nomeCompleto;
-  Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao, BuildContext context) => Container();
-  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao, BuildContext context) => Container();
-}
-
-class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar _tabBar;
-
-  _SliverTabBarDelegate(this._tabBar);
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: _tabBar,
-    );
-  }
-
-  @override
-  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) => false;
-}
-
-// SUBSTITUA OS MÉTODOS PLACEHOLDER DA PARTE 1 POR ESTES:
-
   Widget _buildJogosTab() {
     if (_cachedJogos != null) {
       return _buildJogosContent(_cachedJogos!);
@@ -1144,3 +1109,26 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
       ),
     );
   }
+}
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+
+  _SliverTabBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) => false;
+}
