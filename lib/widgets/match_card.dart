@@ -9,12 +9,16 @@ class MatchCard extends StatefulWidget {
   final dynamic jogo;
   final bool showLeague;
   final int index;
+  final bool isFirst;
+  final bool isLast;
 
   const MatchCard({
     super.key,
     required this.jogo,
     this.showLeague = false,
     this.index = 0,
+    this.isFirst = false,
+    this.isLast = false,
   });
 
   @override
@@ -72,6 +76,28 @@ class _MatchCardState extends State<MatchCard> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+  BorderRadius _getBorderRadius() {
+    if (widget.isFirst && widget.isLast) {
+      return BorderRadius.circular(16);
+    } else if (widget.isFirst) {
+      return const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+        bottomLeft: Radius.circular(4),
+        bottomRight: Radius.circular(4),
+      );
+    } else if (widget.isLast) {
+      return const BorderRadius.only(
+        topLeft: Radius.circular(4),
+        topRight: Radius.circular(4),
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(16),
+      );
+    } else {
+      return BorderRadius.circular(4);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.read<AppState>();
@@ -109,7 +135,7 @@ class _MatchCardState extends State<MatchCard> with SingleTickerProviderStateMix
                 closedElevation: 0,
                 openElevation: 0,
                 closedShape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: _getBorderRadius(),
                 ),
                 closedColor: Colors.transparent,
                 openColor: cs.surface,
@@ -118,7 +144,7 @@ class _MatchCardState extends State<MatchCard> with SingleTickerProviderStateMix
                 transitionType: ContainerTransitionType.fade,
                 closedBuilder: (context, action) => InkWell(
                   onTap: action,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: _getBorderRadius(),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -280,7 +306,8 @@ class _MatchCardState extends State<MatchCard> with SingleTickerProviderStateMix
                   return Container();
                 },
               ),
-              Divider(height: 1, color: cs.outlineVariant.withOpacity(0.3)),
+              if (!widget.isLast)
+                Divider(height: 1, color: cs.outlineVariant.withOpacity(0.3)),
             ],
           ),
         ),
