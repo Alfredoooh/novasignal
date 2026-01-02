@@ -17,14 +17,11 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
-  // Aumentado ligeiramente para deixar os cards um pouco mais compridos
   final PageController _grandesClubesController = PageController(viewportFraction: 0.92);
-  final PageController _aoVivoController = PageController(viewportFraction: 0.92);
   final PageController _jogosHojeController = PageController(viewportFraction: 0.92);
 
   List<dynamic> _jogosHoje = [];
   List<dynamic> _jogosAmanha = [];
-  List<dynamic> _jogosAoVivo = [];
   List<dynamic> _todosJogosHoje = [];
   String? _error;
   Timer? _autoRefreshTimer;
@@ -33,7 +30,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   bool _isLoading = true;
 
   int _grandesClubesCurrentPage = 0;
-  int _aoVivoCurrentPage = 0;
   int _jogosHojeCurrentPage = 0;
 
   @override
@@ -59,17 +55,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       }
     });
 
-    _aoVivoController.addListener(() {
-      if (_aoVivoController.page != null) {
-        final newPage = _aoVivoController.page!.round();
-        if (_aoVivoCurrentPage != newPage) {
-          setState(() {
-            _aoVivoCurrentPage = newPage;
-          });
-        }
-      }
-    });
-
     _jogosHojeController.addListener(() {
       if (_jogosHojeController.page != null) {
         final newPage = _jogosHojeController.page!.round();
@@ -86,7 +71,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   void dispose() {
     _scrollController.dispose();
     _grandesClubesController.dispose();
-    _aoVivoController.dispose();
     _jogosHojeController.dispose();
     _autoRefreshTimer?.cancel();
     super.dispose();
@@ -164,18 +148,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         return jogo['match_date'] == dataAmanha;
       }).toList();
 
-      final liveMatches = jogosHoje.where((jogo) {
-        final status = jogo['match_status'] ?? '';
-        final isNumeric = int.tryParse(status.toString()) != null;
-        return isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
-      }).toList();
-
-      debugPrint('🏆 Jogos hoje: ${jogosHoje.length}, Amanhã: ${jogosAmanha.length}, Ao vivo: ${liveMatches.length}');
+      debugPrint('🏆 Jogos hoje: ${jogosHoje.length}, Amanhã: ${jogosAmanha.length}');
 
       setState(() {
         _jogosHoje = jogosHoje;
         _jogosAmanha = jogosAmanha;
-        _jogosAoVivo = liveMatches;
         _error = null;
       });
     } catch (e) {
@@ -259,7 +236,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         controller: _scrollController,
         slivers: [
           _buildGrandesClubesSection(),
-          _buildJogosAoVivoSection(),
           _buildJogosDeHojeSection(),
           _buildNewsSection(),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -277,6 +253,13 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
     final todosJogos = [..._jogosHoje, ..._jogosAmanha];
 
+    // Verifica se tem jogos ao vivo
+    final temJogosAoVivo = todosJogos.any((jogo) {
+      final status = jogo['match_status'] ?? '';
+      final isNumeric = int.tryParse(status.toString()) != null;
+      return isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
+    });
+
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,9 +270,17 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Grandes Clubes',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                Row(
+                  children: [
+                    const Text(
+                      'Grandes Clubes',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                    ),
+                    if (temJogosAoVivo) ...[
+                      const SizedBox(width: 12),
+                      _BlinkingDot(),
+                    ],
+                  ],
                 ),
                 IconButton(
                   onPressed: _openHomeConfig,
@@ -301,7 +292,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             ),
           ),
           const SizedBox(height: 16),
-          // Altura ligeiramente reduzida para "um pouquinho" menor
           SizedBox(
             height: 170,
             child: PageView.builder(
@@ -339,64 +329,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     );
   }
 
-  Widget _buildJogosAoVivoSection() {
-    if (_jogosAoVivo.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                _BlinkingDot(),
-                const SizedBox(width: 8),
-                const Text('Em Direto', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Altura ligeiramente reduzida
-          SizedBox(
-            height: 170,
-            child: PageView.builder(
-              controller: _aoVivoController,
-              itemCount: _jogosAoVivo.length,
-              itemBuilder: (context, index) {
-                return _buildHorizontalGameCard(_jogosAoVivo[index], _aoVivoController, index);
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                _jogosAoVivo.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _aoVivoCurrentPage == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _aoVivoCurrentPage == index
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
   Widget _buildJogosDeHojeSection() {
     final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
 
@@ -416,7 +348,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             ),
           ),
           const SizedBox(height: 16),
-          // Altura ligeiramente reduzida
           SizedBox(
             height: 170,
             child: PageView.builder(
@@ -455,31 +386,54 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _buildNewsSection() {
-    if (_loadingNews) {
-      return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Center(
-            child: CircularProgressIndicator(
-              color: Theme.of(context).colorScheme.primary,
+    // Sempre mostra a seção de notícias
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Notícias',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
             ),
           ),
-        ),
-      );
-    }
-
-    if (_noticias.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final noticia = _noticias[index];
-          final isLast = index == _noticias.length - 1;
-          return _buildNewsItem(noticia, isLast);
-        },
-        childCount: _noticias.take(10).length,
+          const SizedBox(height: 16),
+          if (_loadingNews)
+            Padding(
+              padding: const EdgeInsets.all(40),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            )
+          else if (_noticias.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(40),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Symbols.article_rounded,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Nenhuma notícia disponível',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ..._noticias.take(10).map((noticia) => _buildNewsItem(noticia, noticia == _noticias.take(10).last)),
+        ],
       ),
     );
   }
