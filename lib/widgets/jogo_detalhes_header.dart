@@ -452,14 +452,12 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
   }
 }
 
-// Custom clipper para bordas curvas na parte inferior
 class CurvedBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
     path.lineTo(0, size.height - 40);
 
-    // Curva suave na parte inferior
     final controlPoint1 = Offset(size.width * 0.25, size.height - 20);
     final endPoint1 = Offset(size.width * 0.5, size.height - 15);
     path.quadraticBezierTo(
@@ -487,7 +485,6 @@ class CurvedBottomClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-// Widget animado para os escudos
 class AnimatedBadge extends StatefulWidget {
   final String? badgeUrl;
   final int delay;
