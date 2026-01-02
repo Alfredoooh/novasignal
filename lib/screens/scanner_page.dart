@@ -1,7 +1,8 @@
-// ==================== scanner_page.dart ====================
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cupertino_icons/cupertino_icons.dart';
+import 'dart:async';
 import 'qr_result_page.dart';
 
 class ScannerPage extends StatefulWidget {
@@ -11,39 +12,131 @@ class ScannerPage extends StatefulWidget {
   State<ScannerPage> createState() => _ScannerPageState();
 }
 
-class _ScannerPageState extends State<ScannerPage> {
-  MobileScannerController cameraController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-  );
+class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin {
+  late MobileScannerController cameraController;
   bool isScanning = false;
   bool isTorchOn = false;
   Barcode? detectedBarcode;
+  late AnimationController _scanLineController;
+  late Animation<double> _scanLineAnimation;
+  bool _isProcessingImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    cameraController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+    );
+
+    // Animação da linha de scan
+    _scanLineController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scanLineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanLineController, curve: Curves.easeInOut),
+    );
+  }
 
   @override
   void dispose() {
+    _scanLineController.dispose();
     cameraController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImageFromGallery() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (_isProcessingImage) return;
 
-    if (image != null) {
+    setState(() {
+      _isProcessingImage = true;
+    });
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image == null) {
+        setState(() {
+          _isProcessingImage = false;
+        });
+        return;
+      }
+
+      // Mostra loading
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Colors.amber),
+                  SizedBox(height: 16),
+                  Text(
+                    'Analisando imagem...',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      // Analisa a imagem
       final BarcodeCapture? barcodes = await cameraController.analyzeImage(image.path);
+      
+      if (mounted) {
+        Navigator.of(context).pop(); // Remove loading
+      }
+
       if (barcodes != null && barcodes.barcodes.isNotEmpty) {
         _handleBarcode(barcodes.barcodes.first);
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Nenhum QR code encontrado na imagem'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          _showErrorSnackbar('Nenhum QR code encontrado na imagem');
         }
       }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Remove loading se existir
+        _showErrorSnackbar('Erro ao analisar imagem: ${e.toString()}');
+      }
+    } finally {
+      setState(() {
+        _isProcessingImage = false;
+      });
     }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(CupertinoIcons.exclamationmark_circle_fill, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFFE53935),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   void _handleBarcode(Barcode barcode) {
@@ -56,27 +149,35 @@ class _ScannerPageState extends State<ScannerPage> {
 
     final scannedCode = barcode.rawValue ?? 'Código não identificado';
 
-    // Navega para página de resultado
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // Feedback háptico e visual
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => QRResultPage(codigo: scannedCode),
         ),
       ).then((_) {
-        setState(() {
-          isScanning = false;
-          detectedBarcode = null;
-        });
+        if (mounted) {
+          setState(() {
+            isScanning = false;
+            detectedBarcode = null;
+          });
+        }
       });
     });
   }
 
-  void _toggleTorch() {
-    setState(() {
-      isTorchOn = !isTorchOn;
-    });
-    cameraController.toggleTorch();
+  Future<void> _toggleTorch() async {
+    try {
+      await cameraController.toggleTorch();
+      setState(() {
+        isTorchOn = !isTorchOn;
+      });
+    } catch (e) {
+      debugPrint('Erro ao alternar lanterna: $e');
+    }
   }
 
   @override
@@ -89,50 +190,65 @@ class _ScannerPageState extends State<ScannerPage> {
           MobileScanner(
             controller: cameraController,
             onDetect: (BarcodeCapture capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              if (barcodes.isNotEmpty) {
-                _handleBarcode(barcodes.first);
+              if (capture.barcodes.isNotEmpty && !isScanning) {
+                _handleBarcode(capture.barcodes.first);
               }
             },
           ),
 
-          // Overlay com bordas amarelas e destaque do QR
+          // Overlay com área de scan e linha animada
           CustomPaint(
-            painter: ScannerOverlayPainter(detectedBarcode: detectedBarcode),
+            painter: ScannerOverlayPainter(
+              detectedBarcode: detectedBarcode,
+              scanLineAnimation: _scanLineAnimation.value,
+            ),
             child: Container(),
           ),
 
-          // Botão de voltar
+          // Botão voltar
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: _AnimatedIconButton(
-                icon: Icons.arrow_back_rounded,
-                onPressed: () => Navigator.pop(context),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    CupertinoIcons.back,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
               ),
             ),
           ),
 
-          // Texto instrução
+          // Instrução
           Positioned(
             top: 100,
             left: 0,
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
                 ),
                 child: const Text(
-                  'Aponte a câmera para o QR code',
+                  'Posicione o QR code na área',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -140,27 +256,31 @@ class _ScannerPageState extends State<ScannerPage> {
 
           // Botões inferiores
           Positioned(
-            bottom: 40,
-            left: 16,
-            right: 16,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Botão Lanterna
-                _AnimatedCircleButton(
-                  icon: isTorchOn ? Icons.flash_on : Icons.flash_off,
-                  onPressed: _toggleTorch,
-                  backgroundColor: isTorchOn ? Colors.amber : Colors.white,
-                  iconColor: isTorchOn ? Colors.white : Colors.black,
-                ),
-                // Botão Upload
-                _AnimatedCircleButton(
-                  icon: Icons.upload_outlined,
-                  onPressed: _pickImageFromGallery,
-                  backgroundColor: Colors.white,
-                  iconColor: Colors.black,
-                ),
-              ],
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Botão Lanterna
+                  _ScannerButton(
+                    icon: isTorchOn ? CupertinoIcons.bolt_fill : CupertinoIcons.bolt_slash_fill,
+                    onPressed: _toggleTorch,
+                    isActive: isTorchOn,
+                    label: 'Flash',
+                  ),
+                  
+                  // Botão Upload
+                  _ScannerButton(
+                    icon: CupertinoIcons.photo_on_rectangle,
+                    onPressed: _isProcessingImage ? null : _pickImageFromGallery,
+                    isActive: false,
+                    label: 'Galeria',
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -169,26 +289,24 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 }
 
-// Botão circular animado
-class _AnimatedCircleButton extends StatefulWidget {
+class _ScannerButton extends StatefulWidget {
   final IconData icon;
-  final VoidCallback onPressed;
-  final Color backgroundColor;
-  final Color iconColor;
+  final VoidCallback? onPressed;
+  final bool isActive;
+  final String label;
 
-  const _AnimatedCircleButton({
+  const _ScannerButton({
     required this.icon,
     required this.onPressed,
-    required this.backgroundColor,
-    required this.iconColor,
+    required this.isActive,
+    required this.label,
   });
 
   @override
-  State<_AnimatedCircleButton> createState() => _AnimatedCircleButtonState();
+  State<_ScannerButton> createState() => _ScannerButtonState();
 }
 
-class _AnimatedCircleButtonState extends State<_AnimatedCircleButton>
-    with SingleTickerProviderStateMixin {
+class _ScannerButtonState extends State<_ScannerButton> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -196,11 +314,10 @@ class _AnimatedCircleButtonState extends State<_AnimatedCircleButton>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 100),
       vsync: this,
     );
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -212,227 +329,225 @@ class _AnimatedCircleButtonState extends State<_AnimatedCircleButton>
   }
 
   Future<void> _handleTap() async {
+    if (widget.onPressed == null) return;
+    
     await _controller.forward();
     await _controller.reverse();
-    widget.onPressed();
+    widget.onPressed!();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: widget.backgroundColor,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: widget.isActive 
+                    ? const Color(0xFFFFC107)
+                    : Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.isActive 
+                        ? const Color(0xFFFFC107).withOpacity(0.4)
+                        : Colors.black.withOpacity(0.3),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Icon(
-            widget.icon,
-            color: widget.iconColor,
-            size: 28,
-          ),
+              child: Icon(
+                widget.icon,
+                color: widget.isActive ? Colors.black : Colors.black87,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// Botão de ícone animado
-class _AnimatedIconButton extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _AnimatedIconButton({
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  State<_AnimatedIconButton> createState() => _AnimatedIconButtonState();
-}
-
-class _AnimatedIconButtonState extends State<_AnimatedIconButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleTap() async {
-    await _controller.forward();
-    await _controller.reverse();
-    widget.onPressed();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            widget.icon,
-            color: Colors.white,
-            size: 28,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Custom Painter para o overlay com bordas amarelas e destaque do QR
 class ScannerOverlayPainter extends CustomPainter {
   final Barcode? detectedBarcode;
+  final double scanLineAnimation;
 
-  ScannerOverlayPainter({this.detectedBarcode});
+  ScannerOverlayPainter({
+    this.detectedBarcode,
+    required this.scanLineAnimation,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+    final overlayPaint = Paint()
+      ..color = Colors.black.withOpacity(0.6)
       ..style = PaintingStyle.fill;
 
     const scanAreaWidth = 280.0;
-    const scanAreaHeight = 360.0;
+    const scanAreaHeight = 280.0;
     final scanLeft = (size.width - scanAreaWidth) / 2;
     final scanTop = (size.height - scanAreaHeight) / 2;
 
-    // Se QR detectado, destacar a área específica
     if (detectedBarcode != null && detectedBarcode!.corners.isNotEmpty) {
+      // QR Code detectado - destaca área específica
       final corners = detectedBarcode!.corners;
       
-      // Desenha overlay escuro exceto na área do QR
-      final qrPath = Path()
-        ..moveTo(corners[0].dx, corners[0].dy);
-      
+      final qrPath = Path();
+      qrPath.moveTo(corners[0].dx, corners[0].dy);
       for (var i = 1; i < corners.length; i++) {
         qrPath.lineTo(corners[i].dx, corners[i].dy);
       }
       qrPath.close();
 
+      // Overlay escuro ao redor
       final overlayPath = Path()
         ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
         ..addPath(qrPath, Offset.zero)
         ..fillType = PathFillType.evenOdd;
+      canvas.drawPath(overlayPath, overlayPaint);
 
-      canvas.drawPath(overlayPath, paint);
-
-      // Desenha borda verde ao redor do QR detectado
+      // Borda verde animada
       final borderPaint = Paint()
-        ..color = Colors.green
+        ..color = const Color(0xFF4CAF50)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4;
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round;
 
       canvas.drawPath(qrPath, borderPaint);
+
+      // Efeito de canto verde
+      final cornerPaint = Paint()
+        ..color = const Color(0xFF4CAF50)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6
+        ..strokeCap = StrokeCap.round;
+
+      for (int i = 0; i < corners.length; i++) {
+        canvas.drawCircle(corners[i], 5, cornerPaint);
+      }
     } else {
       // Área de scan padrão
-      final path = Path()
+      final scanRect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(scanLeft, scanTop, scanAreaWidth, scanAreaHeight),
+        const Radius.circular(24),
+      );
+
+      final overlayPath = Path()
         ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..addRRect(RRect.fromRectAndRadius(
-          Rect.fromLTWH(scanLeft, scanTop, scanAreaWidth, scanAreaHeight),
-          const Radius.circular(16),
-        ))
+        ..addRRect(scanRect)
         ..fillType = PathFillType.evenOdd;
+      canvas.drawPath(overlayPath, overlayPaint);
 
-      canvas.drawPath(path, paint);
-
-      final borderPaint = Paint()
+      // Cantos amarelos
+      final cornerPaint = Paint()
         ..color = const Color(0xFFFFC107)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4;
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round;
 
-      const cornerLength = 40.0;
-      const radius = 16.0;
+      const cornerLength = 35.0;
+      const radius = 24.0;
 
-      // Cantos superiores e inferiores
-      canvas.drawPath(
-        Path()
-          ..moveTo(scanLeft, scanTop + cornerLength)
-          ..lineTo(scanLeft, scanTop + radius)
-          ..arcToPoint(
-            Offset(scanLeft + radius, scanTop),
-            radius: const Radius.circular(radius),
-          )
-          ..lineTo(scanLeft + cornerLength, scanTop),
-        borderPaint,
+      // Canto superior esquerdo
+      final topLeftPath = Path()
+        ..moveTo(scanLeft, scanTop + cornerLength)
+        ..lineTo(scanLeft, scanTop + radius)
+        ..arcToPoint(
+          Offset(scanLeft + radius, scanTop),
+          radius: const Radius.circular(radius),
+        )
+        ..lineTo(scanLeft + cornerLength, scanTop);
+      canvas.drawPath(topLeftPath, cornerPaint);
+
+      // Canto superior direito
+      final topRightPath = Path()
+        ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop)
+        ..lineTo(scanLeft + scanAreaWidth - radius, scanTop)
+        ..arcToPoint(
+          Offset(scanLeft + scanAreaWidth, scanTop + radius),
+          radius: const Radius.circular(radius),
+        )
+        ..lineTo(scanLeft + scanAreaWidth, scanTop + cornerLength);
+      canvas.drawPath(topRightPath, cornerPaint);
+
+      // Canto inferior esquerdo
+      final bottomLeftPath = Path()
+        ..moveTo(scanLeft, scanTop + scanAreaHeight - cornerLength)
+        ..lineTo(scanLeft, scanTop + scanAreaHeight - radius)
+        ..arcToPoint(
+          Offset(scanLeft + radius, scanTop + scanAreaHeight),
+          radius: const Radius.circular(radius),
+        )
+        ..lineTo(scanLeft + cornerLength, scanTop + scanAreaHeight);
+      canvas.drawPath(bottomLeftPath, cornerPaint);
+
+      // Canto inferior direito
+      final bottomRightPath = Path()
+        ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop + scanAreaHeight)
+        ..lineTo(scanLeft + scanAreaWidth - radius, scanTop + scanAreaHeight)
+        ..arcToPoint(
+          Offset(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - radius),
+          radius: const Radius.circular(radius),
+        )
+        ..lineTo(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - cornerLength);
+      canvas.drawPath(bottomRightPath, cornerPaint);
+
+      // Linha de scan animada
+      final scanLineY = scanTop + (scanAreaHeight * scanLineAnimation);
+      final scanLinePaint = Paint()
+        ..shader = LinearGradient(
+          colors: [
+            const Color(0xFFFFC107).withOpacity(0.0),
+            const Color(0xFFFFC107).withOpacity(0.8),
+            const Color(0xFFFFC107).withOpacity(0.0),
+          ],
+        ).createShader(Rect.fromLTWH(scanLeft, scanLineY - 2, scanAreaWidth, 4))
+        ..style = PaintingStyle.fill;
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(scanLeft + 10, scanLineY - 2, scanAreaWidth - 20, 4),
+          const Radius.circular(2),
+        ),
+        scanLinePaint,
       );
 
-      canvas.drawPath(
-        Path()
-          ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop)
-          ..lineTo(scanLeft + scanAreaWidth - radius, scanTop)
-          ..arcToPoint(
-            Offset(scanLeft + scanAreaWidth, scanTop + radius),
-            radius: const Radius.circular(radius),
-          )
-          ..lineTo(scanLeft + scanAreaWidth, scanTop + cornerLength),
-        borderPaint,
-      );
-
-      canvas.drawPath(
-        Path()
-          ..moveTo(scanLeft, scanTop + scanAreaHeight - cornerLength)
-          ..lineTo(scanLeft, scanTop + scanAreaHeight - radius)
-          ..arcToPoint(
-            Offset(scanLeft + radius, scanTop + scanAreaHeight),
-            radius: const Radius.circular(radius),
-          )
-          ..lineTo(scanLeft + cornerLength, scanTop + scanAreaHeight),
-        borderPaint,
-      );
-
-      canvas.drawPath(
-        Path()
-          ..moveTo(scanLeft + scanAreaWidth - cornerLength, scanTop + scanAreaHeight)
-          ..lineTo(scanLeft + scanAreaWidth - radius, scanTop + scanAreaHeight)
-          ..arcToPoint(
-            Offset(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - radius),
-            radius: const Radius.circular(radius),
-          )
-          ..lineTo(scanLeft + scanAreaWidth, scanTop + scanAreaHeight - cornerLength),
-        borderPaint,
+      // Sombra da linha
+      final shadowPaint = Paint()
+        ..color = const Color(0xFFFFC107).withOpacity(0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(scanLeft + 10, scanLineY - 1, scanAreaWidth - 20, 2),
+          const Radius.circular(1),
+        ),
+        shadowPaint,
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant ScannerOverlayPainter oldDelegate) {
-    return oldDelegate.detectedBarcode != detectedBarcode;
+    return oldDelegate.detectedBarcode != detectedBarcode ||
+           oldDelegate.scanLineAnimation != scanLineAnimation;
   }
 }
