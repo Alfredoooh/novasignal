@@ -30,7 +30,6 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    // Animação de fade para os cards
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -41,11 +40,10 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
       curve: Curves.easeOut,
     );
 
-    // Criar controladores para cada estatística
     _statControllers = List.generate(
       widget.statistics.length,
       (index) => AnimationController(
-        duration: Duration(milliseconds: 800 + (index * 100)),
+        duration: Duration(milliseconds: 1200 + (index * 100)),
         vsync: this,
       ),
     );
@@ -59,11 +57,10 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
       );
     }).toList();
 
-    // Iniciar animações
     _fadeController.forward();
-    Future.delayed(const Duration(milliseconds: 200), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       for (var i = 0; i < _statControllers.length; i++) {
-        Future.delayed(Duration(milliseconds: i * 80), () {
+        Future.delayed(Duration(milliseconds: i * 100), () {
           if (mounted) {
             _statControllers[i].forward();
           }
@@ -111,94 +108,71 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(16),
         children: [
           if (widget.statistics.isNotEmpty) ...[
-            PageTransitionSwitcher(
-              duration: const Duration(milliseconds: 500),
-              transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-                return FadeThroughTransition(
-                  animation: primaryAnimation,
-                  secondaryAnimation: secondaryAnimation,
-                  child: child,
-                );
-              },
-              child: Container(
-                key: ValueKey('statistics'),
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDark ? cs.surfaceContainerHighest : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: isDark ? null : Border.all(color: cs.outlineVariant.withOpacity(0.5)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Symbols.bar_chart_rounded, color: cs.primary, size: 22),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Estatísticas',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface,
-                          ),
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Symbols.bar_chart_rounded, color: cs.primary, size: 22),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Estatísticas',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                   ...widget.statistics.take(8).toList().asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final stat = entry.value;
-                      return index < _statAnimations.length
-                          ? _buildStatRow(stat, cs, isDark, _statAnimations[index])
-                          : _buildStatRow(stat, cs, isDark, null);
-                    }),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ...widget.statistics.take(8).toList().asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final stat = entry.value;
+                    return index < _statAnimations.length
+                        ? _buildStatRow(stat, cs, isDark, _statAnimations[index])
+                        : _buildStatRow(stat, cs, isDark, null);
+                  }),
+                ],
               ),
             ),
           ],
           if (widget.events.isEmpty)
-            PageTransitionSwitcher(
-              duration: const Duration(milliseconds: 400),
-              transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
-                return SharedAxisTransition(
-                  animation: primaryAnimation,
-                  secondaryAnimation: secondaryAnimation,
-                  transitionType: SharedAxisTransitionType.vertical,
-                  child: child,
-                );
-              },
-              child: Container(
-                key: ValueKey('empty'),
-                padding: const EdgeInsets.all(32),
-                decoration: BoxDecoration(
-                  color: isDark ? cs.surfaceContainerHighest : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: isDark ? null : Border.all(color: cs.outlineVariant.withOpacity(0.5)),
-                ),
-                child: Column(
-                  children: [
-                    Icon(Symbols.event_busy_rounded, size: 48, color: cs.onSurfaceVariant.withOpacity(0.5)),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Nenhum evento disponível',
-                      style: TextStyle(
-                        color: cs.onSurfaceVariant,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Column(
+                children: [
+                  Icon(Symbols.event_busy_rounded, size: 48, color: cs.onSurfaceVariant.withOpacity(0.5)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Nenhum evento disponível',
+                    style: TextStyle(
+                      color: cs.onSurfaceVariant,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             )
           else
@@ -227,43 +201,19 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
     final away = double.tryParse(awayStr) ?? 0;
 
     final isPercentage = type.toLowerCase().contains('posse');
-    final displayHome = isPercentage ? home : home.toInt();
-    final displayAway = isPercentage ? away : away.toInt();
-    final suffix = isPercentage ? '%' : '';
+    
+    // CORREÇÃO: Formatar números corretamente
+    String formatValue(double value, bool isPercentage) {
+      if (isPercentage) {
+        return value.toStringAsFixed(0);
+      } else {
+        return value.toInt().toString();
+      }
+    }
 
     final total = home + away;
     final homeFlex = total > 0 ? ((home / total) * 100).toInt().clamp(1, 100) : 50;
     final awayFlex = total > 0 ? ((away / total) * 100).toInt().clamp(1, 100) : 50;
-
-    Widget progressBar = ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Row(
-        children: [
-          Expanded(
-            flex: homeFlex,
-            child: Container(
-              height: 8,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue.shade600, Colors.blue.shade400],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: awayFlex,
-            child: Container(
-              height: 8,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.orange.shade400, Colors.orange.shade600],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -276,10 +226,9 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
               AnimatedBuilder(
                 animation: animation ?? AlwaysStoppedAnimation(1.0),
                 builder: (context, child) {
-                  final currentHome = (displayHome * (animation?.value ?? 1.0));
-                  final displayValue = isPercentage ? currentHome : currentHome.toInt();
+                  final currentHome = (home * (animation?.value ?? 1.0));
                   return Text(
-                    '$displayValue$suffix',
+                    '${formatValue(currentHome, isPercentage)}${isPercentage ? '%' : ''}',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: cs.onSurface,
@@ -299,10 +248,9 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
               AnimatedBuilder(
                 animation: animation ?? AlwaysStoppedAnimation(1.0),
                 builder: (context, child) {
-                  final currentAway = (displayAway * (animation?.value ?? 1.0));
-                  final displayValue = isPercentage ? currentAway : currentAway.toInt();
+                  final currentAway = (away * (animation?.value ?? 1.0));
                   return Text(
-                    '$displayValue$suffix',
+                    '${formatValue(currentAway, isPercentage)}${isPercentage ? '%' : ''}',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: cs.onSurface,
@@ -314,63 +262,58 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 8),
-          if (animation != null)
-            AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Stack(
-                    children: [
-                      // Fundo cinza
-                      Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHigh,
-                          borderRadius: BorderRadius.circular(8),
+          AnimatedBuilder(
+            animation: animation ?? AlwaysStoppedAnimation(1.0),
+            builder: (context, child) {
+              final animValue = animation?.value ?? 1.0;
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: (homeFlex * animValue).toInt().clamp(1, 100),
+                          child: Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.blue.shade600, Colors.blue.shade400],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      // Progressbars animadas
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: (homeFlex * animation.value).toInt().clamp(1, 100),
-                            child: Container(
-                              height: 8,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.blue.shade600, Colors.blue.shade400],
-                                ),
+                        Expanded(
+                          flex: (awayFlex * animValue).toInt().clamp(1, 100),
+                          child: Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.orange.shade400, Colors.orange.shade600],
                               ),
                             ),
                           ),
-                          Expanded(
-                            flex: (awayFlex * animation.value).toInt().clamp(1, 100),
-                            child: Container(
-                              height: 8,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.orange.shade400, Colors.orange.shade600],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            )
-          else
-            progressBar,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 }
 
-// Widget animado para Event Cards
 class AnimatedEventCard extends StatefulWidget {
   final Map<String, dynamic> event;
   final String? homeTeamBadge;
@@ -475,7 +418,6 @@ class EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final type = (event['type'] ?? '').toString();
     final time = event['time']?.toString() ?? '';
     final isHome = event['isHome'] == true;
@@ -486,12 +428,12 @@ class EventCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? cs.surfaceContainerHighest : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: isDark ? null : Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -500,7 +442,6 @@ class EventCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Coluna do time da casa
           Expanded(
             child: isHome
                 ? _buildEventDetails(
@@ -511,8 +452,6 @@ class EventCard extends StatelessWidget {
                   )
                 : const SizedBox(),
           ),
-
-          // Coluna central com minutos (sem container)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -525,8 +464,6 @@ class EventCard extends StatelessWidget {
               ),
             ),
           ),
-
-          // Coluna do time visitante
           Expanded(
             child: !isHome
                 ? _buildEventDetails(
@@ -620,7 +557,6 @@ class EventCard extends StatelessWidget {
             height: 36,
             child: Stack(
               children: [
-                // Avatar do jogador
                 Container(
                   width: 36,
                   height: 36,
@@ -637,31 +573,23 @@ class EventCard extends StatelessWidget {
                         ? Image.network(
                             playerImageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Image.asset(
-                              'assets/icons/player_placeholder.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Icon(
-                                Symbols.person_rounded,
-                                size: 20,
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                          )
-                        : Image.asset(
-                            'assets/icons/player_placeholder.png',
-                            fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Icon(
                               Symbols.person_rounded,
                               size: 20,
                               color: cs.onSurfaceVariant,
                             ),
+                          )
+                        : Icon(
+                            Symbols.person_rounded,
+                            size: 20,
+                            color: cs.onSurfaceVariant,
                           ),
                   ),
                 ),
-                // Badge do clube no topo com animação
+                // CORREÇÃO: Badge do time do jogador
                 if (teamBadge != null && teamBadge.isNotEmpty)
                   Positioned(
-                    top: -2,
+                    bottom: -2,
                     right: -2,
                     child: TweenAnimationBuilder<double>(
                       duration: const Duration(milliseconds: 600),
@@ -671,8 +599,8 @@ class EventCard extends StatelessWidget {
                         return Transform.scale(
                           scale: badgeValue,
                           child: Container(
-                            width: 16,
-                            height: 16,
+                            width: 18,
+                            height: 18,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.white,
@@ -781,7 +709,6 @@ class EventCard extends StatelessWidget {
       crossAxisAlignment: isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Nome do jogador com foto (para gols e cartões)
         if (type == 'goal' || type == 'yellow' || type == 'red')
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -844,8 +771,6 @@ class EventCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-
-        // Assistência
         if (assist.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -853,12 +778,7 @@ class EventCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: isHome
                   ? [
-                      Image.asset(
-                        'assets/icons/assist.png',
-                        width: 14,
-                        height: 14,
-                        errorBuilder: (_, __, ___) => Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
-                      ),
+                      Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
                       const SizedBox(width: 5),
                       Flexible(
                         child: Text(
@@ -890,93 +810,11 @@ class EventCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 5),
-                      Image.asset(
-                        'assets/icons/assist.png',
-                        width: 14,
-                        height: 14,
-                        errorBuilder: (_, __, ___) => Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
-                      ),
+                      Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
                     ],
             ),
           ),
-
-        // VAR ou método
-        if (method.isNotEmpty && method.toLowerCase().contains('var'))
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: isHome
-                  ? [
-                      Image.asset(
-                        'assets/icons/var.png',
-                        width: 16,
-                        height: 16,
-                        errorBuilder: (_, __, ___) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.purple.shade700,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'VAR',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          method,
-                          style: TextStyle(
-                            color: Colors.purple.shade700,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ]
-                  : [
-                      Flexible(
-                        child: Text(
-                          method,
-                          style: TextStyle(
-                            color: Colors.purple.shade700,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.right,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Image.asset(
-                        'assets/icons/var.png',
-                        width: 16,
-                        height: 16,
-                        errorBuilder: (_, __, ___) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.purple.shade700,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'VAR',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-            ),
-          )
-        else if (method.isNotEmpty)
+        if (method.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
@@ -989,8 +827,6 @@ class EventCard extends StatelessWidget {
               textAlign: isHome ? TextAlign.left : TextAlign.right,
             ),
           ),
-
-        // Substituições
         if (type == 'substitution' && event['playerIn'] != null) ...[
           const SizedBox(height: 8),
           Row(
@@ -1028,42 +864,6 @@ class EventCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Icon(Symbols.arrow_upward_rounded, size: 16, color: Colors.green.shade600),
-                  ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: isHome
-                ? [
-                    Icon(Symbols.arrow_downward_rounded, size: 16, color: Colors.red.shade400),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        event['playerOut']?.toString() ?? '',
-                        style: TextStyle(
-                          color: Colors.red.shade400,
-                          fontSize: 13,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ]
-                : [
-                    Flexible(
-                      child: Text(
-                        event['playerOut']?.toString() ?? '',
-                        style: TextStyle(
-                          color: Colors.red.shade400,
-                          fontSize: 13,
-                        ),
-                        textAlign: TextAlign.right,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Icon(Symbols.arrow_downward_rounded, size: 16, color: Colors.red.shade400),
                   ],
           ),
         ],
