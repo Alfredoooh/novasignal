@@ -562,9 +562,15 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     );
   }
 
-  // CONTINUA NA PARTE 2...
+  // CONTINUA NA PARTE 2
   Widget _buildJogosTab() => Container();
   Widget _buildEstatisticasTab() => Container();
+  List<Map<String, dynamic>> _calcularArtilheiros() => [];
+  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro, BuildContext context) => Container();
+  Widget _buildPodium(List<dynamic> top3, BuildContext context) => Container();
+  String _abreviarNome(String nomeCompleto) => nomeCompleto;
+  Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao, BuildContext context) => Container();
+  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao, BuildContext context) => Container();
 }
 
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
@@ -589,7 +595,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) => false;
 }
 
-// COLE ESTE CÓDIGO SUBSTITUINDO OS MÉTODOS PLACEHOLDER NA PARTE 1
+// SUBSTITUA OS MÉTODOS PLACEHOLDER DA PARTE 1 POR ESTES:
 
   Widget _buildJogosTab() {
     if (_cachedJogos != null) {
@@ -799,77 +805,81 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   Widget _buildEstatisticasContent(List<dynamic> classificacao) {
-    if (classificacao.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Symbols.analytics_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+    return Builder(
+      builder: (context) {
+        if (classificacao.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Symbols.analytics_rounded,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                ),
+                const SizedBox(height: 16),
+                const Text('Sem dados de estatísticas'),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Text('Sem dados de estatísticas'),
-          ],
-        ),
-      );
-    }
+          );
+        }
 
-    final top3 = classificacao.take(3).toList();
-    final bottom3 = classificacao.length >= 3 
-        ? classificacao.skip(classificacao.length - 3).take(3).toList() 
-        : [];
+        final top3 = classificacao.take(3).toList();
+        final bottom3 = classificacao.length >= 3 
+            ? classificacao.skip(classificacao.length - 3).take(3).toList() 
+            : [];
 
-    final artilheiros = _calcularArtilheiros();
+        final artilheiros = _calcularArtilheiros();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Top 3 Clubes',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Top 3 Clubes',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildPodium(top3, context),
+              if (bottom3.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                Text(
+                  'Zona de Rebaixamento',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...bottom3.asMap().entries.map((entry) {
+                  final time = entry.value;
+                  final pos = classificacao.length - 2 + entry.key;
+                  return _buildBottomTeamCard(time, pos, context);
+                }),
+              ],
+              if (artilheiros.isNotEmpty) ...[
+                const SizedBox(height: 32),
+                Text(
+                  'Artilheiros',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...artilheiros.take(5).map((artilheiro) => _buildArtilheiroCard(artilheiro, context)),
+              ],
+            ],
           ),
-          const SizedBox(height: 16),
-          _buildPodium(top3),
-          if (bottom3.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            Text(
-              'Zona de Rebaixamento',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...bottom3.asMap().entries.map((entry) {
-              final time = entry.value;
-              final pos = classificacao.length - 2 + entry.key;
-              return _buildBottomTeamCard(time, pos);
-            }),
-          ],
-          if (artilheiros.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            Text(
-              'Artilheiros',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...artilheiros.take(5).map((artilheiro) => _buildArtilheiroCard(artilheiro)),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -887,19 +897,11 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
       final awayBadge = jogo['team_away_badge'] ?? '';
 
       if (!golsPorTime.containsKey(homeTeam)) {
-        golsPorTime[homeTeam] = {
-          'team': homeTeam,
-          'badge': homeBadge,
-          'gols': 0,
-        };
+        golsPorTime[homeTeam] = {'team': homeTeam, 'badge': homeBadge, 'gols': 0};
       }
 
       if (!golsPorTime.containsKey(awayTeam)) {
-        golsPorTime[awayTeam] = {
-          'team': awayTeam,
-          'badge': awayBadge,
-          'gols': 0,
-        };
+        golsPorTime[awayTeam] = {'team': awayTeam, 'badge': awayBadge, 'gols': 0};
       }
 
       golsPorTime[homeTeam]!['gols'] = (golsPorTime[homeTeam]!['gols'] as int) + homeScore;
@@ -912,17 +914,14 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     return artilheiros;
   }
 
-  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro) {
+  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro, BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
@@ -962,7 +961,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _buildPodium(List<dynamic> top3) {
+  Widget _buildPodium(List<dynamic> top3, BuildContext context) {
     if (top3.length < 3) return const SizedBox();
 
     return Container(
@@ -982,9 +981,9 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildPodiumTeam(top3[1], 2),
-          _buildPodiumTeam(top3[0], 1),
-          _buildPodiumTeam(top3[2], 3),
+          _buildPodiumTeam(top3[1], 2, context),
+          _buildPodiumTeam(top3[0], 1, context),
+          _buildPodiumTeam(top3[2], 3, context),
         ],
       ),
     );
@@ -993,14 +992,12 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   String _abreviarNome(String nomeCompleto) {
     final partes = nomeCompleto.trim().split(' ');
     if (partes.length == 1) return nomeCompleto;
-
     final abreviados = partes.sublist(0, partes.length - 1).map((p) => '${p[0]}.').toList();
     final ultimo = partes.last;
-
     return '${abreviados.join('')} $ultimo';
   }
 
-  Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao) {
+  Widget _buildPodiumTeam(Map<String, dynamic> time, int posicao, BuildContext context) {
     final pontos = time['pontos'] as int;
     final nomeCompleto = time['team_name']?.toString() ?? '';
     final nomeAbreviado = _abreviarNome(nomeCompleto);
@@ -1024,11 +1021,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
             errorBuilder: (_, __, ___) => Icon(
               Symbols.workspace_premium_rounded,
               size: posicao == 1 ? 50 : 45,
-              color: posicao == 1 
-                  ? Colors.amber 
-                  : posicao == 2 
-                      ? Colors.grey.shade400 
-                      : Colors.brown,
+              color: posicao == 1 ? Colors.amber : posicao == 2 ? Colors.grey.shade400 : Colors.brown,
             ),
           ),
           const SizedBox(height: 12),
@@ -1039,11 +1032,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
               shape: BoxShape.circle,
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: Border.all(
-                color: posicao == 1 
-                    ? Colors.amber 
-                    : posicao == 2 
-                        ? Colors.grey.shade400 
-                        : Colors.brown,
+                color: posicao == 1 ? Colors.amber : posicao == 2 ? Colors.grey.shade400 : Colors.brown,
                 width: 3,
               ),
               boxShadow: [
@@ -1113,7 +1102,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao) {
+  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao, BuildContext context) {
     final pontos = time['pontos'] as int;
 
     return Container(
@@ -1128,11 +1117,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
         children: [
           Text(
             '$posicao',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.red,
-            ),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.red),
           ),
           const SizedBox(width: 16),
           if ((time['team_badge'] ?? '').toString().isNotEmpty)
@@ -1153,11 +1138,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
           ),
           Text(
             '$pontos pts',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.red,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.red),
           ),
         ],
       ),
