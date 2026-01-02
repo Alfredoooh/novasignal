@@ -43,7 +43,20 @@ class AppState with ChangeNotifier {
   bool get notificacoesAtivas => _notificacoesAtivas;
 
   // ========== CONFIGURAÇÃO DA API ==========
-  static const String cloudflareBase = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
+  
+  // CLOUDFLARE WORKER (COMENTADO - NÃO ESTÁ SENDO USADO)
+  // static const String cloudflareBase = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
+  
+  // API DIRETA (EM USO)
+  static const List<String> _apiKeys = [
+    'b44c67ad584a39726891c32421edec77847c068cb036edf6a41c4c40d8855f97',
+    '5fbf446f332cdcb25ae37e36e1d7edeb55f7a47c7b30f34a8fe23da37f8d6ac0',
+    '20e63224b98d436a5cacca064bd40c204f7179171b08212b9cdf6d770cfef3ff'
+  ];
+  
+  static const String _apiBase = 'https://apiv3.apifootball.com';
+  int _currentApiKeyIndex = 0;
+
   static const String newsApiKey = 'b2e4d59068e545abbdffaf947c371bcd';
   static const String newsApiBase = 'https://newsapi.org/v2';
 
@@ -84,6 +97,15 @@ class AppState with ChangeNotifier {
       now.difference(entry.timestamp).inHours > 1
     );
     debugPrint('🧹 Cache limpo. Itens: ${_cache.length}');
+  }
+
+  String _getCurrentApiKey() {
+    return _apiKeys[_currentApiKeyIndex];
+  }
+
+  void _rotateApiKey() {
+    _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _apiKeys.length;
+    debugPrint('🔄 Rotacionando API Key para índice: $_currentApiKeyIndex');
   }
 
   // ========== PREFERÊNCIAS ==========
@@ -233,8 +255,94 @@ class AppState with ChangeNotifier {
     return age >= _cacheStaleTime;
   }
 
-  // ========== REQUISIÇÕES ==========
+  // ========== REQUISIÇÕES API FOOTBALL (EM USO) ==========
 
+  Future<dynamic> _makeApiRequest(String action, Map<String, String> params) async {
+    final queryParams = {
+      'action': action,
+      'APIkey': _getCurrentApiKey(),
+      ...params,
+    };
+
+    final uri = Uri.parse(_apiBase).replace(queryParameters: queryParams);
+    final cacheKey = uri.toString();
+
+    if (_pendingRequests.containsKey(cacheKey)) {
+      debugPrint('⏳ Aguardando requisição: $action');
+      return await _pendingRequests[cacheKey]!.future;
+    }
+
+    final completer = Completer<dynamic>();
+    _pendingRequests[cacheKey] = completer;
+
+    try {
+      final result = await _executeApiRequest(uri);
+      _saveToCache(cacheKey, result);
+      completer.complete(result);
+      return result;
+    } catch (e) {
+      completer.completeError(e);
+      rethrow;
+    } finally {
+      _pendingRequests.remove(cacheKey);
+    }
+  }
+
+  Future<dynamic> _executeApiRequest(Uri uri) async {
+    int retries = 0;
+    const maxRetries = 3;
+
+    while (retries < maxRetries) {
+      try {
+        debugPrint('🚀 API Request: ${uri.queryParameters['action']}');
+
+        final response = await _httpClient.get(uri).timeout(
+          const Duration(seconds: 15),
+        );
+
+        debugPrint('📡 Status Code: ${response.statusCode}');
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+
+          // Verifica se há erro na resposta
+          if (data is Map && data.containsKey('error')) {
+            if (data['error'].toString().contains('requests')) {
+              debugPrint('⚠️ Limite de requisições atingido, rotacionando chave...');
+              _rotateApiKey();
+              retries++;
+              continue;
+            }
+            throw Exception(data['error']);
+          }
+
+          debugPrint('✅ Response OK');
+          return data;
+        } else if (response.statusCode == 429 || response.statusCode == 401) {
+          debugPrint('⚠️ Erro ${response.statusCode}, rotacionando chave...');
+          _rotateApiKey();
+          retries++;
+          await Future.delayed(Duration(seconds: retries));
+          continue;
+        } else {
+          throw Exception('HTTP ${response.statusCode}');
+        }
+      } catch (e) {
+        if (retries >= maxRetries - 1) {
+          debugPrint('❌ Erro após $maxRetries tentativas: $e');
+          rethrow;
+        }
+        retries++;
+        await Future.delayed(Duration(seconds: retries));
+      }
+    }
+
+    throw Exception('Falha após $maxRetries tentativas');
+  }
+
+  // ========== REQUISIÇÕES CLOUDFLARE WORKER (COMENTADO) ==========
+  
+  /*
   Future<dynamic> _makeRequest(String endpoint, String cacheKey) async {
     if (_pendingRequests.containsKey(endpoint)) {
       debugPrint('⏳ Aguardando requisição: $endpoint');
@@ -285,8 +393,9 @@ class AppState with ChangeNotifier {
       rethrow;
     }
   }
+  */
 
-  // ========== NEWS API - CORRIGIDO ==========
+  // ========== NEWS API ==========
 
   Future<List<Map<String, dynamic>>> carregarNoticias() async {
     const cacheKey = 'noticias_sports';
@@ -422,7 +531,7 @@ class AppState with ChangeNotifier {
     }
   }
 
-  // ========== JOGOS - INTEGRADO COM WORKER ==========
+  // ========== JOGOS - API DIRETA ==========
 
   Future<List<dynamic>> carregarTodosJogos() async {
     const cacheKey = 'jogos_todos';
@@ -444,13 +553,14 @@ class AppState with ChangeNotifier {
     try {
       debugPrint('🔄 Carregando TODOS os jogos...');
 
-      final response = await _executeRequest('/api/matches');
+      final hoje = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final response = await _makeApiRequest('get_events', {'from': hoje, 'to': hoje});
 
       List<dynamic> jogos = [];
 
-      if (response is Map && response.containsKey('matches')) {
-        jogos = response['matches'] as List<dynamic>;
-        debugPrint('✅ ${jogos.length} jogos carregados via /api/matches');
+      if (response is List) {
+        jogos = response;
+        debugPrint('✅ ${jogos.length} jogos carregados');
       }
 
       _saveToCache(cacheKey, jogos);
@@ -462,45 +572,34 @@ class AppState with ChangeNotifier {
 
   Future<List<dynamic>> carregarJogosDoDia(DateTime data) async {
     final dataStr = DateFormat('yyyy-MM-dd').format(data);
-    final hoje = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final amanha = DateFormat('yyyy-MM-dd').format(
-      DateTime.now().add(const Duration(days: 1))
-    );
-
-    debugPrint('📅 Carregando jogos para: $dataStr');
-
-    String endpoint;
-    if (dataStr == hoje) {
-      endpoint = '/api/matches/today';
-    } else if (dataStr == amanha) {
-      endpoint = '/api/matches/tomorrow';
-    } else {
-      return _filtrarJogosPorData(dataStr);
-    }
-
     final cacheKey = 'jogos_$dataStr';
     final cached = _getFromCache(cacheKey);
 
     if (cached != null && cached is List) {
       if (_isCacheStale(cacheKey)) {
-        _fetchJogosDoDiaBackground(endpoint, cacheKey);
+        _fetchJogosDoDiaBackground(dataStr, cacheKey);
       }
       return cached;
     }
 
-    await _fetchJogosDoDiaBackground(endpoint, cacheKey);
+    await _fetchJogosDoDiaBackground(dataStr, cacheKey);
     final result = _getFromCache(cacheKey);
     return result is List ? result : [];
   }
 
-  Future<void> _fetchJogosDoDiaBackground(String endpoint, String cacheKey) async {
+  Future<void> _fetchJogosDoDiaBackground(String dataStr, String cacheKey) async {
     try {
-      final response = await _executeRequest(endpoint);
+      debugPrint('📅 Carregando jogos para: $dataStr');
+      
+      final response = await _makeApiRequest('get_events', {
+        'from': dataStr,
+        'to': dataStr,
+      });
 
       List<dynamic> jogos = [];
 
-      if (response is Map && response.containsKey('matches')) {
-        jogos = response['matches'] as List<dynamic>;
+      if (response is List) {
+        jogos = response;
         debugPrint('✅ ${jogos.length} jogos carregados');
       }
 
@@ -509,15 +608,6 @@ class AppState with ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Erro ao buscar jogos do dia: $e');
     }
-  }
-
-  Future<List<dynamic>> _filtrarJogosPorData(String dataStr) async {
-    final todosJogos = await carregarTodosJogos();
-
-    return todosJogos.where((jogo) {
-      final matchDate = jogo['match_date'] ?? '';
-      return matchDate == dataStr;
-    }).toList();
   }
 
   void iniciarAutoAtualizacaoJogos(DateTime data) {
@@ -533,7 +623,7 @@ class AppState with ChangeNotifier {
         final hoje = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
         if (dataStr == hoje) {
-          _fetchJogosDoDiaBackground('/api/matches/today', cacheKey);
+          _fetchJogosDoDiaBackground(dataStr, cacheKey);
         }
       },
     );
@@ -641,10 +731,10 @@ class AppState with ChangeNotifier {
 
   Future<void> _fetchJogoDetalhesBackground(String jogoId, String cacheKey) async {
     try {
-      final response = await _executeRequest('/api/matches/$jogoId');
+      final response = await _makeApiRequest('get_events', {'match_id': jogoId});
 
-      if (response != null) {
-        _saveToCache(cacheKey, response);
+      if (response != null && response is List && response.isNotEmpty) {
+        _saveToCache(cacheKey, response[0]);
         notifyListeners();
       }
     } catch (e) {
@@ -696,18 +786,10 @@ class AppState with ChangeNotifier {
   Future<void> _fetchLigasBackground(String cacheKey) async {
     try {
       debugPrint('🔄 Carregando ligas...');
-      final response = await _executeRequest('/api/leagues');
+      final response = await _makeApiRequest('get_leagues', {});
 
-      if (response is Map && response.containsKey('leagues')) {
-        final leagues = response['leagues'] as Map;
-
-        todasLigas = leagues.entries.map((entry) {
-          return {
-            'league_id': entry.value,
-            'league_name': entry.key,
-          };
-        }).toList();
-
+      if (response is List) {
+        todasLigas = response;
         _saveToCache(cacheKey, todasLigas);
         debugPrint('✅ ${todasLigas.length} ligas carregadas');
         notifyListeners();
@@ -736,12 +818,18 @@ class AppState with ChangeNotifier {
   Future<void> _fetchJogosPorLigaBackground(String ligaId, String cacheKey) async {
     try {
       debugPrint('🔄 Carregando jogos da liga: $ligaId');
-      final response = await _executeRequest('/api/matches/league/$ligaId');
+      
+      final hoje = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final response = await _makeApiRequest('get_events', {
+        'league_id': ligaId,
+        'from': hoje,
+        'to': hoje,
+      });
 
       List<dynamic> jogos = [];
 
-      if (response is Map && response.containsKey('matches')) {
-        jogos = response['matches'] as List<dynamic>;
+      if (response is List) {
+        jogos = response;
         debugPrint('✅ ${jogos.length} jogos da liga carregados');
       }
 
@@ -771,12 +859,12 @@ class AppState with ChangeNotifier {
   Future<void> _fetchClassificacaoBackground(String ligaId, String cacheKey) async {
     try {
       debugPrint('🔄 Carregando classificação da liga: $ligaId');
-      final response = await _executeRequest('/api/leagues/$ligaId/standings');
+      final response = await _makeApiRequest('get_standings', {'league_id': ligaId});
 
       List<dynamic> standings = [];
 
-      if (response is Map && response.containsKey('standings')) {
-        standings = response['standings'] as List<dynamic>;
+      if (response is List) {
+        standings = response;
         debugPrint('✅ ${standings.length} times na classificação');
       }
 
