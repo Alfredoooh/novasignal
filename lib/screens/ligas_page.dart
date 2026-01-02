@@ -29,29 +29,29 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
   late TabController _tabController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  
-  Future<List<dynamic>>? _futureJogos;
-  Future<List<dynamic>>? _futureClassificacao;
-  List<dynamic>? _cachedJogos;
-  List<dynamic>? _cachedClassificacao;
+
+  List<dynamic>? _jogos;
+  List<dynamic>? _classificacao;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeOut,
     );
-    
-    _loadLigaData();
+
     _fadeController.forward();
+    _loadLigaData();
   }
 
   @override
@@ -61,49 +61,70 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     super.dispose();
   }
 
-  void _loadLigaData() {
-    final appState = context.read<AppState>();
+  Future<void> _loadLigaData() async {
     setState(() {
-      _futureJogos = appState.carregarJogosPorLiga(widget.ligaId);
-      _futureClassificacao = appState.carregarClassificacao(widget.ligaId);
+      _isLoading = true;
+      _errorMessage = null;
     });
 
-    _futureJogos?.then((jogos) {
-      if (mounted) {
-        setState(() {
-          _cachedJogos = jogos;
-          _buildClassificacaoFromMatches(jogos);
-        });
+    try {
+      final appState = context.read<AppState>();
+      
+      // Carregar jogos
+      final jogos = await appState.carregarJogosPorLiga(widget.ligaId);
+      
+      print('🏆 Liga ID: ${widget.ligaId}');
+      print('⚽ Jogos carregados: ${jogos.length}');
+      
+      if (jogos.isNotEmpty) {
+        print('📋 Primeiro jogo: ${jogos[0]}');
       }
-    });
 
-    _futureClassificacao?.then((classificacao) {
+      // Calcular classificação a partir dos jogos
+      final classificacao = _buildClassificacaoFromMatches(jogos);
+      
+      print('📊 Classificação calculada: ${classificacao.length} times');
+
       if (mounted) {
         setState(() {
-          _cachedClassificacao = classificacao;
+          _jogos = jogos;
+          _classificacao = classificacao;
+          _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      print('❌ Erro ao carregar dados da liga: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Erro ao carregar dados: $e';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
-  void _buildClassificacaoFromMatches(List<dynamic> jogos) {
-    if (jogos.isEmpty) return;
+  List<dynamic> _buildClassificacaoFromMatches(List<dynamic> jogos) {
+    if (jogos.isEmpty) return [];
 
     Map<String, Map<String, dynamic>> tabelaCalculada = {};
 
     for (var jogo in jogos) {
-      final status = jogo['match_status'] ?? '';
+      final status = jogo['match_status']?.toString() ?? '';
       final isFinished = status.contains('Finished') || status == 'FT' || status == 'AET';
 
       if (!isFinished) continue;
 
-      final homeTeam = jogo['match_hometeam_name'] ?? '';
-      final awayTeam = jogo['match_awayteam_name'] ?? '';
+      final homeTeam = jogo['match_hometeam_name']?.toString() ?? '';
+      final awayTeam = jogo['match_awayteam_name']?.toString() ?? '';
+      
+      if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
+
       final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
       final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
-      final homeBadge = jogo['team_home_badge'] ?? '';
-      final awayBadge = jogo['team_away_badge'] ?? '';
+      final homeBadge = jogo['team_home_badge']?.toString() ?? '';
+      final awayBadge = jogo['team_away_badge']?.toString() ?? '';
 
+      // Inicializar time da casa
       if (!tabelaCalculada.containsKey(homeTeam)) {
         tabelaCalculada[homeTeam] = {
           'team_name': homeTeam,
@@ -118,6 +139,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
         };
       }
 
+      // Inicializar time visitante
       if (!tabelaCalculada.containsKey(awayTeam)) {
         tabelaCalculada[awayTeam] = {
           'team_name': awayTeam,
@@ -132,6 +154,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
         };
       }
 
+      // Atualizar estatísticas
       tabelaCalculada[homeTeam]!['jogos'] = (tabelaCalculada[homeTeam]!['jogos'] as int) + 1;
       tabelaCalculada[awayTeam]!['jogos'] = (tabelaCalculada[awayTeam]!['jogos'] as int) + 1;
 
@@ -169,15 +192,13 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
         return (b['gols_pro'] as int).compareTo(a['gols_pro'] as int);
       });
 
-    setState(() {
-      _cachedClassificacao = tabelaOrdenada;
-    });
+    return tabelaOrdenada;
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    
+
     final ligaData = widget.ligaData ??
         {
           'league_name': widget.ligaNome ?? 'Liga',
@@ -211,8 +232,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Theme.of(context).colorScheme.primaryContainer,
-                          Theme.of(context).colorScheme.surface,
+                          cs.primaryContainer,
+                          cs.surface,
                         ],
                       ),
                     ),
@@ -233,13 +254,13 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                                     errorBuilder: (_, __, ___) => Icon(
                                       Symbols.emoji_events_rounded,
                                       size: 80,
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                      color: cs.primary.withOpacity(0.3),
                                     ),
                                   )
                                 : Icon(
                                     Symbols.emoji_events_rounded,
                                     size: 80,
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                    color: cs.primary.withOpacity(0.3),
                                   ),
                           );
                         },
@@ -253,9 +274,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                 delegate: _SliverTabBarDelegate(
                   TabBar(
                     controller: _tabController,
-                    labelColor: Theme.of(context).colorScheme.primary,
-                    unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    labelColor: cs.primary,
+                    unselectedLabelColor: cs.onSurfaceVariant,
+                    indicatorColor: cs.primary,
                     indicatorWeight: 3,
                     labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                     tabs: const [
@@ -268,53 +289,63 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
               ),
             ];
           },
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildClassificacaoTab(),
-              _buildJogosTab(),
-              _buildEstatisticasTab(),
-            ],
-          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Symbols.error_rounded,
+                            size: 64,
+                            color: cs.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Erro ao carregar dados',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Text(
+                              _errorMessage!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          FilledButton.icon(
+                            onPressed: _loadLigaData,
+                            icon: const Icon(Symbols.refresh_rounded),
+                            label: const Text('Tentar Novamente'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildClassificacaoTab(),
+                        _buildJogosTab(),
+                        _buildEstatisticasTab(),
+                      ],
+                    ),
         ),
       ),
     );
   }
 
   Widget _buildClassificacaoTab() {
-    if (_cachedClassificacao != null) {
-      return _buildClassificacaoContent(_cachedClassificacao!);
-    }
-
-    return FutureBuilder<List<dynamic>>(
-      future: _futureJogos,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Symbols.table_chart_rounded,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                ),
-                const SizedBox(height: 16),
-                const Text('Classificação não disponível'),
-              ],
-            ),
-          );
-        }
-        return _buildClassificacaoContent(_cachedClassificacao ?? []);
-      },
-    );
-  }
-
-  Widget _buildClassificacaoContent(List<dynamic> classificacao) {
-    if (classificacao.isEmpty) {
+    if (_classificacao == null || _classificacao!.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -325,12 +356,30 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
               color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
             ),
             const SizedBox(height: 16),
-            const Text('Nenhum jogo finalizado ainda'),
+            Text(
+              'Nenhum jogo finalizado ainda',
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'A classificação aparecerá após os jogos',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
           ],
         ),
       );
     }
 
+    return _buildClassificacaoContent(_classificacao!);
+  }
+
+  Widget _buildClassificacaoContent(List<dynamic> classificacao) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: classificacao.length + 1,
@@ -563,42 +612,37 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
   }
 
   Widget _buildJogosTab() {
-    if (_cachedJogos != null) {
-      return _buildJogosContent(_cachedJogos!);
+    if (_jogos == null || _jogos!.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Symbols.sports_soccer_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhum jogo disponível',
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
-    return FutureBuilder<List<dynamic>>(
-      future: _futureJogos,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Symbols.sports_soccer_rounded,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                ),
-                const SizedBox(height: 16),
-                const Text('Nenhum jogo disponível'),
-              ],
-            ),
-          );
-        }
-        return _buildJogosContent(snapshot.data!);
-      },
-    );
+    return _buildJogosContent(_jogos!);
   }
 
   Widget _buildJogosContent(List<dynamic> jogos) {
     final jogosSorted = List<dynamic>.from(jogos)
       ..sort((a, b) {
-        final dateA = a['match_date'] ?? '';
-        final dateB = b['match_date'] ?? '';
+        final dateA = a['match_date']?.toString() ?? '';
+        final dateB = b['match_date']?.toString() ?? '';
         return dateB.compareTo(dateA);
       });
 
@@ -607,7 +651,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
       itemCount: jogosSorted.length,
       itemBuilder: (context, index) {
         final jogo = jogosSorted[index];
-        final status = jogo['match_status'] ?? '';
+        final status = jogo['match_status']?.toString() ?? '';
         final isLive = status.contains("'") || status == 'LIVE';
         final isFinished = status.contains('Finished') || status == 'FT';
 
@@ -672,10 +716,12 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                               ),
                               child: Text(
                                 formatarStatus(status),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  color: isFinished 
+                                      ? Theme.of(context).colorScheme.onSurface 
+                                      : Colors.white,
                                 ),
                               ),
                             ),
@@ -752,114 +798,100 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
   }
 
   Widget _buildEstatisticasTab() {
-    if (_cachedClassificacao == null) {
-      return FutureBuilder<List<dynamic>>(
-        future: _futureJogos,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('Sem dados disponíveis'));
-          }
-          return _buildEstatisticasContent(_cachedClassificacao ?? []);
-        },
+    if (_classificacao == null || _classificacao!.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Symbols.analytics_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+            ),
+            const SizedBox(height: 16),
+            const Text('Sem dados de estatísticas'),
+          ],
+        ),
       );
     }
-    return _buildEstatisticasContent(_cachedClassificacao!);
+
+    return _buildEstatisticasContent(_classificacao!);
   }
 
   Widget _buildEstatisticasContent(List<dynamic> classificacao) {
-    return Builder(
-      builder: (context) {
-        if (classificacao.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Symbols.analytics_rounded,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                ),
-                const SizedBox(height: 16),
-                const Text('Sem dados de estatísticas'),
-              ],
-            ),
-          );
-        }
+    final top3 = classificacao.take(3).toList();
+    final bottom3 = classificacao.length >= 3 
+        ? classificacao.skip(classificacao.length - 3).take(3).toList() 
+        : [];
 
-        final top3 = classificacao.take(3).toList();
-        final bottom3 = classificacao.length >= 3 
-            ? classificacao.skip(classificacao.length - 3).take(3).toList() 
-            : [];
+    final artilheiros = _calcularArtilheiros();
 
-        final artilheiros = _calcularArtilheiros();
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Top 3 Clubes',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (top3.length >= 3) ...[
+            Text(
+              'Top 3 Clubes',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
-              const SizedBox(height: 16),
-              _buildPodium(top3, context),
-              if (bottom3.isNotEmpty) ...[
-                const SizedBox(height: 32),
-                Text(
-                  'Zona de Rebaixamento',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ...bottom3.asMap().entries.map((entry) {
-                  final time = entry.value;
-                  final pos = classificacao.length - 2 + entry.key;
-                  return _buildBottomTeamCard(time, pos, context);
-                }),
-              ],
-              if (artilheiros.isNotEmpty) ...[
-                const SizedBox(height: 32),
-                Text(
-                  'Artilheiros',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ...artilheiros.take(5).map((artilheiro) => _buildArtilheiroCard(artilheiro, context)),
-              ],
-            ],
-          ),
-        );
-      },
+            ),
+            const SizedBox(height: 16),
+            _buildPodium(top3, context),
+          ],
+          if (bottom3.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Text(
+              'Zona de Rebaixamento',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...bottom3.asMap().entries.map((entry) {
+              final time = entry.value;
+              final pos = classificacao.length - 2 + entry.key;
+              return _buildBottomTeamCard(time, pos, context);
+            }),
+          ],
+          if (artilheiros.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Text(
+              'Artilheiros',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...artilheiros.take(5).map((artilheiro) => _buildArtilheiroCard(artilheiro, context)),
+          ],
+        ],
+      ),
     );
   }
 
   List<Map<String, dynamic>> _calcularArtilheiros() {
-    if (_cachedJogos == null) return [];
+    if (_jogos == null || _jogos!.isEmpty) return [];
 
     Map<String, Map<String, dynamic>> golsPorTime = {};
 
-    for (var jogo in _cachedJogos!) {
-      final homeTeam = jogo['match_hometeam_name'] ?? '';
-      final awayTeam = jogo['match_awayteam_name'] ?? '';
+    for (var jogo in _jogos!) {
+      final homeTeam = jogo['match_hometeam_name']?.toString() ?? '';
+      final awayTeam = jogo['match_awayteam_name']?.toString() ?? '';
       final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
       final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
-      final homeBadge = jogo['team_home_badge'] ?? '';
-      final awayBadge = jogo['team_away_badge'] ?? '';
+      final homeBadge = jogo['team_home_badge']?.toString() ?? '';
+      final awayBadge = jogo['team_away_badge']?.toString() ?? '';
+
+      if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
 
       if (!golsPorTime.containsKey(homeTeam)) {
         golsPorTime[homeTeam] = {'team': homeTeam, 'badge': homeBadge, 'gols': 0};
