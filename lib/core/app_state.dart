@@ -43,17 +43,13 @@ class AppState with ChangeNotifier {
   bool get notificacoesAtivas => _notificacoesAtivas;
 
   // ========== CONFIGURAÇÃO DA API ==========
-  
-  // CLOUDFLARE WORKER (COMENTADO - NÃO ESTÁ SENDO USADO)
-  // static const String cloudflareBase = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
-  
-  // API DIRETA (EM USO)
+
   static const List<String> _apiKeys = [
     'b44c67ad584a39726891c32421edec77847c068cb036edf6a41c4c40d8855f97',
     '5fbf446f332cdcb25ae37e36e1d7edeb55f7a47c7b30f34a8fe23da37f8d6ac0',
     '20e63224b98d436a5cacca064bd40c204f7179171b08212b9cdf6d770cfef3ff'
   ];
-  
+
   static const String _apiBase = 'https://apiv3.apifootball.com';
   int _currentApiKeyIndex = 0;
 
@@ -61,13 +57,13 @@ class AppState with ChangeNotifier {
   static const String newsApiBase = 'https://newsapi.org/v2';
 
   // Cache e intervalos otimizados
-  static const int _cacheStaleTime = 60; // 1 minuto
-  static const int _cacheDurationNews = 1800; // 30 minutos
+  static const int _cacheStaleTime = 60;
+  static const int _cacheDurationNews = 1800;
 
-  // Intervalos OTIMIZADOS
-  static const int _updateIntervalJogosAoVivo = 30; // 30s
-  static const int _updateIntervalJogosNormais = 60; // 1 min
-  static const int _updateIntervalDetalhes = 15; // 15s
+  // Intervalos de atualização
+  static const int _updateIntervalJogosAoVivo = 30;
+  static const int _updateIntervalJogosNormais = 60;
+  static const int _updateIntervalDetalhes = 15;
 
   final List<String> topClubs = [
     'Manchester United', 'Manchester City', 'Liverpool', 'Chelsea', 'Arsenal',
@@ -77,7 +73,6 @@ class AppState with ChangeNotifier {
     'PSG', 'Lyon', 'Marseille',
   ];
 
-  // Controle de requisições em andamento
   final Map<String, Completer<dynamic>> _pendingRequests = {};
 
   AppState() {
@@ -212,7 +207,6 @@ class AppState with ChangeNotifier {
     if (entry != null) {
       final age = DateTime.now().difference(entry.timestamp).inSeconds;
 
-      // Cache especial para notícias (30 minutos)
       if (key.contains('noticias')) {
         if (age < _cacheDurationNews) {
           debugPrint('✅ Cache FRESH (notícias): $key (${age}s)');
@@ -223,7 +217,6 @@ class AppState with ChangeNotifier {
         }
       }
 
-      // Cache normal (1 minuto)
       if (age < _cacheStaleTime) {
         debugPrint('✅ Cache FRESH: $key (${age}s)');
         return entry.data;
@@ -247,7 +240,6 @@ class AppState with ChangeNotifier {
     if (entry == null) return true;
     final age = DateTime.now().difference(entry.timestamp).inSeconds;
 
-    // Cache especial para notícias
     if (key.contains('noticias')) {
       return age >= _cacheDurationNews;
     }
@@ -255,7 +247,7 @@ class AppState with ChangeNotifier {
     return age >= _cacheStaleTime;
   }
 
-  // ========== REQUISIÇÕES API FOOTBALL (EM USO) ==========
+  // ========== REQUISIÇÕES API FOOTBALL ==========
 
   Future<dynamic> _makeApiRequest(String action, Map<String, String> params) async {
     final queryParams = {
@@ -305,7 +297,6 @@ class AppState with ChangeNotifier {
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
 
-          // Verifica se há erro na resposta
           if (data is Map && data.containsKey('error')) {
             if (data['error'].toString().contains('requests')) {
               debugPrint('⚠️ Limite de requisições atingido, rotacionando chave...');
@@ -339,8 +330,8 @@ class AppState with ChangeNotifier {
 
     throw Exception('Falha após $maxRetries tentativas');
   }
-
-  // ========== REQUISIÇÕES CLOUDFLARE WORKER (COMENTADO) ==========
+ 
+    // ========== REQUISIÇÕES CLOUDFLARE WORKER (COMENTADO) ==========
   
   /*
   Future<dynamic> _makeRequest(String endpoint, String cacheKey) async {
@@ -394,18 +385,16 @@ class AppState with ChangeNotifier {
     }
   }
   */
-
+  
   // ========== NEWS API ==========
 
   Future<List<Map<String, dynamic>>> carregarNoticias() async {
     const cacheKey = 'noticias_sports';
     final cached = _getFromCache(cacheKey);
 
-    // Retorna cache se ainda for válido (30 minutos)
     if (cached != null) {
       debugPrint('📰 Retornando ${(cached as List).length} notícias do cache');
 
-      // Atualiza em background se stale
       if (_isCacheStale(cacheKey)) {
         _fetchNoticiasBackground(cacheKey);
       }
@@ -413,7 +402,6 @@ class AppState with ChangeNotifier {
       return List<Map<String, dynamic>>.from(cached);
     }
 
-    // Busca pela primeira vez
     debugPrint('📰 Buscando notícias pela primeira vez...');
     try {
       await _fetchNoticiasSync(cacheKey);
@@ -427,7 +415,6 @@ class AppState with ChangeNotifier {
 
   Future<void> _fetchNoticiasSync(String cacheKey) async {
     try {
-      // Tenta múltiplas categorias e idiomas para melhorar resultados
       final queries = [
         'category=sports&language=pt&country=br',
         'q=futebol&language=pt',
@@ -479,12 +466,6 @@ class AppState with ChangeNotifier {
                 return;
               }
             }
-          } else if (response.statusCode == 426) {
-            debugPrint('⚠️ API Key inválida ou limite excedido');
-            throw Exception('API Key issue');
-          } else if (response.statusCode == 429) {
-            debugPrint('⚠️ Limite de requisições excedido');
-            throw Exception('Rate limit exceeded');
           }
         } catch (e) {
           debugPrint('⚠️ Erro com query "$query": $e');
@@ -492,12 +473,7 @@ class AppState with ChangeNotifier {
         }
       }
 
-      // Se chegou aqui, nenhuma query funcionou
-      debugPrint('❌ Nenhuma notícia pôde ser carregada');
-
-      // Salva lista vazia no cache para evitar múltiplas tentativas
       _saveToCache(cacheKey, []);
-
     } catch (e) {
       debugPrint('❌ Erro fatal ao buscar notícias: $e');
       rethrow;
@@ -590,7 +566,7 @@ class AppState with ChangeNotifier {
   Future<void> _fetchJogosDoDiaBackground(String dataStr, String cacheKey) async {
     try {
       debugPrint('📅 Carregando jogos para: $dataStr');
-      
+
       final response = await _makeApiRequest('get_events', {
         'from': dataStr,
         'to': dataStr,
@@ -763,7 +739,7 @@ class AppState with ChangeNotifier {
     _autoUpdateTimers.remove(timerId);
   }
 
-  // ========== LIGAS ==========
+  // ========== LIGAS - CORREÇÃO PRINCIPAL ==========
 
   Future<List<dynamic>> carregarLigas() async {
     const cacheKey = 'ligas_todas';
@@ -799,11 +775,13 @@ class AppState with ChangeNotifier {
     }
   }
 
+  // ========== CORREÇÃO: JOGOS POR LIGA ==========
   Future<List<dynamic>> carregarJogosPorLiga(String ligaId) async {
     final cacheKey = 'jogos_liga_$ligaId';
     final cached = _getFromCache(cacheKey);
 
     if (cached != null && cached is List) {
+      debugPrint('📋 Retornando ${cached.length} jogos da liga do cache');
       if (_isCacheStale(cacheKey)) {
         _fetchJogosPorLigaBackground(ligaId, cacheKey);
       }
@@ -818,25 +796,46 @@ class AppState with ChangeNotifier {
   Future<void> _fetchJogosPorLigaBackground(String ligaId, String cacheKey) async {
     try {
       debugPrint('🔄 Carregando jogos da liga: $ligaId');
+
+      // CORREÇÃO: Buscar jogos dos últimos 6 meses para ter histórico completo
+      final hoje = DateTime.now();
+      final inicioTemporada = hoje.subtract(const Duration(days: 180)); // 6 meses atrás
       
-      final hoje = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final dataInicio = DateFormat('yyyy-MM-dd').format(inicioTemporada);
+      final dataFim = DateFormat('yyyy-MM-dd').format(hoje);
+
+      debugPrint('📅 Buscando jogos de $dataInicio até $dataFim');
+
       final response = await _makeApiRequest('get_events', {
         'league_id': ligaId,
-        'from': hoje,
-        'to': hoje,
+        'from': dataInicio,
+        'to': dataFim,
       });
 
       List<dynamic> jogos = [];
 
       if (response is List) {
         jogos = response;
-        debugPrint('✅ ${jogos.length} jogos da liga carregados');
+        debugPrint('✅ ${jogos.length} jogos da liga carregados (total)');
+        
+        // Contar jogos finalizados para classificação
+        final finalizados = jogos.where((j) {
+          final status = j['match_status']?.toString() ?? '';
+          return status.contains('Finished') || status == 'FT' || status == 'AET';
+        }).length;
+        
+        debugPrint('   📊 $finalizados jogos finalizados');
+        debugPrint('   ⏳ ${jogos.length - finalizados} jogos futuros/ao vivo');
+      } else {
+        debugPrint('⚠️ Resposta não é uma lista: ${response.runtimeType}');
       }
 
       _saveToCache(cacheKey, jogos);
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Erro ao carregar jogos da liga: $e');
+      debugPrint('❌ Erro ao carregar jogos da liga $ligaId: $e');
+      // Salva lista vazia para evitar loop de erros
+      _saveToCache(cacheKey, []);
     }
   }
 
@@ -877,6 +876,28 @@ class AppState with ChangeNotifier {
 
   Future<List<dynamic>> carregarUltimosJogosLiga(String ligaId) async {
     return carregarJogosPorLiga(ligaId);
+  }
+
+  // ========== FUNÇÃO PARA DEBUG/TESTE ==========
+  Future<void> testarLiga(String ligaId) async {
+    debugPrint('🧪 TESTE: Carregando liga $ligaId');
+    
+    try {
+      final jogos = await carregarJogosPorLiga(ligaId);
+      debugPrint('✅ Total de jogos: ${jogos.length}');
+      
+      if (jogos.isNotEmpty) {
+        debugPrint('📋 Primeiro jogo: ${jogos[0]['match_hometeam_name']} vs ${jogos[0]['match_awayteam_name']}');
+        debugPrint('   Status: ${jogos[0]['match_status']}');
+        debugPrint('   Data: ${jogos[0]['match_date']}');
+      }
+      
+      final classificacao = await carregarClassificacao(ligaId);
+      debugPrint('📊 Times na classificação: ${classificacao.length}');
+      
+    } catch (e) {
+      debugPrint('❌ ERRO NO TESTE: $e');
+    }
   }
 
   // ========== UTILIDADES ==========
