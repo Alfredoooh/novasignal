@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:cupertino_icons/cupertino_icons.dart';
+import 'package:flutter/cupertino.dart';
+import 'dart:ui_web' as ui_web;
 import 'dart:html' as html;
-import 'dart:ui' as ui;
 
 class VerificacaoWebViewPage extends StatefulWidget {
   const VerificacaoWebViewPage({super.key});
@@ -51,8 +51,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
       ..allowFullscreen = true;
 
     // Registra o iframe como um platform view
-    // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory(
+    ui_web.platformViewRegistry.registerViewFactory(
       _viewId,
       (int viewId) => _iframeElement!,
     );
