@@ -141,12 +141,17 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (widget.jogo['team_home_badge'] != null)
+                  if (widget.jogo['team_home_badge'] != null && widget.jogo['team_home_badge'].toString().isNotEmpty)
                     Image.network(
-                      widget.jogo['team_home_badge'],
+                      _getProxiedImageUrl(widget.jogo['team_home_badge']),
                       width: 24,
                       height: 24,
-                      errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 24, color: cs.onSurface),
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.medium,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('❌ Erro ao carregar badge home (título): ${widget.jogo['team_home_badge']}');
+                        return Icon(Icons.shield, size: 24, color: cs.onSurface);
+                      },
                     ),
                   const SizedBox(width: 8),
                   Text(
@@ -158,12 +163,17 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  if (widget.jogo['team_away_badge'] != null)
+                  if (widget.jogo['team_away_badge'] != null && widget.jogo['team_away_badge'].toString().isNotEmpty)
                     Image.network(
-                      widget.jogo['team_away_badge'],
+                      _getProxiedImageUrl(widget.jogo['team_away_badge']),
                       width: 24,
                       height: 24,
-                      errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 24, color: cs.onSurface),
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.medium,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('❌ Erro ao carregar badge away (título): ${widget.jogo['team_away_badge']}');
+                        return Icon(Icons.shield, size: 24, color: cs.onSurface);
+                      },
                     ),
                 ],
               )
