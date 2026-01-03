@@ -12,6 +12,7 @@ dependencies:
 
   url_launcher: any
   ionicons: any
+  cupertino_icons: any
   webview_flutter: any
   mobile_scanner: any
   image_picker: any
