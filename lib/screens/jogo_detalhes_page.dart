@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
@@ -305,63 +304,56 @@ class _JogoDetalhesPageState extends State<JogoDetalhesPage> with TickerProvider
         padding: const EdgeInsets.all(16),
         itemCount: 4,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _buildGlassLoadingCard(cs),
+        itemBuilder: (context, index) => _buildLoadingCard(cs),
       ),
     );
   }
 
-  Widget _buildGlassLoadingCard(ColorScheme cs) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: 100,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.3)),
+  Widget _buildLoadingCard(ColorScheme cs) {
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              shape: BoxShape.circle,
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withOpacity(0.5),
-                  shape: BoxShape.circle,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 12,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 12,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: cs.onSurface.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 10,
-                      width: MediaQuery.of(context).size.width * 0.5,
-                      decoration: BoxDecoration(
-                        color: cs.onSurface.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 8),
+                Container(
+                  height: 10,
+                  width: MediaQuery.of(context).size.width * 0.5,
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
