@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Widget para carregar imagens com suporte CORS na web
 class CorsImage extends StatelessWidget {
@@ -34,14 +33,8 @@ class CorsImage extends StatelessWidget {
     
     // Na web, usa proxy CORS
     if (kIsWeb) {
-      // Opção 1: CORS Anywhere (público, mas pode ter limite de taxa)
+      // Proxy CORS público
       return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
-      
-      // Opção 2: AllOrigins (alternativa)
-      // return 'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}';
-      
-      // Opção 3: Seu próprio proxy (recomendado para produção)
-      // return 'https://seu-proxy.com/image?url=${Uri.encodeComponent(url)}';
     }
     
     // Mobile/Desktop: retorna URL direta
@@ -51,26 +44,25 @@ class CorsImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imageUrl.isEmpty) {
-      return _buildPlaceholder();
+      return errorWidget ?? _buildErrorWidget();
     }
 
     final proxiedUrl = _getCorsProxyUrl(imageUrl);
 
-    return CachedNetworkImage(
-      imageUrl: proxiedUrl,
+    return Image.network(
+      proxiedUrl,
       width: width,
       height: height,
       fit: fit ?? BoxFit.contain,
-      placeholder: (context, url) => placeholder ?? _buildPlaceholder(),
-      errorWidget: (context, url, error) {
-        debugPrint('❌ Erro ao carregar imagem: $url');
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return placeholder ?? _buildPlaceholder();
+      },
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('❌ Erro ao carregar imagem: $proxiedUrl');
         debugPrint('   Erro: $error');
         return errorWidget ?? _buildErrorWidget();
       },
-      // Configurações adicionais para web
-      httpHeaders: kIsWeb ? {
-        'Accept': 'image/*',
-      } : null,
     );
   }
 
@@ -83,9 +75,13 @@ class CorsImage extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[600]!),
+        child: SizedBox(
+          width: (width ?? 50) * 0.4,
+          height: (height ?? 50) * 0.4,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[600]!),
+          ),
         ),
       ),
     );
