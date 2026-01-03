@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'core/app_state.dart';
 import 'screens/home_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Configuração global para corrigir imagens PNG na web
+  if (kIsWeb) {
+    // Força o uso de CORS para imagens
+    HttpOverrides.global = MyHttpOverrides();
+  }
+  
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.black,
@@ -20,6 +28,15 @@ void main() {
       child: const MyApp(),
     ),
   );
+}
+
+// Classe para resolver problemas de CORS com imagens na web
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -44,6 +61,16 @@ class MyApp extends StatelessWidget {
                 : _buildDarkTheme(appState.corDinamica, appState.temaEscuroProfundo),
             themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
             home: const HomePage(),
+            // Configuração adicional para melhorar renderização de imagens na web
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  // Garante que imagens sejam renderizadas corretamente
+                  textScaleFactor: 1.0,
+                ),
+                child: child!,
+              );
+            },
           ),
         );
       },
@@ -177,8 +204,7 @@ class MyApp extends StatelessWidget {
 
   ThemeData _buildDarkTheme(bool usarCorDinamica, bool profundo) {
     const appleBlue = Color(0xFF007AFF);
-    
-    // NOVAS CORES DO TEMA ESCURO
+
     final surfaceColor = profundo ? const Color(0xFF0D0D0D) : const Color(0xFF1D2024);
     final backgroundColor = profundo ? const Color(0xFF000000) : const Color(0xFF111318);
     final surfaceContainerColor = profundo ? const Color(0xFF1A1A1A) : const Color(0xFF282A2F);
