@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  cached_network_image: any
   url_launcher: any
   ionicons: any
   cupertino_icons: any
