@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cupertino_icons/cupertino_icons.dart';
+import 'package:flutter/cupertino.dart';
 import 'dart:async';
 import 'qr_result_page.dart';
 
