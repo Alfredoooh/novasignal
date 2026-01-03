@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:animations/animations.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import '../widgets/cors_image.dart';
 import 'jogo_detalhes_page.dart';
 
 class LigaDetalhesPage extends StatefulWidget {
@@ -69,20 +70,18 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
 
     try {
       final appState = context.read<AppState>();
-      
-      // Carregar jogos
+
       final jogos = await appState.carregarJogosPorLiga(widget.ligaId);
-      
+
       print('🏆 Liga ID: ${widget.ligaId}');
       print('⚽ Jogos carregados: ${jogos.length}');
-      
+
       if (jogos.isNotEmpty) {
         print('📋 Primeiro jogo: ${jogos[0]}');
       }
 
-      // Calcular classificação a partir dos jogos
       final classificacao = _buildClassificacaoFromMatches(jogos);
-      
+
       print('📊 Classificação calculada: ${classificacao.length} times');
 
       if (mounted) {
@@ -116,7 +115,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
 
       final homeTeam = jogo['match_hometeam_name']?.toString() ?? '';
       final awayTeam = jogo['match_awayteam_name']?.toString() ?? '';
-      
+
       if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
 
       final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
@@ -124,7 +123,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
       final homeBadge = jogo['team_home_badge']?.toString() ?? '';
       final awayBadge = jogo['team_away_badge']?.toString() ?? '';
 
-      // Inicializar time da casa
       if (!tabelaCalculada.containsKey(homeTeam)) {
         tabelaCalculada[homeTeam] = {
           'team_name': homeTeam,
@@ -139,7 +137,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
         };
       }
 
-      // Inicializar time visitante
       if (!tabelaCalculada.containsKey(awayTeam)) {
         tabelaCalculada[awayTeam] = {
           'team_name': awayTeam,
@@ -154,7 +151,6 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
         };
       }
 
-      // Atualizar estatísticas
       tabelaCalculada[homeTeam]!['jogos'] = (tabelaCalculada[homeTeam]!['jogos'] as int) + 1;
       tabelaCalculada[awayTeam]!['jogos'] = (tabelaCalculada[awayTeam]!['jogos'] as int) + 1;
 
@@ -247,11 +243,11 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                             scale: 0.7 + (0.3 * value),
                             child: ligaData['league_logo'] != null && 
                                    ligaData['league_logo'].toString().isNotEmpty
-                                ? Image.network(
-                                    ligaData['league_logo'],
+                                ? CorsImage(
+                                    imageUrl: ligaData['league_logo'],
                                     width: 80,
                                     height: 80,
-                                    errorBuilder: (_, __, ___) => Icon(
+                                    errorWidget: Icon(
                                       Symbols.emoji_events_rounded,
                                       size: 80,
                                       color: cs.primary.withOpacity(0.3),
@@ -492,14 +488,14 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
         Color? borderColor;
 
         if (posicao <= 4) {
-          posicaoColor = Colors.green.withOpacity(0.15);
-          borderColor = Colors.green;
+          posicaoColor = Colors.green.withOpacity(0.08);
+          borderColor = Colors.green.withOpacity(0.4);
         } else if (posicao <= 6) {
-          posicaoColor = Colors.orange.withOpacity(0.15);
-          borderColor = Colors.orange;
+          posicaoColor = Colors.orange.withOpacity(0.08);
+          borderColor = Colors.orange.withOpacity(0.4);
         } else if (posicao >= classificacao.length - 2) {
-          posicaoColor = Colors.red.withOpacity(0.15);
-          borderColor = Colors.red;
+          posicaoColor = Theme.of(context).colorScheme.errorContainer.withOpacity(0.3);
+          borderColor = Theme.of(context).colorScheme.error.withOpacity(0.3);
         }
 
         return TweenAnimationBuilder<double>(
@@ -521,7 +517,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                         width: 0.5,
                       ),
                       left: borderColor != null
-                          ? BorderSide(color: borderColor, width: 4)
+                          ? BorderSide(color: borderColor, width: 3)
                           : BorderSide.none,
                     ),
                   ),
@@ -537,15 +533,11 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                       Expanded(
                         child: Row(
                           children: [
-                            if ((time['team_badge'] ?? '').toString().isNotEmpty) ...[
-                              Image.network(
-                                time['team_badge'],
-                                width: 28,
-                                height: 28,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 28),
-                              ),
-                              const SizedBox(width: 10),
-                            ],
+                            TeamLogo(
+                              logoUrl: time['team_badge'],
+                              size: 28,
+                            ),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 time['team_name']?.toString() ?? 'Unknown',
@@ -680,7 +672,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isLive 
-                            ? Colors.red 
+                            ? Colors.red.withOpacity(0.3)
                             : Theme.of(context).dividerColor.withOpacity(0.2),
                         width: isLive ? 2 : 1,
                       ),
@@ -733,11 +725,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                             Expanded(
                               child: Row(
                                 children: [
-                                  Image.network(
-                                    jogo['team_home_badge'] ?? '',
-                                    width: 32,
-                                    height: 32,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 32),
+                                  TeamLogo(
+                                    logoUrl: jogo['team_home_badge'],
+                                    size: 32,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
@@ -774,11 +764,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                                     ),
                                   ),
                                   const SizedBox(width: 10),
-                                  Image.network(
-                                    jogo['team_away_badge'] ?? '',
-                                    width: 32,
-                                    height: 32,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 32),
+                                  TeamLogo(
+                                    logoUrl: jogo['team_away_badge'],
+                                    size: 32,
                                   ),
                                 ],
                               ),
@@ -853,11 +841,13 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ...bottom3.asMap().entries.map((entry) {
               final time = entry.value;
               final pos = classificacao.length - 2 + entry.key;
-              return _buildBottomTeamCard(time, pos, context);
+              final isFirst = entry.key == 0;
+              final isLast = entry.key == bottom3.length - 1;
+              return _buildBottomTeamCard(time, pos, context, isFirst, isLast);
             }),
           ],
           if (artilheiros.isNotEmpty) ...[
@@ -870,8 +860,12 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 16),
-            ...artilheiros.take(5).map((artilheiro) => _buildArtilheiroCard(artilheiro, context)),
+            const SizedBox(height: 12),
+            ...artilheiros.take(5).toList().asMap().entries.map((entry) {
+              final isFirst = entry.key == 0;
+              final isLast = entry.key == artilheiros.take(5).length - 1;
+              return _buildArtilheiroCard(entry.value, context, isFirst, isLast);
+            }),
           ],
         ],
       ),
@@ -911,26 +905,43 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     return artilheiros;
   }
 
-  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro, BuildContext context) {
+  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro, BuildContext context, bool isFirst, bool isLast) {
+    final cs = Theme.of(context).colorScheme;
+    
+    BorderRadius borderRadius;
+    if (isFirst && isLast) {
+      borderRadius = BorderRadius.circular(16);
+    } else if (isFirst) {
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+        bottomLeft: Radius.circular(4),
+        bottomRight: Radius.circular(4),
+      );
+    } else if (isLast) {
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(4),
+        topRight: Radius.circular(4),
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(16),
+      );
+    } else {
+      borderRadius = BorderRadius.circular(4);
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 2),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.2), width: 1),
+        color: cs.surfaceContainerHigh,
+        borderRadius: borderRadius,
       ),
       child: Row(
         children: [
-          if ((artilheiro['badge'] ?? '').toString().isNotEmpty)
-            Image.network(
-              artilheiro['badge'],
-              width: 40,
-              height: 40,
-              errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 40),
-            )
-          else
-            const Icon(Icons.shield, size: 40),
+          TeamLogo(
+            logoUrl: artilheiro['badge'],
+            size: 40,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -938,19 +949,12 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '${artilheiro['gols']} gols',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
+          Text(
+            '${artilheiro['gols']} gols',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: cs.primary,
             ),
           ),
         ],
@@ -1029,7 +1033,11 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
               shape: BoxShape.circle,
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: Border.all(
-                color: posicao == 1 ? Colors.amber : posicao == 2 ? Colors.grey.shade400 : Colors.brown,
+                color: posicao == 1 
+                    ? Colors.amber.withOpacity(0.5)
+                    : posicao == 2 
+                        ? Colors.grey.shade400.withOpacity(0.5)
+                        : Colors.brown.withOpacity(0.5),
                 width: 3,
               ),
               boxShadow: [
@@ -1041,21 +1049,10 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
               ],
             ),
             child: ClipOval(
-              child: (time['team_badge'] ?? '').toString().isNotEmpty
-                  ? Image.network(
-                      time['team_badge'],
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Symbols.shield_rounded,
-                        size: posicao == 1 ? 35 : 30,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    )
-                  : Icon(
-                      Symbols.shield_rounded,
-                      size: posicao == 1 ? 35 : 30,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+              child: TeamLogo(
+                logoUrl: time['team_badge'],
+                size: posicao == 1 ? 70 : 60,
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -1071,27 +1068,12 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: posicao == 1 
-                  ? Colors.amber.withOpacity(0.2) 
-                  : posicao == 2 
-                      ? Colors.grey.shade300.withOpacity(0.3) 
-                      : Colors.brown.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '$pontos pts',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: posicao == 1 
-                    ? Colors.amber.shade800 
-                    : posicao == 2 
-                        ? Colors.grey.shade700 
-                        : Colors.brown,
-              ),
+          Text(
+            '$pontos pts',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
@@ -1099,33 +1081,63 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     );
   }
 
-  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao, BuildContext context) {
+  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao, BuildContext context, bool isFirst, bool isLast) {
     final pontos = time['pontos'] as int;
+    final cs = Theme.of(context).colorScheme;
+    
+    BorderRadius borderRadius;
+    if (isFirst && isLast) {
+      borderRadius = BorderRadius.circular(16);
+    } else if (isFirst) {
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+        bottomLeft: Radius.circular(4),
+        bottomRight: Radius.circular(4),
+      );
+    } else if (isLast) {
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(4),
+        topRight: Radius.circular(4),
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(16),
+      );
+    } else {
+      borderRadius = BorderRadius.circular(4);
+    }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 2),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red, width: 2),
+        color: cs.errorContainer.withOpacity(0.3),
+        borderRadius: borderRadius,
       ),
       child: Row(
         children: [
-          Text(
-            '$posicao',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.red),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: cs.error.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '$posicao',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: cs.error,
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 16),
-          if ((time['team_badge'] ?? '').toString().isNotEmpty)
-            Image.network(
-              time['team_badge'],
-              width: 40,
-              height: 40,
-              errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 40),
-            )
-          else
-            const Icon(Icons.shield, size: 40),
+          const SizedBox(width: 12),
+          TeamLogo(
+            logoUrl: time['team_badge'],
+            size: 40,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -1135,7 +1147,11 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
           ),
           Text(
             '$pontos pts',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.red),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: cs.error,
+            ),
           ),
         ],
       ),
