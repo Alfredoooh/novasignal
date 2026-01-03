@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:animations/animations.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import '../widgets/cors_image.dart';
 
 class MatchCard extends StatefulWidget {
   final dynamic jogo;
@@ -109,11 +110,11 @@ class _MatchCardState extends State<MatchCard> with SingleTickerProviderStateMix
     String badgeText = formatarStatus(status);
 
     if (status.contains('Finished') || status == 'FT' || status == 'AET') {
-      badgeColor = cs.tertiary;
+      badgeColor = isDark ? cs.tertiary.withOpacity(0.8) : cs.tertiary;
     } else if (status.contains("'") || status == 'HT' || status == 'LIVE') {
-      badgeColor = cs.error;
+      badgeColor = isDark ? cs.error.withOpacity(0.9) : cs.error;
     } else {
-      badgeColor = cs.secondary;
+      badgeColor = isDark ? cs.secondary.withOpacity(0.8) : cs.secondary;
     }
 
     final homeTeamLogo = widget.jogo['team_home_badge']?.toString() ?? '';
@@ -129,193 +130,218 @@ class _MatchCardState extends State<MatchCard> with SingleTickerProviderStateMix
         position: _slideAnimation,
         child: ScaleTransition(
           scale: _scaleAnimation,
-          child: Column(
-            children: [
-              OpenContainer(
-                closedElevation: 0,
-                openElevation: 0,
-                closedShape: RoundedRectangleBorder(
-                  borderRadius: _getBorderRadius(),
+          child: Container(
+            margin: EdgeInsets.only(bottom: widget.isLast ? 0 : 2),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHigh,
+              borderRadius: _getBorderRadius(),
+              border: Border.all(
+                color: cs.outlineVariant.withOpacity(isDark ? 0.3 : 0.5),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                closedColor: Colors.transparent,
-                openColor: cs.surface,
-                middleColor: cs.surfaceContainerHigh,
-                transitionDuration: const Duration(milliseconds: 400),
-                transitionType: ContainerTransitionType.fade,
-                closedBuilder: (context, action) => InkWell(
-                  onTap: action,
-                  borderRadius: _getBorderRadius(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        // Cabeçalho: Hora e Status
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Symbols.schedule_rounded,
-                                  size: 14,
+              ],
+            ),
+            child: OpenContainer(
+              closedElevation: 0,
+              openElevation: 0,
+              closedShape: RoundedRectangleBorder(
+                borderRadius: _getBorderRadius(),
+              ),
+              closedColor: Colors.transparent,
+              openColor: cs.surface,
+              middleColor: cs.surfaceContainerHigh,
+              transitionDuration: const Duration(milliseconds: 400),
+              transitionType: ContainerTransitionType.fade,
+              closedBuilder: (context, action) => InkWell(
+                onTap: action,
+                borderRadius: _getBorderRadius(),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      // Cabeçalho: Hora e Status
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Symbols.schedule_rounded,
+                                size: 14,
+                                color: cs.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.jogo['match_time'] ?? '--:--',
+                                style: TextStyle(
+                                  fontSize: 13,
                                   color: cs.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  widget.jogo['match_time'] ?? '--:--',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                          TweenAnimationBuilder<double>(
+                            duration: const Duration(milliseconds: 600),
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            curve: Curves.elasticOut,
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                scale: value,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor.withOpacity(isDark ? 0.25 : 0.15),
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: badgeColor.withOpacity(isDark ? 0.5 : 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    badgeText,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: badgeColor,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Corpo: Times e Placar
+                      Row(
+                        children: [
+                          // Time da Casa
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _buildTeamLogo(homeTeamLogo, cs, isDark, 0),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    homeTeamName,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurface,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
-                            TweenAnimationBuilder<double>(
-                              duration: const Duration(milliseconds: 600),
+                          ),
+
+                          // Placar com animação
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: TweenAnimationBuilder<double>(
+                              duration: const Duration(milliseconds: 800),
                               tween: Tween(begin: 0.0, end: 1.0),
                               curve: Curves.elasticOut,
                               builder: (context, value, child) {
                                 return Transform.scale(
-                                  scale: value,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: badgeColor.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(100),
-                                    ),
-                                    child: Text(
-                                      badgeText,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: badgeColor,
-                                        letterSpacing: 0.5,
-                                      ),
+                                  scale: 0.8 + (0.2 * value),
+                                  child: Text(
+                                    '$homeScore : $awayScore',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800,
+                                      color: cs.primary,
                                     ),
                                   ),
                                 );
                               },
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                          ),
 
-                        // Corpo: Times e Placar
-                        Row(
-                          children: [
-                            // Time da Casa
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  _buildTeamLogo(homeTeamLogo, cs, 0),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      homeTeamName,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                          // Time Visitante
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    awayTeamName,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurface,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
                                   ),
-                                ],
-                              ),
-                            ),
-
-                            // Placar com animação
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: TweenAnimationBuilder<double>(
-                                duration: const Duration(milliseconds: 800),
-                                tween: Tween(begin: 0.0, end: 1.0),
-                                curve: Curves.elasticOut,
-                                builder: (context, value, child) {
-                                  return Transform.scale(
-                                    scale: 0.8 + (0.2 * value),
-                                    child: Text(
-                                      '$homeScore : $awayScore',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w800,
-                                        color: cs.primary,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-
-                            // Time Visitante
-                            Expanded(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      awayTeamName,
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  _buildTeamLogo(awayTeamLogo, cs, 100),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Rodapé: Liga
-                        if (widget.showLeague) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Symbols.emoji_events_rounded,
-                                size: 14,
-                                color: cs.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  '${widget.jogo['league_name'] ?? ''} • ${widget.jogo['country_name'] ?? ''}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 12),
+                                _buildTeamLogo(awayTeamLogo, cs, isDark, 100),
+                              ],
+                            ),
                           ),
                         ],
+                      ),
+
+                      // Rodapé: Liga
+                      if (widget.showLeague) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Symbols.emoji_events_rounded,
+                              size: 14,
+                              color: cs.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                '${widget.jogo['league_name'] ?? ''} • ${widget.jogo['country_name'] ?? ''}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: cs.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
-                openBuilder: (context, action) {
-                  // Navegar para detalhes do jogo
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    appState.setJogoDetalhes(
-                      widget.jogo['match_id'],
-                      '$homeTeamName vs $awayTeamName',
-                    );
-                    appState.navegarPara('jogo-detalhes');
-                    Navigator.of(context).pop();
-                  });
-                  return Container();
-                },
               ),
-              if (!widget.isLast)
-                Divider(height: 1, color: cs.outlineVariant.withOpacity(0.3)),
-            ],
+              openBuilder: (context, action) {
+                // Navegar para detalhes do jogo
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  appState.setJogoDetalhes(
+                    widget.jogo['match_id'],
+                    '$homeTeamName vs $awayTeamName',
+                  );
+                  appState.navegarPara('jogo-detalhes');
+                  Navigator.of(context).pop();
+                });
+                return Container();
+              },
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTeamLogo(String logoUrl, ColorScheme cs, int delay) {
+  Widget _buildTeamLogo(String logoUrl, ColorScheme cs, bool isDark, int delay) {
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 600 + delay),
       tween: Tween(begin: 0.0, end: 1.0),
@@ -329,16 +355,19 @@ class _MatchCardState extends State<MatchCard> with SingleTickerProviderStateMix
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               color: cs.surfaceContainerHighest,
+              border: Border.all(
+                color: cs.outlineVariant.withOpacity(isDark ? 0.3 : 0.2),
+                width: 1,
+              ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: logoUrl.isNotEmpty
-                  ? Image.network(
-                      logoUrl,
+                  ? CorsImage(
+                      imageUrl: logoUrl,
                       width: 40,
                       height: 40,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => _buildPlaceholderLogo(cs),
+                      errorWidget: _buildPlaceholderLogo(cs),
                     )
                   : _buildPlaceholderLogo(cs),
             ),
