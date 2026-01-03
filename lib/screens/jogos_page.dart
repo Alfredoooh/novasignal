@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import '../widgets/cors_image.dart';
 import 'jogo_detalhes_page.dart';
 import 'ligas_page.dart';
 
@@ -19,6 +20,18 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   Timer? _autoRefreshTimer;
 
   final Map<String, List<dynamic>> _cacheJogosPorFiltro = {};
+
+  // Ordem das ligas europeias prioritárias
+  final List<String> _ligasPrioritarias = [
+    'LaLiga',
+    'Premier League',
+    'Serie A',
+    'Bundesliga',
+    'Ligue 1',
+    'UEFA Champions League',
+    'UEFA Europa League',
+    'Liga Portugal',
+  ];
 
   String _selectedFilter = 'hoje';
   String? _lastFiltro;
@@ -164,6 +177,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       });
       _loadJogosDoDia();
     }
+  }
+
+  int _getPrioridadeLiga(String ligaNome) {
+    final index = _ligasPrioritarias.indexWhere(
+      (liga) => ligaNome.toLowerCase().contains(liga.toLowerCase())
+    );
+    return index == -1 ? 999 : index;
   }
 
   @override
@@ -344,7 +364,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   Widget _formatTeamName(String name) {
     final words = name.split(' ');
-    
+
     if (words.length == 1) {
       return Text(
         name,
@@ -406,28 +426,45 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     int homePasses = 0;
     int awayPasses = 0;
 
-    try {
-      final statistics = jogo['statistics'];
-      if (statistics != null && statistics is List && statistics.isNotEmpty) {
-        for (var stat in statistics) {
-          if (stat != null && stat is Map) {
-            final type = stat['type']?.toString() ?? '';
-            if (type == 'Ball Possession' || type.toLowerCase().contains('possession')) {
-              final homeValue = stat['home']?.toString() ?? '';
-              final cleanValue = homeValue.replaceAll('%', '').replaceAll(' ', '').trim();
-              if (cleanValue.isNotEmpty) {
-                homePercent = int.tryParse(cleanValue) ?? 50;
-                awayPercent = 100 - homePercent;
+    final status = jogo['match_status'] ?? '';
+    final isNotStarted = status == 'Not Started' || 
+                         status == '' || 
+                         (jogo['match_hometeam_score']?.toString() == '' && 
+                          jogo['match_awayteam_score']?.toString() == '');
+
+    if (isNotStarted) {
+      homePercent = 0;
+      awayPercent = 0;
+    } else {
+      try {
+        final statistics = jogo['statistics'];
+        if (statistics != null && statistics is List && statistics.isNotEmpty) {
+          for (var stat in statistics) {
+            if (stat != null && stat is Map) {
+              final type = stat['type']?.toString() ?? '';
+              if (type == 'Ball Possession' || type.toLowerCase().contains('possession')) {
+                final homeValue = stat['home']?.toString() ?? '';
+                final cleanValue = homeValue.replaceAll('%', '').replaceAll(' ', '').trim();
+                if (cleanValue.isNotEmpty) {
+                  homePercent = int.tryParse(cleanValue) ?? 50;
+                  awayPercent = 100 - homePercent;
+                }
+              } else if (type == 'Passes %' || type.toLowerCase().contains('passes')) {
+                final homeValue = stat['home']?.toString() ?? '';
+                final awayValue = stat['away']?.toString() ?? '';
+                
+                final homeClean = homeValue.replaceAll('%', '').trim();
+                final awayClean = awayValue.replaceAll('%', '').trim();
+                
+                homePasses = int.tryParse(homeClean) ?? 0;
+                awayPasses = int.tryParse(awayClean) ?? 0;
               }
-            } else if (type == 'Passes %' || type.toLowerCase().contains('passes')) {
-              homePasses = int.tryParse(stat['home']?.toString().replaceAll('%', '').trim() ?? '0') ?? 0;
-              awayPasses = int.tryParse(stat['away']?.toString().replaceAll('%', '').trim() ?? '0') ?? 0;
             }
           }
         }
+      } catch (e) {
+        debugPrint('❌ Erro ao carregar estatísticas: $e');
       }
-    } catch (e) {
-      debugPrint('❌ Erro ao carregar estatísticas: $e');
     }
 
     showModalBottomSheet(
@@ -444,6 +481,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
         homeRedCards: homeRedCards,
         awayYellowCards: awayYellowCards,
         awayRedCards: awayRedCards,
+        isNotStarted: isNotStarted,
       ),
     );
   }
@@ -465,6 +503,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       }
       jogosPorLiga[ligaNome]!.add(jogo);
     }
+
+    // Ordenar ligas por prioridade
+    ligasOrdenadas.sort((a, b) {
+      final prioA = _getPrioridadeLiga(a);
+      final prioB = _getPrioridadeLiga(b);
+      return prioA.compareTo(prioB);
+    });
 
     return ListView.builder(
       key: ValueKey('lista_$_selectedFilter'),
@@ -503,11 +548,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     if (leagueLogo != null && leagueLogo.toString().isNotEmpty) ...[
                       Hero(
                         tag: 'liga_logo_$leagueId',
-                        child: _CachedNetworkImage(
+                        child: CorsImage(
                           imageUrl: leagueLogo,
                           width: 24,
                           height: 24,
-                          placeholder: Icon(
+                          errorWidget: Icon(
                             Symbols.emoji_events_rounded,
                             size: 24,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -572,8 +617,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
             ...jogosLiga.asMap().entries.map((entry) {
               final idx = entry.key;
               final jogo = entry.value;
+              final isFirst = idx == 0;
               final isLast = idx == jogosLiga.length - 1;
-              return _buildMatchItem(jogo, isLast);
+              return _buildMatchItem(jogo, isFirst, isLast);
             }),
             if (!isLastLiga)
               Container(
@@ -586,7 +632,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     );
   }
 
-  Widget _buildMatchItem(dynamic jogo, bool isLast) {
+  Widget _buildMatchItem(dynamic jogo, bool isFirst, bool isLast) {
     final status = jogo['match_status'] ?? '';
     final isNumericStatus = int.tryParse(status.toString()) != null;
     final isLive = isNumericStatus || 
@@ -609,6 +655,26 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
     final isAoVivoTab = _selectedFilter == 'direto';
 
+    BorderRadius borderRadius;
+    if (isFirst && isLast) {
+      borderRadius = const BorderRadius.only(
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(16),
+      );
+    } else if (isFirst) {
+      borderRadius = const BorderRadius.only(
+        bottomLeft: Radius.circular(4),
+        bottomRight: Radius.circular(4),
+      );
+    } else if (isLast) {
+      borderRadius = const BorderRadius.only(
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(16),
+      );
+    } else {
+      borderRadius = BorderRadius.circular(4);
+    }
+
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -623,10 +689,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       child: Column(
         children: [
           Container(
-            color: Theme.of(context).colorScheme.surface,
+            margin: EdgeInsets.only(bottom: isLast ? 0 : 2),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+              borderRadius: borderRadius,
             ),
             child: Column(
               children: [
@@ -639,11 +706,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                             child: _formatTeamName(jogo['match_hometeam_name'] ?? ''),
                           ),
                           const SizedBox(width: 8),
-                          _CachedNetworkImage(
+                          CorsImage(
                             imageUrl: jogo['team_home_badge'] ?? '',
                             width: 32,
                             height: 32,
-                            placeholder: Container(
+                            errorWidget: Container(
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
@@ -670,11 +737,11 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          _CachedNetworkImage(
+                          CorsImage(
                             imageUrl: jogo['team_away_badge'] ?? '',
                             width: 32,
                             height: 32,
-                            placeholder: Container(
+                            errorWidget: Container(
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
@@ -767,12 +834,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               ],
             ),
           ),
-          if (!isLast)
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-            ),
         ],
       ),
     );
@@ -841,6 +902,7 @@ class _QuickMatchDetailsModal extends StatelessWidget {
   final int homeRedCards;
   final int awayYellowCards;
   final int awayRedCards;
+  final bool isNotStarted;
 
   const _QuickMatchDetailsModal({
     required this.jogo,
@@ -852,6 +914,7 @@ class _QuickMatchDetailsModal extends StatelessWidget {
     required this.homeRedCards,
     required this.awayYellowCards,
     required this.awayRedCards,
+    required this.isNotStarted,
   });
 
   @override
@@ -905,11 +968,11 @@ class _QuickMatchDetailsModal extends StatelessWidget {
                     Expanded(
                       child: Column(
                         children: [
-                          Image.network(
-                            jogo['team_home_badge'] ?? '',
+                          CorsImage(
+                            imageUrl: jogo['team_home_badge'] ?? '',
                             width: 56,
                             height: 56,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorWidget: Icon(
                               Symbols.shield_rounded,
                               size: 56,
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -943,11 +1006,11 @@ class _QuickMatchDetailsModal extends StatelessWidget {
                     Expanded(
                       child: Column(
                         children: [
-                          Image.network(
-                            jogo['team_away_badge'] ?? '',
+                          CorsImage(
+                            imageUrl: jogo['team_away_badge'] ?? '',
                             width: 56,
                             height: 56,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorWidget: Icon(
                               Symbols.shield_rounded,
                               size: 56,
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -970,153 +1033,164 @@ class _QuickMatchDetailsModal extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 32),
-                _StatRow(
-                  label: 'Posse de Bola',
-                  homeValue: homePercent,
-                  awayValue: awayPercent,
-                  isPercentage: true,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 20),
-                if (homePasses > 0 || awayPasses > 0)
+                if (isNotStarted) ...[
+                  Text(
+                    'Jogo ainda não começou',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ] else ...[
                   _StatRow(
-                    label: 'Passes Certos',
-                    homeValue: homePasses,
-                    awayValue: awayPasses,
+                    label: 'Posse de Bola',
+                    homeValue: homePercent,
+                    awayValue: awayPercent,
                     isPercentage: true,
                     isDark: isDark,
                   ),
-                if (homePasses > 0 || awayPasses > 0) const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Cartões',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey,
+                  const SizedBox(height: 20),
+                  if (homePasses > 0 || awayPasses > 0)
+                    _StatRow(
+                      label: 'Passes Certos',
+                      homeValue: homePasses,
+                      awayValue: awayPasses,
+                      isPercentage: true,
+                      isDark: isDark,
+                    ),
+                  if (homePasses > 0 || awayPasses > 0) const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Cartões',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (homeYellowCards > 0) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '$homeYellowCards',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                if (homeRedCards > 0)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE53935),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '$homeRedCards',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                if (homeYellowCards == 0 && homeRedCards == 0)
+                                  const Text(
+                                    '-',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Cartões',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (awayYellowCards > 0) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFD700),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '$awayYellowCards',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                if (awayRedCards > 0)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE53935),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      '$awayRedCards',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                if (awayYellowCards == 0 && awayRedCards == 0)
+                                  const Text(
+                                    '-',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (homeYellowCards > 0) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFD700),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '$homeYellowCards',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                              ],
-                              if (homeRedCards > 0)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '$homeRedCards',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              if (homeYellowCards == 0 && homeRedCards == 0)
-                                const Text(
-                                  '-',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Cartões',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (awayYellowCards > 0) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFD700),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '$awayYellowCards',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                              ],
-                              if (awayRedCards > 0)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    '$awayRedCards',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              if (awayYellowCards == 0 && awayRedCards == 0)
-                                const Text(
-                                  '-',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -1143,6 +1217,9 @@ class _StatRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final total = homeValue + awayValue;
+    final homeProgress = total > 0 ? homeValue / total : 0.5;
+
     return Column(
       children: [
         Text(
@@ -1168,7 +1245,7 @@ class _StatRow extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
-                  value: homeValue / (homeValue + awayValue),
+                  value: homeProgress,
                   backgroundColor: isDark ? const Color(0xFFFF7043) : const Color(0xFFFF6F00),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     isDark ? const Color(0xFF42A5F5) : const Color(0xFF1976D2),
@@ -1253,53 +1330,6 @@ class _AnimatedBouncyButtonState extends State<_AnimatedBouncyButton>
         scale: _scaleAnimation,
         child: widget.child,
       ),
-    );
-  }
-}
-
-class _CachedNetworkImage extends StatefulWidget {
-  final String imageUrl;
-  final double width;
-  final double height;
-  final Widget placeholder;
-
-  const _CachedNetworkImage({
-    required this.imageUrl,
-    required this.width,
-    required this.height,
-    required this.placeholder,
-  });
-
-  @override
-  State<_CachedNetworkImage> createState() => _CachedNetworkImageState();
-}
-
-class _CachedNetworkImageState extends State<_CachedNetworkImage> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-
-    if (widget.imageUrl.isEmpty) {
-      return widget.placeholder;
-    }
-
-    return Image.network(
-      widget.imageUrl,
-      width: widget.width,
-      height: widget.height,
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => widget.placeholder,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return SizedBox(
-          width: widget.width,
-          height: widget.height,
-          child: widget.placeholder,
-        );
-      },
     );
   }
 }
