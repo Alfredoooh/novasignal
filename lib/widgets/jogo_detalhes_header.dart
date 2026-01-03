@@ -97,10 +97,10 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
     final minutosJogo = _getMinutosJogo();
 
     return SliverAppBar(
-      expandedHeight: 280,
+      expandedHeight: 320,
       pinned: true,
       stretch: true,
-      backgroundColor: cs.surface,
+      backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
       automaticallyImplyLeading: false,
       leading: IconButton(
         icon: Icon(Symbols.arrow_back_rounded, color: cs.onSurface),
@@ -113,20 +113,20 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
             closedElevation: 0,
             openElevation: 0,
             closedShape: const CircleBorder(),
-            closedColor: cs.primaryContainer,
+            closedColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF3F3F3),
             openColor: cs.surface,
-            middleColor: cs.primaryContainer,
+            middleColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF3F3F3),
             transitionDuration: const Duration(milliseconds: 500),
             closedBuilder: (context, action) => Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: cs.primaryContainer,
+                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF3F3F3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Symbols.search_rounded,
-                color: cs.onPrimaryContainer,
+                color: cs.onSurface,
                 size: 22,
               ),
             ),
@@ -147,17 +147,16 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.medium,
                       errorBuilder: (context, error, stackTrace) {
-                        debugPrint('❌ Erro ao carregar badge home (título): ${widget.jogo['team_home_badge']}');
                         return Icon(Icons.shield, size: 24, color: cs.onSurface);
                       },
                     ),
                   const SizedBox(width: 8),
                   Text(
-                    'VS',
+                    '${widget.jogo['match_hometeam_score'] ?? '-'} - ${widget.jogo['match_awayteam_score'] ?? '-'}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
-                      color: cs.onSurface.withOpacity(0.6),
+                      color: cs.onSurface,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -169,7 +168,6 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.medium,
                       errorBuilder: (context, error, stackTrace) {
-                        debugPrint('❌ Erro ao carregar badge away (título): ${widget.jogo['team_away_badge']}');
                         return Icon(Icons.shield, size: 24, color: cs.onSurface);
                       },
                     ),
@@ -182,7 +180,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
           clipper: CurvedTopAndBottomClipper(),
           child: Container(
             decoration: BoxDecoration(
-              color: cs.primaryContainer,
+              color: isDark ? const Color(0xFF121212) : Colors.white,
             ),
             child: SafeArea(
               bottom: false,
@@ -193,16 +191,25 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Text(
                         '${widget.jogo['match_date'] ?? ''} • ${widget.jogo['match_time'] ?? ''}',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: cs.primary,
+                          fontSize: 13,
+                          color: cs.onSurface.withOpacity(0.7),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.jogo['league_name'] ?? '',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: cs.onSurface.withOpacity(0.8),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -223,7 +230,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   child: AnimatedBadge(
                                     badgeUrl: widget.jogo['team_home_badge'],
                                     delay: 100,
-                                    color: cs.primary,
+                                    color: cs.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -233,8 +240,8 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                     widget.jogo['match_hometeam_name'] ?? '',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: cs.primary,
+                                      fontWeight: FontWeight.w700,
+                                      color: cs.onSurface,
                                     ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
@@ -249,11 +256,11 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                             child: Column(
                               children: [
                                 Text(
-                                  '${widget.jogo['match_hometeam_score'] ?? '0'} - ${widget.jogo['match_awayteam_score'] ?? '0'}',
+                                  '${widget.jogo['match_hometeam_score'] ?? '-'} - ${widget.jogo['match_awayteam_score'] ?? '-'}',
                                   style: TextStyle(
-                                    fontSize: 44,
+                                    fontSize: 48,
                                     fontWeight: FontWeight.w900,
-                                    color: cs.primary,
+                                    color: cs.onSurface,
                                     height: 1,
                                   ),
                                 ),
@@ -310,7 +317,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   child: AnimatedBadge(
                                     badgeUrl: widget.jogo['team_away_badge'],
                                     delay: 200,
-                                    color: cs.primary,
+                                    color: cs.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -320,8 +327,8 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                     widget.jogo['match_awayteam_name'] ?? '',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: cs.primary,
+                                      fontWeight: FontWeight.w700,
+                                      color: cs.onSurface,
                                     ),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
@@ -354,7 +361,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesAmareloCasa}',
                                     style: TextStyle(
-                                      color: cs.primary,
+                                      color: cs.onSurface,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -374,7 +381,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesVermelhoCasa}',
                                     style: TextStyle(
-                                      color: cs.primary,
+                                      color: cs.onSurface,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -388,7 +395,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesAmareloFora}',
                                     style: TextStyle(
-                                      color: cs.primary,
+                                      color: cs.onSurface,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -408,7 +415,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
                                   Text(
                                     '${widget.cartoesVermelhoFora}',
                                     style: TextStyle(
-                                      color: cs.primary,
+                                      color: cs.onSurface,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -439,7 +446,7 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(48),
         child: Container(
-          color: cs.surface,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           child: TabBar(
             controller: widget.tabController,
             labelColor: cs.primary,
