@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:animations/animations.dart';
 import '../utils/formatters.dart';
@@ -24,18 +24,6 @@ class JogoDetalhesHeader extends StatefulWidget {
     required this.tabController,
     required this.innerScrolled,
   });
-
-  String _getProxiedImageUrl(String? url) {
-    if (url == null || url.isEmpty) return '';
-    
-    // Se for web, usa um proxy CORS
-    if (kIsWeb) {
-      // Usa o proxy CORS público
-      return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
-    }
-    
-    return url;
-  }
 
   @override
   State<JogoDetalhesHeader> createState() => _JogoDetalhesHeaderState();
@@ -90,6 +78,16 @@ class _JogoDetalhesHeaderState extends State<JogoDetalhesHeader>
       return status;
     }
     return '';
+  }
+
+  String _getProxiedImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    
+    if (kIsWeb) {
+      return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
+    }
+    
+    return url;
   }
 
   @override
@@ -470,10 +468,8 @@ class CurvedTopAndBottomClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     final path = Path();
     
-    // Começa com curva no topo
     path.moveTo(0, 30);
     
-    // Curva superior esquerda
     final topControlPoint1 = Offset(size.width * 0.25, 5);
     final topEndPoint1 = Offset(size.width * 0.5, 0);
     path.quadraticBezierTo(
@@ -483,7 +479,6 @@ class CurvedTopAndBottomClipper extends CustomClipper<Path> {
       topEndPoint1.dy,
     );
     
-    // Curva superior direita
     final topControlPoint2 = Offset(size.width * 0.75, -5);
     final topEndPoint2 = Offset(size.width, 30);
     path.quadraticBezierTo(
@@ -493,10 +488,8 @@ class CurvedTopAndBottomClipper extends CustomClipper<Path> {
       topEndPoint2.dy,
     );
     
-    // Linha direita
     path.lineTo(size.width, size.height - 40);
 
-    // Curva inferior direita
     final bottomControlPoint1 = Offset(size.width * 0.75, size.height - 10);
     final bottomEndPoint1 = Offset(size.width * 0.5, size.height - 15);
     path.quadraticBezierTo(
@@ -506,7 +499,6 @@ class CurvedTopAndBottomClipper extends CustomClipper<Path> {
       bottomEndPoint1.dy,
     );
 
-    // Curva inferior esquerda
     final bottomControlPoint2 = Offset(size.width * 0.25, size.height - 20);
     final bottomEndPoint2 = Offset(0, size.height - 40);
     path.quadraticBezierTo(
@@ -586,7 +578,6 @@ class _AnimatedBadgeState extends State<AnimatedBadge>
   String _getProxiedImageUrl(String? url) {
     if (url == null || url.isEmpty) return '';
     
-    // Se for web, usa um proxy CORS
     if (kIsWeb) {
       return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
     }
