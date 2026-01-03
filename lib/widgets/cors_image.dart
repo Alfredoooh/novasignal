@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Widget para carregar imagens com suporte CORS na web
 class CorsImage extends StatelessWidget {
@@ -8,6 +7,7 @@ class CorsImage extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxFit? fit;
+  final FilterQuality filterQuality;
   final Widget? placeholder;
   final Widget? errorWidget;
 
@@ -17,64 +17,57 @@ class CorsImage extends StatelessWidget {
     this.width,
     this.height,
     this.fit,
+    this.filterQuality = FilterQuality.medium,
     this.placeholder,
     this.errorWidget,
   }) : super(key: key);
 
-  String _getCorsProxyUrl(String url) {
-    if (url.isEmpty) return '';
+  String _getProxiedImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+
+    String cleanUrl = url.trim();
     
-    // Remove espaços em branco
-    url = url.trim();
-    
-    // Se já tiver protocolo, usa direto
-    if (!url.startsWith('http')) {
-      url = 'https://$url';
+    if (!cleanUrl.startsWith('http')) {
+      cleanUrl = 'https://$cleanUrl';
     }
-    
-    // Na web, usa proxy CORS
+
     if (kIsWeb) {
-      // Opção 1: CORS Anywhere (público, mas pode ter limite de taxa)
-      return 'https://corsproxy.io/?${Uri.encodeComponent(url)}';
-      
-      // Opção 2: AllOrigins (alternativa)
-      // return 'https://api.allorigins.win/raw?url=${Uri.encodeComponent(url)}';
-      
-      // Opção 3: Seu próprio proxy (recomendado para produção)
-      // return 'https://seu-proxy.com/image?url=${Uri.encodeComponent(url)}';
+      return 'https://corsproxy.io/?${Uri.encodeComponent(cleanUrl)}';
     }
-    
-    // Mobile/Desktop: retorna URL direta
-    return url;
+
+    return cleanUrl;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrl.isEmpty) {
-      return _buildPlaceholder();
+    final proxiedUrl = _getProxiedImageUrl(imageUrl);
+    final hasValidUrl = proxiedUrl.isNotEmpty && 
+                        Uri.tryParse(proxiedUrl)?.hasAbsolutePath == true;
+
+    if (!hasValidUrl) {
+      return errorWidget ?? _buildErrorWidget();
     }
 
-    final proxiedUrl = _getCorsProxyUrl(imageUrl);
-
-    return CachedNetworkImage(
-      imageUrl: proxiedUrl,
+    return Image.network(
+      proxiedUrl,
       width: width,
       height: height,
       fit: fit ?? BoxFit.contain,
-      placeholder: (context, url) => placeholder ?? _buildPlaceholder(),
-      errorWidget: (context, url, error) {
-        debugPrint('❌ Erro ao carregar imagem: $url');
+      filterQuality: filterQuality,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return placeholder ?? _buildPlaceholder(loadingProgress);
+      },
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('❌ Erro ao carregar imagem: $imageUrl');
+        debugPrint('   URL proxied: $proxiedUrl');
         debugPrint('   Erro: $error');
         return errorWidget ?? _buildErrorWidget();
       },
-      // Configurações adicionais para web
-      httpHeaders: kIsWeb ? {
-        'Accept': 'image/*',
-      } : null,
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(ImageChunkEvent? loadingProgress) {
     return Container(
       width: width,
       height: height,
@@ -83,9 +76,17 @@ class CorsImage extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[600]!),
+        child: SizedBox(
+          width: (width ?? 50) * 0.4,
+          height: (height ?? 50) * 0.4,
+          child: CircularProgressIndicator(
+            value: loadingProgress?.expectedTotalBytes != null
+                ? loadingProgress!.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
+                : null,
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[600]!),
+          ),
         ),
       ),
     );
@@ -112,21 +113,74 @@ class CorsImage extends StatelessWidget {
 class TeamLogo extends StatelessWidget {
   final String? logoUrl;
   final double size;
+  final FilterQuality filterQuality;
 
   const TeamLogo({
     Key? key,
     required this.logoUrl,
     this.size = 40,
+    this.filterQuality = FilterQuality.medium,
   }) : super(key: key);
+
+  String _getProxiedImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+
+    String cleanUrl = url.trim();
+    
+    if (!cleanUrl.startsWith('http')) {
+      cleanUrl = 'https://$cleanUrl';
+    }
+
+    if (kIsWeb) {
+      return 'https://corsproxy.io/?${Uri.encodeComponent(cleanUrl)}';
+    }
+
+    return cleanUrl;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CorsImage(
-      imageUrl: logoUrl ?? '',
+    final proxiedUrl = _getProxiedImageUrl(logoUrl);
+    final hasValidUrl = proxiedUrl.isNotEmpty && 
+                        Uri.tryParse(proxiedUrl)?.hasAbsolutePath == true;
+
+    if (!hasValidUrl) {
+      return _buildDefaultLogo();
+    }
+
+    return Image.network(
+      proxiedUrl,
       width: size,
       height: size,
       fit: BoxFit.contain,
-      errorWidget: _buildDefaultLogo(),
+      filterQuality: filterQuality,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return SizedBox(
+          width: size,
+          height: size,
+          child: Center(
+            child: SizedBox(
+              width: size * 0.4,
+              height: size * 0.4,
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                strokeWidth: 2,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('❌ Erro ao carregar logo: $logoUrl');
+        debugPrint('   URL proxied: $proxiedUrl');
+        debugPrint('   Erro: $error');
+        return _buildDefaultLogo();
+      },
     );
   }
 
@@ -152,33 +206,94 @@ class LeagueFlag extends StatelessWidget {
   final String? flagUrl;
   final double width;
   final double height;
+  final FilterQuality filterQuality;
 
   const LeagueFlag({
     Key? key,
     required this.flagUrl,
     this.width = 32,
     this.height = 24,
+    this.filterQuality = FilterQuality.medium,
   }) : super(key: key);
+
+  String _getProxiedImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+
+    String cleanUrl = url.trim();
+    
+    if (!cleanUrl.startsWith('http')) {
+      cleanUrl = 'https://$cleanUrl';
+    }
+
+    if (kIsWeb) {
+      return 'https://corsproxy.io/?${Uri.encodeComponent(cleanUrl)}';
+    }
+
+    return cleanUrl;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CorsImage(
-      imageUrl: flagUrl ?? '',
+    final proxiedUrl = _getProxiedImageUrl(flagUrl);
+    final hasValidUrl = proxiedUrl.isNotEmpty && 
+                        Uri.tryParse(proxiedUrl)?.hasAbsolutePath == true;
+
+    if (!hasValidUrl) {
+      return _buildDefaultFlag();
+    }
+
+    return Image.network(
+      proxiedUrl,
       width: width,
       height: height,
       fit: BoxFit.cover,
-      errorWidget: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Icon(
-          Icons.flag_outlined,
-          size: height * 0.7,
-          color: Colors.grey[600],
-        ),
+      filterQuality: filterQuality,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Center(
+            child: SizedBox(
+              width: height * 0.4,
+              height: height * 0.4,
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+                strokeWidth: 1.5,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('❌ Erro ao carregar flag: $flagUrl');
+        debugPrint('   URL proxied: $proxiedUrl');
+        debugPrint('   Erro: $error');
+        return _buildDefaultFlag();
+      },
+    );
+  }
+
+  Widget _buildDefaultFlag() {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Icon(
+        Icons.flag_outlined,
+        size: height * 0.7,
+        color: Colors.grey[600],
       ),
     );
   }
