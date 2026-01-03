@@ -194,7 +194,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   Widget _buildToggleButtons() {
-    // Conta jogos ao vivo sempre que necessário
     final aoVivoCount = _contarJogosAoVivo();
 
     return Padding(
@@ -341,6 +340,59 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   String _truncarNomeLiga(String nome) {
     if (nome.length <= 30) return nome;
     return '${nome.substring(0, 27)}...';
+  }
+
+  Widget _formatTeamName(String name) {
+    final words = name.split(' ');
+    
+    if (words.length == 1) {
+      return Text(
+        name,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      );
+    } else if (words.length == 2) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            words[0],
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          Text(
+            words[1],
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ],
+      );
+    } else {
+      final firstLine = words.sublist(0, words.length - 1).join(' ');
+      final secondLine = words.last;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            firstLine,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          Text(
+            secondLine,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ],
+      );
+    }
   }
 
   void _showQuickMatchDetails(BuildContext context, dynamic jogo) {
@@ -533,7 +585,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       },
     );
   }
-  
+
   Widget _buildMatchItem(dynamic jogo, bool isLast) {
     final status = jogo['match_status'] ?? '';
     final isNumericStatus = int.tryParse(status.toString()) != null;
@@ -583,6 +635,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     Expanded(
                       child: Row(
                         children: [
+                          Expanded(
+                            child: _formatTeamName(jogo['match_hometeam_name'] ?? ''),
+                          ),
+                          const SizedBox(width: 8),
                           _CachedNetworkImage(
                             imageUrl: jogo['team_home_badge'] ?? '',
                             width: 32,
@@ -594,14 +650,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                 shape: BoxShape.circle,
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              jogo['match_hometeam_name'] ?? '',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -622,15 +670,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Expanded(
-                            child: Text(
-                              jogo['match_awayteam_name'] ?? '',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           _CachedNetworkImage(
                             imageUrl: jogo['team_away_badge'] ?? '',
                             width: 32,
@@ -642,6 +681,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                                 shape: BoxShape.circle,
                               ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: _formatTeamName(jogo['match_awayteam_name'] ?? ''),
                             ),
                           ),
                         ],
@@ -699,7 +745,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                     ],
                   ],
                 ),
-                // CARD "AO VIVO" SEM ANIMAÇÃO
                 if (isPlaying && !isAoVivoTab) ...[
                   const SizedBox(height: 4),
                   Container(
@@ -753,12 +798,12 @@ class _ToggleButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8), // Reduzido de 12 para 8
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: isSelected 
               ? Theme.of(context).colorScheme.primaryContainer 
               : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(100), // Bordas 100% curvas
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(
             color: isSelected 
                 ? Theme.of(context).colorScheme.primary 
@@ -1245,8 +1290,7 @@ class _CachedNetworkImageState extends State<_CachedNetworkImage> with Automatic
       widget.imageUrl,
       width: widget.width,
       height: widget.height,
-      cacheWidth: (widget.width * MediaQuery.of(context).devicePixelRatio).round(),
-      cacheHeight: (widget.height * MediaQuery.of(context).devicePixelRatio).round(),
+      fit: BoxFit.contain,
       errorBuilder: (_, __, ___) => widget.placeholder,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
