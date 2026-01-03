@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show HttpOverrides, HttpClient, SecurityContext, X509Certificate;
 import 'core/app_state.dart';
 import 'screens/home_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Configuração global para corrigir imagens PNG na web
-  if (kIsWeb) {
-    // Força o uso de CORS para imagens
+
+  // Configuração global para corrigir imagens PNG - APENAS para plataformas não-web
+  if (!kIsWeb) {
     HttpOverrides.global = MyHttpOverrides();
   }
-  
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.black,
@@ -30,7 +30,7 @@ void main() {
   );
 }
 
-// Classe para resolver problemas de CORS com imagens na web
+// Classe para resolver problemas de certificado SSL - NÃO funciona na web
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
