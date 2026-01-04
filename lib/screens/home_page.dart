@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
 import 'package:animations/animations.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/app_state.dart';
 import 'home_tab.dart';
 import 'search_page.dart';
@@ -88,6 +89,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     });
   }
 
+  Future<void> _launchWhatsApp() async {
+    final Uri whatsappUrl = Uri.parse('https://wa.me/258843902649');
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _sendFeedback() async {
+    final Uri emailUrl = Uri(
+      scheme: 'mailto',
+      path: 'support@elephantbetclub.com',
+      query: 'subject=Feedback do App&body=Olá, gostaria de enviar um feedback sobre o app:',
+    );
+    if (await canLaunchUrl(emailUrl)) {
+      await launchUrl(emailUrl);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
@@ -157,6 +176,26 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                     builder: (context) => const ConfiguracoesPage(),
                                   ),
                                 );
+                              }
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Ionicons.logo_whatsapp,
+                            title: 'WhatsApp',
+                            onTap: () async {
+                              await _animationController.reverse();
+                              if (mounted) {
+                                _launchWhatsApp();
+                              }
+                            },
+                          ),
+                          _buildDrawerItem(
+                            icon: Ionicons.mail_outline,
+                            title: 'Enviar Feedback',
+                            onTap: () async {
+                              await _animationController.reverse();
+                              if (mounted) {
+                                _sendFeedback();
                               }
                             },
                           ),
@@ -312,7 +351,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               );
             },
           ),
-          const SizedBox(width: 8),
           _AnimatedUserButton(
             onPressed: () {
               // Funcionalidade futura
@@ -593,7 +631,7 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
       scale: _scaleAnimation,
       child: IconButton(
         icon: const Icon(
-          Ionicons.radio_button_on_outline,
+          Ionicons.menu_outline,
           size: 24,
         ),
         iconSize: 24,
@@ -603,7 +641,7 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
   }
 }
 
-// ==================== ANIMATED SEARCH BUTTON ====================
+// ==================== ANIMATED SEARCH BUTTON (Material Design 3 Expressive) ====================
 class _AnimatedSearchButton extends StatefulWidget {
   final VoidCallback onPressed;
 
@@ -617,7 +655,6 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _borderRadiusAnimation;
 
   @override
   void initState() {
@@ -627,11 +664,7 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-
-    _borderRadiusAnimation = Tween<double>(begin: 20.0, end: 12.0).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -654,32 +687,32 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
       onTap: _handleTap,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: AnimatedBuilder(
-          animation: _borderRadiusAnimation,
-          builder: (context, child) {
-            return Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(_borderRadiusAnimation.value),
-              ),
-              child: const Center(
-                child: Icon(
-                  Ionicons.search,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            );
-          },
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              bottomLeft: Radius.circular(20),
+              topRight: Radius.circular(4),
+              bottomRight: Radius.circular(4),
+            ),
+          ),
+          child: const Center(
+            child: Icon(
+              Ionicons.search,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-// ==================== ANIMATED USER BUTTON ====================
+// ==================== ANIMATED USER BUTTON (Material Design 3 Expressive) ====================
 class _AnimatedUserButton extends StatefulWidget {
   final VoidCallback onPressed;
 
@@ -702,7 +735,7 @@ class _AnimatedUserButtonState extends State<_AnimatedUserButton>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -730,7 +763,12 @@ class _AnimatedUserButtonState extends State<_AnimatedUserButton>
           height: 40,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.primary,
-            shape: BoxShape.circle,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(4),
+              bottomLeft: Radius.circular(4),
+              topRight: Radius.circular(20),
+              bottomRight: Radius.circular(20),
+            ),
           ),
           child: const Center(
             child: Icon(
