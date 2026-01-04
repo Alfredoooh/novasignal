@@ -1333,3 +1333,50 @@ class _AnimatedBouncyButtonState extends State<_AnimatedBouncyButton>
     );
   }
 }
+
+class _CachedNetworkImage extends StatefulWidget {
+  final String imageUrl;
+  final double width;
+  final double height;
+  final Widget placeholder;
+
+  const _CachedNetworkImage({
+    required this.imageUrl,
+    required this.width,
+    required this.height,
+    required this.placeholder,
+  });
+
+  @override
+  State<_CachedNetworkImage> createState() => _CachedNetworkImageState();
+}
+
+class _CachedNetworkImageState extends State<_CachedNetworkImage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    if (widget.imageUrl.isEmpty) {
+      return widget.placeholder;
+    }
+
+    return Image.network(
+      widget.imageUrl,
+      width: widget.width,
+      height: widget.height,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => widget.placeholder,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: widget.placeholder,
+        );
+      },
+    );
+  }
+}
