@@ -53,6 +53,11 @@ class AppState with ChangeNotifier {
   static const String _apiBase = 'https://apiv3.apifootball.com';
   int _currentApiKeyIndex = 0;
 
+  // Controle de requisições por API key
+  final Map<int, int> _apiKeyRequestCount = {};
+  final Map<int, DateTime> _apiKeyResetTime = {};
+  static const int _maxRequestsPerHour = 150;
+
   static const String newsApiKey = 'b2e4d59068e545abbdffaf947c371bcd';
   static const String newsApiBase = 'https://newsapi.org/v2';
 
@@ -78,6 +83,73 @@ class AppState with ChangeNotifier {
   AppState() {
     _carregarPreferencias();
     _startCacheCleanup();
+    _initializeApiKeyTracking();
+  }
+
+  void _initializeApiKeyTracking() {
+    for (int i = 0; i < _apiKeys.length; i++) {
+      _apiKeyRequestCount[i] = 0;
+      _apiKeyResetTime[i] = DateTime.now().add(const Duration(hours: 1));
+    }
+    
+    Timer.periodic(const Duration(minutes: 1), (timer) {
+      _checkAndResetApiKeys();
+    });
+  }
+
+  void _checkAndResetApiKeys() {
+    final now = DateTime.now();
+    for (int i = 0; i < _apiKeys.length; i++) {
+      if (now.isAfter(_apiKeyResetTime[i]!)) {
+        _apiKeyRequestCount[i] = 0;
+        _apiKeyResetTime[i] = now.add(const Duration(hours: 1));
+        debugPrint('🔄 API Key $i resetada. Contagem: 0/$_maxRequestsPerHour');
+      }
+    }
+  }
+
+  void _incrementApiKeyCount() {
+    _apiKeyRequestCount[_currentApiKeyIndex] = 
+        (_apiKeyRequestCount[_currentApiKeyIndex] ?? 0) + 1;
+    
+    final count = _apiKeyRequestCount[_currentApiKeyIndex]!;
+    final remaining = _maxRequestsPerHour - count;
+    
+    debugPrint('📊 API Key $_currentApiKeyIndex: $count/$_maxRequestsPerHour requisições (restam: $remaining)');
+    
+    if (count >= _maxRequestsPerHour) {
+      debugPrint('⚠️ API Key $_currentApiKeyIndex atingiu o limite! Rotacionando...');
+      _rotateToNextAvailableKey();
+    }
+  }
+
+  void _rotateToNextAvailableKey() {
+    final startIndex = _currentApiKeyIndex;
+    int attempts = 0;
+    
+    do {
+      _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _apiKeys.length;
+      attempts++;
+      
+      final count = _apiKeyRequestCount[_currentApiKeyIndex] ?? 0;
+      
+      if (count < _maxRequestsPerHour) {
+        final remaining = _maxRequestsPerHour - count;
+        debugPrint('✅ Rotacionado para API Key $_currentApiKeyIndex (uso: $count/$_maxRequestsPerHour, restam: $remaining)');
+        return;
+      }
+      
+      debugPrint('⏭️ API Key $_currentApiKeyIndex também no limite ($count/$_maxRequestsPerHour), tentando próxima...');
+      
+    } while (_currentApiKeyIndex != startIndex && attempts < _apiKeys.length);
+    
+    if (attempts >= _apiKeys.length) {
+      debugPrint('❌ TODAS as API Keys atingiram o limite! Aguardando reset...');
+      final nextReset = _apiKeyResetTime.values
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      final waitTime = nextReset.difference(DateTime.now());
+      debugPrint('⏰ Próximo reset em: ${waitTime.inMinutes} minutos');
+    }
   }
 
   void _startCacheCleanup() {
@@ -99,8 +171,7 @@ class AppState with ChangeNotifier {
   }
 
   void _rotateApiKey() {
-    _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _apiKeys.length;
-    debugPrint('🔄 Rotacionando API Key para índice: $_currentApiKeyIndex');
+    _rotateToNextAvailableKey();
   }
 
   // ========== PREFERÊNCIAS ==========
@@ -288,6 +359,8 @@ class AppState with ChangeNotifier {
       try {
         debugPrint('🚀 API Request: ${uri.queryParameters['action']}');
 
+        _incrementApiKeyCount();
+
         final response = await _httpClient.get(uri).timeout(
           const Duration(seconds: 15),
         );
@@ -298,10 +371,16 @@ class AppState with ChangeNotifier {
           final data = json.decode(response.body);
 
           if (data is Map && data.containsKey('error')) {
-            if (data['error'].toString().contains('requests')) {
-              debugPrint('⚠️ Limite de requisições atingido, rotacionando chave...');
+            final errorMsg = data['error'].toString().toLowerCase();
+            
+            if (errorMsg.contains('requests') || 
+                errorMsg.contains('limit') || 
+                errorMsg.contains('quota') ||
+                errorMsg.contains('exceeded')) {
+              debugPrint('⚠️ Limite de requisições atingido pela resposta da API, rotacionando chave...');
               _rotateApiKey();
               retries++;
+              await Future.delayed(Duration(seconds: retries));
               continue;
             }
             throw Exception(data['error']);
@@ -330,9 +409,9 @@ class AppState with ChangeNotifier {
 
     throw Exception('Falha após $maxRetries tentativas');
   }
- 
+
     // ========== REQUISIÇÕES CLOUDFLARE WORKER (COMENTADO) ==========
-  
+
   /*
   Future<dynamic> _makeRequest(String endpoint, String cacheKey) async {
     if (_pendingRequests.containsKey(endpoint)) {
@@ -385,7 +464,7 @@ class AppState with ChangeNotifier {
     }
   }
   */
-  
+
   // ========== NEWS API ==========
 
   Future<List<Map<String, dynamic>>> carregarNoticias() async {
@@ -800,7 +879,7 @@ class AppState with ChangeNotifier {
       // CORREÇÃO: Buscar jogos dos últimos 6 meses para ter histórico completo
       final hoje = DateTime.now();
       final inicioTemporada = hoje.subtract(const Duration(days: 180)); // 6 meses atrás
-      
+
       final dataInicio = DateFormat('yyyy-MM-dd').format(inicioTemporada);
       final dataFim = DateFormat('yyyy-MM-dd').format(hoje);
 
@@ -817,13 +896,13 @@ class AppState with ChangeNotifier {
       if (response is List) {
         jogos = response;
         debugPrint('✅ ${jogos.length} jogos da liga carregados (total)');
-        
+
         // Contar jogos finalizados para classificação
         final finalizados = jogos.where((j) {
           final status = j['match_status']?.toString() ?? '';
           return status.contains('Finished') || status == 'FT' || status == 'AET';
         }).length;
-        
+
         debugPrint('   📊 $finalizados jogos finalizados');
         debugPrint('   ⏳ ${jogos.length - finalizados} jogos futuros/ao vivo');
       } else {
@@ -881,20 +960,20 @@ class AppState with ChangeNotifier {
   // ========== FUNÇÃO PARA DEBUG/TESTE ==========
   Future<void> testarLiga(String ligaId) async {
     debugPrint('🧪 TESTE: Carregando liga $ligaId');
-    
+
     try {
       final jogos = await carregarJogosPorLiga(ligaId);
       debugPrint('✅ Total de jogos: ${jogos.length}');
-      
+
       if (jogos.isNotEmpty) {
         debugPrint('📋 Primeiro jogo: ${jogos[0]['match_hometeam_name']} vs ${jogos[0]['match_awayteam_name']}');
         debugPrint('   Status: ${jogos[0]['match_status']}');
         debugPrint('   Data: ${jogos[0]['match_date']}');
       }
-      
+
       final classificacao = await carregarClassificacao(ligaId);
       debugPrint('📊 Times na classificação: ${classificacao.length}');
-      
+
     } catch (e) {
       debugPrint('❌ ERRO NO TESTE: $e');
     }
