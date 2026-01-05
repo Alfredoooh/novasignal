@@ -112,12 +112,14 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cs.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+                border: Border.all(
+                  color: cs.outlineVariant.withOpacity(isDark ? 0.3 : 0.5),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -152,25 +154,45 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
               ),
             ),
           ],
-          if (widget.events.isEmpty)
+          if (widget.events.isEmpty && widget.statistics.isEmpty)
             Container(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(48),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cs.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+                border: Border.all(
+                  color: cs.outlineVariant.withOpacity(isDark ? 0.3 : 0.5),
+                ),
               ),
               child: Column(
                 children: [
-                  Icon(Symbols.event_busy_rounded, size: 48, color: cs.onSurfaceVariant.withOpacity(0.5)),
-                  const SizedBox(height: 12),
+                  Image.asset(
+                    'assets/animations/no_data.gif',
+                    width: 120,
+                    height: 120,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Symbols.event_busy_rounded,
+                      size: 64,
+                      color: cs.onSurfaceVariant.withOpacity(0.3),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'Nenhum evento disponível',
                     style: TextStyle(
                       color: cs.onSurfaceVariant,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Os eventos aparecerão aqui quando disponíveis',
+                    style: TextStyle(
+                      color: cs.onSurfaceVariant.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -179,12 +201,16 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
             ...widget.events.asMap().entries.map((entry) {
               final index = entry.key;
               final event = entry.value;
+              final isFirst = index == 0;
+              final isLast = index == widget.events.length - 1;
               return AnimatedEventCard(
                 key: ValueKey('event_$index'),
                 event: event,
                 homeTeamBadge: widget.homeTeamBadge,
                 awayTeamBadge: widget.awayTeamBadge,
                 delay: index * 60,
+                isFirst: isFirst,
+                isLast: isLast,
               );
             }),
         ],
@@ -201,8 +227,7 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
     final away = double.tryParse(awayStr) ?? 0;
 
     final isPercentage = type.toLowerCase().contains('posse');
-    
-    // CORREÇÃO: Formatar números corretamente
+
     String formatValue(double value, bool isPercentage) {
       if (isPercentage) {
         return value.toStringAsFixed(0);
@@ -273,7 +298,7 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
                     Container(
                       height: 8,
                       decoration: BoxDecoration(
-                        color: cs.surfaceContainerHigh,
+                        color: cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -285,7 +310,9 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
                             height: 8,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.blue.shade600, Colors.blue.shade400],
+                                colors: isDark
+                                    ? [Colors.blue.shade400, Colors.blue.shade600]
+                                    : [Colors.blue.shade600, Colors.blue.shade400],
                               ),
                             ),
                           ),
@@ -296,7 +323,9 @@ class _EventosTabState extends State<EventosTab> with TickerProviderStateMixin {
                             height: 8,
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.orange.shade400, Colors.orange.shade600],
+                                colors: isDark
+                                    ? [Colors.orange.shade400, Colors.orange.shade600]
+                                    : [Colors.orange.shade400, Colors.orange.shade600],
                               ),
                             ),
                           ),
@@ -319,6 +348,8 @@ class AnimatedEventCard extends StatefulWidget {
   final String? homeTeamBadge;
   final String? awayTeamBadge;
   final int delay;
+  final bool isFirst;
+  final bool isLast;
 
   const AnimatedEventCard({
     super.key,
@@ -326,6 +357,8 @@ class AnimatedEventCard extends StatefulWidget {
     this.homeTeamBadge,
     this.awayTeamBadge,
     this.delay = 0,
+    this.isFirst = false,
+    this.isLast = false,
   });
 
   @override
@@ -396,6 +429,8 @@ class _AnimatedEventCardState extends State<AnimatedEventCard>
             event: widget.event,
             homeTeamBadge: widget.homeTeamBadge,
             awayTeamBadge: widget.awayTeamBadge,
+            isFirst: widget.isFirst,
+            isLast: widget.isLast,
           ),
         ),
       ),
@@ -407,17 +442,44 @@ class EventCard extends StatelessWidget {
   final Map<String, dynamic> event;
   final String? homeTeamBadge;
   final String? awayTeamBadge;
+  final bool isFirst;
+  final bool isLast;
 
   const EventCard({
     super.key,
     required this.event,
     this.homeTeamBadge,
     this.awayTeamBadge,
+    this.isFirst = false,
+    this.isLast = false,
   });
+
+  BorderRadius _getBorderRadius() {
+    if (isFirst && isLast) {
+      return BorderRadius.circular(16);
+    } else if (isFirst) {
+      return const BorderRadius.only(
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+        bottomLeft: Radius.circular(4),
+        bottomRight: Radius.circular(4),
+      );
+    } else if (isLast) {
+      return const BorderRadius.only(
+        topLeft: Radius.circular(4),
+        topRight: Radius.circular(4),
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(16),
+      );
+    } else {
+      return BorderRadius.circular(4);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final type = (event['type'] ?? '').toString();
     final time = event['time']?.toString() ?? '';
     final isHome = event['isHome'] == true;
@@ -425,15 +487,17 @@ class EventCard extends StatelessWidget {
     Widget eventIcon = _buildEventIcon(type, cs);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 2),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+        color: cs.surfaceContainerHigh,
+        borderRadius: _getBorderRadius(),
+        border: Border.all(
+          color: cs.outlineVariant.withOpacity(isDark ? 0.3 : 0.5),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -586,7 +650,6 @@ class EventCard extends StatelessWidget {
                           ),
                   ),
                 ),
-                // CORREÇÃO: Badge do time do jogador
                 if (teamBadge != null && teamBadge.isNotEmpty)
                   Positioned(
                     bottom: -2,
@@ -603,9 +666,9 @@ class EventCard extends StatelessWidget {
                             height: 18,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white,
+                              color: cs.surface,
                               border: Border.all(
-                                color: Colors.white,
+                                color: cs.surface,
                                 width: 2,
                               ),
                               boxShadow: [
@@ -693,181 +756,3 @@ class EventCard extends StatelessWidget {
       ],
     );
   }
-
-  Widget _buildPlayerInfo({
-    required String player,
-    required String assist,
-    required String method,
-    required bool isHome,
-    required ColorScheme cs,
-    required String type,
-  }) {
-    final playerImageUrl = event['player_image']?.toString();
-    final teamBadge = isHome ? homeTeamBadge : awayTeamBadge;
-
-    return Column(
-      crossAxisAlignment: isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (type == 'goal' || type == 'yellow' || type == 'red')
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: isHome
-                ? [
-                    _buildPlayerAvatar(
-                      playerImageUrl: playerImageUrl,
-                      teamBadge: teamBadge,
-                      cs: cs,
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        player.isNotEmpty ? player : 'Jogador',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurface,
-                          fontSize: 15,
-                          height: 1.3,
-                        ),
-                        textAlign: TextAlign.left,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ]
-                : [
-                    Flexible(
-                      child: Text(
-                        player.isNotEmpty ? player : 'Jogador',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurface,
-                          fontSize: 15,
-                          height: 1.3,
-                        ),
-                        textAlign: TextAlign.right,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    _buildPlayerAvatar(
-                      playerImageUrl: playerImageUrl,
-                      teamBadge: teamBadge,
-                      cs: cs,
-                    ),
-                  ],
-          )
-        else
-          Text(
-            player.isNotEmpty ? player : 'Jogador',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface,
-              fontSize: 15,
-              height: 1.3,
-            ),
-            textAlign: isHome ? TextAlign.left : TextAlign.right,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        if (assist.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: isHome
-                  ? [
-                      Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          assist,
-                          style: TextStyle(
-                            color: cs.onSurfaceVariant,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            height: 1.3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ]
-                  : [
-                      Flexible(
-                        child: Text(
-                          assist,
-                          style: TextStyle(
-                            color: cs.onSurfaceVariant,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            height: 1.3,
-                          ),
-                          textAlign: TextAlign.right,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Icon(Symbols.sports_rounded, size: 14, color: cs.onSurfaceVariant),
-                    ],
-            ),
-          ),
-        if (method.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              method,
-              style: TextStyle(
-                color: cs.onSurfaceVariant,
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: isHome ? TextAlign.left : TextAlign.right,
-            ),
-          ),
-        if (type == 'substitution' && event['playerIn'] != null) ...[
-          const SizedBox(height: 8),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: isHome
-                ? [
-                    Icon(Symbols.arrow_upward_rounded, size: 16, color: Colors.green.shade600),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        event['playerIn'].toString(),
-                        style: TextStyle(
-                          color: Colors.green.shade600,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ]
-                : [
-                    Flexible(
-                      child: Text(
-                        event['playerIn'].toString(),
-                        style: TextStyle(
-                          color: Colors.green.shade600,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        textAlign: TextAlign.right,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Icon(Symbols.arrow_upward_rounded, size: 16, color: Colors.green.shade600),
-                  ],
-          ),
-        ],
-      ],
-    );
-  }
-}
