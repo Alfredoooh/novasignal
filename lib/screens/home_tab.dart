@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../utils/formatters.dart';
+import '../widgets/cors_image.dart';
 import 'jogo_detalhes_page.dart';
 import 'home_config_page.dart';
 import 'news_detail_page.dart';
@@ -81,6 +82,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       if (mounted) {
         _loadTopMatches();
         _loadAllTodayMatches();
+        _loadNews();
       }
     });
   }
@@ -141,11 +143,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       final dataAmanha = '${amanha.year}-${amanha.month.toString().padLeft(2, '0')}-${amanha.day.toString().padLeft(2, '0')}';
 
       final jogosHoje = todosJogos.where((jogo) {
-        return jogo['match_date'] == dataHoje;
+        return (jogo['match_date']?.toString() ?? '') == dataHoje;
       }).toList();
 
       final jogosAmanha = todosJogos.where((jogo) {
-        return jogo['match_date'] == dataAmanha;
+        return (jogo['match_date']?.toString() ?? '') == dataAmanha;
       }).toList();
 
       debugPrint('🏆 Jogos hoje: ${jogosHoje.length}, Amanhã: ${jogosAmanha.length}');
@@ -180,8 +182,18 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
       if (!mounted) return;
 
+      // Garantir que cada notícia é um Map<String, dynamic>
+      final safeList = <Map<String, dynamic>>[];
+      for (var n in noticias) {
+        if (n is Map<String, dynamic>) {
+          safeList.add(n);
+        } else if (n is Map) {
+          safeList.add(Map<String, dynamic>.from(n));
+        }
+      }
+
       setState(() {
-        _noticias = noticias;
+        _noticias = safeList;
         _loadingNews = false;
       });
     } catch (e) {
@@ -216,6 +228,115 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       return const Color(0xFF2C2C2E);
     }
     return const Color(0xFFF3F3F3);
+  }
+
+  // --- possession parsing helpers ---
+  int _parseFirstInt(String input) {
+    try {
+      final match = RegExp(r'(\d{1,3})').firstMatch(input);
+      if (match != null) {
+        final v = int.tryParse(match.group(1) ?? '') ?? 0;
+        return v.clamp(0, 100);
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  /// Recebe estatísticas (pode ser List/Map/null) e tenta extrair posse (home/away).
+  /// Retorna um Map {'home': int, 'away': int}.
+  Map<String, int> _extractPossession(dynamic statistics) {
+    int home = 0;
+    int away = 0;
+
+    try {
+      if (statistics == null) {
+        return {'home': 50, 'away': 50};
+      }
+
+      if (statistics is Map) {
+        // procura chaves possíveis
+        if (statistics.containsKey('possession')) {
+          final val = statistics['possession'];
+          if (val is Map) {
+            home = _parseFirstInt(val['home']?.toString() ?? '');
+            away = _parseFirstInt(val['away']?.toString() ?? '');
+          } else {
+            final s = val?.toString() ?? '';
+            home = _parseFirstInt(s);
+          }
+        } else {
+          // tentar varrer o map por um valor que contenha 'possession'
+          for (var e in statistics.entries) {
+            final k = e.key.toString().toLowerCase();
+            if (k.contains('possession') || k.contains('ball')) {
+              final entryVal = e.value;
+              if (entryVal is Map) {
+                home = _parseFirstInt(entryVal['home']?.toString() ?? '');
+                away = _parseFirstInt(entryVal['away']?.toString() ?? '');
+              } else {
+                home = _parseFirstInt(entryVal?.toString() ?? '');
+              }
+              break;
+            }
+          }
+        }
+      } else if (statistics is List) {
+        for (var stat in statistics) {
+          if (stat == null) continue;
+          if (stat is Map) {
+            final type = (stat['type'] ?? stat['stat'] ?? '').toString().toLowerCase();
+            if (type.contains('possession') || type.contains('ball')) {
+              // APIs diferentes têm formatos diferentes: home/away ou single home value
+              if (stat.containsKey('home') && stat.containsKey('away')) {
+                home = _parseFirstInt(stat['home']?.toString() ?? '');
+                away = _parseFirstInt(stat['away']?.toString() ?? '');
+              } else if (stat.containsKey('value')) {
+                final v = stat['value']?.toString() ?? '';
+                home = _parseFirstInt(v);
+              } else if (stat.containsKey('homeValue')) {
+                home = _parseFirstInt(stat['homeValue']?.toString() ?? '');
+                away = _parseFirstInt(stat['awayValue']?.toString() ?? '');
+              } else {
+                // tentar detectar em qualquer campo
+                final combined = stat.values.map((v) => v?.toString() ?? '').join(' ');
+                final m = RegExp(r'(\d{1,3})%?').allMatches(combined).toList();
+                if (m.length >= 2) {
+                  home = _parseFirstInt(m[0].group(1) ?? '');
+                  away = _parseFirstInt(m[1].group(1) ?? '');
+                } else if (m.length == 1) {
+                  home = _parseFirstInt(m[0].group(1) ?? '');
+                }
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Erro ao extrair posse: $e');
+    }
+
+    // Sanitizar resultados e aplicar fallback
+    home = home.clamp(0, 100);
+    away = away.clamp(0, 100);
+
+    if (home == 0 && away == 0) {
+      // fallback: 50/50
+      return {'home': 50, 'away': 50};
+    } else if (home > 0 && away == 0) {
+      away = (100 - home).clamp(0, 100);
+    } else if (away > 0 && home == 0) {
+      home = (100 - away).clamp(0, 100);
+    } else {
+      final sum = home + away;
+      if (sum != 100 && sum > 0) {
+        // normalizar proporcionalmente para garantir soma 100
+        home = ((home / sum) * 100).round();
+        away = 100 - home;
+      }
+    }
+
+    return {'home': home, 'away': away};
   }
 
   @override
@@ -253,11 +374,10 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
     final todosJogos = [..._jogosHoje, ..._jogosAmanha];
 
-    // Verifica se tem jogos ao vivo
+    // Verifica se tem jogos ao vivo (mais robusto)
     final temJogosAoVivo = todosJogos.any((jogo) {
-      final status = jogo['match_status'] ?? '';
-      final isNumeric = int.tryParse(status.toString()) != null;
-      return isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
+      final status = (jogo['match_status']?.toString() ?? '').toLowerCase();
+      return RegExp(r"live|ht|1h|2h|'|\bminute\b|\b'\b").hasMatch(status) || int.tryParse(status.replaceAll(RegExp(r'\D'), '')) != null;
     });
 
     return SliverToBoxAdapter(
@@ -336,6 +456,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
+    final itens = _todosJogosHoje.take(10).toList();
+
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,9 +474,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             height: 170,
             child: PageView.builder(
               controller: _jogosHojeController,
-              itemCount: _todosJogosHoje.take(10).length,
+              itemCount: itens.length,
               itemBuilder: (context, index) {
-                return _buildHorizontalGameCard(_todosJogosHoje[index], _jogosHojeController, index);
+                return _buildHorizontalGameCard(itens[index], _jogosHojeController, index);
               },
             ),
           ),
@@ -363,7 +485,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: List.generate(
-                _todosJogosHoje.take(10).length,
+                itens.length,
                 (index) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -432,7 +554,14 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               ),
             )
           else
-            ..._noticias.take(10).map((noticia) => _buildNewsItem(noticia, noticia == _noticias.take(10).last)),
+            // Render por índice para controlar isLast corretamente
+            Column(
+              children: List.generate(_noticias.take(10).length, (i) {
+                final noticia = _noticias.take(10).toList()[i];
+                final isLast = i == _noticias.take(10).length - 1;
+                return _buildNewsItem(noticia, isLast);
+              }),
+            ),
         ],
       ),
     );
@@ -456,10 +585,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       height: 80,
                       color: Theme.of(context).colorScheme.primaryContainer,
                       child: noticia['image'] != null && noticia['image'].toString().isNotEmpty
-                          ? Image.network(
-                              noticia['image'],
+                          ? CorsImage(
+                              imageUrl: noticia['image'],
+                              width: 80,
+                              height: 80,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Icon(
+                              errorWidget: Icon(
                                 Symbols.article_rounded,
                                 color: Theme.of(context).colorScheme.primary,
                                 size: 32,
@@ -502,7 +633,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                           Row(
                             children: [
                               Text(
-                                'Euronews.com',
+                                noticia['source']?.toString() ?? 'Fonte',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -540,12 +671,14 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _buildHorizontalGameCard(dynamic jogo, PageController controller, int index) {
-    final status = jogo['match_status'] ?? '';
-    final isNumeric = int.tryParse(status.toString()) != null;
-    final isLive = isNumeric || status.contains("'") || status == 'HT' || status == 'LIVE' || status == '1H' || status == '2H';
-    final isHT = status == 'HT';
-    final isFinished = status.contains('Finished') || status == 'FT' || status == 'AET' || status == 'AP';
-    final isNotStarted = status == '' || status == 'NS' || status.contains('Not Started');
+    final statusRaw = (jogo['match_status']?.toString() ?? '');
+    final statusLower = statusRaw.toLowerCase();
+
+    final isNumeric = int.tryParse(statusRaw.replaceAll(RegExp(r'\D'), '')) != null && statusRaw.trim().isNotEmpty;
+    final isLive = RegExp(r"live|ht|1h|2h|'|\bminute\b", caseSensitive: false).hasMatch(statusLower) || isNumeric;
+    final isHT = statusLower == 'ht' || statusLower == 'interval' || statusLower == 'ht.';
+    final isFinished = statusLower.contains('finished') || statusLower == 'ft' || statusLower == 'aet' || statusLower == 'ap';
+    final isNotStarted = statusLower.isEmpty || statusLower == 'ns' || statusLower.contains('not started');
 
     final homeYellowCards = int.tryParse(jogo['match_hometeam_yellow_cards']?.toString() ?? '0') ?? 0;
     final homeRedCards = int.tryParse(jogo['match_hometeam_red_cards']?.toString() ?? '0') ?? 0;
@@ -555,32 +688,10 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
     final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
 
-    int homePercent = 0;
-    int awayPercent = 0;
-
-    if (!isNotStarted) {
-      try {
-        final statistics = jogo['statistics'];
-        if (statistics != null && statistics is List && statistics.isNotEmpty) {
-          for (var stat in statistics) {
-            if (stat != null && stat is Map) {
-              final type = stat['type']?.toString() ?? '';
-              if (type == 'Ball Possession' || type.toLowerCase().contains('possession')) {
-                final homeValue = stat['home']?.toString() ?? '';
-                final cleanValue = homeValue.replaceAll('%', '').replaceAll(' ', '').trim();
-                if (cleanValue.isNotEmpty) {
-                  homePercent = int.tryParse(cleanValue) ?? 0;
-                  awayPercent = 100 - homePercent;
-                  break;
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('❌ Erro ao carregar estatísticas: $e');
-      }
-    }
+    // extrair posse de forma robusta
+    final possession = _extractPossession(jogo['statistics']);
+    final homePercent = possession['home']!;
+    final awayPercent = possession['away']!;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final homeWon = isFinished && homeScore > awayScore;
@@ -593,18 +704,25 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         double scale = 1.0;
 
         if (controller.position.haveDimensions) {
-          value = controller.page! - index;
+          value = (controller.page ?? controller.initialPage) - index;
           scale = (1 - (value.abs() * 0.12)).clamp(0.88, 1.0);
         }
 
+        final elevation = ((scale - 0.88) / (1 - 0.88)) * 8; // 0..8
         return Center(
           child: Transform.scale(
             scale: scale,
-            child: child,
+            child: Material(
+              color: Colors.transparent,
+              elevation: elevation,
+              borderRadius: BorderRadius.circular(28),
+              child: child,
+            ),
           ),
         );
       },
-      child: GestureDetector(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(28),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -618,6 +736,14 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           decoration: BoxDecoration(
             color: _getCardColor(context),
             borderRadius: BorderRadius.circular(28),
+            // sombra leve extra para quando Material elevation não for suficiente
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -632,11 +758,13 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         Stack(
                           alignment: Alignment.center,
                           children: [
-                            Image.network(
-                              jogo['team_home_badge'] ?? '',
+                            // usa CorsImage para garantir que PNGs com CORS carreguem
+                            CorsImage(
+                              imageUrl: (jogo['team_home_badge'] ?? '').toString(),
                               width: 48,
                               height: 48,
-                              errorBuilder: (_, __, ___) => Icon(
+                              fit: BoxFit.contain,
+                              errorWidget: Icon(
                                 Symbols.shield_rounded,
                                 size: 48,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -774,7 +902,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          isHT ? 'INT' : status,
+                          isHT ? 'INT' : statusRaw,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -793,11 +921,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         Stack(
                           alignment: Alignment.center,
                           children: [
-                            Image.network(
-                              jogo['team_away_badge'] ?? '',
+                            CorsImage(
+                              imageUrl: (jogo['team_away_badge'] ?? '').toString(),
                               width: 48,
                               height: 48,
-                              errorBuilder: (_, __, ___) => Icon(
+                              fit: BoxFit.contain,
+                              errorWidget: Icon(
                                 Symbols.shield_rounded,
                                 size: 48,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -907,7 +1036,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '$homePercent%',
+                          '${homePercent}%',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -918,12 +1047,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         TweenAnimationBuilder<double>(
                           duration: const Duration(milliseconds: 800),
                           curve: Curves.easeOut,
-                          tween: Tween(begin: 0, end: homePercent / 100),
+                          tween: Tween(begin: 0.0, end: homePercent / 100),
                           builder: (context, value, child) {
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
-                                value: value,
+                                value: value.isNaN ? 0 : value,
                                 backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   isDark ? const Color(0xFF42A5F5) : const Color(0xFF1976D2),
@@ -942,7 +1071,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '$awayPercent%',
+                          '${awayPercent}%',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
@@ -953,12 +1082,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         TweenAnimationBuilder<double>(
                           duration: const Duration(milliseconds: 800),
                           curve: Curves.easeOut,
-                          tween: Tween(begin: 0, end: awayPercent / 100),
+                          tween: Tween(begin: 0.0, end: awayPercent / 100),
                           builder: (context, value, child) {
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: LinearProgressIndicator(
-                                value: value,
+                                value: value.isNaN ? 0 : value,
                                 backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   isDark ? const Color(0xFFFF7043) : const Color(0xFFFF6F00),
