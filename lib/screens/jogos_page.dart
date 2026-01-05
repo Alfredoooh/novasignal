@@ -21,7 +21,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
   final Map<String, List<dynamic>> _cacheJogosPorFiltro = {};
 
-  // Ordem das ligas europeias prioritárias
   final List<String> _ligasPrioritarias = [
     'LaLiga',
     'Premier League',
@@ -504,7 +503,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       jogosPorLiga[ligaNome]!.add(jogo);
     }
 
-    // Ordenar ligas por prioridade
     ligasOrdenadas.sort((a, b) {
       final prioA = _getPrioridadeLiga(a);
       final prioB = _getPrioridadeLiga(b);
@@ -917,7 +915,7 @@ class _QuickMatchDetailsModal extends StatelessWidget {
     required this.isNotStarted,
   });
 
-  @override
+   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1185,7 +1183,7 @@ class _QuickMatchDetailsModal extends StatelessWidget {
                                   ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ],
