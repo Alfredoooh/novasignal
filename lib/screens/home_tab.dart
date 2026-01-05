@@ -584,9 +584,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       width: 80,
                       height: 80,
                       color: Theme.of(context).colorScheme.primaryContainer,
-                      child: noticia['image'] != null && noticia['image'].toString().isNotEmpty
+                      child: noticia['imageUrl'] != null && noticia['imageUrl'].toString().isNotEmpty
                           ? CorsImage(
-                              imageUrl: noticia['image'],
+                              imageUrl: noticia['imageUrl'],
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
@@ -620,7 +620,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          noticia['subtitle'] ?? '',
+                          noticia['description'] ?? noticia['subtitle'] ?? '',
                           style: TextStyle(
                             fontSize: 13,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -633,7 +633,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                           Row(
                             children: [
                               Text(
-                                noticia['source']?.toString() ?? 'Fonte',
+                                noticia['subtitle']?.toString() ?? 'Fonte',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -704,7 +704,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         double scale = 1.0;
 
         if (controller.position.haveDimensions) {
-          value = (controller.page ?? controller.initialPage) - index;
+          // CORREÇÃO LINHA 707: Converter para double explicitamente
+          value = ((controller.page ?? controller.initialPage.toDouble()) - index).toDouble();
           scale = (1 - (value.abs() * 0.12)).clamp(0.88, 1.0);
         }
 
