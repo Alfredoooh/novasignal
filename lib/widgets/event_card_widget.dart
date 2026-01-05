@@ -756,3 +756,86 @@ class EventCard extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildPlayerInfo({
+    required String player,
+    required String assist,
+    required String method,
+    required bool isHome,
+    required ColorScheme cs,
+    required String type,
+  }) {
+    final playerImage = event['playerImage']?.toString();
+    final teamBadge = isHome ? homeTeamBadge : awayTeamBadge;
+
+    return Column(
+      crossAxisAlignment: isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        Row(
+          mainAxisAlignment: isHome ? MainAxisAlignment.start : MainAxisAlignment.end,
+          children: [
+            if (!isHome && player.isNotEmpty) ...[
+              Flexible(
+                child: Text(
+                  player,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                    fontSize: 14,
+                  ),
+                  textAlign: isHome ? TextAlign.left : TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (player.isNotEmpty)
+              _buildPlayerAvatar(
+                playerImageUrl: playerImage,
+                teamBadge: teamBadge,
+                cs: cs,
+              ),
+            if (isHome && player.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  player,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.left,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (assist.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Assistência: $assist',
+            style: TextStyle(
+              color: cs.onSurfaceVariant.withOpacity(0.7),
+              fontSize: 12,
+            ),
+            textAlign: isHome ? TextAlign.left : TextAlign.right,
+          ),
+        ],
+        if (method.isNotEmpty && type == 'goal') ...[
+          const SizedBox(height: 4),
+          Text(
+            method,
+            style: TextStyle(
+              color: cs.onSurfaceVariant.withOpacity(0.6),
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: isHome ? TextAlign.left : TextAlign.right,
+          ),
+        ],
+      ],
+    );
+  }
+}
