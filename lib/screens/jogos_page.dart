@@ -653,26 +653,6 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
 
     final isAoVivoTab = _selectedFilter == 'direto';
 
-    BorderRadius borderRadius;
-    if (isFirst && isLast) {
-      borderRadius = const BorderRadius.only(
-        bottomLeft: Radius.circular(16),
-        bottomRight: Radius.circular(16),
-      );
-    } else if (isFirst) {
-      borderRadius = const BorderRadius.only(
-        bottomLeft: Radius.circular(4),
-        bottomRight: Radius.circular(4),
-      );
-    } else if (isLast) {
-      borderRadius = const BorderRadius.only(
-        bottomLeft: Radius.circular(16),
-        bottomRight: Radius.circular(16),
-      );
-    } else {
-      borderRadius = BorderRadius.circular(4);
-    }
-
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -687,12 +667,8 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       child: Column(
         children: [
           Container(
-            margin: EdgeInsets.only(bottom: isLast ? 0 : 2),
+            color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              borderRadius: borderRadius,
-            ),
             child: Column(
               children: [
                 Row(
@@ -832,6 +808,12 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               ],
             ),
           ),
+          if (!isLast)
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            ),
         ],
       ),
     );
