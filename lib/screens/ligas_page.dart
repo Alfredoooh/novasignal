@@ -25,7 +25,7 @@ class LigaDetalhesPage extends StatefulWidget {
   State<LigaDetalhesPage> createState() => _LigaDetalhesPageState();
 }
 
-class _LigaDetalhesPageState extends State<LigaDetalhesPage> 
+class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late AnimationController _fadeController;
@@ -74,10 +74,10 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
       final jogos = await appState.carregarJogosPorLiga(widget.ligaId);
 
       print('🏆 Liga ID: ${widget.ligaId}');
-      print('⚽ Jogos carregados: ${jogos.length}');
+      print('⚽ Jogos carregados (raw): ${jogos.length}');
 
       if (jogos.isNotEmpty) {
-        print('📋 Primeiro jogo: ${jogos[0]}');
+        print('📋 Primeiro jogo (raw): ${jogos[0]}');
       }
 
       final classificacao = _buildClassificacaoFromMatches(jogos);
@@ -102,82 +102,153 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     }
   }
 
+  // Normaliza um nome de equipa para chave interna (remove espaços extras, trim, lowercase)
+  String _normalizeTeamKey(String name) {
+    return name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+  }
+
+  // Determina se o status do jogo indica que terminou
+  bool _isMatchFinished(String status) {
+    final s = status.toLowerCase();
+    // detecta FT, finished, final, full-time, aet, after extra time, penalties podem aparecer em textos
+    return s.contains('finished') ||
+        s.contains('ft') ||
+        s.contains('final') ||
+        s.contains('full-time') ||
+        s.contains('aet') ||
+        s.contains('after extra') ||
+        s.contains('pen') ||
+        s == 'ft' ||
+        s == 'finished';
+  }
+
   List<dynamic> _buildClassificacaoFromMatches(List<dynamic> jogos) {
     if (jogos.isEmpty) return [];
 
-    Map<String, Map<String, dynamic>> tabelaCalculada = {};
+    // Mapa por chave normalizada -> dados do time
+    final Map<String, Map<String, dynamic>> tabelaCalculada = {};
+    final Set<String> seenMatchIds = {};
 
     for (var jogo in jogos) {
-      final status = jogo['match_status']?.toString() ?? '';
-      final isFinished = status.contains('Finished') || status == 'FT' || status == 'AET';
+      try {
+        // Criar uma chave de jogo para deduplicar. Preferimos match_id quando disponível.
+        final rawMatchId = jogo['match_id']?.toString();
+        final homeRaw = (jogo['match_hometeam_name'] ?? '').toString();
+        final awayRaw = (jogo['match_awayteam_name'] ?? '').toString();
+        final homeScoreRaw = jogo['match_hometeam_score']?.toString() ?? '';
+        final awayScoreRaw = jogo['match_awayteam_score']?.toString() ?? '';
+        final matchKey = rawMatchId != null && rawMatchId.isNotEmpty
+            ? rawMatchId
+            : '${jogo['match_date'] ?? ''}::$homeRaw::$awayRaw::$homeScoreRaw::$awayScoreRaw';
 
-      if (!isFinished) continue;
+        if (seenMatchIds.contains(matchKey)) {
+          // Já contabilizamos este jogo — pular para evitar duplicados.
+          continue;
+        }
+        seenMatchIds.add(matchKey);
 
-      final homeTeam = jogo['match_hometeam_name']?.toString() ?? '';
-      final awayTeam = jogo['match_awayteam_name']?.toString() ?? '';
+        final status = jogo['match_status']?.toString() ?? '';
+        final isFinished = _isMatchFinished(status);
+        if (!isFinished) continue;
 
-      if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
+        final homeTeam = homeRaw.trim();
+        final awayTeam = awayRaw.trim();
+        if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
 
-      final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
-      final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
-      final homeBadge = jogo['team_home_badge']?.toString() ?? '';
-      final awayBadge = jogo['team_away_badge']?.toString() ?? '';
+        final homeScore = int.tryParse(homeScoreRaw) ?? 0;
+        final awayScore = int.tryParse(awayScoreRaw) ?? 0;
 
-      if (!tabelaCalculada.containsKey(homeTeam)) {
-        tabelaCalculada[homeTeam] = {
-          'team_name': homeTeam,
-          'team_badge': homeBadge,
-          'jogos': 0,
-          'vitorias': 0,
-          'empates': 0,
-          'derrotas': 0,
-          'gols_pro': 0,
-          'gols_contra': 0,
-          'pontos': 0,
-        };
-      }
+        // Chaves normalizadas para eliminar variações de escrita
+        final homeKey = _normalizeTeamKey(homeTeam);
+        final awayKey = _normalizeTeamKey(awayTeam);
 
-      if (!tabelaCalculada.containsKey(awayTeam)) {
-        tabelaCalculada[awayTeam] = {
-          'team_name': awayTeam,
-          'team_badge': awayBadge,
-          'jogos': 0,
-          'vitorias': 0,
-          'empates': 0,
-          'derrotas': 0,
-          'gols_pro': 0,
-          'gols_contra': 0,
-          'pontos': 0,
-        };
-      }
+        final homeBadge = jogo['team_home_badge']?.toString() ?? '';
+        final awayBadge = jogo['team_away_badge']?.toString() ?? '';
 
-      tabelaCalculada[homeTeam]!['jogos'] = (tabelaCalculada[homeTeam]!['jogos'] as int) + 1;
-      tabelaCalculada[awayTeam]!['jogos'] = (tabelaCalculada[awayTeam]!['jogos'] as int) + 1;
+        // Função local para inicializar registro de time com valores padrão
+        void _initTeamIfNeeded(Map<String, Map<String, dynamic>> map, String key,
+            String displayName, String badge) {
+          if (!map.containsKey(key)) {
+            map[key] = {
+              'team_key': key,
+              'team_name': displayName,
+              'team_badge': badge,
+              'jogos': 0,
+              'vitorias': 0,
+              'empates': 0,
+              'derrotas': 0,
+              'gols_pro': 0,
+              'gols_contra': 0,
+              'pontos': 0,
+            };
+          } else {
+            // se existir mas tiver nome vazio ou badge vazio, preenchê-los com dados melhores
+            final existing = map[key]!;
+            if ((existing['team_name']?.toString().isEmpty ?? true) &&
+                displayName.isNotEmpty) {
+              existing['team_name'] = displayName;
+            }
+            if ((existing['team_badge']?.toString().isEmpty ?? true) &&
+                badge.isNotEmpty) {
+              existing['team_badge'] = badge;
+            }
+          }
+        }
 
-      tabelaCalculada[homeTeam]!['gols_pro'] = (tabelaCalculada[homeTeam]!['gols_pro'] as int) + homeScore;
-      tabelaCalculada[homeTeam]!['gols_contra'] = (tabelaCalculada[homeTeam]!['gols_contra'] as int) + awayScore;
-      tabelaCalculada[awayTeam]!['gols_pro'] = (tabelaCalculada[awayTeam]!['gols_pro'] as int) + awayScore;
-      tabelaCalculada[awayTeam]!['gols_contra'] = (tabelaCalculada[awayTeam]!['gols_contra'] as int) + homeScore;
+        _initTeamIfNeeded(tabelaCalculada, homeKey, homeTeam, homeBadge);
+        _initTeamIfNeeded(tabelaCalculada, awayKey, awayTeam, awayBadge);
 
-      if (homeScore > awayScore) {
-        tabelaCalculada[homeTeam]!['vitorias'] = (tabelaCalculada[homeTeam]!['vitorias'] as int) + 1;
-        tabelaCalculada[homeTeam]!['pontos'] = (tabelaCalculada[homeTeam]!['pontos'] as int) + 3;
-        tabelaCalculada[awayTeam]!['derrotas'] = (tabelaCalculada[awayTeam]!['derrotas'] as int) + 1;
-      } else if (awayScore > homeScore) {
-        tabelaCalculada[awayTeam]!['vitorias'] = (tabelaCalculada[awayTeam]!['vitorias'] as int) + 1;
-        tabelaCalculada[awayTeam]!['pontos'] = (tabelaCalculada[awayTeam]!['pontos'] as int) + 3;
-        tabelaCalculada[homeTeam]!['derrotas'] = (tabelaCalculada[homeTeam]!['derrotas'] as int) + 1;
-      } else {
-        tabelaCalculada[homeTeam]!['empates'] = (tabelaCalculada[homeTeam]!['empates'] as int) + 1;
-        tabelaCalculada[homeTeam]!['pontos'] = (tabelaCalculada[homeTeam]!['pontos'] as int) + 1;
-        tabelaCalculada[awayTeam]!['empates'] = (tabelaCalculada[awayTeam]!['empates'] as int) + 1;
-        tabelaCalculada[awayTeam]!['pontos'] = (tabelaCalculada[awayTeam]!['pontos'] as int) + 1;
+        tabelaCalculada[homeKey]!['jogos'] =
+            (tabelaCalculada[homeKey]!['jogos'] as int) + 1;
+        tabelaCalculada[awayKey]!['jogos'] =
+            (tabelaCalculada[awayKey]!['jogos'] as int) + 1;
+
+        tabelaCalculada[homeKey]!['gols_pro'] =
+            (tabelaCalculada[homeKey]!['gols_pro'] as int) + homeScore;
+        tabelaCalculada[homeKey]!['gols_contra'] =
+            (tabelaCalculada[homeKey]!['gols_contra'] as int) + awayScore;
+        tabelaCalculada[awayKey]!['gols_pro'] =
+            (tabelaCalculada[awayKey]!['gols_pro'] as int) + awayScore;
+        tabelaCalculada[awayKey]!['gols_contra'] =
+            (tabelaCalculada[awayKey]!['gols_contra'] as int) + homeScore;
+
+        if (homeScore > awayScore) {
+          tabelaCalculada[homeKey]!['vitorias'] =
+              (tabelaCalculada[homeKey]!['vitorias'] as int) + 1;
+          tabelaCalculada[homeKey]!['pontos'] =
+              (tabelaCalculada[homeKey]!['pontos'] as int) + 3;
+          tabelaCalculada[awayKey]!['derrotas'] =
+              (tabelaCalculada[awayKey]!['derrotas'] as int) + 1;
+        } else if (awayScore > homeScore) {
+          tabelaCalculada[awayKey]!['vitorias'] =
+              (tabelaCalculada[awayKey]!['vitorias'] as int) + 1;
+          tabelaCalculada[awayKey]!['pontos'] =
+              (tabelaCalculada[awayKey]!['pontos'] as int) + 3;
+          tabelaCalculada[homeKey]!['derrotas'] =
+              (tabelaCalculada[homeKey]!['derrotas'] as int) + 1;
+        } else {
+          tabelaCalculada[homeKey]!['empates'] =
+              (tabelaCalculada[homeKey]!['empates'] as int) + 1;
+          tabelaCalculada[homeKey]!['pontos'] =
+              (tabelaCalculada[homeKey]!['pontos'] as int) + 1;
+          tabelaCalculada[awayKey]!['empates'] =
+              (tabelaCalculada[awayKey]!['empates'] as int) + 1;
+          tabelaCalculada[awayKey]!['pontos'] =
+              (tabelaCalculada[awayKey]!['pontos'] as int) + 1;
+        }
+      } catch (err) {
+        // proteger contra entradas inesperadas sem quebrar todo o cálculo
+        print('⚠️ Erro ao processar jogo para classificação: $err\nJogo: $jogo');
+        continue;
       }
     }
 
+    // Converter para lista e ordenar com critérios: pontos, saldo, gols pró
     final tabelaOrdenada = tabelaCalculada.values.toList()
       ..sort((a, b) {
-        final pontosCompare = (b['pontos'] as int).compareTo(a['pontos'] as int);
+        final pontosA = a['pontos'] as int;
+        final pontosB = b['pontos'] as int;
+        final pontosCompare = pontosB.compareTo(pontosA);
         if (pontosCompare != 0) return pontosCompare;
 
         final saldoA = (a['gols_pro'] as int) - (a['gols_contra'] as int);
@@ -218,21 +289,14 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                 flexibleSpace: FlexibleSpaceBar(
                   title: Text(
                     ligaData['league_name'] ?? 'Liga',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    style:
+                        const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                   centerTitle: false,
                   titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
                   background: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          cs.primaryContainer,
-                          cs.surface,
-                        ],
-                      ),
-                    ),
+                    // remova o gradiente: fundo sólido usando a cor do tema
+                    color: cs.surface,
                     child: Center(
                       child: TweenAnimationBuilder<double>(
                         duration: const Duration(milliseconds: 800),
@@ -241,8 +305,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                         builder: (context, value, child) {
                           return Transform.scale(
                             scale: 0.7 + (0.3 * value),
-                            child: ligaData['league_logo'] != null && 
-                                   ligaData['league_logo'].toString().isNotEmpty
+                            child: ligaData['league_logo'] != null &&
+                                    ligaData['league_logo'].toString().isNotEmpty
                                 ? CorsImage(
                                     imageUrl: ligaData['league_logo'],
                                     width: 80,
@@ -274,7 +338,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                     unselectedLabelColor: cs.onSurfaceVariant,
                     indicatorColor: cs.primary,
                     indicatorWeight: 3,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    labelStyle:
+                        const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                     tabs: const [
                       Tab(text: 'Classificação'),
                       Tab(text: 'Jogos'),
@@ -364,7 +429,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
               'A classificação aparecerá após os jogos',
               style: TextStyle(
                 fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                color:
+                    Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
               ),
             ),
           ],
@@ -494,7 +560,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
           posicaoColor = Colors.orange.withOpacity(0.08);
           borderColor = Colors.orange.withOpacity(0.4);
         } else if (posicao >= classificacao.length - 2) {
-          posicaoColor = Theme.of(context).colorScheme.errorContainer.withOpacity(0.3);
+          posicaoColor =
+              Theme.of(context).colorScheme.errorContainer.withOpacity(0.3);
           borderColor = Theme.of(context).colorScheme.error.withOpacity(0.3);
         }
 
@@ -527,7 +594,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                         width: 40,
                         child: Text(
                           '$posicao',
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                       ),
                       Expanded(
@@ -541,7 +609,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                             Expanded(
                               child: Text(
                                 time['team_name']?.toString() ?? 'Unknown',
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -671,7 +740,7 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                       color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isLive 
+                        color: isLive
                             ? Colors.red.withOpacity(0.3)
                             : Theme.of(context).dividerColor.withOpacity(0.2),
                         width: isLive ? 2 : 1,
@@ -711,8 +780,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: isFinished 
-                                      ? Theme.of(context).colorScheme.onSurface 
+                                  color: isFinished
+                                      ? Theme.of(context).colorScheme.onSurface
                                       : Colors.white,
                                 ),
                               ),
@@ -733,7 +802,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                                   Expanded(
                                     child: Text(
                                       jogo['match_hometeam_name'] ?? '',
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                      style: const TextStyle(
+                                          fontSize: 14, fontWeight: FontWeight.w600),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -758,7 +828,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
                                   Expanded(
                                     child: Text(
                                       jogo['match_awayteam_name'] ?? '',
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                      style: const TextStyle(
+                                          fontSize: 14, fontWeight: FontWeight.w600),
                                       overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.right,
                                     ),
@@ -808,8 +879,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
 
   Widget _buildEstatisticasContent(List<dynamic> classificacao) {
     final top3 = classificacao.take(3).toList();
-    final bottom3 = classificacao.length >= 3 
-        ? classificacao.skip(classificacao.length - 3).take(3).toList() 
+    final bottom3 = classificacao.length >= 3
+        ? classificacao.skip(classificacao.length - 3).take(3).toList()
         : [];
 
     final artilheiros = _calcularArtilheiros();
@@ -863,7 +934,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
             const SizedBox(height: 12),
             ...artilheiros.take(5).toList().asMap().entries.map((entry) {
               final isFirst = entry.key == 0;
-              final isLast = entry.key == artilheiros.take(5).length - 1;
+              final isLast =
+                  entry.key == artilheiros.take(5).length - 1;
               return _buildArtilheiroCard(entry.value, context, isFirst, isLast);
             }),
           ],
@@ -875,39 +947,85 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
   List<Map<String, dynamic>> _calcularArtilheiros() {
     if (_jogos == null || _jogos!.isEmpty) return [];
 
-    Map<String, Map<String, dynamic>> golsPorTime = {};
+    final Map<String, Map<String, dynamic>> golsPorTime = {};
+    final Set<String> seenMatchIds = {};
 
     for (var jogo in _jogos!) {
-      final homeTeam = jogo['match_hometeam_name']?.toString() ?? '';
-      final awayTeam = jogo['match_awayteam_name']?.toString() ?? '';
-      final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
-      final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
-      final homeBadge = jogo['team_home_badge']?.toString() ?? '';
-      final awayBadge = jogo['team_away_badge']?.toString() ?? '';
+      try {
+        final rawMatchId = jogo['match_id']?.toString();
+        final homeRaw = (jogo['match_hometeam_name'] ?? '').toString();
+        final awayRaw = (jogo['match_awayteam_name'] ?? '').toString();
+        final homeScoreRaw = jogo['match_hometeam_score']?.toString() ?? '';
+        final awayScoreRaw = jogo['match_awayteam_score']?.toString() ?? '';
+        final matchKey = rawMatchId != null && rawMatchId.isNotEmpty
+            ? rawMatchId
+            : '${jogo['match_date'] ?? ''}::$homeRaw::$awayRaw::$homeScoreRaw::$awayScoreRaw';
 
-      if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
+        if (seenMatchIds.contains(matchKey)) continue;
+        seenMatchIds.add(matchKey);
 
-      if (!golsPorTime.containsKey(homeTeam)) {
-        golsPorTime[homeTeam] = {'team': homeTeam, 'badge': homeBadge, 'gols': 0};
+        final status = jogo['match_status']?.toString() ?? '';
+        final isFinished = _isMatchFinished(status);
+        if (!isFinished) continue;
+
+        final homeTeam = homeRaw.trim();
+        final awayTeam = awayRaw.trim();
+        if (homeTeam.isEmpty || awayTeam.isEmpty) continue;
+
+        final homeScore = int.tryParse(homeScoreRaw) ?? 0;
+        final awayScore = int.tryParse(awayScoreRaw) ?? 0;
+
+        final homeKey = _normalizeTeamKey(homeTeam);
+        final awayKey = _normalizeTeamKey(awayTeam);
+
+        final homeBadge = jogo['team_home_badge']?.toString() ?? '';
+        final awayBadge = jogo['team_away_badge']?.toString() ?? '';
+
+        if (!golsPorTime.containsKey(homeKey)) {
+          golsPorTime[homeKey] = {'team': homeTeam, 'badge': homeBadge, 'gols': 0};
+        } else {
+          if ((golsPorTime[homeKey]!['team']?.toString().isEmpty ?? true) &&
+              homeTeam.isNotEmpty) {
+            golsPorTime[homeKey]!['team'] = homeTeam;
+          }
+          if ((golsPorTime[homeKey]!['badge']?.toString().isEmpty ?? true) &&
+              homeBadge.isNotEmpty) {
+            golsPorTime[homeKey]!['badge'] = homeBadge;
+          }
+        }
+
+        if (!golsPorTime.containsKey(awayKey)) {
+          golsPorTime[awayKey] = {'team': awayTeam, 'badge': awayBadge, 'gols': 0};
+        } else {
+          if ((golsPorTime[awayKey]!['team']?.toString().isEmpty ?? true) &&
+              awayTeam.isNotEmpty) {
+            golsPorTime[awayKey]!['team'] = awayTeam;
+          }
+          if ((golsPorTime[awayKey]!['badge']?.toString().isEmpty ?? true) &&
+              awayBadge.isNotEmpty) {
+            golsPorTime[awayKey]!['badge'] = awayBadge;
+          }
+        }
+
+        golsPorTime[homeKey]!['gols'] =
+            (golsPorTime[homeKey]!['gols'] as int) + homeScore;
+        golsPorTime[awayKey]!['gols'] =
+            (golsPorTime[awayKey]!['gols'] as int) + awayScore;
+      } catch (err) {
+        print('⚠️ Erro ao processar jogo para artilheiros: $err\nJogo: $jogo');
+        continue;
       }
-
-      if (!golsPorTime.containsKey(awayTeam)) {
-        golsPorTime[awayTeam] = {'team': awayTeam, 'badge': awayBadge, 'gols': 0};
-      }
-
-      golsPorTime[homeTeam]!['gols'] = (golsPorTime[homeTeam]!['gols'] as int) + homeScore;
-      golsPorTime[awayTeam]!['gols'] = (golsPorTime[awayTeam]!['gols'] as int) + awayScore;
     }
 
     final artilheiros = golsPorTime.values.toList()
       ..sort((a, b) => (b['gols'] as int).compareTo(a['gols'] as int));
-
     return artilheiros;
   }
 
-  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro, BuildContext context, bool isFirst, bool isLast) {
+  Widget _buildArtilheiroCard(Map<String, dynamic> artilheiro, BuildContext context,
+      bool isFirst, bool isLast) {
     final cs = Theme.of(context).colorScheme;
-    
+
     BorderRadius borderRadius;
     if (isFirst && isLast) {
       borderRadius = BorderRadius.circular(16);
@@ -993,7 +1111,8 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
   String _abreviarNome(String nomeCompleto) {
     final partes = nomeCompleto.trim().split(' ');
     if (partes.length == 1) return nomeCompleto;
-    final abreviados = partes.sublist(0, partes.length - 1).map((p) => '${p[0]}.').toList();
+    final abreviados =
+        partes.sublist(0, partes.length - 1).map((p) => '${p[0]}.').toList();
     final ultimo = partes.last;
     return '${abreviados.join('')} $ultimo';
   }
@@ -1022,7 +1141,11 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
             errorBuilder: (_, __, ___) => Icon(
               Symbols.workspace_premium_rounded,
               size: posicao == 1 ? 50 : 45,
-              color: posicao == 1 ? Colors.amber : posicao == 2 ? Colors.grey.shade400 : Colors.brown,
+              color: posicao == 1
+                  ? Colors.amber
+                  : posicao == 2
+                      ? Colors.grey.shade400
+                      : Colors.brown,
             ),
           ),
           const SizedBox(height: 12),
@@ -1033,9 +1156,9 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
               shape: BoxShape.circle,
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: Border.all(
-                color: posicao == 1 
+                color: posicao == 1
                     ? Colors.amber.withOpacity(0.5)
-                    : posicao == 2 
+                    : posicao == 2
                         ? Colors.grey.shade400.withOpacity(0.5)
                         : Colors.brown.withOpacity(0.5),
                 width: 3,
@@ -1081,10 +1204,11 @@ class _LigaDetalhesPageState extends State<LigaDetalhesPage>
     );
   }
 
-  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao, BuildContext context, bool isFirst, bool isLast) {
+  Widget _buildBottomTeamCard(Map<String, dynamic> time, int posicao, BuildContext context,
+      bool isFirst, bool isLast) {
     final pontos = time['pontos'] as int;
     final cs = Theme.of(context).colorScheme;
-    
+
     BorderRadius borderRadius;
     if (isFirst && isLast) {
       borderRadius = BorderRadius.circular(16);
