@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/cupertino.dart';
-import 'dart:ui_web' as ui_web;
-import 'dart:html' as html;
+
+// Imports condicionais - apenas para web
+import 'dart:ui_web' as ui_web show platformViewRegistry;
+import 'dart:html' as html show IFrameElement, window;
 
 class VerificacaoWebViewPage extends StatefulWidget {
   const VerificacaoWebViewPage({super.key});
@@ -17,9 +19,9 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   bool isLoading = true;
   double loadingProgress = 0.0;
   final String url = 'https://elephantbetzone.com/app/scanTicket/manualEntry';
-  
+
   // Web specific
-  html.IFrameElement? _iframeElement;
+  dynamic _iframeElement;
   String _viewId = 'webview-iframe-${DateTime.now().millisecondsSinceEpoch}';
 
   @override
@@ -42,6 +44,8 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
 
   // ==================== WEB PLATFORM ====================
   void _initializeWebPlatform() {
+    if (!kIsWeb) return;
+    
     _iframeElement = html.IFrameElement()
       ..src = url
       ..style.border = 'none'
@@ -50,13 +54,11 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
       ..allow = 'camera; microphone; geolocation'
       ..allowFullscreen = true;
 
-    // Registra o iframe como um platform view
     ui_web.platformViewRegistry.registerViewFactory(
       _viewId,
       (int viewId) => _iframeElement!,
     );
 
-    // Simula loading
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
@@ -74,14 +76,13 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
       }
     });
 
-    // Injeta estilos após carregar
     Future.delayed(const Duration(milliseconds: 1500), () {
       _injectWebStyles();
     });
   }
 
   void _injectWebStyles() {
-    if (_iframeElement == null) return;
+    if (!kIsWeb || _iframeElement == null) return;
 
     try {
       final themeColors = _getThemeColorsForWeb();
@@ -96,7 +97,6 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
         })();
       ''';
 
-      // Tenta injetar no contentWindow do iframe
       _iframeElement?.contentWindow?.postMessage({
         'type': 'inject-styles',
         'script': script,
@@ -109,6 +109,8 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   }
 
   void _reloadWebView() {
+    if (!kIsWeb) return;
+    
     if (_iframeElement != null) {
       _iframeElement?.src = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
       setState(() {
@@ -127,6 +129,8 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
 
   // ==================== MOBILE PLATFORM ====================
   void _initializeMobileWebView() {
+    if (kIsWeb) return;
+    
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent)
@@ -166,6 +170,8 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   }
 
   void _injectMobileStyles() {
+    if (kIsWeb) return;
+    
     final themeColors = _getThemeColors();
     final script = '''
       (function() {
@@ -188,7 +194,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   // ==================== THEME COLORS ====================
   String _getThemeColors() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (isDark) {
       return '''
         const theme = {
@@ -642,14 +648,11 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
         ),
         body: Stack(
           children: [
-            // Web Platform - Usa HtmlElementView com iframe
             if (kIsWeb)
               HtmlElementView(viewType: _viewId)
-            // Mobile Platform - Usa WebView nativo
             else
               WebViewWidget(controller: controller),
 
-            // Loading overlay
             if (isLoading && loadingProgress < 0.5)
               Container(
                 color: isDark ? const Color(0xFF121212) : Colors.white,
