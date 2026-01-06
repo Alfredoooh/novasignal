@@ -42,7 +42,16 @@ class AppState with ChangeNotifier {
   bool get temaEscuroProfundo => _temaEscuroProfundo;
   bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
-  String get modoTema => _modoTema; // NOVO GETTER
+  ThemeMode get modoTema {
+    switch (_modoTema) {
+      case 'claro':
+        return ThemeMode.light;
+      case 'escuro':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
 
   // ========== CONFIGURAÇÃO DA API ==========
 
@@ -194,26 +203,31 @@ class AppState with ChangeNotifier {
   }
 
   // NOVO MÉTODO PARA ALTERAR MODO DE TEMA
-  Future<void> alterarModoTema(String modo) async {
-    if (modo != 'claro' && modo != 'escuro' && modo != 'auto') {
-      debugPrint('⚠️ Modo de tema inválido: $modo');
-      return;
+  Future<void> alterarModoTema(ThemeMode modo) async {
+    String novoModo;
+    
+    switch (modo) {
+      case ThemeMode.light:
+        novoModo = 'claro';
+        _temaEscuro = false;
+        break;
+      case ThemeMode.dark:
+        novoModo = 'escuro';
+        _temaEscuro = true;
+        break;
+      case ThemeMode.system:
+      default:
+        novoModo = 'auto';
+        break;
     }
     
-    _modoTema = modo;
-    
-    // Atualiza também o _temaEscuro baseado no modo
-    if (modo == 'claro') {
-      _temaEscuro = false;
-    } else if (modo == 'escuro') {
-      _temaEscuro = true;
-    }
-    // Se 'auto', mantém baseado no sistema (você pode implementar detecção do sistema)
+    _modoTema = novoModo;
     
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('modo_tema', modo);
+    await prefs.setString('modo_tema', novoModo);
+    await prefs.setBool('tema_escuro', _temaEscuro);
     notifyListeners();
-    debugPrint('🎨 Modo de tema alterado para: $modo');
+    debugPrint('🎨 Modo de tema alterado para: $novoModo');
   }
 
   Future<void> alternarTema(bool valor) async {
