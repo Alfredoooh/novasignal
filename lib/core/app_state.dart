@@ -6,13 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class AppState with ChangeNotifier {
-  // ========== CONFIGURAÇÕES DE TEMA (CORRIGIDO) ==========
+  // ========== CONFIGURAÇÕES DE TEMA ==========
   bool _temaEscuro = false;
   bool _temaAmoled = false;
   bool _temaEscuroProfundo = false;
   bool _corDinamica = true;
   bool _notificacoesAtivas = true;
-  String _modoTema = 'auto'; // 'claro', 'escuro', 'auto'
 
   // Estado de navegação
   String tabAtual = 'home';
@@ -36,25 +35,14 @@ class AppState with ChangeNotifier {
   // Timers de auto-atualização
   final Map<String, Timer> _autoUpdateTimers = {};
 
-  // ========== GETTERS (CORRIGIDO) ==========
+  // ========== GETTERS ==========
   bool get temaEscuro => _temaEscuro;
   bool get temaAmoled => _temaAmoled;
   bool get temaEscuroProfundo => _temaEscuroProfundo;
   bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
-  ThemeMode get modoTema {
-    switch (_modoTema) {
-      case 'claro':
-        return ThemeMode.light;
-      case 'escuro':
-        return ThemeMode.dark;
-      default:
-        return ThemeMode.system;
-    }
-  }
 
   // ========== CONFIGURAÇÃO DA API ==========
-
   static const List<String> _apiKeys = [
     'b44c67ad584a39726891c32421edec77847c068cb036edf6a41c4c40d8855f97',
     '5fbf446f332cdcb25ae37e36e1d7edeb55f7a47c7b30f34a8fe23da37f8d6ac0',
@@ -185,7 +173,7 @@ class AppState with ChangeNotifier {
     _rotateToNextAvailableKey();
   }
 
-  // ========== PREFERÊNCIAS (CORRIGIDO E EXPANDIDO) ==========
+  // ========== PREFERÊNCIAS ==========
 
   Future<void> _carregarPreferencias() async {
     try {
@@ -195,47 +183,16 @@ class AppState with ChangeNotifier {
       _temaEscuroProfundo = prefs.getBool('tema_escuro_profundo') ?? false;
       _corDinamica = prefs.getBool('cor_dinamica') ?? true;
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
-      _modoTema = prefs.getString('modo_tema') ?? 'auto';
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro ao carregar preferências: $e');
     }
   }
 
-  // NOVO MÉTODO PARA ALTERAR MODO DE TEMA
-  Future<void> alterarModoTema(ThemeMode modo) async {
-    String novoModo;
-    
-    switch (modo) {
-      case ThemeMode.light:
-        novoModo = 'claro';
-        _temaEscuro = false;
-        break;
-      case ThemeMode.dark:
-        novoModo = 'escuro';
-        _temaEscuro = true;
-        break;
-      case ThemeMode.system:
-      default:
-        novoModo = 'auto';
-        break;
-    }
-    
-    _modoTema = novoModo;
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('modo_tema', novoModo);
-    await prefs.setBool('tema_escuro', _temaEscuro);
-    notifyListeners();
-    debugPrint('🎨 Modo de tema alterado para: $novoModo');
-  }
-
   Future<void> alternarTema(bool valor) async {
     _temaEscuro = valor;
-    _modoTema = valor ? 'escuro' : 'claro';
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('tema_escuro', valor);
-    await prefs.setString('modo_tema', _modoTema);
     notifyListeners();
   }
 
@@ -572,6 +529,8 @@ class AppState with ChangeNotifier {
       return '';
     }
   }
+
+  // CONTINUA NA PARTE 2...
 
   // ========== JOGOS - API DIRETA ==========
 
@@ -938,27 +897,6 @@ class AppState with ChangeNotifier {
 
   Future<List<dynamic>> carregarUltimosJogosLiga(String ligaId) async {
     return carregarJogosPorLiga(ligaId);
-  }
-
-  Future<void> testarLiga(String ligaId) async {
-    debugPrint('🧪 TESTE: Carregando liga $ligaId');
-
-    try {
-      final jogos = await carregarJogosPorLiga(ligaId);
-      debugPrint('✅ Total de jogos: ${jogos.length}');
-
-      if (jogos.isNotEmpty) {
-        debugPrint('📋 Primeiro jogo: ${jogos[0]['match_hometeam_name']} vs ${jogos[0]['match_awayteam_name']}');
-        debugPrint('   Status: ${jogos[0]['match_status']}');
-        debugPrint('   Data: ${jogos[0]['match_date']}');
-      }
-
-      final classificacao = await carregarClassificacao(ligaId);
-      debugPrint('📊 Times na classificação: ${classificacao.length}');
-
-    } catch (e) {
-      debugPrint('❌ ERRO NO TESTE: $e');
-    }
   }
 
   // ========== UTILIDADES ==========
