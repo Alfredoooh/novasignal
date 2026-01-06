@@ -6,6 +6,70 @@ import '../core/app_state.dart';
 class ConfiguracoesPage extends StatelessWidget {
   const ConfiguracoesPage({super.key});
 
+  void _mostrarDialogTema(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Tema do Aplicativo'),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<ThemeMode>(
+                title: const Text('Sistema'),
+                value: ThemeMode.system,
+                groupValue: appState.modoTema,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    appState.alterarModoTema(value);
+                    Navigator.of(context).pop();
+                  }
+                },
+                activeColor: Theme.of(context).colorScheme.primary,
+              ),
+              RadioListTile<ThemeMode>(
+                title: const Text('Claro'),
+                value: ThemeMode.light,
+                groupValue: appState.modoTema,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    appState.alterarModoTema(value);
+                    Navigator.of(context).pop();
+                  }
+                },
+                activeColor: Theme.of(context).colorScheme.primary,
+              ),
+              RadioListTile<ThemeMode>(
+                title: const Text('Escuro'),
+                value: ThemeMode.dark,
+                groupValue: appState.modoTema,
+                onChanged: (ThemeMode? value) {
+                  if (value != null) {
+                    appState.alterarModoTema(value);
+                    Navigator.of(context).pop();
+                  }
+                },
+                activeColor: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _obterTextoTema(ThemeMode modo) {
+    switch (modo) {
+      case ThemeMode.system:
+        return 'Sistema';
+      case ThemeMode.light:
+        return 'Claro';
+      case ThemeMode.dark:
+        return 'Escuro';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,20 +131,21 @@ class ConfiguracoesPage extends StatelessWidget {
                       indent: 72,
                       color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
                     ),
-                    SwitchListTile(
-                      title: const Text('Tema Escuro'),
-                      subtitle: const Text('Ativar modo escuro'),
-                      secondary: Icon(
-                        Symbols.dark_mode_rounded,
+                    ListTile(
+                      leading: Icon(
+                        Symbols.contrast_rounded,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      value: appState.temaEscuro,
-                      // AppState tem alternarTema(bool)
-                      onChanged: (v) => appState.alternarTema(v),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: appState.temaEscuro 
-                            ? BorderRadius.zero 
-                            : const BorderRadius.vertical(bottom: Radius.circular(12)),
+                      title: const Text('Tema'),
+                      subtitle: Text(_obterTextoTema(appState.modoTema)),
+                      trailing: Icon(
+                        Symbols.arrow_forward_ios_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      onTap: () => _mostrarDialogTema(context, appState),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
                       ),
                     ),
                     if (appState.temaEscuro) ...[
@@ -94,43 +159,6 @@ class ConfiguracoesPage extends StatelessWidget {
                         subtitle: const Text('Usar tema preto puro'),
                         secondary: Icon(
                           Symbols.brightness_low_rounded,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        value: appState.temaEscuroProfundo,
-                        onChanged: (v) => appState.alternarTemaEscuroProfundo(v),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-                        ),
-                      ),
-
-                      // Divider separador entre os switches adicionais
-                      Divider(
-                        height: 1,
-                        indent: 72,
-                        color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
-                      ),
-
-                      // Novo switch: AMOLED (preto absoluto)
-                      SwitchListTile(
-                        title: const Text('AMOLED (Preto Puro)'),
-                        subtitle: const Text('Usa preto absoluto para reduzir brilho em OLED'),
-                        secondary: Icon(
-                          Icons.brightness_6,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        value: appState.temaAmoled,
-                        onChanged: (v) => appState.alternarTemaAmoled(v),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-                        ),
-                      ),
-
-                      // Switch adicional reaproveitando a flag de escuro profundo (variante)
-                      SwitchListTile(
-                        title: const Text('Escuro Profundo (variante)'),
-                        subtitle: const Text('Variação de contraste do modo escuro'),
-                        secondary: Icon(
-                          Icons.nights_stay,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         value: appState.temaEscuroProfundo,
