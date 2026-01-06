@@ -6,12 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 class AppState with ChangeNotifier {
-  // Configurações de tema e notificações
+  // ========== CONFIGURAÇÕES DE TEMA (CORRIGIDO) ==========
   bool _temaEscuro = false;
   bool _temaAmoled = false;
   bool _temaEscuroProfundo = false;
   bool _corDinamica = true;
   bool _notificacoesAtivas = true;
+  String _modoTema = 'auto'; // 'claro', 'escuro', 'auto'
 
   // Estado de navegação
   String tabAtual = 'home';
@@ -35,12 +36,13 @@ class AppState with ChangeNotifier {
   // Timers de auto-atualização
   final Map<String, Timer> _autoUpdateTimers = {};
 
-  // Getters
+  // ========== GETTERS (CORRIGIDO) ==========
   bool get temaEscuro => _temaEscuro;
   bool get temaAmoled => _temaAmoled;
   bool get temaEscuroProfundo => _temaEscuroProfundo;
   bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
+  String get modoTema => _modoTema; // NOVO GETTER
 
   // ========== CONFIGURAÇÃO DA API ==========
 
@@ -91,7 +93,7 @@ class AppState with ChangeNotifier {
       _apiKeyRequestCount[i] = 0;
       _apiKeyResetTime[i] = DateTime.now().add(const Duration(hours: 1));
     }
-    
+
     Timer.periodic(const Duration(minutes: 1), (timer) {
       _checkAndResetApiKeys();
     });
@@ -111,12 +113,12 @@ class AppState with ChangeNotifier {
   void _incrementApiKeyCount() {
     _apiKeyRequestCount[_currentApiKeyIndex] = 
         (_apiKeyRequestCount[_currentApiKeyIndex] ?? 0) + 1;
-    
+
     final count = _apiKeyRequestCount[_currentApiKeyIndex]!;
     final remaining = _maxRequestsPerHour - count;
-    
+
     debugPrint('📊 API Key $_currentApiKeyIndex: $count/$_maxRequestsPerHour requisições (restam: $remaining)');
-    
+
     if (count >= _maxRequestsPerHour) {
       debugPrint('⚠️ API Key $_currentApiKeyIndex atingiu o limite! Rotacionando...');
       _rotateToNextAvailableKey();
@@ -126,23 +128,23 @@ class AppState with ChangeNotifier {
   void _rotateToNextAvailableKey() {
     final startIndex = _currentApiKeyIndex;
     int attempts = 0;
-    
+
     do {
       _currentApiKeyIndex = (_currentApiKeyIndex + 1) % _apiKeys.length;
       attempts++;
-      
+
       final count = _apiKeyRequestCount[_currentApiKeyIndex] ?? 0;
-      
+
       if (count < _maxRequestsPerHour) {
         final remaining = _maxRequestsPerHour - count;
         debugPrint('✅ Rotacionado para API Key $_currentApiKeyIndex (uso: $count/$_maxRequestsPerHour, restam: $remaining)');
         return;
       }
-      
+
       debugPrint('⏭️ API Key $_currentApiKeyIndex também no limite ($count/$_maxRequestsPerHour), tentando próxima...');
-      
+
     } while (_currentApiKeyIndex != startIndex && attempts < _apiKeys.length);
-    
+
     if (attempts >= _apiKeys.length) {
       debugPrint('❌ TODAS as API Keys atingiram o limite! Aguardando reset...');
       final nextReset = _apiKeyResetTime.values
@@ -174,7 +176,7 @@ class AppState with ChangeNotifier {
     _rotateToNextAvailableKey();
   }
 
-  // ========== PREFERÊNCIAS ==========
+  // ========== PREFERÊNCIAS (CORRIGIDO E EXPANDIDO) ==========
 
   Future<void> _carregarPreferencias() async {
     try {
@@ -184,16 +186,42 @@ class AppState with ChangeNotifier {
       _temaEscuroProfundo = prefs.getBool('tema_escuro_profundo') ?? false;
       _corDinamica = prefs.getBool('cor_dinamica') ?? true;
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
+      _modoTema = prefs.getString('modo_tema') ?? 'auto';
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro ao carregar preferências: $e');
     }
   }
 
+  // NOVO MÉTODO PARA ALTERAR MODO DE TEMA
+  Future<void> alterarModoTema(String modo) async {
+    if (modo != 'claro' && modo != 'escuro' && modo != 'auto') {
+      debugPrint('⚠️ Modo de tema inválido: $modo');
+      return;
+    }
+    
+    _modoTema = modo;
+    
+    // Atualiza também o _temaEscuro baseado no modo
+    if (modo == 'claro') {
+      _temaEscuro = false;
+    } else if (modo == 'escuro') {
+      _temaEscuro = true;
+    }
+    // Se 'auto', mantém baseado no sistema (você pode implementar detecção do sistema)
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('modo_tema', modo);
+    notifyListeners();
+    debugPrint('🎨 Modo de tema alterado para: $modo');
+  }
+
   Future<void> alternarTema(bool valor) async {
     _temaEscuro = valor;
+    _modoTema = valor ? 'escuro' : 'claro';
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('tema_escuro', valor);
+    await prefs.setString('modo_tema', _modoTema);
     notifyListeners();
   }
 
@@ -372,7 +400,7 @@ class AppState with ChangeNotifier {
 
           if (data is Map && data.containsKey('error')) {
             final errorMsg = data['error'].toString().toLowerCase();
-            
+
             if (errorMsg.contains('requests') || 
                 errorMsg.contains('limit') || 
                 errorMsg.contains('quota') ||
@@ -409,61 +437,6 @@ class AppState with ChangeNotifier {
 
     throw Exception('Falha após $maxRetries tentativas');
   }
-
-    // ========== REQUISIÇÕES CLOUDFLARE WORKER (COMENTADO) ==========
-
-  /*
-  Future<dynamic> _makeRequest(String endpoint, String cacheKey) async {
-    if (_pendingRequests.containsKey(endpoint)) {
-      debugPrint('⏳ Aguardando requisição: $endpoint');
-      return await _pendingRequests[endpoint]!.future;
-    }
-
-    final completer = Completer<dynamic>();
-    _pendingRequests[endpoint] = completer;
-
-    try {
-      final result = await _executeRequest(endpoint);
-      _saveToCache(cacheKey, result);
-      completer.complete(result);
-      return result;
-    } catch (e) {
-      completer.completeError(e);
-      rethrow;
-    } finally {
-      _pendingRequests.remove(endpoint);
-    }
-  }
-
-  Future<dynamic> _executeRequest(String endpoint) async {
-    try {
-      final url = '$cloudflareBase$endpoint';
-      debugPrint('🚀 Request: $url');
-
-      final response = await _httpClient.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 15),
-      );
-
-      debugPrint('📡 Status Code: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data is Map && data.containsKey('error')) {
-          throw Exception(data['error']);
-        }
-
-        debugPrint('✅ Response OK: $endpoint');
-        return data;
-      } else {
-        throw Exception('HTTP ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('❌ Erro em _executeRequest: $e');
-      rethrow;
-    }
-  }
-  */
 
   // ========== NEWS API ==========
 
@@ -818,7 +791,7 @@ class AppState with ChangeNotifier {
     _autoUpdateTimers.remove(timerId);
   }
 
-  // ========== LIGAS - CORREÇÃO PRINCIPAL ==========
+  // ========== LIGAS ==========
 
   Future<List<dynamic>> carregarLigas() async {
     const cacheKey = 'ligas_todas';
@@ -854,7 +827,6 @@ class AppState with ChangeNotifier {
     }
   }
 
-  // ========== CORREÇÃO: JOGOS POR LIGA ==========
   Future<List<dynamic>> carregarJogosPorLiga(String ligaId) async {
     final cacheKey = 'jogos_liga_$ligaId';
     final cached = _getFromCache(cacheKey);
@@ -876,9 +848,8 @@ class AppState with ChangeNotifier {
     try {
       debugPrint('🔄 Carregando jogos da liga: $ligaId');
 
-      // CORREÇÃO: Buscar jogos dos últimos 6 meses para ter histórico completo
       final hoje = DateTime.now();
-      final inicioTemporada = hoje.subtract(const Duration(days: 180)); // 6 meses atrás
+      final inicioTemporada = hoje.subtract(const Duration(days: 180));
 
       final dataInicio = DateFormat('yyyy-MM-dd').format(inicioTemporada);
       final dataFim = DateFormat('yyyy-MM-dd').format(hoje);
@@ -897,7 +868,6 @@ class AppState with ChangeNotifier {
         jogos = response;
         debugPrint('✅ ${jogos.length} jogos da liga carregados (total)');
 
-        // Contar jogos finalizados para classificação
         final finalizados = jogos.where((j) {
           final status = j['match_status']?.toString() ?? '';
           return status.contains('Finished') || status == 'FT' || status == 'AET';
@@ -913,7 +883,6 @@ class AppState with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro ao carregar jogos da liga $ligaId: $e');
-      // Salva lista vazia para evitar loop de erros
       _saveToCache(cacheKey, []);
     }
   }
@@ -957,7 +926,6 @@ class AppState with ChangeNotifier {
     return carregarJogosPorLiga(ligaId);
   }
 
-  // ========== FUNÇÃO PARA DEBUG/TESTE ==========
   Future<void> testarLiga(String ligaId) async {
     debugPrint('🧪 TESTE: Carregando liga $ligaId');
 
