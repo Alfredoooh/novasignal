@@ -12,6 +12,7 @@ class AppState with ChangeNotifier {
   bool _temaEscuroProfundo = false;
   bool _corDinamica = true;
   bool _notificacoesAtivas = true;
+  ThemeMode _modoTema = ThemeMode.system; // ✅ ADICIONADO
 
   // Estado de navegação
   String tabAtual = 'home';
@@ -41,6 +42,7 @@ class AppState with ChangeNotifier {
   bool get temaEscuroProfundo => _temaEscuroProfundo;
   bool get corDinamica => _corDinamica;
   bool get notificacoesAtivas => _notificacoesAtivas;
+  ThemeMode get modoTema => _modoTema; // ✅ ADICIONADO
 
   // ========== CONFIGURAÇÃO DA API ==========
   static const List<String> _apiKeys = [
@@ -52,7 +54,6 @@ class AppState with ChangeNotifier {
   static const String _apiBase = 'https://apiv3.apifootball.com';
   int _currentApiKeyIndex = 0;
 
-  // Controle de requisições por API key
   final Map<int, int> _apiKeyRequestCount = {};
   final Map<int, DateTime> _apiKeyResetTime = {};
   static const int _maxRequestsPerHour = 150;
@@ -60,11 +61,9 @@ class AppState with ChangeNotifier {
   static const String newsApiKey = 'b2e4d59068e545abbdffaf947c371bcd';
   static const String newsApiBase = 'https://newsapi.org/v2';
 
-  // Cache e intervalos otimizados
   static const int _cacheStaleTime = 60;
   static const int _cacheDurationNews = 1800;
 
-  // Intervalos de atualização
   static const int _updateIntervalJogosAoVivo = 30;
   static const int _updateIntervalJogosNormais = 60;
   static const int _updateIntervalDetalhes = 15;
@@ -183,6 +182,11 @@ class AppState with ChangeNotifier {
       _temaEscuroProfundo = prefs.getBool('tema_escuro_profundo') ?? false;
       _corDinamica = prefs.getBool('cor_dinamica') ?? true;
       _notificacoesAtivas = prefs.getBool('notificacoes') ?? true;
+      
+      // ✅ ADICIONADO - Carregar modoTema
+      final modoTemaIndex = prefs.getInt('modo_tema') ?? 0;
+      _modoTema = ThemeMode.values[modoTemaIndex];
+      
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Erro ao carregar preferências: $e');
@@ -221,6 +225,22 @@ class AppState with ChangeNotifier {
     _notificacoesAtivas = valor;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notificacoes', valor);
+    notifyListeners();
+  }
+
+  // ✅ ADICIONADO - Novo método
+  Future<void> alterarModoTema(ThemeMode novoModo) async {
+    _modoTema = novoModo;
+    
+    // Sincronizar com _temaEscuro
+    if (novoModo == ThemeMode.dark) {
+      _temaEscuro = true;
+    } else if (novoModo == ThemeMode.light) {
+      _temaEscuro = false;
+    }
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('modo_tema', novoModo.index);
     notifyListeners();
   }
 
@@ -409,6 +429,8 @@ class AppState with ChangeNotifier {
     throw Exception('Falha após $maxRetries tentativas');
   }
 
+  // CONTINUA NA PARTE 2...
+
   // ========== NEWS API ==========
 
   Future<List<Map<String, dynamic>>> carregarNoticias() async {
@@ -529,8 +551,6 @@ class AppState with ChangeNotifier {
       return '';
     }
   }
-
-  // CONTINUA NA PARTE 2...
 
   // ========== JOGOS - API DIRETA ==========
 
