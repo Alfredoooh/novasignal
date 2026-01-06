@@ -55,8 +55,10 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: _buildLightTheme(appState.corDinamica),
             darkTheme: appState.temaAmoled 
-                ? _buildAmoledTheme(appState.corDinamica) 
-                : _buildDarkTheme(appState.corDinamica, appState.temaEscuroProfundo),
+                ? _buildPureBlackTheme(appState.corDinamica) 
+                : (appState.temaEscuroProfundo 
+                    ? _buildDarkElevatedTheme(appState.corDinamica)
+                    : _buildDarkTheme(appState.corDinamica)),
             themeMode: appState.temaEscuro ? ThemeMode.dark : ThemeMode.light,
             home: const HomePage(),
             builder: (context, child) {
@@ -71,10 +73,16 @@ class MyApp extends StatelessWidget {
     );
   }
 
+  // ==================== TEMA CLARO ====================
   ThemeData _buildLightTheme(bool usarCorDinamica) {
     const pureWhite = Color(0xFFFFFFFF);
     const appleBlue = Color(0xFF007AFF);
-    const lightGray = Color(0xFFF8F8F8);
+    const lightBackground = Color(0xFFF2F2F7); // iOS System Background
+    const lightSecondary = Color(0xFFFFFFFF); // iOS Secondary Background
+    const lightTertiary = Color(0xFFFFFFFF); // iOS Tertiary Background
+    const separator = Color(0xFFC6C6C8);
+    const labelPrimary = Color(0xFF000000);
+    const labelSecondary = Color(0xFF3C3C43);
 
     if (usarCorDinamica) {
       return ThemeData(
@@ -82,12 +90,19 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: appleBlue,
           brightness: Brightness.light,
-        ).copyWith(
-          surface: pureWhite,
-          onSurface: const Color(0xFF000000),
+          surface: lightBackground,
+          surfaceContainerLowest: pureWhite,
+          surfaceContainerLow: lightSecondary,
+          surfaceContainer: lightSecondary,
+          surfaceContainerHigh: lightTertiary,
+          surfaceContainerHighest: lightTertiary,
+          onSurface: labelPrimary,
+          onSurfaceVariant: labelSecondary,
+          outline: separator,
         ),
-        scaffoldBackgroundColor: pureWhite,
-        cardColor: pureWhite,
+        scaffoldBackgroundColor: lightBackground,
+        dividerColor: separator,
+        cardColor: lightSecondary,
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
             TargetPlatform.android: CupertinoPageTransitionsBuilder(),
@@ -98,9 +113,19 @@ class MyApp extends StatelessWidget {
           centerTitle: false,
           elevation: 0,
           scrolledUnderElevation: 0,
-          backgroundColor: pureWhite,
-          foregroundColor: Color(0xFF000000),
+          backgroundColor: lightBackground,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: labelPrimary,
           systemOverlayStyle: SystemUiOverlayStyle.dark,
+        ),
+        cardTheme: CardThemeData(
+          color: lightSecondary,
+          elevation: 0,
+          shadowColor: Colors.black.withOpacity(0.05),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: separator.withOpacity(0.3), width: 0.5),
+          ),
         ),
       );
     }
@@ -109,43 +134,57 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: appleBlue,
-      scaffoldBackgroundColor: pureWhite,
-      cardColor: pureWhite,
-      dividerColor: const Color(0xFFE5E5E5),
-      colorScheme: const ColorScheme.light(
+      scaffoldBackgroundColor: lightBackground,
+      cardColor: lightSecondary,
+      dividerColor: separator,
+      colorScheme: ColorScheme.light(
         primary: appleBlue,
         onPrimary: pureWhite,
         secondary: appleBlue,
-        surface: pureWhite,
-        onSurface: Color(0xFF000000),
+        surface: lightBackground,
+        surfaceContainerLowest: pureWhite,
+        surfaceContainerLow: lightSecondary,
+        surfaceContainer: lightSecondary,
+        surfaceContainerHigh: lightTertiary,
+        surfaceContainerHighest: lightTertiary,
+        onSurface: labelPrimary,
+        onSurfaceVariant: labelSecondary,
+        outline: separator,
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: pureWhite,
-        foregroundColor: Color(0xFF000000),
+        backgroundColor: lightBackground,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: labelPrimary,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(
-        color: pureWhite,
-        elevation: 0.5,
-        shadowColor: Colors.black.withOpacity(0.03),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: lightSecondary,
+        elevation: 0,
+        shadowColor: Colors.black.withOpacity(0.05),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: separator.withOpacity(0.3), width: 0.5),
+        ),
       ),
     );
   }
 
-  ThemeData _buildDarkTheme(bool usarCorDinamica, bool profundo) {
-    // Cores base Apple-style
+  // ==================== TEMA ESCURO (NORMAL - iOS Dark Mode) ====================
+  ThemeData _buildDarkTheme(bool usarCorDinamica) {
     const appleBlue = Color(0xFF0A84FF);
     
-    // Profundo: Preto absoluto com sutis variações
-    // Normal: Cinza escuro Apple-style
-    final backgroundColor = profundo ? const Color(0xFF000000) : const Color(0xFF1C1C1E);
-    final surfaceColor = profundo ? const Color(0xFF0A0A0A) : const Color(0xFF2C2C2E);
-    final surfaceVariant = profundo ? const Color(0xFF141414) : const Color(0xFF3A3A3C);
-    final surfaceHighest = profundo ? const Color(0xFF1C1C1C) : const Color(0xFF48484A);
+    // iOS Dark Mode Colors
+    const darkBackground = Color(0xFF000000); // System Background
+    const darkSecondary = Color(0xFF1C1C1E); // Secondary Background
+    const darkTertiary = Color(0xFF2C2C2E); // Tertiary Background
+    const darkQuaternary = Color(0xFF3A3A3C); // Quaternary (cards, etc)
+    const darkSeparator = Color(0xFF38383A); // Separator
+    const darkLabel = Color(0xFFFFFFFF); // Primary Label
+    const darkLabelSecondary = Color(0xFFEBEBF5); // Secondary Label
+    const darkLabelTertiary = Color(0xFFAEAEB2); // Tertiary Label
 
     if (usarCorDinamica) {
       return ThemeData(
@@ -153,29 +192,41 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: appleBlue,
           brightness: Brightness.dark,
-        ).copyWith(
-          surface: surfaceColor,
-          onSurface: const Color(0xFFFFFFFF),
-          surfaceContainerLowest: backgroundColor,
-          surfaceContainerLow: surfaceColor,
-          surfaceContainer: surfaceVariant,
-          surfaceContainerHigh: surfaceHighest,
+          surface: darkBackground,
+          surfaceContainerLowest: darkBackground,
+          surfaceContainerLow: darkSecondary,
+          surfaceContainer: darkTertiary,
+          surfaceContainerHigh: darkQuaternary,
+          surfaceContainerHighest: darkQuaternary,
+          onSurface: darkLabel,
+          onSurfaceVariant: darkLabelTertiary,
+          outline: darkSeparator,
         ),
-        scaffoldBackgroundColor: backgroundColor,
-        cardColor: surfaceColor,
+        scaffoldBackgroundColor: darkBackground,
+        dividerColor: darkSeparator,
+        cardColor: darkSecondary,
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
             TargetPlatform.android: CupertinoPageTransitionsBuilder(),
             TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           },
         ),
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           centerTitle: false,
           elevation: 0,
           scrolledUnderElevation: 0,
-          backgroundColor: backgroundColor,
-          foregroundColor: const Color(0xFFFFFFFF),
+          backgroundColor: darkBackground,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: darkLabel,
           systemOverlayStyle: SystemUiOverlayStyle.light,
+        ),
+        cardTheme: CardThemeData(
+          color: darkSecondary,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: darkSeparator.withOpacity(0.5), width: 0.5),
+          ),
         ),
       );
     }
@@ -184,66 +235,56 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: appleBlue,
-      scaffoldBackgroundColor: backgroundColor,
-      cardColor: surfaceColor,
-      dividerColor: profundo ? const Color(0xFF1C1C1C) : const Color(0xFF38383A),
+      scaffoldBackgroundColor: darkBackground,
+      cardColor: darkSecondary,
+      dividerColor: darkSeparator,
       colorScheme: ColorScheme.dark(
         primary: appleBlue,
         onPrimary: Colors.white,
         secondary: appleBlue,
-        surface: surfaceColor,
-        onSurface: const Color(0xFFFFFFFF),
-        surfaceContainerLowest: backgroundColor,
-        surfaceContainerLow: surfaceColor,
-        surfaceContainer: surfaceVariant,
-        surfaceContainerHigh: surfaceHighest,
-        onSurfaceVariant: const Color(0xFFAEAEB2),
-        outline: profundo ? const Color(0xFF1C1C1C) : const Color(0xFF38383A),
+        surface: darkBackground,
+        surfaceContainerLowest: darkBackground,
+        surfaceContainerLow: darkSecondary,
+        surfaceContainer: darkTertiary,
+        surfaceContainerHigh: darkQuaternary,
+        surfaceContainerHighest: darkQuaternary,
+        onSurface: darkLabel,
+        onSurfaceVariant: darkLabelTertiary,
+        outline: darkSeparator,
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: backgroundColor,
-        foregroundColor: const Color(0xFFFFFFFF),
+        backgroundColor: darkBackground,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: darkLabel,
         systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surfaceColor,
-        indicatorColor: appleBlue.withOpacity(0.15),
-      ),
       cardTheme: CardThemeData(
-        color: surfaceColor,
+        color: darkSecondary,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: profundo ? const Color(0xFF1C1C1C) : const Color(0xFF38383A),
-            width: 0.5,
-          ),
-        ),
-      ),
-      dialogTheme: DialogThemeData(
-        backgroundColor: surfaceVariant,
-        elevation: 24,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surfaceVariant,
-        modalBackgroundColor: surfaceVariant,
-        elevation: 24,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+          side: BorderSide(color: darkSeparator.withOpacity(0.5), width: 0.5),
         ),
       ),
     );
   }
 
-  ThemeData _buildAmoledTheme(bool usarCorDinamica) {
-    const pureBlack = Color(0xFF000000);
-    const almostBlack = Color(0xFF0A0A0A);
+  // ==================== TEMA ESCURO ELEVADO (Dark Elevated) ====================
+  ThemeData _buildDarkElevatedTheme(bool usarCorDinamica) {
     const appleBlue = Color(0xFF0A84FF);
-    const darkGray = Color(0xFF1C1C1C);
+    
+    // iOS Dark Elevated Colors (mais claro que o normal)
+    const elevatedBackground = Color(0xFF1C1C1E); // Base Level
+    const elevatedSecondary = Color(0xFF2C2C2E); // Elevated
+    const elevatedTertiary = Color(0xFF3A3A3C); // More Elevated
+    const elevatedQuaternary = Color(0xFF48484A); // Most Elevated
+    const elevatedSeparator = Color(0xFF545456); // Separator (mais claro)
+    const elevatedLabel = Color(0xFFFFFFFF);
+    const elevatedLabelSecondary = Color(0xFFEBEBF5);
+    const elevatedLabelTertiary = Color(0xFFAEAEB2);
 
     if (usarCorDinamica) {
       return ThemeData(
@@ -251,15 +292,117 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: appleBlue,
           brightness: Brightness.dark,
-        ).copyWith(
-          surface: almostBlack,
-          onSurface: const Color(0xFFFFFFFF),
+          surface: elevatedBackground,
+          surfaceContainerLowest: elevatedBackground,
+          surfaceContainerLow: elevatedSecondary,
+          surfaceContainer: elevatedTertiary,
+          surfaceContainerHigh: elevatedQuaternary,
+          surfaceContainerHighest: elevatedQuaternary,
+          onSurface: elevatedLabel,
+          onSurfaceVariant: elevatedLabelTertiary,
+          outline: elevatedSeparator,
+        ),
+        scaffoldBackgroundColor: elevatedBackground,
+        dividerColor: elevatedSeparator,
+        cardColor: elevatedSecondary,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
+        appBarTheme: const AppBarTheme(
+          centerTitle: false,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: elevatedBackground,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: elevatedLabel,
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+        ),
+        cardTheme: CardThemeData(
+          color: elevatedSecondary,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: elevatedSeparator.withOpacity(0.5), width: 0.5),
+          ),
+        ),
+      );
+    }
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: appleBlue,
+      scaffoldBackgroundColor: elevatedBackground,
+      cardColor: elevatedSecondary,
+      dividerColor: elevatedSeparator,
+      colorScheme: ColorScheme.dark(
+        primary: appleBlue,
+        onPrimary: Colors.white,
+        secondary: appleBlue,
+        surface: elevatedBackground,
+        surfaceContainerLowest: elevatedBackground,
+        surfaceContainerLow: elevatedSecondary,
+        surfaceContainer: elevatedTertiary,
+        surfaceContainerHigh: elevatedQuaternary,
+        surfaceContainerHighest: elevatedQuaternary,
+        onSurface: elevatedLabel,
+        onSurfaceVariant: elevatedLabelTertiary,
+        outline: elevatedSeparator,
+      ),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: elevatedBackground,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: elevatedLabel,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
+      cardTheme: CardThemeData(
+        color: elevatedSecondary,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: elevatedSeparator.withOpacity(0.5), width: 0.5),
+        ),
+      ),
+    );
+  }
+
+  // ==================== TEMA PURE BLACK (AMOLED) ====================
+  ThemeData _buildPureBlackTheme(bool usarCorDinamica) {
+    const appleBlue = Color(0xFF0A84FF);
+    
+    // Pure Black Theme (para telas AMOLED)
+    const pureBlack = Color(0xFF000000); // Background absoluto
+    const almostBlack = Color(0xFF0A0A0A); // Cards/Elementos
+    const darkGray = Color(0xFF1C1C1C); // Separadores/Bordas
+    const mediumGray = Color(0xFF2C2C2E); // Elementos elevados
+    const blackSeparator = Color(0xFF1C1C1C); // Separator bem sutil
+    const whiteLabel = Color(0xFFFFFFFF);
+    const grayLabel = Color(0xFFAEAEB2);
+
+    if (usarCorDinamica) {
+      return ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: appleBlue,
+          brightness: Brightness.dark,
+          surface: pureBlack,
           surfaceContainerLowest: pureBlack,
           surfaceContainerLow: almostBlack,
-          surfaceContainer: Color(0xFF141414),
-          surfaceContainerHigh: darkGray,
+          surfaceContainer: darkGray,
+          surfaceContainerHigh: mediumGray,
+          surfaceContainerHighest: mediumGray,
+          onSurface: whiteLabel,
+          onSurfaceVariant: grayLabel,
+          outline: blackSeparator,
         ),
         scaffoldBackgroundColor: pureBlack,
+        dividerColor: blackSeparator,
         cardColor: almostBlack,
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
@@ -272,8 +415,17 @@ class MyApp extends StatelessWidget {
           elevation: 0,
           scrolledUnderElevation: 0,
           backgroundColor: pureBlack,
-          foregroundColor: Color(0xFFFFFFFF),
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: whiteLabel,
           systemOverlayStyle: SystemUiOverlayStyle.light,
+        ),
+        cardTheme: CardThemeData(
+          color: almostBlack,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: blackSeparator.withOpacity(0.5), width: 0.5),
+          ),
         ),
       );
     }
@@ -284,53 +436,36 @@ class MyApp extends StatelessWidget {
       primaryColor: appleBlue,
       scaffoldBackgroundColor: pureBlack,
       cardColor: almostBlack,
-      dividerColor: darkGray,
-      colorScheme: const ColorScheme.dark(
+      dividerColor: blackSeparator,
+      colorScheme: ColorScheme.dark(
         primary: appleBlue,
         onPrimary: Colors.white,
         secondary: appleBlue,
-        surface: almostBlack,
-        onSurface: Color(0xFFFFFFFF),
+        surface: pureBlack,
         surfaceContainerLowest: pureBlack,
         surfaceContainerLow: almostBlack,
-        surfaceContainer: Color(0xFF141414),
-        surfaceContainerHigh: darkGray,
-        onSurfaceVariant: Color(0xFFAEAEB2),
-        outline: darkGray,
+        surfaceContainer: darkGray,
+        surfaceContainerHigh: mediumGray,
+        surfaceContainerHighest: mediumGray,
+        onSurface: whiteLabel,
+        onSurfaceVariant: grayLabel,
+        outline: blackSeparator,
       ),
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: pureBlack,
-        foregroundColor: Color(0xFFFFFFFF),
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: whiteLabel,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: almostBlack,
-        indicatorColor: appleBlue.withOpacity(0.15),
       ),
       cardTheme: CardThemeData(
         color: almostBlack,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: darkGray, width: 0.5),
-        ),
-      ),
-      dialogTheme: const DialogThemeData(
-        backgroundColor: Color(0xFF1C1C1C),
-        elevation: 24,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-        ),
-      ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF1C1C1C),
-        modalBackgroundColor: Color(0xFF1C1C1C),
-        elevation: 24,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+          side: BorderSide(color: blackSeparator.withOpacity(0.5), width: 0.5),
         ),
       ),
     );
