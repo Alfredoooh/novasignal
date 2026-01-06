@@ -215,43 +215,47 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   Widget _buildToggleButtons() {
     final aoVivoCount = _contarJogosAoVivo();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ToggleButton(
-              label: 'Ontem',
-              isSelected: _selectedFilter == 'ontem',
-              onTap: () => _onFilterChanged('ontem'),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _IOSStyleTabButton(
+                label: 'Ontem',
+                isSelected: _selectedFilter == 'ontem',
+                onTap: () => _onFilterChanged('ontem'),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ToggleButton(
-              label: 'Hoje',
-              isSelected: _selectedFilter == 'hoje',
-              onTap: () => _onFilterChanged('hoje'),
+            Expanded(
+              child: _IOSStyleTabButton(
+                label: 'Hoje',
+                isSelected: _selectedFilter == 'hoje',
+                onTap: () => _onFilterChanged('hoje'),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ToggleButton(
-              label: aoVivoCount > 0 ? 'Ao Vivo ($aoVivoCount)' : 'Ao Vivo',
-              isSelected: _selectedFilter == 'direto',
-              onTap: () => _onFilterChanged('direto'),
-              isLive: true,
+            Expanded(
+              child: _IOSStyleTabButton(
+                label: aoVivoCount > 0 ? 'Ao Vivo ($aoVivoCount)' : 'Ao Vivo',
+                isSelected: _selectedFilter == 'direto',
+                onTap: () => _onFilterChanged('direto'),
+                isLive: true,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ToggleButton(
-              label: 'Amanhã',
-              isSelected: _selectedFilter == 'amanha',
-              onTap: () => _onFilterChanged('amanha'),
+            Expanded(
+              child: _IOSStyleTabButton(
+                label: 'Amanhã',
+                isSelected: _selectedFilter == 'amanha',
+                onTap: () => _onFilterChanged('amanha'),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -451,10 +455,10 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               } else if (type == 'Passes %' || type.toLowerCase().contains('passes')) {
                 final homeValue = stat['home']?.toString() ?? '';
                 final awayValue = stat['away']?.toString() ?? '';
-                
+
                 final homeClean = homeValue.replaceAll('%', '').trim();
                 final awayClean = awayValue.replaceAll('%', '').trim();
-                
+
                 homePasses = int.tryParse(homeClean) ?? 0;
                 awayPasses = int.tryParse(awayClean) ?? 0;
               }
@@ -667,7 +671,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       child: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             child: Column(
               children: [
@@ -820,13 +824,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 }
 
-class _ToggleButton extends StatelessWidget {
+class _IOSStyleTabButton extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
   final bool isLive;
 
-  const _ToggleButton({
+  const _IOSStyleTabButton({
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -839,27 +843,29 @@ class _ToggleButton extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
         decoration: BoxDecoration(
           color: isSelected 
-              ? Theme.of(context).colorScheme.primaryContainer 
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(
-            color: isSelected 
-                ? Theme.of(context).colorScheme.primary 
-                : Colors.transparent,
-            width: 2,
-          ),
+              ? Theme.of(context).colorScheme.surface
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ] : [],
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              fontWeight: FontWeight.w600,
               color: isSelected
-                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  ? Theme.of(context).colorScheme.onSurface
                   : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
@@ -904,7 +910,7 @@ class _QuickMatchDetailsModal extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -922,11 +928,12 @@ class _QuickMatchDetailsModal extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Detalhes Rápidos',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 IconButton(
@@ -934,6 +941,7 @@ class _QuickMatchDetailsModal extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ],
             ),
@@ -961,9 +969,10 @@ class _QuickMatchDetailsModal extends StatelessWidget {
                           const SizedBox(height: 12),
                           Text(
                             jogo['match_hometeam_name'] ?? '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 2,
@@ -999,9 +1008,10 @@ class _QuickMatchDetailsModal extends StatelessWidget {
                           const SizedBox(height: 12),
                           Text(
                             jogo['match_awayteam_name'] ?? '',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 2,
@@ -1215,9 +1225,10 @@ class _StatRow extends StatelessWidget {
           children: [
             Text(
               isPercentage ? '$homeValue%' : '$homeValue',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(width: 8),
@@ -1237,9 +1248,10 @@ class _StatRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               isPercentage ? '$awayValue%' : '$awayValue',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -1310,53 +1322,6 @@ class _AnimatedBouncyButtonState extends State<_AnimatedBouncyButton>
         scale: _scaleAnimation,
         child: widget.child,
       ),
-    );
-  }
-}
-
-class _CachedNetworkImage extends StatefulWidget {
-  final String imageUrl;
-  final double width;
-  final double height;
-  final Widget placeholder;
-
-  const _CachedNetworkImage({
-    required this.imageUrl,
-    required this.width,
-    required this.height,
-    required this.placeholder,
-  });
-
-  @override
-  State<_CachedNetworkImage> createState() => _CachedNetworkImageState();
-}
-
-class _CachedNetworkImageState extends State<_CachedNetworkImage> with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-
-    if (widget.imageUrl.isEmpty) {
-      return widget.placeholder;
-    }
-
-    return Image.network(
-      widget.imageUrl,
-      width: widget.width,
-      height: widget.height,
-      fit: BoxFit.contain,
-      errorBuilder: (_, __, ___) => widget.placeholder,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return SizedBox(
-          width: widget.width,
-          height: widget.height,
-          child: widget.placeholder,
-        );
-      },
     );
   }
 }
