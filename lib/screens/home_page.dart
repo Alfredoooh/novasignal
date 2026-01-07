@@ -12,7 +12,7 @@ import 'search_page.dart';
 import 'jogos_page.dart';
 import 'opcoes_page.dart';
 import 'comunidade_page.dart';
-import 'cupom_page.dart';
+import 'cupon_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
 
