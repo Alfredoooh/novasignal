@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/cupertino.dart';
 
-// Imports condicionais - apenas para web
-import 'dart:ui_web' as ui_web show platformViewRegistry;
-import 'dart:html' as html show IFrameElement, window;
+// Import condicional apenas para mobile
+import 'package:webview_flutter/webview_flutter.dart'
+    if (dart.library.html) 'webview_flutter_stub.dart';
+
+// Imports condicionais para web
+import 'web_view_stub.dart'
+    if (dart.library.html) 'web_view_web.dart';
 
 class VerificacaoWebViewPage extends StatefulWidget {
   const VerificacaoWebViewPage({super.key});
@@ -21,7 +24,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   final String url = 'https://elephantbetzone.com/app/scanTicket/manualEntry';
 
   // Web specific
-  dynamic _iframeElement;
+  dynamic _webViewHelper;
   String _viewId = 'webview-iframe-${DateTime.now().millisecondsSinceEpoch}';
 
   @override
@@ -36,8 +39,8 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
 
   @override
   void dispose() {
-    if (kIsWeb && _iframeElement != null) {
-      _iframeElement?.remove();
+    if (kIsWeb && _webViewHelper != null) {
+      _webViewHelper?.dispose();
     }
     super.dispose();
   }
@@ -45,36 +48,21 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   // ==================== WEB PLATFORM ====================
   void _initializeWebPlatform() {
     if (!kIsWeb) return;
-    
-    _iframeElement = html.IFrameElement()
-      ..src = url
-      ..style.border = 'none'
-      ..style.width = '100%'
-      ..style.height = '100%'
-      ..allow = 'camera; microphone; geolocation'
-      ..allowFullscreen = true;
 
-    ui_web.platformViewRegistry.registerViewFactory(
-      _viewId,
-      (int viewId) => _iframeElement!,
+    _webViewHelper = createWebViewHelper(
+      url: url,
+      viewId: _viewId,
+      onProgress: (progress) {
+        if (mounted) {
+          setState(() {
+            loadingProgress = progress;
+            isLoading = progress < 1.0;
+          });
+        }
+      },
     );
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          loadingProgress = 0.5;
-        });
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) {
-        setState(() {
-          loadingProgress = 1.0;
-          isLoading = false;
-        });
-      }
-    });
+    _webViewHelper?.initialize();
 
     Future.delayed(const Duration(milliseconds: 1500), () {
       _injectWebStyles();
@@ -82,10 +70,10 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   }
 
   void _injectWebStyles() {
-    if (!kIsWeb || _iframeElement == null) return;
+    if (!kIsWeb || _webViewHelper == null) return;
 
     try {
-      final themeColors = _getThemeColorsForWeb();
+      final themeColors = _getThemeColors();
       final script = '''
         (function() {
           try {
@@ -97,11 +85,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
         })();
       ''';
 
-      _iframeElement?.contentWindow?.postMessage({
-        'type': 'inject-styles',
-        'script': script,
-      }, '*');
-
+      _webViewHelper?.injectScript(script);
       debugPrint('✅ Estilos enviados para iframe web');
     } catch (e) {
       debugPrint('❌ Erro ao injetar estilos web: $e');
@@ -110,9 +94,9 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
 
   void _reloadWebView() {
     if (!kIsWeb) return;
-    
-    if (_iframeElement != null) {
-      _iframeElement?.src = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
+
+    if (_webViewHelper != null) {
+      _webViewHelper?.reload();
       setState(() {
         isLoading = true;
       });
@@ -130,7 +114,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
   // ==================== MOBILE PLATFORM ====================
   void _initializeMobileWebView() {
     if (kIsWeb) return;
-    
+
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent)
@@ -171,7 +155,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
 
   void _injectMobileStyles() {
     if (kIsWeb) return;
-    
+
     final themeColors = _getThemeColors();
     final script = '''
       (function() {
@@ -240,10 +224,6 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
     }
   }
 
-  String _getThemeColorsForWeb() {
-    return _getThemeColors();
-  }
-
   // ==================== STYLE INJECTION SCRIPT ====================
   String _getStyleInjectionScript() {
     return '''
@@ -293,15 +273,8 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
           scrollbar-width: none !important;
         }
         
-        ion-header,
-        ion-toolbar,
-        ion-footer,
-        ion-tabs,
-        ion-tab-bar,
-        [class*="header"],
-        [class*="toolbar"],
-        [class*="footer"],
-        [class*="tabbar"] {
+        ion-header, ion-toolbar, ion-footer, ion-tabs, ion-tab-bar,
+        [class*="header"], [class*="toolbar"], [class*="footer"], [class*="tabbar"] {
           display: none !important;
           visibility: hidden !important;
           height: 0 !important;
@@ -318,245 +291,35 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
           --offset-bottom: 0 !important;
         }
         
-        ion-app {
-          background: \${theme.background} !important;
-        }
-        
-        ion-card,
-        .card,
-        [class*="card"],
-        [class*="Card"] {
-          background: \${theme.cardBackground} !important;
-          border-radius: 16px !important;
-          border: 1px solid \${theme.border} !important;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, \${theme.isDark ? '0.3' : '0.08'}) !important;
-          margin: 12px !important;
-          padding: 16px !important;
-          color: \${theme.text} !important;
-        }
-        
-        ion-card-header,
-        .card-header {
-          color: \${theme.text} !important;
-        }
-        
-        ion-card-content,
-        .card-content {
-          color: \${theme.textSecondary} !important;
-        }
-        
-        ion-button,
-        button:not(.close):not([class*="icon"]),
-        .button,
-        .btn,
-        [type="submit"],
-        [type="button"] {
+        ion-button, button:not(.close):not([class*="icon"]) {
           border-radius: 12px !important;
           padding: 12px 24px !important;
           font-weight: 600 !important;
-          font-size: 14px !important;
           min-height: 44px !important;
-          border: none !important;
-          cursor: pointer !important;
-          transition: all 0.2s ease !important;
-          text-transform: none !important;
         }
         
-        ion-button[color="primary"],
-        ion-button:not([color]),
-        button.primary,
-        button.btn-primary,
-        .btn-primary,
-        [class*="primary"] {
+        ion-button[color="primary"], button.primary {
           --background: \${theme.primary} !important;
           background: \${theme.primary} !important;
           color: white !important;
         }
         
-        ion-button[color="primary"]:hover,
-        button.primary:hover,
-        .btn-primary:hover {
-          --background: \${theme.primaryDark} !important;
-          background: \${theme.primaryDark} !important;
-          transform: scale(0.98) !important;
-        }
-        
-        ion-button[color="success"],
-        button.success,
-        .btn-success,
-        [class*="success"]:not(ion-badge) {
-          --background: \${theme.success} !important;
-          background: \${theme.success} !important;
-          color: white !important;
-        }
-        
-        ion-button[color="secondary"],
-        button.secondary,
-        .btn-secondary {
-          --background: \${theme.secondary} !important;
-          background: \${theme.secondary} !important;
-          color: white !important;
-        }
-        
-        ion-button[fill="outline"],
-        button.outline,
-        .btn-outline {
-          --background: transparent !important;
-          background: transparent !important;
-          border: 2px solid \${theme.primary} !important;
-          color: \${theme.primary} !important;
-        }
-        
-        ion-input,
-        ion-textarea,
-        ion-select,
-        input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-        textarea,
-        select {
+        ion-input, input:not([type="checkbox"]):not([type="radio"]) {
           --background: \${theme.inputBackground} !important;
           --color: \${theme.text} !important;
-          --placeholder-color: \${theme.textSecondary} !important;
-          --border-radius: 12px !important;
-          --border-width: 1px !important;
-          --border-color: \${theme.border} !important;
-          --padding-start: 16px !important;
-          --padding-end: 16px !important;
           background: \${theme.inputBackground} !important;
           border: 1px solid \${theme.border} !important;
           border-radius: 12px !important;
           padding: 12px 16px !important;
-          font-size: 14px !important;
-          color: \${theme.text} !important;
-          transition: all 0.2s ease !important;
-        }
-        
-        ion-input:focus-within,
-        input:focus,
-        textarea:focus,
-        select:focus {
-          --border-color: \${theme.primary} !important;
-          border-color: \${theme.primary} !important;
-          box-shadow: 0 0 0 3px rgba(255, 68, 79, 0.1) !important;
-          outline: none !important;
-        }
-        
-        ::placeholder {
-          color: \${theme.textSecondary} !important;
-          opacity: 1 !important;
-        }
-        
-        ion-label,
-        label,
-        .label {
-          color: \${theme.text} !important;
-          font-weight: 600 !important;
-        }
-        
-        ion-item {
-          --background: \${theme.surface} !important;
-          --color: \${theme.text} !important;
-          --border-color: \${theme.border} !important;
-          --padding-start: 16px !important;
-          --padding-end: 16px !important;
-          --inner-padding-end: 0 !important;
-          --min-height: 48px !important;
-          border-radius: 12px !important;
-        }
-        
-        ion-list {
-          background: transparent !important;
-          padding: 8px !important;
-        }
-        
-        ion-badge,
-        .badge,
-        [class*="badge"] {
-          border-radius: 8px !important;
-          padding: 6px 12px !important;
-          font-weight: 600 !important;
-          font-size: 12px !important;
-        }
-        
-        ion-badge[color="success"],
-        .badge-success {
-          --background: \${theme.success} !important;
-          background: \${theme.success} !important;
-          color: white !important;
-        }
-        
-        ion-badge[color="danger"],
-        .badge-danger {
-          --background: \${theme.error} !important;
-          background: \${theme.error} !important;
-          color: white !important;
-        }
-        
-        ion-badge[color="warning"],
-        .badge-warning {
-          --background: \${theme.warning} !important;
-          background: \${theme.warning} !important;
-          color: white !important;
-        }
-        
-        ion-badge[color="primary"],
-        .badge-primary {
-          --background: \${theme.primary} !important;
-          background: \${theme.primary} !important;
-          color: white !important;
-        }
-        
-        ion-spinner {
-          --color: \${theme.primary} !important;
-        }
-        
-        h1, h2, h3, h4, h5, h6 {
-          color: \${theme.text} !important;
-        }
-        
-        p, span, div {
-          color: \${theme.text} !important;
-        }
-        
-        a {
-          color: \${theme.primary} !important;
-          text-decoration: none !important;
-        }
-        
-        a:hover {
-          color: \${theme.primaryDark} !important;
-        }
-        
-        hr {
-          border-top: 1px solid \${theme.border} !important;
-        }
-        
-        .backdrop-no-scroll {
-          overflow: auto !important;
-          position: static !important;
         }
       \`;
       
       document.head.appendChild(styleElement);
       
       setTimeout(() => {
-        document.querySelectorAll('ion-header, ion-toolbar, ion-footer, ion-tabs, ion-tab-bar').forEach(el => {
+        document.querySelectorAll('ion-header, ion-toolbar, ion-footer').forEach(el => {
           el.style.display = 'none';
-          el.style.height = '0';
-          el.style.minHeight = '0';
         });
-        
-        document.querySelectorAll('ion-content').forEach(el => {
-          el.style.setProperty('--offset-top', '0', 'important');
-          el.style.setProperty('--offset-bottom', '0', 'important');
-          el.style.setProperty('--padding-top', '0', 'important');
-          el.style.setProperty('--padding-bottom', '0', 'important');
-        });
-        
-        document.body.classList.remove('backdrop-no-scroll');
-        document.body.style.overflow = 'auto';
-        document.body.style.position = 'static';
-        document.documentElement.style.overflow = 'auto';
-        
         console.log('✅ Estilos aplicados com sucesso!');
       }, 200);
     ''';
@@ -649,7 +412,7 @@ class _VerificacaoWebViewPageState extends State<VerificacaoWebViewPage> {
         body: Stack(
           children: [
             if (kIsWeb)
-              HtmlElementView(viewType: _viewId)
+              getWebView(_viewId)
             else
               WebViewWidget(controller: controller),
 
