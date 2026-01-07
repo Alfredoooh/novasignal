@@ -150,6 +150,29 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         return (jogo['match_date']?.toString() ?? '') == dataAmanha;
       }).toList();
 
+      // Ordenar: Real Madrid sempre primeiro
+      jogosHoje.sort((a, b) {
+        final aIsRealMadrid = (a['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
+                              (a['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
+        final bIsRealMadrid = (b['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
+                              (b['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
+        
+        if (aIsRealMadrid && !bIsRealMadrid) return -1;
+        if (!aIsRealMadrid && bIsRealMadrid) return 1;
+        return 0;
+      });
+
+      jogosAmanha.sort((a, b) {
+        final aIsRealMadrid = (a['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
+                              (a['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
+        final bIsRealMadrid = (b['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
+                              (b['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
+        
+        if (aIsRealMadrid && !bIsRealMadrid) return -1;
+        if (!aIsRealMadrid && bIsRealMadrid) return 1;
+        return 0;
+      });
+
       debugPrint('🏆 Jogos hoje: ${jogosHoje.length}, Amanhã: ${jogosAmanha.length}');
 
       setState(() {
@@ -182,7 +205,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
       if (!mounted) return;
 
-      // Garantir que cada notícia é um Map<String, dynamic>
       final safeList = <Map<String, dynamic>>[];
       for (var n in noticias) {
         if (n is Map<String, dynamic>) {
@@ -222,92 +244,37 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     );
   }
 
-  Color _getCardColor(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      return const Color(0xFF2C2C2E);
-    }
-    return const Color(0xFFF3F3F3);
+  bool _isJogoAoVivo(dynamic jogo) {
+    final status = (jogo['match_status']?.toString() ?? '').toLowerCase();
+    if (status.isEmpty) return false;
+    
+    final isNumeric = int.tryParse(status.replaceAll(RegExp(r'\D'), '')) != null && status.trim().isNotEmpty;
+    return RegExp(r"live|1h|2h|'|\bminute\b", caseSensitive: false).hasMatch(status) || 
+           isNumeric ||
+           status.contains("'");
   }
 
-  // --- possession parsing helpers ---
-  int _parseFirstInt(String input) {
-    try {
-      final match = RegExp(r'(\d{1,3})').firstMatch(input);
-      if (match != null) {
-        final v = int.tryParse(match.group(1) ?? '') ?? 0;
-        return v.clamp(0, 100);
-      }
-    } catch (_) {}
-    return 0;
-  }
-
-  /// Recebe estatísticas (pode ser List/Map/null) e tenta extrair posse (home/away).
-  /// Retorna um Map {'home': int, 'away': int}.
   Map<String, int> _extractPossession(dynamic statistics) {
     int home = 0;
     int away = 0;
 
     try {
       if (statistics == null) {
-        return {'home': 50, 'away': 50};
+        return {'home': 0, 'away': 0};
       }
 
-      if (statistics is Map) {
-        // procura chaves possíveis
-        if (statistics.containsKey('possession')) {
-          final val = statistics['possession'];
-          if (val is Map) {
-            home = _parseFirstInt(val['home']?.toString() ?? '');
-            away = _parseFirstInt(val['away']?.toString() ?? '');
-          } else {
-            final s = val?.toString() ?? '';
-            home = _parseFirstInt(s);
-          }
-        } else {
-          // tentar varrer o map por um valor que contenha 'possession'
-          for (var e in statistics.entries) {
-            final k = e.key.toString().toLowerCase();
-            if (k.contains('possession') || k.contains('ball')) {
-              final entryVal = e.value;
-              if (entryVal is Map) {
-                home = _parseFirstInt(entryVal['home']?.toString() ?? '');
-                away = _parseFirstInt(entryVal['away']?.toString() ?? '');
-              } else {
-                home = _parseFirstInt(entryVal?.toString() ?? '');
-              }
-              break;
-            }
-          }
-        }
-      } else if (statistics is List) {
+      if (statistics is List) {
         for (var stat in statistics) {
-          if (stat == null) continue;
           if (stat is Map) {
-            final type = (stat['type'] ?? stat['stat'] ?? '').toString().toLowerCase();
+            final type = (stat['type']?.toString() ?? '').toLowerCase();
             if (type.contains('possession') || type.contains('ball')) {
-              // APIs diferentes têm formatos diferentes: home/away ou single home value
-              if (stat.containsKey('home') && stat.containsKey('away')) {
-                home = _parseFirstInt(stat['home']?.toString() ?? '');
-                away = _parseFirstInt(stat['away']?.toString() ?? '');
-              } else if (stat.containsKey('value')) {
-                final v = stat['value']?.toString() ?? '';
-                home = _parseFirstInt(v);
-              } else if (stat.containsKey('homeValue')) {
-                home = _parseFirstInt(stat['homeValue']?.toString() ?? '');
-                away = _parseFirstInt(stat['awayValue']?.toString() ?? '');
-              } else {
-                // tentar detectar em qualquer campo
-                final combined = stat.values.map((v) => v?.toString() ?? '').join(' ');
-                final m = RegExp(r'(\d{1,3})%?').allMatches(combined).toList();
-                if (m.length >= 2) {
-                  home = _parseFirstInt(m[0].group(1) ?? '');
-                  away = _parseFirstInt(m[1].group(1) ?? '');
-                } else if (m.length == 1) {
-                  home = _parseFirstInt(m[0].group(1) ?? '');
-                }
-              }
-              break;
+              final homeVal = stat['home']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '';
+              final awayVal = stat['away']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '';
+              
+              home = int.tryParse(homeVal) ?? 0;
+              away = int.tryParse(awayVal) ?? 0;
+              
+              if (home > 0 || away > 0) break;
             }
           }
         }
@@ -316,24 +283,19 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
       debugPrint('⚠️ Erro ao extrair posse: $e');
     }
 
-    // Sanitizar resultados e aplicar fallback
     home = home.clamp(0, 100);
     away = away.clamp(0, 100);
 
+    // Se não tem dados válidos, retorna 0
     if (home == 0 && away == 0) {
-      // fallback: 50/50
-      return {'home': 50, 'away': 50};
-    } else if (home > 0 && away == 0) {
-      away = (100 - home).clamp(0, 100);
-    } else if (away > 0 && home == 0) {
-      home = (100 - away).clamp(0, 100);
-    } else {
-      final sum = home + away;
-      if (sum != 100 && sum > 0) {
-        // normalizar proporcionalmente para garantir soma 100
-        home = ((home / sum) * 100).round();
-        away = 100 - home;
-      }
+      return {'home': 0, 'away': 0};
+    }
+
+    // Normalizar para somar 100
+    final sum = home + away;
+    if (sum != 100 && sum > 0) {
+      home = ((home / sum) * 100).round();
+      away = 100 - home;
     }
 
     return {'home': home, 'away': away};
@@ -374,12 +336,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
     final todosJogos = [..._jogosHoje, ..._jogosAmanha];
 
-    // Verifica se tem jogos ao vivo (mais robusto)
-    final temJogosAoVivo = todosJogos.any((jogo) {
-      final status = (jogo['match_status']?.toString() ?? '').toLowerCase();
-      return RegExp(r"live|ht|1h|2h|'|\bminute\b|\b'\b").hasMatch(status) || int.tryParse(status.replaceAll(RegExp(r'\D'), '')) != null;
-    });
-
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,17 +346,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Text(
-                      'Grandes Clubes',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                    ),
-                    if (temJogosAoVivo) ...[
-                      const SizedBox(width: 12),
-                      _BlinkingDot(),
-                    ],
-                  ],
+                const Text(
+                  'Ainda Hoje',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                 ),
                 IconButton(
                   onPressed: _openHomeConfig,
@@ -413,7 +361,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 170,
+            height: 190,
             child: PageView.builder(
               controller: _grandesClubesController,
               itemCount: todosJogos.length,
@@ -422,22 +370,29 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                todosJogos.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _grandesClubesCurrentPage == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _grandesClubesCurrentPage == index
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(4),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  todosJogos.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _grandesClubesCurrentPage == index ? 20 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _grandesClubesCurrentPage == index
+                          ? const Color(0xFF007AFF)
+                          : Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
               ),
@@ -465,13 +420,13 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              'Hoje',
+              'Ainda Hoje',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 170,
+            height: 190,
             child: PageView.builder(
               controller: _jogosHojeController,
               itemCount: itens.length,
@@ -480,22 +435,29 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(
-                itens.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _jogosHojeCurrentPage == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _jogosHojeCurrentPage == index
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(4),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  itens.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _jogosHojeCurrentPage == index ? 20 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _jogosHojeCurrentPage == index
+                          ? const Color(0xFF007AFF)
+                          : Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
               ),
@@ -508,7 +470,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _buildNewsSection() {
-    // Sempre mostra a seção de notícias
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,7 +515,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               ),
             )
           else
-            // Render por índice para controlar isLast corretamente
             Column(
               children: List.generate(_noticias.take(10).length, (i) {
                 final noticia = _noticias.take(10).toList()[i];
@@ -583,22 +543,22 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                     child: Container(
                       width: 80,
                       height: 80,
-                      color: Theme.of(context).colorScheme.primaryContainer,
+                      color: const Color(0xFF007AFF).withOpacity(0.1),
                       child: noticia['imageUrl'] != null && noticia['imageUrl'].toString().isNotEmpty
                           ? CorsImage(
                               imageUrl: noticia['imageUrl'],
                               width: 80,
                               height: 80,
                               fit: BoxFit.cover,
-                              errorWidget: Icon(
+                              errorWidget: const Icon(
                                 Symbols.article_rounded,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: Color(0xFF007AFF),
                                 size: 32,
                               ),
                             )
-                          : Icon(
+                          : const Icon(
                               Symbols.article_rounded,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: Color(0xFF007AFF),
                               size: 32,
                             ),
                     ),
@@ -610,10 +570,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       children: [
                         Text(
                           noticia['title'] ?? '',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -623,7 +582,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                           noticia['description'] ?? noticia['subtitle'] ?? '',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Colors.grey.shade600,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -637,14 +596,14 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                                  color: Colors.grey.shade500,
                                 ),
                               ),
                               Text(
                                 ' · ${noticia['date']}',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                                  color: Colors.grey.shade500,
                                 ),
                               ),
                             ],
@@ -664,7 +623,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             thickness: 1,
             indent: 20,
             endIndent: 20,
-            color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+            color: Colors.grey.shade200,
           ),
       ],
     );
@@ -673,12 +632,13 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   Widget _buildHorizontalGameCard(dynamic jogo, PageController controller, int index) {
     final statusRaw = (jogo['match_status']?.toString() ?? '');
     final statusLower = statusRaw.toLowerCase();
+    final matchTime = jogo['match_time']?.toString() ?? '';
 
     final isNumeric = int.tryParse(statusRaw.replaceAll(RegExp(r'\D'), '')) != null && statusRaw.trim().isNotEmpty;
-    final isLive = RegExp(r"live|ht|1h|2h|'|\bminute\b", caseSensitive: false).hasMatch(statusLower) || isNumeric;
+    final isLive = _isJogoAoVivo(jogo);
     final isHT = statusLower == 'ht' || statusLower == 'interval' || statusLower == 'ht.';
     final isFinished = statusLower.contains('finished') || statusLower == 'ft' || statusLower == 'aet' || statusLower == 'ap';
-    final isNotStarted = statusLower.isEmpty || statusLower == 'ns' || statusLower.contains('not started');
+    final isNotStarted = statusLower.isEmpty || statusLower == 'ns' || statusLower.contains('not started') || matchTime.isNotEmpty;
 
     final homeYellowCards = int.tryParse(jogo['match_hometeam_yellow_cards']?.toString() ?? '0') ?? 0;
     final homeRedCards = int.tryParse(jogo['match_hometeam_red_cards']?.toString() ?? '0') ?? 0;
@@ -688,12 +648,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
     final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
 
-    // extrair posse de forma robusta
     final possession = _extractPossession(jogo['statistics']);
     final homePercent = possession['home']!;
     final awayPercent = possession['away']!;
+    final hasPossession = homePercent > 0 || awayPercent > 0;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final homeWon = isFinished && homeScore > awayScore;
     final awayWon = isFinished && awayScore > homeScore;
 
@@ -704,26 +663,19 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         double scale = 1.0;
 
         if (controller.position.haveDimensions) {
-          // CORREÇÃO LINHA 707: Converter para double explicitamente
           value = ((controller.page ?? controller.initialPage.toDouble()) - index).toDouble();
-          scale = (1 - (value.abs() * 0.12)).clamp(0.88, 1.0);
+          scale = (1 - (value.abs() * 0.05)).clamp(0.95, 1.0);
         }
 
-        final elevation = ((scale - 0.88) / (1 - 0.88)) * 8; // 0..8
         return Center(
           child: Transform.scale(
             scale: scale,
-            child: Material(
-              color: Colors.transparent,
-              elevation: elevation,
-              borderRadius: BorderRadius.circular(28),
-              child: child,
-            ),
+            child: child,
           ),
         );
       },
       child: InkWell(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -733,97 +685,131 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         },
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 12),
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _getCardColor(context),
-            borderRadius: BorderRadius.circular(28),
-            // sombra leve extra para quando Material elevation não for suficiente
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Header com badge ao vivo
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isLive)
+                    Row(
+                      children: [
+                        _BlinkingDot(),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'AO VIVO',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.red,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    )
+                  else if (isNotStarted && matchTime.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(
+                          Symbols.schedule_rounded,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          matchTime,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    const SizedBox(),
+                  if (isFinished)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'FINALIZADO',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Placar e times
+              Row(
                 children: [
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Stack(
                           alignment: Alignment.center,
                           children: [
-                            // usa CorsImage para garantir que PNGs com CORS carreguem
                             CorsImage(
                               imageUrl: (jogo['team_home_badge'] ?? '').toString(),
-                              width: 48,
-                              height: 48,
+                              width: 44,
+                              height: 44,
                               fit: BoxFit.contain,
                               errorWidget: Icon(
                                 Symbols.shield_rounded,
-                                size: 48,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                size: 44,
+                                color: Colors.grey.shade400,
                               ),
                             ),
                             if (homeWon)
                               Image.asset(
                                 'assets/winner.gif',
-                                width: 70,
-                                height: 70,
+                                width: 65,
+                                height: 65,
                                 errorBuilder: (_, __, ___) => const SizedBox(),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           jogo['match_hometeam_name'] ?? '',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 3),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade500,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Casa',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         if (homeYellowCards > 0 || homeRedCards > 0)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (homeYellowCards > 0) ...[
                                 Container(
-                                  width: 14,
-                                  height: 18,
+                                  width: 13,
+                                  height: 17,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD700),
                                     borderRadius: BorderRadius.circular(2),
@@ -843,8 +829,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                               ],
                               if (homeRedCards > 0)
                                 Container(
-                                  width: 14,
-                                  height: 18,
+                                  width: 13,
+                                  height: 17,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE53935),
                                     borderRadius: BorderRadius.circular(2),
@@ -865,127 +851,102 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    children: [
-                      Text(
-                        '$homeScore : $awayScore',
-                        style: TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w900,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (isLive)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE53935),
-                            borderRadius: BorderRadius.circular(14),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        Text(
+                          '$homeScore : $awayScore',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
                           ),
-                          child: const Text(
-                            'Ao Vivo',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 0.3,
+                        ),
+                        if (!isNotStarted && !isFinished && !isHT)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF007AFF).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              statusRaw,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF007AFF),
+                              ),
+                            ),
+                          )
+                        else if (isHT)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'INTERVALO',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.orange,
+                              ),
                             ),
                           ),
-                        ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          isHT ? 'INT' : statusRaw,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: isLive && !isHT
-                                ? const Color(0xFF00C853)
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Stack(
                           alignment: Alignment.center,
                           children: [
                             CorsImage(
                               imageUrl: (jogo['team_away_badge'] ?? '').toString(),
-                              width: 48,
-                              height: 48,
+                              width: 44,
+                              height: 44,
                               fit: BoxFit.contain,
                               errorWidget: Icon(
                                 Symbols.shield_rounded,
-                                size: 48,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                size: 44,
+                                color: Colors.grey.shade400,
                               ),
                             ),
                             if (awayWon)
                               Image.asset(
                                 'assets/winner.gif',
-                                width: 70,
-                                height: 70,
+                                width: 65,
+                                height: 65,
                                 errorBuilder: (_, __, ___) => const SizedBox(),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         Text(
                           jogo['match_awayteam_name'] ?? '',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 3),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade500,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Fora',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         if (awayYellowCards > 0 || awayRedCards > 0)
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (awayYellowCards > 0) ...[
                                 Container(
-                                  width: 14,
-                                  height: 18,
+                                  width: 13,
+                                  height: 17,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD700),
                                     borderRadius: BorderRadius.circular(2),
@@ -1005,8 +966,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                               ],
                               if (awayRedCards > 0)
                                 Container(
-                                  width: 14,
-                                  height: 18,
+                                  width: 13,
+                                  height: 17,
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE53935),
                                     borderRadius: BorderRadius.circular(2),
@@ -1029,80 +990,62 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${homePercent}%',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface,
+              if (hasPossession) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$homePercent%',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 5),
-                        TweenAnimationBuilder<double>(
-                          duration: const Duration(milliseconds: 800),
-                          curve: Curves.easeOut,
-                          tween: Tween(begin: 0.0, end: homePercent / 100),
-                          builder: (context, value, child) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: value.isNaN ? 0 : value,
-                                backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isDark ? const Color(0xFF42A5F5) : const Color(0xFF1976D2),
-                                ),
-                                minHeight: 6,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${awayPercent}%',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface,
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: homePercent / 100,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
+                              minHeight: 5,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 5),
-                        TweenAnimationBuilder<double>(
-                          duration: const Duration(milliseconds: 800),
-                          curve: Curves.easeOut,
-                          tween: Tween(begin: 0.0, end: awayPercent / 100),
-                          builder: (context, value, child) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: value.isNaN ? 0 : value,
-                                backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isDark ? const Color(0xFFFF7043) : const Color(0xFFFF6F00),
-                                ),
-                                minHeight: 6,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '$awayPercent%',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: awayPercent / 100,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
+                              minHeight: 5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -1141,8 +1084,8 @@ class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderSta
     return FadeTransition(
       opacity: _animation,
       child: Container(
-        width: 8,
-        height: 8,
+        width: 7,
+        height: 7,
         decoration: const BoxDecoration(
           color: Colors.red,
           shape: BoxShape.circle,
