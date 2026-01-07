@@ -189,12 +189,13 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   Widget build(BuildContext context) {
     super.build(context);
     final appState = context.watch<AppState>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.1),
@@ -203,7 +204,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
               ),
             ],
           ),
-          child: _buildToggleButtons(),
+          child: _buildToggleButtons(isDark),
         ),
         Expanded(
           child: _buildContent(appState),
@@ -212,7 +213,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
     );
   }
 
-  Widget _buildToggleButtons() {
+  Widget _buildToggleButtons(bool isDark) {
     final aoVivoCount = _contarJogosAoVivo();
 
     return Container(
@@ -220,7 +221,9 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       child: Container(
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.6),
+          color: isDark 
+              ? Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.6)
+              : const Color(0xFFE5E5EA), // Cinza iOS claro
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -490,6 +493,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   Widget _buildJogosList(List<dynamic> jogos) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Map<String, List<dynamic>> jogosPorLiga = {};
     Map<String, Map<String, dynamic>> ligasInfo = {};
     List<String> ligasOrdenadas = [];
@@ -543,7 +547,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
                 }
               },
               child: Container(
-                color: Theme.of(context).colorScheme.surface,
+                color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Row(
                   children: [
@@ -635,6 +639,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
   }
 
   Widget _buildMatchItem(dynamic jogo, bool isFirst, bool isLast) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final status = jogo['match_status'] ?? '';
     final isNumericStatus = int.tryParse(status.toString()) != null;
     final isLive = isNumericStatus || 
@@ -671,7 +676,7 @@ class _JogosPageState extends State<JogosPage> with TickerProviderStateMixin, Au
       child: Column(
         children: [
           Container(
-            color: Theme.of(context).colorScheme.surface,
+            color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             child: Column(
               children: [
@@ -839,6 +844,8 @@ class _IOSStyleTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -847,13 +854,13 @@ class _IOSStyleTabButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
         decoration: BoxDecoration(
           color: isSelected 
-              ? Theme.of(context).colorScheme.surface
+              ? (isDark ? Theme.of(context).colorScheme.surface : Colors.white)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.15),
+              blurRadius: isDark ? 8 : 4,
               offset: const Offset(0, 1),
             ),
           ] : [],
@@ -865,8 +872,8 @@ class _IOSStyleTabButton extends StatelessWidget {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: isSelected
-                  ? Theme.of(context).colorScheme.onSurface
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ? (isDark ? Theme.of(context).colorScheme.onSurface : Colors.black)
+                  : (isDark ? Theme.of(context).colorScheme.onSurfaceVariant : const Color(0xFF3C3C43).withOpacity(0.6)),
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
@@ -910,7 +917,7 @@ class _QuickMatchDetailsModal extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
