@@ -14,6 +14,7 @@ import 'opcoes_page.dart';
 import 'comunidade_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
+import 'cupon_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -351,12 +352,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               );
             },
           ),
+          const SizedBox(width: 8),
           _AnimatedUserButton(
             onPressed: () {
               // Funcionalidade futura
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
         ];
         break;
       case 'jogos':
@@ -442,10 +444,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.65),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.75),
             border: Border(
               top: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
                 width: 0.5,
               ),
             ),
@@ -454,37 +456,147 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             top: false,
             child: Container(
               height: 72,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _AnimatedNavItem(
                     icon: Symbols.home_rounded,
-                    label: 'Home',
+                    label: 'Populaire',
                     isSelected: currentIndex == 0,
                     onTap: () => appState.mudarTab('home'),
                   ),
                   _AnimatedNavItem(
-                    icon: Symbols.sports_soccer_rounded,
-                    label: 'Jogos',
+                    icon: Symbols.star_rounded,
+                    label: 'Favoris',
                     isSelected: currentIndex == 1,
                     onTap: () => appState.mudarTab('jogos'),
                   ),
+                  // Botão central do cupom
+                  _CentralCouponButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const CuponPage(),
+                        ),
+                      );
+                    },
+                  ),
                   _AnimatedNavItem(
-                    icon: Symbols.category_rounded,
-                    label: 'Categorias',
+                    icon: Symbols.schedule_rounded,
+                    label: 'Historique',
                     isSelected: currentIndex == 2,
                     onTap: () => appState.mudarTab('opcoes'),
                   ),
                   _AnimatedNavItem(
-                    icon: Symbols.groups_rounded,
-                    label: 'Comunidade',
+                    icon: Symbols.grid_view_rounded,
+                    label: 'Menu',
                     isSelected: currentIndex == 3,
                     onTap: () => appState.mudarTab('comunidade'),
                   ),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==================== BOTÃO CENTRAL DO CUPOM ====================
+class _CentralCouponButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _CentralCouponButton({required this.onPressed});
+
+  @override
+  State<_CentralCouponButton> createState() => _CentralCouponButtonState();
+}
+
+class _CentralCouponButtonState extends State<_CentralCouponButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.88).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _controller.forward();
+    await _controller.reverse();
+    widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          width: 56,
+          height: 56,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE53935),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE53935).withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              const Center(
+                child: Icon(
+                  Ionicons.ticket,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '2',
+                      style: TextStyle(
+                        color: Color(0xFFE53935),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -542,6 +654,8 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    
     return Expanded(
       child: GestureDetector(
         onTap: _handleTap,
@@ -559,7 +673,9 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                   fill: widget.isSelected ? 1 : 0,
                   color: widget.isSelected 
                       ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                      : (brightness == Brightness.light 
+                          ? Colors.grey.shade600 
+                          : Colors.grey.shade400),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -569,7 +685,9 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
                     fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
                     color: widget.isSelected 
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                        : (brightness == Brightness.light 
+                            ? Colors.grey.shade600 
+                            : Colors.grey.shade400),
                   ),
                 ),
               ],
@@ -641,7 +759,7 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
   }
 }
 
-// ==================== ANIMATED SEARCH BUTTON (Material Design 3 Expressive) ====================
+// ==================== ANIMATED SEARCH BUTTON ====================
 class _AnimatedSearchButton extends StatefulWidget {
   final VoidCallback onPressed;
 
@@ -712,7 +830,7 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
   }
 }
 
-// ==================== ANIMATED USER BUTTON (Material Design 3 Expressive) ====================
+// ==================== ANIMATED USER BUTTON ====================
 class _AnimatedUserButton extends StatefulWidget {
   final VoidCallback onPressed;
 
