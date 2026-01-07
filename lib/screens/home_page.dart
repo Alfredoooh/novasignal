@@ -12,9 +12,9 @@ import 'search_page.dart';
 import 'jogos_page.dart';
 import 'opcoes_page.dart';
 import 'comunidade_page.dart';
+import 'cupom_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
-import 'cupon_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -82,14 +82,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
   }
 
-  void _navigateAndCloseDrawer(VoidCallback action) {
-    _animationController.reverse().then((_) {
-      if (mounted) {
-        action();
-      }
-    });
-  }
-
   Future<void> _launchWhatsApp() async {
     final Uri whatsappUrl = Uri.parse('https://wa.me/258843902649');
     if (await canLaunchUrl(whatsappUrl)) {
@@ -110,27 +102,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.black,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.black,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Consumer<AppState>(
         builder: (context, appState, child) {
           final canSwipeDrawer = appState.tabAtual == 'home';
 
           return Material(
-            color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
+            color: Colors.white,
             child: Stack(
               children: [
-                // Drawer background
                 Container(
-                  color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
+                  color: Colors.white,
                   child: SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 20, top: 20, right: 20),
@@ -219,7 +208,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     ),
                   ),
                 ),
-                // Main content
                 Transform.translate(
                   offset: Offset(_slideAnimation.value.dx * MediaQuery.of(context).size.width, 0),
                   child: Transform.scale(
@@ -248,7 +236,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             child: IgnorePointer(
                               ignoring: _isDrawerOpen,
                               child: Container(
-                                color: brightness == Brightness.light ? Colors.white : Theme.of(context).colorScheme.surface,
+                                color: Colors.white,
                                 child: Column(
                                   children: [
                                     if (appState.paginaAtual != 'search')
@@ -261,7 +249,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             ),
                           ),
                         ),
-                        // Overlay escuro quando drawer está aberto
                         if (_animationController.value > 0)
                           Positioned.fill(
                             child: GestureDetector(
@@ -354,11 +341,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           ),
           const SizedBox(width: 8),
           _AnimatedUserButton(
-            onPressed: () {
-              // Funcionalidade futura
-            },
+            onPressed: () {},
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
         ];
         break;
       case 'jogos':
@@ -379,9 +364,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     }
 
     return Container(
-      color: Theme.of(context).brightness == Brightness.light 
-          ? Colors.white 
-          : Theme.of(context).colorScheme.surface,
+      color: Colors.white,
       child: SafeArea(
         bottom: false,
         child: Container(
@@ -444,55 +427,69 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.75),
+            color: Colors.white.withOpacity(0.85),
             border: Border(
               top: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
+                color: Colors.grey.withOpacity(0.2),
                 width: 0.5,
               ),
             ),
           ),
           child: SafeArea(
             top: false,
-            child: Container(
+            child: SizedBox(
               height: 72,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              child: Stack(
                 children: [
-                  _AnimatedNavItem(
-                    icon: Symbols.home_rounded,
-                    label: 'Populaire',
-                    isSelected: currentIndex == 0,
-                    onTap: () => appState.mudarTab('home'),
-                  ),
-                  _AnimatedNavItem(
-                    icon: Symbols.star_rounded,
-                    label: 'Favoris',
-                    isSelected: currentIndex == 1,
-                    onTap: () => appState.mudarTab('jogos'),
-                  ),
-                  // Botão central do cupom
-                  _CentralCouponButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const CuponPage(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _AnimatedNavItem(
+                          icon: Symbols.home_rounded,
+                          label: 'Home',
+                          isSelected: currentIndex == 0,
+                          onTap: () => appState.mudarTab('home'),
                         ),
-                      );
-                    },
+                      ),
+                      Expanded(
+                        child: _AnimatedNavItem(
+                          icon: Symbols.sports_soccer_rounded,
+                          label: 'Jogos',
+                          isSelected: currentIndex == 1,
+                          onTap: () => appState.mudarTab('jogos'),
+                        ),
+                      ),
+                      const SizedBox(width: 80),
+                      Expanded(
+                        child: _AnimatedNavItem(
+                          icon: Symbols.category_rounded,
+                          label: 'Categorias',
+                          isSelected: currentIndex == 2,
+                          onTap: () => appState.mudarTab('opcoes'),
+                        ),
+                      ),
+                      Expanded(
+                        child: _AnimatedNavItem(
+                          icon: Symbols.groups_rounded,
+                          label: 'Comunidade',
+                          isSelected: currentIndex == 3,
+                          onTap: () => appState.mudarTab('comunidade'),
+                        ),
+                      ),
+                    ],
                   ),
-                  _AnimatedNavItem(
-                    icon: Symbols.schedule_rounded,
-                    label: 'Historique',
-                    isSelected: currentIndex == 2,
-                    onTap: () => appState.mudarTab('opcoes'),
-                  ),
-                  _AnimatedNavItem(
-                    icon: Symbols.grid_view_rounded,
-                    label: 'Menu',
-                    isSelected: currentIndex == 3,
-                    onTap: () => appState.mudarTab('comunidade'),
+                  Positioned(
+                    left: MediaQuery.of(context).size.width / 2 - 32,
+                    top: -8,
+                    child: _CupomCentralButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const CupomPage(),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -504,17 +501,16 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 }
 
-// ==================== BOTÃO CENTRAL DO CUPOM ====================
-class _CentralCouponButton extends StatefulWidget {
+class _CupomCentralButton extends StatefulWidget {
   final VoidCallback onPressed;
 
-  const _CentralCouponButton({required this.onPressed});
+  const _CupomCentralButton({required this.onPressed});
 
   @override
-  State<_CentralCouponButton> createState() => _CentralCouponButtonState();
+  State<_CupomCentralButton> createState() => _CupomCentralButtonState();
 }
 
-class _CentralCouponButtonState extends State<_CentralCouponButton>
+class _CupomCentralButtonState extends State<_CupomCentralButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -527,7 +523,7 @@ class _CentralCouponButtonState extends State<_CentralCouponButton>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.88).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -551,52 +547,24 @@ class _CentralCouponButtonState extends State<_CentralCouponButton>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          width: 56,
-          height: 56,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFFE53935),
             shape: BoxShape.circle,
+            color: const Color(0xFF007AFF),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFE53935).withOpacity(0.3),
-                blurRadius: 12,
+                color: const Color(0xFF007AFF).withOpacity(0.4),
+                blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Stack(
-            children: [
-              const Center(
-                child: Icon(
-                  Ionicons.ticket,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '2',
-                      style: TextStyle(
-                        color: Color(0xFFE53935),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          child: const Icon(
+            Symbols.confirmation_number_rounded,
+            color: Colors.white,
+            size: 28,
+            fill: 1,
           ),
         ),
       ),
@@ -604,7 +572,6 @@ class _CentralCouponButtonState extends State<_CentralCouponButton>
   }
 }
 
-// ==================== ANIMATED NAV ITEM ====================
 class _AnimatedNavItem extends StatefulWidget {
   final IconData icon;
   final String label;
@@ -654,44 +621,36 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    
-    return Expanded(
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  widget.icon,
-                  size: 26,
-                  fill: widget.isSelected ? 1 : 0,
+    return GestureDetector(
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                widget.icon,
+                size: 26,
+                fill: widget.isSelected ? 1 : 0,
+                color: widget.isSelected 
+                    ? const Color(0xFF007AFF)
+                    : Colors.grey,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: widget.isSelected 
-                      ? Theme.of(context).colorScheme.primary
-                      : (brightness == Brightness.light 
-                          ? Colors.grey.shade600 
-                          : Colors.grey.shade400),
+                      ? const Color(0xFF007AFF)
+                      : Colors.grey,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: widget.isSelected 
-                        ? Theme.of(context).colorScheme.primary
-                        : (brightness == Brightness.light 
-                            ? Colors.grey.shade600 
-                            : Colors.grey.shade400),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -699,7 +658,6 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
   }
 }
 
-// ==================== ANIMATED MENU BUTTON ====================
 class _AnimatedMenuButton extends StatefulWidget {
   final VoidCallback onPressed;
   final bool isOpen;
@@ -753,13 +711,13 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
           size: 24,
         ),
         iconSize: 24,
+        padding: const EdgeInsets.all(16),
         onPressed: _handleTap,
       ),
     );
   }
 }
 
-// ==================== ANIMATED SEARCH BUTTON ====================
 class _AnimatedSearchButton extends StatefulWidget {
   final VoidCallback onPressed;
 
@@ -808,9 +766,9 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
         child: Container(
           height: 40,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: const BorderRadius.only(
+          decoration: const BoxDecoration(
+            color: Color(0xFF007AFF),
+            borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               bottomLeft: Radius.circular(20),
               topRight: Radius.circular(4),
@@ -830,7 +788,6 @@ class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
   }
 }
 
-// ==================== ANIMATED USER BUTTON ====================
 class _AnimatedUserButton extends StatefulWidget {
   final VoidCallback onPressed;
 
@@ -879,9 +836,9 @@ class _AnimatedUserButtonState extends State<_AnimatedUserButton>
         child: Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: const BorderRadius.only(
+          decoration: const BoxDecoration(
+            color: Color(0xFF007AFF),
+            borderRadius: BorderRadius.only(
               topLeft: Radius.circular(4),
               bottomLeft: Radius.circular(4),
               topRight: Radius.circular(20),
