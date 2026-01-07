@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 
-class CuponPage extends StatelessWidget {
-  const CuponPage({super.key});
+class CupomPage extends StatelessWidget {
+  const CupomPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    
     return Scaffold(
-      backgroundColor: brightness == Brightness.light 
-          ? Colors.grey.shade50 
-          : Theme.of(context).colorScheme.background,
+      backgroundColor: const Color(0xFFF2F2F7),
       appBar: AppBar(
         title: const Text('Cupons Ativos'),
         centerTitle: false,
@@ -19,78 +15,80 @@ class CuponPage extends StatelessWidget {
           icon: const Icon(Symbols.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        backgroundColor: brightness == Brightness.light 
-            ? Colors.white 
-            : Theme.of(context).colorScheme.surface,
+        backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Cupom 1
+          // Cupom zerado de exemplo
           _buildCuponCard(
             context,
-            mise: '150 000 F',
-            gains: '334 170 F',
-            status: 'Payé',
-            statusColor: Colors.green,
+            mise: '0 F',
+            gains: '0 F',
+            status: 'Aucune mise',
+            statusColor: Colors.grey,
             matches: [
               _MatchInfo(
-                league: 'Championnat de Chypre, Première division',
-                date: '08.04.2024 (17:00)',
-                team1: 'AEZ Zakakiou',
-                team2: 'AEL Limassol',
-                score: '1 : 5',
-                halfScore: '1:5 (0:3, 1:2)',
-                bet: '1X2',
-                choice: 'V2',
-                odds: 1.58,
-                result: 'Gagné',
-                resultColor: Colors.green,
-              ),
-              _MatchInfo(
-                league: 'Championnat de Hongrie, NB II',
-                date: '08.04.2024 (19:00)',
-                team1: 'Nyíregyháza',
-                team2: 'PecsiMFC',
-                score: '2 : 1',
-                halfScore: '2:1 (2:0, 0:1)',
-                bet: '1X2',
-                choice: 'V1',
-                odds: 1.41,
-                result: 'Gagné',
-                resultColor: Colors.green,
-              ),
-            ],
-            ticketId: '#84930294',
-            placedDate: '08.04.2024',
-          ),
-          const SizedBox(height: 16),
-          // Cupom 2 (exemplo adicional)
-          _buildCuponCard(
-            context,
-            mise: '50 000 F',
-            gains: '125 500 F',
-            status: 'En cours',
-            statusColor: Colors.orange,
-            matches: [
-              _MatchInfo(
-                league: 'Premier League',
-                date: '07.01.2026 (20:00)',
-                team1: 'Manchester United',
-                team2: 'Liverpool',
+                league: 'Aucun match sélectionné',
+                date: '--.--.---- (--:--)',
+                team1: '---',
+                team2: '---',
                 score: '- : -',
                 halfScore: '',
-                bet: '1X2',
-                choice: 'V2',
-                odds: 2.15,
+                bet: '---',
+                choice: '---',
+                odds: 0.00,
                 result: 'En attente',
-                resultColor: Colors.orange,
+                resultColor: Colors.grey,
               ),
             ],
-            ticketId: '#84930295',
-            placedDate: '07.01.2026',
+            ticketId: '#00000000',
+            placedDate: '--.--.----',
+          ),
+          const SizedBox(height: 16),
+          // Mensagem informativa
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Symbols.info_rounded,
+                  size: 48,
+                  color: const Color(0xFF007AFF),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nenhum cupom ativo',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Faça suas apostas para ver\nseus cupons aqui',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -107,23 +105,17 @@ class CuponPage extends StatelessWidget {
     required String ticketId,
     required String placedDate,
   }) {
-    final brightness = Theme.of(context).brightness;
-    
     return Container(
       decoration: BoxDecoration(
-        color: brightness == Brightness.light 
-            ? Colors.white 
-            : Theme.of(context).colorScheme.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: brightness == Brightness.light
-            ? [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,9 +132,7 @@ class CuponPage extends StatelessWidget {
                       'Mise :',
                       style: TextStyle(
                         fontSize: 16,
-                        color: brightness == Brightness.light 
-                            ? Colors.grey.shade600 
-                            : Colors.grey.shade400,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                     Text(
@@ -162,9 +152,7 @@ class CuponPage extends StatelessWidget {
                       'Gains :',
                       style: TextStyle(
                         fontSize: 16,
-                        color: brightness == Brightness.light 
-                            ? Colors.grey.shade600 
-                            : Colors.grey.shade400,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                     Text(
@@ -185,9 +173,7 @@ class CuponPage extends StatelessWidget {
                       'Statut :',
                       style: TextStyle(
                         fontSize: 16,
-                        color: brightness == Brightness.light 
-                            ? Colors.grey.shade600 
-                            : Colors.grey.shade400,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                     Row(
@@ -213,20 +199,18 @@ class CuponPage extends StatelessWidget {
               ],
             ),
           ),
-          
+
           Divider(
             height: 1,
-            color: brightness == Brightness.light 
-                ? Colors.grey.shade200 
-                : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+            color: Colors.grey.shade200,
           ),
-          
+
           // Matches
           ...matches.asMap().entries.map((entry) {
             final index = entry.key;
             final match = entry.value;
             final isLast = index == matches.length - 1;
-            
+
             return Column(
               children: [
                 Padding(
@@ -240,9 +224,7 @@ class CuponPage extends StatelessWidget {
                           Icon(
                             Symbols.sports_soccer_rounded,
                             size: 16,
-                            color: brightness == Brightness.light 
-                                ? Colors.grey.shade600 
-                                : Colors.grey.shade400,
+                            color: Colors.grey.shade600,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -250,9 +232,7 @@ class CuponPage extends StatelessWidget {
                               match.league,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: brightness == Brightness.light 
-                                    ? Colors.grey.shade600 
-                                    : Colors.grey.shade400,
+                                color: Colors.grey.shade600,
                               ),
                             ),
                           ),
@@ -263,13 +243,11 @@ class CuponPage extends StatelessWidget {
                         match.date,
                         style: TextStyle(
                           fontSize: 12,
-                          color: brightness == Brightness.light 
-                              ? Colors.grey.shade500 
-                              : Colors.grey.shade500,
+                          color: Colors.grey.shade500,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Placar
                       Row(
                         children: [
@@ -301,7 +279,7 @@ class CuponPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       if (match.halfScore.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Center(
@@ -309,16 +287,14 @@ class CuponPage extends StatelessWidget {
                             match.halfScore,
                             style: TextStyle(
                               fontSize: 12,
-                              color: brightness == Brightness.light 
-                                  ? Colors.grey.shade500 
-                                  : Colors.grey.shade500,
+                              color: Colors.grey.shade500,
                             ),
                           ),
                         ),
                       ],
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Aposta
                       Row(
                         children: [
@@ -326,30 +302,28 @@ class CuponPage extends StatelessWidget {
                             'Mise : ${match.bet}',
                             style: TextStyle(
                               fontSize: 14,
-                              color: brightness == Brightness.light 
-                                  ? Colors.grey.shade600 
-                                  : Colors.grey.shade400,
+                              color: Colors.grey.shade600,
                             ),
                           ),
                           const SizedBox(width: 16),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              color: const Color(0xFF007AFF).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               match.choice,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: Color(0xFF007AFF),
                               ),
                             ),
                           ),
                           const Spacer(),
                           Text(
-                            match.odds.toString(),
+                            match.odds.toStringAsFixed(2),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -357,9 +331,9 @@ class CuponPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 12),
-                      
+
                       // Status
                       Row(
                         children: [
@@ -367,9 +341,7 @@ class CuponPage extends StatelessWidget {
                             'Statut :',
                             style: TextStyle(
                               fontSize: 14,
-                              color: brightness == Brightness.light 
-                                  ? Colors.grey.shade600 
-                                  : Colors.grey.shade400,
+                              color: Colors.grey.shade600,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -395,21 +367,17 @@ class CuponPage extends StatelessWidget {
                 if (!isLast)
                   Divider(
                     height: 1,
-                    color: brightness == Brightness.light 
-                        ? Colors.grey.shade200 
-                        : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+                    color: Colors.grey.shade200,
                   ),
               ],
             );
-          }).toList(),
-          
+          }),
+
           Divider(
             height: 1,
-            color: brightness == Brightness.light 
-                ? Colors.grey.shade200 
-                : Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+            color: Colors.grey.shade200,
           ),
-          
+
           // Footer
           Padding(
             padding: const EdgeInsets.all(20),
@@ -417,9 +385,7 @@ class CuponPage extends StatelessWidget {
               'ID Ticket: $ticketId • Placé le $placedDate',
               style: TextStyle(
                 fontSize: 12,
-                color: brightness == Brightness.light 
-                    ? Colors.grey.shade500 
-                    : Colors.grey.shade500,
+                color: Colors.grey.shade500,
               ),
               textAlign: TextAlign.center,
             ),
