@@ -73,5 +73,7 @@ flutter:
     - assets/icon/community.svg
     - assets/icon/search.svg
     - assets/icon/user.svg
-    - assets/icon/
-    - assets/icon/
+    - assets/icon/home_filled.svg
+    - assets/icon/soccer_filled.svg
+    - assets/icon/category_filled.svg
+    - assets/icon/community_filled.svg
