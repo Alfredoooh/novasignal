@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'package:ionicons/ionicons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:animations/animations.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,7 +12,7 @@ import 'search_page.dart';
 import 'jogos_page.dart';
 import 'opcoes_page.dart';
 import 'comunidade_page.dart';
-import 'cupon_page.dart';
+import 'cupom_page.dart';
 import 'jogo_detalhes_page.dart';
 import 'configuracoes_page.dart';
 
@@ -104,7 +104,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
+        statusBarColor: Colors.white,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
         systemNavigationBarColor: Colors.white,
@@ -170,7 +170,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             },
                           ),
                           _buildDrawerItem(
-                            icon: Ionicons.logo_whatsapp,
+                            icon: Symbols.logo_dev_rounded,
                             title: 'WhatsApp',
                             onTap: () async {
                               await _animationController.reverse();
@@ -180,7 +180,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             },
                           ),
                           _buildDrawerItem(
-                            icon: Ionicons.mail_outline,
+                            icon: Symbols.mail_outline_rounded,
                             title: 'Enviar Feedback',
                             onTap: () async {
                               await _animationController.reverse();
@@ -323,7 +323,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         leading = menuButton;
         title = 'Elephantbet Club';
         actions = [
-          _AnimatedSearchButton(
+          _AnimatedIconButton(
             onPressed: () {
               Navigator.of(context).push(
                 PageRouteBuilder(
@@ -338,10 +338,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ),
               );
             },
+            svgPath: 'assets/icons/search.svg',
           ),
           const SizedBox(width: 8),
-          _AnimatedUserButton(
+          _AnimatedIconButton(
             onPressed: () {},
+            svgPath: 'assets/icons/user.svg',
           ),
           const SizedBox(width: 16),
         ];
@@ -422,96 +424,88 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       }
     });
 
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.85),
-            border: Border(
-              top: BorderSide(
-                color: Colors.grey.withOpacity(0.2),
-                width: 0.5,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
               ),
-            ),
+            ],
           ),
           child: SafeArea(
             top: false,
-            child: SizedBox(
+            child: Container(
               height: 72,
-              child: Stack(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _AnimatedNavItem(
-                          icon: Symbols.home_rounded,
-                          label: 'Home',
-                          isSelected: currentIndex == 0,
-                          onTap: () => appState.mudarTab('home'),
-                        ),
-                      ),
-                      Expanded(
-                        child: _AnimatedNavItem(
-                          icon: Symbols.sports_soccer_rounded,
-                          label: 'Jogos',
-                          isSelected: currentIndex == 1,
-                          onTap: () => appState.mudarTab('jogos'),
-                        ),
-                      ),
-                      const SizedBox(width: 80),
-                      Expanded(
-                        child: _AnimatedNavItem(
-                          icon: Symbols.category_rounded,
-                          label: 'Categorias',
-                          isSelected: currentIndex == 2,
-                          onTap: () => appState.mudarTab('opcoes'),
-                        ),
-                      ),
-                      Expanded(
-                        child: _AnimatedNavItem(
-                          icon: Symbols.groups_rounded,
-                          label: 'Comunidade',
-                          isSelected: currentIndex == 3,
-                          onTap: () => appState.mudarTab('comunidade'),
-                        ),
-                      ),
-                    ],
+                  _AnimatedNavItem(
+                    svgPath: 'assets/icons/home.svg',
+                    label: 'Home',
+                    isSelected: currentIndex == 0,
+                    onTap: () => appState.mudarTab('home'),
                   ),
-                  Positioned(
-                    left: MediaQuery.of(context).size.width / 2 - 32,
-                    top: -8,
-                    child: _CupomCentralButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const CupomPage(),
-                          ),
-                        );
-                      },
-                    ),
+                  _AnimatedNavItem(
+                    svgPath: 'assets/icons/soccer.svg',
+                    label: 'Jogos',
+                    isSelected: currentIndex == 1,
+                    onTap: () => appState.mudarTab('jogos'),
+                  ),
+                  _AnimatedNavItem(
+                    svgPath: 'assets/icons/category.svg',
+                    label: 'Categorias',
+                    isSelected: currentIndex == 2,
+                    onTap: () => appState.mudarTab('opcoes'),
+                  ),
+                  _AnimatedNavItem(
+                    svgPath: 'assets/icons/community.svg',
+                    label: 'Comunidade',
+                    isSelected: currentIndex == 3,
+                    onTap: () => appState.mudarTab('comunidade'),
                   ),
                 ],
               ),
             ),
           ),
         ),
-      ),
+        // FAB Cupom
+        Positioned(
+          right: 16,
+          bottom: 80,
+          child: _CupomFAB(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CupomPage(),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _CupomCentralButton extends StatefulWidget {
+// CONTINUAÇÃO DA HOME PAGE - WIDGETS
+
+class _CupomFAB extends StatefulWidget {
   final VoidCallback onPressed;
 
-  const _CupomCentralButton({required this.onPressed});
+  const _CupomFAB({required this.onPressed});
 
   @override
-  State<_CupomCentralButton> createState() => _CupomCentralButtonState();
+  State<_CupomFAB> createState() => _CupomFABState();
 }
 
-class _CupomCentralButtonState extends State<_CupomCentralButton>
-    with SingleTickerProviderStateMixin {
+class _CupomFABState extends State<_CupomFAB> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -547,23 +541,23 @@ class _CupomCentralButtonState extends State<_CupomCentralButton>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          width: 64,
-          height: 64,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
             color: const Color(0xFF007AFF),
+            shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF007AFF).withOpacity(0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: const Icon(
             Symbols.confirmation_number_rounded,
             color: Colors.white,
-            size: 28,
+            size: 26,
             fill: 1,
           ),
         ),
@@ -573,13 +567,13 @@ class _CupomCentralButtonState extends State<_CupomCentralButton>
 }
 
 class _AnimatedNavItem extends StatefulWidget {
-  final IconData icon;
+  final String svgPath;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _AnimatedNavItem({
-    required this.icon,
+    required this.svgPath,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -621,36 +615,46 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _handleTap,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                widget.icon,
-                size: 26,
-                fill: widget.isSelected ? 1 : 0,
-                color: widget.isSelected 
-                    ? const Color(0xFF007AFF)
-                    : Colors.grey,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: widget.isSelected 
-                      ? const Color(0xFF007AFF)
-                      : Colors.grey,
+    // Determinar qual ícone usar baseado no estado
+    final iconPath = widget.isSelected 
+        ? widget.svgPath.replaceAll('.svg', '_filled.svg')
+        : widget.svgPath;
+    
+    return Expanded(
+      child: GestureDetector(
+        onTap: _handleTap,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  iconPath,
+                  width: 26,
+                  height: 26,
+                  colorFilter: ColorFilter.mode(
+                    widget.isSelected 
+                        ? const Color(0xFF007AFF)
+                        : Colors.grey,
+                    BlendMode.srcIn,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: widget.isSelected 
+                        ? const Color(0xFF007AFF)
+                        : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -707,7 +711,7 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
       scale: _scaleAnimation,
       child: IconButton(
         icon: const Icon(
-          Ionicons.menu_outline,
+          Symbols.menu_rounded,
           size: 24,
         ),
         iconSize: 24,
@@ -718,86 +722,20 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton>
   }
 }
 
-class _AnimatedSearchButton extends StatefulWidget {
+class _AnimatedIconButton extends StatefulWidget {
   final VoidCallback onPressed;
+  final String svgPath;
 
-  const _AnimatedSearchButton({required this.onPressed});
+  const _AnimatedIconButton({
+    required this.onPressed,
+    required this.svgPath,
+  });
 
   @override
-  State<_AnimatedSearchButton> createState() => _AnimatedSearchButtonState();
+  State<_AnimatedIconButton> createState() => _AnimatedIconButtonState();
 }
 
-class _AnimatedSearchButtonState extends State<_AnimatedSearchButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleTap() async {
-    await _controller.forward();
-    await _controller.reverse();
-    widget.onPressed();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _handleTap,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
-            color: Color(0xFF007AFF),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              bottomLeft: Radius.circular(20),
-              topRight: Radius.circular(4),
-              bottomRight: Radius.circular(4),
-            ),
-          ),
-          child: const Center(
-            child: Icon(
-              Ionicons.search,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AnimatedUserButton extends StatefulWidget {
-  final VoidCallback onPressed;
-
-  const _AnimatedUserButton({required this.onPressed});
-
-  @override
-  State<_AnimatedUserButton> createState() => _AnimatedUserButtonState();
-}
-
-class _AnimatedUserButtonState extends State<_AnimatedUserButton>
+class _AnimatedIconButtonState extends State<_AnimatedIconButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -837,19 +775,18 @@ class _AnimatedUserButtonState extends State<_AnimatedUserButton>
           width: 40,
           height: 40,
           decoration: const BoxDecoration(
-            color: Color(0xFF007AFF),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(4),
-              bottomLeft: Radius.circular(4),
-              topRight: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
+            color: Color(0xFFD5E1F5),
+            shape: BoxShape.circle,
           ),
-          child: const Center(
-            child: Icon(
-              Ionicons.person,
-              color: Colors.white,
-              size: 20,
+          child: Center(
+            child: SvgPicture.asset(
+              widget.svgPath,
+              width: 20,
+              height: 20,
+              colorFilter: const ColorFilter.mode(
+                Color(0xFF007AFF),
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ),
