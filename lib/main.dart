@@ -13,12 +13,12 @@ void main() {
     HttpOverrides.global = MyHttpOverrides();
   }
 
-  // Força statusbar preto com ícones brancos SEMPRE
+  // StatusBar BRANCO com ícones ESCUROS
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.black,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
+      statusBarColor: Colors.white,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
       systemNavigationBarColor: Colors.white,
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
@@ -49,14 +49,14 @@ class MyApp extends StatelessWidget {
       title: 'Football Live',
       debugShowCheckedModeBanner: false,
       theme: _buildLightTheme(),
-      themeMode: ThemeMode.light, // SEMPRE tema claro
+      themeMode: ThemeMode.light,
       home: const HomePage(),
       builder: (context, child) {
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: const SystemUiOverlayStyle(
-            statusBarColor: Colors.black,
-            statusBarIconBrightness: Brightness.light,
-            statusBarBrightness: Brightness.dark,
+            statusBarColor: Colors.white,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
             systemNavigationBarColor: Colors.white,
             systemNavigationBarIconBrightness: Brightness.dark,
           ),
@@ -86,8 +86,8 @@ class MyApp extends StatelessWidget {
       scaffoldBackgroundColor: lightBackground,
       cardColor: lightSecondary,
       dividerColor: separator,
-      splashFactory: NoSplash.splashFactory, // Remove brilho de navegação
-      highlightColor: Colors.transparent, // Remove highlight
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: Colors.transparent,
       colorScheme: ColorScheme.light(
         primary: appleBlue,
         onPrimary: pureWhite,
@@ -112,13 +112,13 @@ class MyApp extends StatelessWidget {
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: lightBackground,
+        backgroundColor: pureWhite,
         surfaceTintColor: Colors.transparent,
         foregroundColor: labelPrimary,
         systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarColor: Colors.black,
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
+          statusBarColor: Colors.white,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
         ),
       ),
       cardTheme: CardThemeData(
