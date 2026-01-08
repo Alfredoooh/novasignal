@@ -21,7 +21,6 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
   late AnimationController _scanLineController;
   late Animation<double> _scanLineAnimation;
   bool _isProcessingImage = false;
-  bool _isCameraReady = false;
 
   @override
   void initState() {
@@ -34,15 +33,6 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
       torchEnabled: false,
       formats: [BarcodeFormat.qrCode],
     );
-
-    // Listener para saber quando a câmera está pronta
-    cameraController.start().then((_) {
-      if (mounted) {
-        setState(() {
-          _isCameraReady = true;
-        });
-      }
-    });
 
     // Animação da linha de scan
     _scanLineController = AnimationController(
@@ -231,52 +221,25 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
           MobileScanner(
             controller: cameraController,
             onDetect: (BarcodeCapture capture) {
-              if (capture.barcodes.isNotEmpty && !isScanning && _isCameraReady) {
+              if (capture.barcodes.isNotEmpty && !isScanning) {
                 _handleBarcode(capture.barcodes.first);
               }
             },
           ),
 
-          // Loading inicial
-          if (!_isCameraReady)
-            Container(
-              color: Colors.black,
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Color(0xFFFFC107),
-                      strokeWidth: 3,
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Preparando câmera...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
           // Overlay com área de scan e linha animada
-          if (_isCameraReady)
-            AnimatedBuilder(
-              animation: _scanLineAnimation,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: ScannerOverlayPainter(
-                    detectedBarcode: detectedBarcode,
-                    scanLineAnimation: _scanLineAnimation.value,
-                  ),
-                  child: Container(),
-                );
-              },
-            ),
+          AnimatedBuilder(
+            animation: _scanLineAnimation,
+            builder: (context, child) {
+              return CustomPaint(
+                painter: ScannerOverlayPainter(
+                  detectedBarcode: detectedBarcode,
+                  scanLineAnimation: _scanLineAnimation.value,
+                ),
+                child: Container(),
+              );
+            },
+          ),
 
           // Botão voltar
           SafeArea(
@@ -351,7 +314,7 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
                     ),
 
                   // Espaçador se na web
-                  if (kIsWeb) const SizedBox(width: 64),
+                  if (kIsWeb) const SizedBox(width: 56),
 
                   // Botão Upload
                   _ScannerButton(
@@ -462,8 +425,8 @@ class _ScannerButtonState extends State<_ScannerButton>
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 68,
-              height: 68,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: widget.isActive 
                     ? const Color(0xFFFFC107)
@@ -489,7 +452,7 @@ class _ScannerButtonState extends State<_ScannerButton>
               child: Icon(
                 widget.icon,
                 color: widget.isActive ? Colors.black : Colors.black87,
-                size: 30,
+                size: 26,
                 fill: 1,
               ),
             ),
