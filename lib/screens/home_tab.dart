@@ -470,58 +470,22 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _buildNewsSection() {
+    if (_noticias.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'Notícias',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
+          const SizedBox(height: 8),
+          Column(
+            children: List.generate(_noticias.take(10).length, (i) {
+              final noticia = _noticias.take(10).toList()[i];
+              final isLast = i == _noticias.take(10).length - 1;
+              return _buildNewsItem(noticia, isLast);
+            }),
           ),
-          const SizedBox(height: 16),
-          if (_loadingNews)
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            )
-          else if (_noticias.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Symbols.article_rounded,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Nenhuma notícia disponível',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Column(
-              children: List.generate(_noticias.take(10).length, (i) {
-                final noticia = _noticias.take(10).toList()[i];
-                final isLast = i == _noticias.take(10).length - 1;
-                return _buildNewsItem(noticia, isLast);
-              }),
-            ),
         ],
       ),
     );
@@ -633,6 +597,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final statusRaw = (jogo['match_status']?.toString() ?? '');
     final statusLower = statusRaw.toLowerCase();
     final matchTime = jogo['match_time']?.toString() ?? '';
+    final matchDate = jogo['match_date']?.toString() ?? '';
 
     final isNumeric = int.tryParse(statusRaw.replaceAll(RegExp(r'\D'), '')) != null && statusRaw.trim().isNotEmpty;
     final isLive = _isJogoAoVivo(jogo);
@@ -655,6 +620,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
 
     final homeWon = isFinished && homeScore > awayScore;
     final awayWon = isFinished && awayScore > homeScore;
+
+    // Mostrar data se jogo terminou, senão mostra hora
+    final displayDateTime = isFinished ? matchDate : matchTime;
 
     return AnimatedBuilder(
       animation: controller,
@@ -687,7 +655,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           margin: const EdgeInsets.symmetric(horizontal: 12),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color(0xFFD5E1F5),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -719,7 +687,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         ),
                       ],
                     )
-                  else if (isNotStarted && matchTime.isNotEmpty)
+                  else if (displayDateTime.isNotEmpty)
                     Row(
                       children: [
                         Icon(
@@ -729,7 +697,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          matchTime,
+                          displayDateTime,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -767,28 +735,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CorsImage(
-                              imageUrl: (jogo['team_home_badge'] ?? '').toString(),
-                              width: 44,
-                              height: 44,
-                              fit: BoxFit.contain,
-                              errorWidget: Icon(
-                                Symbols.shield_rounded,
-                                size: 44,
-                                color: Colors.grey.shade400,
-                              ),
-                            ),
-                            if (homeWon)
-                              Image.asset(
-                                'assets/winner.gif',
-                                width: 65,
-                                height: 65,
-                                errorBuilder: (_, __, ___) => const SizedBox(),
-                              ),
-                          ],
+                        _WinnerBadge(
+                          imageUrl: (jogo['team_home_badge'] ?? '').toString(),
+                          isWinner: homeWon,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -904,28 +853,9 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CorsImage(
-                              imageUrl: (jogo['team_away_badge'] ?? '').toString(),
-                              width: 44,
-                              height: 44,
-                              fit: BoxFit.contain,
-                              errorWidget: Icon(
-                                Symbols.shield_rounded,
-                                size: 44,
-                                color: Colors.grey.shade400,
-                              ),
-                            ),
-                            if (awayWon)
-                              Image.asset(
-                                'assets/winner.gif',
-                                width: 65,
-                                height: 65,
-                                errorBuilder: (_, __, ___) => const SizedBox(),
-                              ),
-                          ],
+                        _WinnerBadge(
+                          imageUrl: (jogo['team_away_badge'] ?? '').toString(),
+                          isWinner: awayWon,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -1053,6 +983,134 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     );
   }
 }
+
+class _WinnerBadge extends StatefulWidget {
+  final String imageUrl;
+  final bool isWinner;
+
+  const _WinnerBadge({
+    required this.imageUrl,
+    required this.isWinner,
+  });
+
+  @override
+  State<_WinnerBadge> createState() => _WinnerBadgeState();
+}
+
+class _WinnerBadgeState extends State<_WinnerBadge> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    if (widget.isWinner) {
+      _scaleAnimation = TweenSequence<double>([
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 1.0, end: 1.3)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 40,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 1.3, end: 1.0)
+              .chain(CurveTween(curve: Curves.elasticOut)),
+          weight: 60,
+        ),
+      ]).animate(_controller);
+
+      _rotationAnimation = TweenSequence<double>([
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 0.0, end: 0.1)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 20,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 0.1, end: -0.1)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 30,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: -0.1, end: 0.0)
+              .chain(CurveTween(curve: Curves.elasticOut)),
+          weight: 50,
+        ),
+      ]).animate(_controller);
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    } else {
+      _scaleAnimation = AlwaysStoppedAnimation(1.0);
+      _rotationAnimation = AlwaysStoppedAnimation(0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Transform.rotate(
+            angle: _rotationAnimation.value,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                FadeInImage.memoryNetwork(
+                  placeholder: kTransparentImage,
+                  image: widget.imageUrl,
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.contain,
+                  fadeInDuration: const Duration(milliseconds: 100),
+                  imageErrorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Symbols.shield_rounded,
+                      size: 44,
+                      color: Colors.grey.shade400,
+                    );
+                  },
+                ),
+                if (widget.isWinner)
+                  Image.asset(
+                    'assets/winner.gif',
+                    width: 65,
+                    height: 65,
+                    errorBuilder: (_, __, ___) => const SizedBox(),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Transparent image for placeholder
+const kTransparentImage = <int>[
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+  0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+  0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+  0x45, 0x4E, 0x44, 0xAE,
+];
 
 class _BlinkingDot extends StatefulWidget {
   @override
