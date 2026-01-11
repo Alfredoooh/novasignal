@@ -77,3 +77,4 @@ flutter:
     - assets/icon/soccer_filled.svg
     - assets/icon/category_filled.svg
     - assets/icon/community_filled.svg
+    - assets/products.json
