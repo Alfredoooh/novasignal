@@ -1,11 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
-import '../widgets/cors_image.dart';
-import 'jogo_detalhes_page.dart';
-import 'news_detail_page.dart';
 import 'package:shimmer/shimmer.dart';
 
 class HomeTab extends StatefulWidget {
@@ -17,20 +13,8 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
-  final PageController _grandesClubesController = PageController(viewportFraction: 0.92);
-  final PageController _jogosHojeController = PageController(viewportFraction: 0.92);
-
-  List<dynamic> _jogosHoje = [];
-  List<dynamic> _jogosAmanha = [];
-  List<dynamic> _todosJogosHoje = [];
-  String? _error;
-  Timer? _autoRefreshTimer;
-  List<Map<String, dynamic>> _noticias = [];
-  bool _loadingNews = false;
-  bool _isLoading = true;
-
-  int _grandesClubesCurrentPage = 0;
-  int _jogosHojeCurrentPage = 0;
+  final PageController _bannerController = PageController(viewportFraction: 0.92);
+  int _bannerCurrentPage = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -38,29 +22,16 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
-    _startAutoRefresh();
-    _setupPageControllers();
+    _setupBannerController();
   }
 
-  void _setupPageControllers() {
-    _grandesClubesController.addListener(() {
-      if (_grandesClubesController.page != null) {
-        final newPage = _grandesClubesController.page!.round();
-        if (_grandesClubesCurrentPage != newPage) {
+  void _setupBannerController() {
+    _bannerController.addListener(() {
+      if (_bannerController.page != null) {
+        final newPage = _bannerController.page!.round();
+        if (_bannerCurrentPage != newPage) {
           setState(() {
-            _grandesClubesCurrentPage = newPage;
-          });
-        }
-      }
-    });
-
-    _jogosHojeController.addListener(() {
-      if (_jogosHojeController.page != null) {
-        final newPage = _jogosHojeController.page!.round();
-        if (_jogosHojeCurrentPage != newPage) {
-          setState(() {
-            _jogosHojeCurrentPage = newPage;
+            _bannerCurrentPage = newPage;
           });
         }
       }
@@ -70,241 +41,46 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   @override
   void dispose() {
     _scrollController.dispose();
-    _grandesClubesController.dispose();
-    _jogosHojeController.dispose();
-    _autoRefreshTimer?.cancel();
+    _bannerController.dispose();
     super.dispose();
-  }
-
-  void _startAutoRefresh() {
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        _loadTopMatches();
-        _loadAllTodayMatches();
-        _loadNews();
-      }
-    });
-  }
-
-  Future<void> _loadInitialData() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    await Future.wait([
-      _loadTopMatches(),
-      _loadAllTodayMatches(),
-      _loadNews(),
-    ]);
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadAllTodayMatches() async {
-    if (!mounted) return;
-
-    try {
-      final appState = context.read<AppState>();
-      final hoje = DateTime.now();
-      final jogosHoje = await appState.carregarJogosDoDia(hoje);
-
-      debugPrint('📅 Jogos de hoje carregados: ${jogosHoje.length}');
-
-      if (!mounted) return;
-
-      setState(() {
-        _todosJogosHoje = jogosHoje;
-      });
-    } catch (e) {
-      debugPrint('❌ Erro ao carregar jogos de hoje: $e');
-    }
-  }
-
-  Future<void> _loadTopMatches() async {
-    if (!mounted) return;
-
-    try {
-      final appState = context.read<AppState>();
-      final todosJogos = await appState.carregarJogosDestaque(appState.topClubs);
-
-      debugPrint('⭐ Jogos destaque carregados: ${todosJogos.length}');
-
-      if (!mounted) return;
-
-      final hoje = DateTime.now();
-      final amanha = hoje.add(const Duration(days: 1));
-
-      final dataHoje = '${hoje.year}-${hoje.month.toString().padLeft(2, '0')}-${hoje.day.toString().padLeft(2, '0')}';
-      final dataAmanha = '${amanha.year}-${amanha.month.toString().padLeft(2, '0')}-${amanha.day.toString().padLeft(2, '0')}';
-
-      final jogosHoje = todosJogos.where((jogo) {
-        return (jogo['match_date']?.toString() ?? '') == dataHoje;
-      }).toList();
-
-      final jogosAmanha = todosJogos.where((jogo) {
-        return (jogo['match_date']?.toString() ?? '') == dataAmanha;
-      }).toList();
-
-      jogosHoje.sort((a, b) {
-        final aIsRealMadrid = (a['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
-                              (a['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
-        final bIsRealMadrid = (b['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
-                              (b['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
-
-        if (aIsRealMadrid && !bIsRealMadrid) return -1;
-        if (!aIsRealMadrid && bIsRealMadrid) return 1;
-        return 0;
-      });
-
-      jogosAmanha.sort((a, b) {
-        final aIsRealMadrid = (a['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
-                              (a['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
-        final bIsRealMadrid = (b['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
-                              (b['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
-
-        if (aIsRealMadrid && !bIsRealMadrid) return -1;
-        if (!aIsRealMadrid && bIsRealMadrid) return 1;
-        return 0;
-      });
-
-      debugPrint('🏆 Jogos hoje: ${jogosHoje.length}, Amanhã: ${jogosAmanha.length}');
-
-      setState(() {
-        _jogosHoje = jogosHoje;
-        _jogosAmanha = jogosAmanha;
-        _error = null;
-      });
-    } catch (e) {
-      debugPrint('❌ Erro ao carregar jogos destaque: $e');
-      if (!mounted) return;
-
-      setState(() {
-        _error = e.toString();
-      });
-    }
-  }
-
-  Future<void> _loadNews() async {
-    if (!mounted) return;
-
-    setState(() {
-      _loadingNews = true;
-    });
-
-    try {
-      final appState = context.read<AppState>();
-      final noticias = await appState.carregarNoticias();
-
-      debugPrint('📰 Notícias carregadas: ${noticias.length}');
-
-      if (!mounted) return;
-
-      final safeList = <Map<String, dynamic>>[];
-      for (var n in noticias) {
-        if (n is Map<String, dynamic>) {
-          safeList.add(n);
-        } else if (n is Map) {
-          safeList.add(Map<String, dynamic>.from(n));
-        }
-      }
-
-      setState(() {
-        _noticias = safeList;
-        _loadingNews = false;
-      });
-    } catch (e) {
-      debugPrint('❌ Erro ao carregar notícias: $e');
-      if (!mounted) return;
-
-      setState(() {
-        _loadingNews = false;
-      });
-    }
-  }
-
-  void _openNewsDetail(Map<String, dynamic> noticia) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => NewsDetailPage(noticia: noticia),
-      ),
-    );
-  }
-
-  bool _isJogoAoVivo(dynamic jogo) {
-    final status = (jogo['match_status']?.toString() ?? '').toLowerCase();
-    if (status.isEmpty) return false;
-
-    final isNumeric = int.tryParse(status.replaceAll(RegExp(r'\D'), '')) != null && status.trim().isNotEmpty;
-    return RegExp(r"live|1h|2h|'|\bminute\b", caseSensitive: false).hasMatch(status) || 
-           isNumeric ||
-           status.contains("'");
-  }
-
-  Map<String, int> _extractPossession(dynamic statistics) {
-    int home = 0;
-    int away = 0;
-
-    try {
-      if (statistics == null) {
-        return {'home': 0, 'away': 0};
-      }
-
-      if (statistics is List) {
-        for (var stat in statistics) {
-          if (stat is Map) {
-            final type = (stat['type']?.toString() ?? '').toLowerCase();
-            if (type.contains('possession') || type.contains('ball')) {
-              final homeVal = stat['home']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '';
-              final awayVal = stat['away']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '';
-
-              home = int.tryParse(homeVal) ?? 0;
-              away = int.tryParse(awayVal) ?? 0;
-
-              if (home > 0 || away > 0) break;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ Erro ao extrair posse: $e');
-    }
-
-    home = home.clamp(0, 100);
-    away = away.clamp(0, 100);
-
-    if (home == 0 && away == 0) {
-      return {'home': 0, 'away': 0};
-    }
-
-    final sum = home + away;
-    if (sum != 100 && sum > 0) {
-      home = ((home / sum) * 100).round();
-      away = 100 - home;
-    }
-
-    return {'home': home, 'away': away};
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final appState = context.watch<AppState>();
 
-    if (_isLoading) {
+    if (appState.isLoadingProducts) {
       return _buildSkeletonLoader();
     }
 
+    if (appState.errorProducts != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Symbols.error_rounded, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('Erro ao carregar produtos'),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => appState.recarregarProdutos(),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return RefreshIndicator(
-      onRefresh: _loadInitialData,
+      onRefresh: () => appState.recarregarProdutos(),
       child: CustomScrollView(
         controller: _scrollController,
         slivers: [
-          _buildGrandesClubesSection(),
-          _buildJogosDeHojeSection(),
-          _buildNewsSection(),
+          _buildHeader(),
+          _buildBannerSection(appState),
+          _buildCategoriasSection(appState),
+          _buildProdutosDestaqueSection(appState),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -325,8 +101,8 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                   baseColor: Colors.grey.shade300,
                   highlightColor: Colors.grey.shade100,
                   child: Container(
-                    width: 150,
-                    height: 28,
+                    width: 200,
+                    height: 32,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -336,7 +112,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
               ),
               const SizedBox(height: 16),
               SizedBox(
-                height: 190,
+                height: 180,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -360,12 +136,32 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                 ),
               ),
               const SizedBox(height: 32),
-              ...List.generate(5, (index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    children: [
-                      Shimmer.fromColors(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(
+                    width: 150,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: 5,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Shimmer.fromColors(
                         baseColor: Colors.grey.shade300,
                         highlightColor: Colors.grey.shade100,
                         child: Container(
@@ -373,60 +169,41 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                           height: 80,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Shimmer.fromColors(
-                              baseColor: Colors.grey.shade300,
-                              highlightColor: Colors.grey.shade100,
-                              child: Container(
-                                width: double.infinity,
-                                height: 16,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Shimmer.fromColors(
-                              baseColor: Colors.grey.shade300,
-                              highlightColor: Colors.grey.shade100,
-                              child: Container(
-                                width: double.infinity,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Shimmer.fromColors(
-                              baseColor: Colors.grey.shade300,
-                              highlightColor: Colors.grey.shade100,
-                              child: Container(
-                                width: 100,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                          ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.7,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: 6,
+                  itemBuilder: (context, index) {
+                    return Shimmer.fromColors(
+                      baseColor: Colors.grey.shade300,
+                      highlightColor: Colors.grey.shade100,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -434,872 +211,459 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     );
   }
 
-  Widget _buildGrandesClubesSection() {
-    final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
-
-    if (!temGrandesClubes) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    final todosJogos = [..._jogosHoje, ..._jogosAmanha];
-
+  Widget _buildHeader() {
     return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'Ainda Hoje',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 190,
-            child: PageView.builder(
-              controller: _grandesClubesController,
-              itemCount: todosJogos.length,
-              itemBuilder: (context, index) {
-                return _buildHorizontalGameCard(todosJogos[index], _grandesClubesController, index);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  todosJogos.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _grandesClubesCurrentPage == index ? 20 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: _grandesClubesCurrentPage == index
-                          ? const Color(0xFF007AFF)
-                          : Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildJogosDeHojeSection() {
-    final temGrandesClubes = _jogosHoje.isNotEmpty || _jogosAmanha.isNotEmpty;
-
-    if (temGrandesClubes || _todosJogosHoje.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    final itens = _todosJogosHoje.take(10).toList();
-
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              'Ainda Hoje',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 190,
-            child: PageView.builder(
-              controller: _jogosHojeController,
-              itemCount: itens.length,
-              itemBuilder: (context, index) {
-                return _buildHorizontalGameCard(itens[index], _jogosHojeController, index);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF2F2F7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  itens.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _jogosHojeCurrentPage == index ? 20 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: _jogosHojeCurrentPage == index
-                          ? const Color(0xFF007AFF)
-                          : Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNewsSection() {
-    if (_loadingNews) {
-      return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
-          children: List.generate(5, (index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  Shimmer.fromColors(
-                    baseColor: Colors.grey.shade300,
-                    highlightColor: Colors.grey.shade100,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TechMart',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Shimmer.fromColors(
-                          baseColor: Colors.grey.shade300,
-                          highlightColor: Colors.grey.shade100,
-                          child: Container(
-                            width: double.infinity,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Shimmer.fromColors(
-                          baseColor: Colors.grey.shade300,
-                          highlightColor: Colors.grey.shade100,
-                          child: Container(
-                            width: double.infinity,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Sua loja de tecnologia',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      );
-    }
-
-    if (_noticias.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          Column(
-            children: List.generate(_noticias.take(10).length, (i) {
-              final noticia = _noticias.take(10).toList()[i];
-              final isLast = i == _noticias.take(10).length - 1;
-              return _buildNewsItem(noticia, isLast);
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNewsItem(Map<String, dynamic> noticia, bool isLast) {
-    return Column(
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _openNewsDetail(noticia),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      color: const Color(0xFF007AFF).withOpacity(0.1),
-                      child: noticia['imageUrl'] != null && noticia['imageUrl'].toString().isNotEmpty
-                          ? CorsImage(
-                              imageUrl: noticia['imageUrl'],
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorWidget: const Icon(
-                                Symbols.article_rounded,
-                                color: Color(0xFF007AFF),
-                                size: 32,
-                              ),
-                            )
-                          : const Icon(
-                              Symbols.article_rounded,
+                  ],
+                ),
+                Stack(
+                  children: [
+                    IconButton(
+                      onPressed: () {},
+                      icon: const Icon(Symbols.shopping_cart_rounded),
+                      iconSize: 28,
+                    ),
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Consumer<AppState>(
+                        builder: (context, appState, child) {
+                          if (appState.totalItensCarrinho == 0) return const SizedBox();
+                          return Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
                               color: Color(0xFF007AFF),
-                              size: 32,
+                              shape: BoxShape.circle,
                             ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          noticia['title'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          noticia['description'] ?? noticia['subtitle'] ?? '',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (noticia['date'] != null && (noticia['date'] as String).isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text(
-                                noticia['subtitle']?.toString() ?? 'Fonte',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                              Text(
-                                ' · ${noticia['date']}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (!isLast)
-          Divider(
-            height: 1,
-            thickness: 1,
-            indent: 20,
-            endIndent: 20,
-            color: Colors.grey.shade200,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildHorizontalGameCard(dynamic jogo, PageController controller, int index) {
-    final statusRaw = (jogo['match_status']?.toString() ?? '');
-    final statusLower = statusRaw.toLowerCase();
-    final matchTime = jogo['match_time']?.toString() ?? '';
-    final matchDate = jogo['match_date']?.toString() ?? '';
-
-    final isNumeric = int.tryParse(statusRaw.replaceAll(RegExp(r'\D'), '')) != null && statusRaw.trim().isNotEmpty;
-    final isLive = _isJogoAoVivo(jogo);
-    final isHT = statusLower == 'ht' || statusLower == 'interval' || statusLower == 'ht.';
-    final isFinished = statusLower.contains('finished') || statusLower == 'ft' || statusLower == 'aet' || statusLower == 'ap';
-    final isNotStarted = statusLower.isEmpty || statusLower == 'ns' || statusLower.contains('not started') || matchTime.isNotEmpty;
-
-    final homeYellowCards = int.tryParse(jogo['match_hometeam_yellow_cards']?.toString() ?? '0') ?? 0;
-    final homeRedCards = int.tryParse(jogo['match_hometeam_red_cards']?.toString() ?? '0') ?? 0;
-    final awayYellowCards = int.tryParse(jogo['match_awayteam_yellow_cards']?.toString() ?? '0') ?? 0;
-    final awayRedCards = int.tryParse(jogo['match_awayteam_red_cards']?.toString() ?? '0') ?? 0;
-
-    final homeScore = int.tryParse(jogo['match_hometeam_score']?.toString() ?? '0') ?? 0;
-    final awayScore = int.tryParse(jogo['match_awayteam_score']?.toString() ?? '0') ?? 0;
-
-    final possession = _extractPossession(jogo['statistics']);
-    final homePercent = possession['home']!;
-    final awayPercent = possession['away']!;
-    final hasPossession = homePercent > 0 || awayPercent > 0;
-
-    final homeWon = isFinished && homeScore > awayScore;
-    final awayWon = isFinished && awayScore > homeScore;
-
-    final displayDateTime = isFinished ? matchDate : matchTime;
-
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        double value = 1.0;
-        double scale = 1.0;
-
-        if (controller.position.haveDimensions) {
-          value = ((controller.page ?? controller.initialPage.toDouble()) - index).toDouble();
-          scale = (1 - (value.abs() * 0.05)).clamp(0.95, 1.0);
-        }
-
-        return Center(
-          child: Transform.scale(
-            scale: scale,
-            child: child,
-          ),
-        );
-      },
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => JogoDetalhesPage(jogoId: jogo['match_id']),
-            ),
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD5E1F5),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (isLive)
-                    Row(
-                      children: [
-                        _BlinkingDot(),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'AO VIVO',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.red,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    )
-                  else if (displayDateTime.isNotEmpty)
-                    Row(
-                      children: [
-                        Icon(
-                          Symbols.schedule_rounded,
-                          size: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          displayDateTime,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    const SizedBox(),
-                  if (isFinished)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'FINALIZADO',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey.shade700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _WinnerBadge(
-                          imageUrl: (jogo['team_home_badge'] ?? '').toString(),
-                          isWinner: homeWon,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          jogo['match_hometeam_name'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        if (homeYellowCards > 0 || homeRedCards > 0)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (homeYellowCards > 0) ...[
-                                Container(
-                                  width: 13,
-                                  height: 17,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFD700),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '$homeYellowCards',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 3),
-                              ],
-                              if (homeRedCards > 0)
-                                Container(
-                                  width: 13,
-                                  height: 17,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '$homeRedCards',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        Text(
-                          '$homeScore : $awayScore',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        if (!isNotStarted && !isFinished && !isHT)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF007AFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
                             ),
                             child: Text(
-                              statusRaw,
+                              '${appState.totalItensCarrinho}',
                               style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF007AFF),
-                              ),
-                            ),
-                          )
-                        else if (isHT)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'INTERVALO',
-                              style: TextStyle(
+                                color: Colors.white,
                                 fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
                               ),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _WinnerBadge(
-                          imageUrl: (jogo['team_away_badge'] ?? '').toString(),
-                          isWinner: awayWon,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          jogo['match_awayteam_name'] ?? '',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        if (awayYellowCards > 0 || awayRedCards > 0)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (awayYellowCards > 0) ...[
-                                Container(
-                                  width: 13,
-                                  height: 17,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFD700),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '$awayYellowCards',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 3),
-                              ],
-                              if (awayRedCards > 0)
-                                Container(
-                                  width: 13,
-                                  height: 17,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE53935),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '$awayRedCards',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (hasPossession) ...[
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$homePercent%',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: LinearProgressIndicator(
-                              value: homePercent / 100,
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
-                              minHeight: 5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '$awayPercent%',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: LinearProgressIndicator(
-                              value: awayPercent / 100,
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
-                              minHeight: 5,
-                            ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBannerSection(AppState appState) {
+    final destaque = appState.produtosDestaque.take(5).toList();
+
+    if (destaque.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverToBoxAdapter(
+      child: Column(
+        children: [
+          SizedBox(
+            height: 180,
+            child: PageView.builder(
+              controller: _bannerController,
+              itemCount: destaque.length,
+              itemBuilder: (context, index) {
+                return _buildBannerCard(destaque[index]);
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  destaque.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _bannerCurrentPage == index ? 20 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: _bannerCurrentPage == index
+                          ? const Color(0xFF007AFF)
+                          : Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerCard(dynamic produto) {
+    return AnimatedBuilder(
+      animation: _bannerController,
+      builder: (context, child) {
+        double value = 1.0;
+        if (_bannerController.position.haveDimensions) {
+          value = _bannerController.page ?? 0.0;
+          value = (value - _bannerCurrentPage).abs();
+          value = (1 - (value * 0.05)).clamp(0.95, 1.0);
+        }
+
+        return Center(
+          child: Transform.scale(
+            scale: value,
+            child: child,
+          ),
+        );
+      },
+      child: GestureDetector(
+        onTap: () {
+          context.read<AppState>().setProdutoSelecionado(produto);
+          // Navigator para página de detalhes
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF007AFF), Color(0xFF0051D5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF007AFF).withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        produto['marca'] ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      produto['nome'] ?? '',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'R\$ ${produto['preco']?.toStringAsFixed(2) ?? '0.00'}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Symbols.devices_rounded,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-class _WinnerBadge extends StatefulWidget {
-  final String imageUrl;
-  final bool isWinner;
-
-  const _WinnerBadge({
-    required this.imageUrl,
-    required this.isWinner,
-  });
-
-  @override
-  State<_WinnerBadge> createState() => _WinnerBadgeState();
-}
-
-class _WinnerBadgeState extends State<_WinnerBadge> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-
-    if (widget.isWinner) {
-      _scaleAnimation = TweenSequence<double>([
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 1.0, end: 1.3)
-              .chain(CurveTween(curve: Curves.easeOut)),
-          weight: 40,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 1.3, end: 1.0)
-              .chain(CurveTween(curve: Curves.elasticOut)),
-          weight: 60,
-        ),
-      ]).animate(_controller);
-
-      _rotationAnimation = TweenSequence<double>([
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 0.0, end: 0.1)
-              .chain(CurveTween(curve: Curves.easeOut)),
-          weight: 20,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: 0.1, end: -0.1)
-              .chain(CurveTween(curve: Curves.easeInOut)),
-          weight: 30,
-        ),
-        TweenSequenceItem(
-          tween: Tween<double>(begin: -0.1, end: 0.0)
-              .chain(CurveTween(curve: Curves.elasticOut)),
-          weight: 50,
-        ),
-      ]).animate(_controller);
-
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          _controller.forward();
-        }
-      });
-    } else {
-      _scaleAnimation = AlwaysStoppedAnimation(1.0);
-      _rotationAnimation = AlwaysStoppedAnimation(0.0);
+  Widget _buildCategoriasSection(AppState appState) {
+    if (appState.categorias.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
-  }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Transform.rotate(
-            angle: _rotationAnimation.value,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                FadeInImage.memoryNetwork(
-                  placeholder: kTransparentImage,
-                  image: widget.imageUrl,
-                  width: 44,
-                  height: 44,
-                  fit: BoxFit.contain,
-                  fadeInDuration: const Duration(milliseconds: 100),
-                  imageErrorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Symbols.shield_rounded,
-                      size: 44,
-                      color: Colors.grey.shade400,
-                    );
-                  },
-                ),
-                if (widget.isWinner)
-                  Image.asset(
-                    'assets/winner.gif',
-                    width: 65,
-                    height: 65,
-                    errorBuilder: (_, __, ___) => const SizedBox(),
-                  ),
-              ],
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Categorias',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: appState.categorias.length,
+              itemBuilder: (context, index) {
+                final categoria = appState.categorias[index];
+                return _buildCategoriaCard(categoria);
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
     );
   }
-}
 
-const kTransparentImage = <int>[
-  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-  0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-  0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-  0x45, 0x4E, 0x44, 0xAE,
-];
+  Widget _buildCategoriaCard(dynamic categoria) {
+    final icons = {
+      'Smartphones': Symbols.smartphone_rounded,
+      'Notebooks': Symbols.laptop_mac_rounded,
+      'Tablets': Symbols.tablet_mac_rounded,
+      'Fones de Ouvido': Symbols.headphones_rounded,
+      'Smartwatches': Symbols.watch_rounded,
+      'Câmeras': Symbols.photo_camera_rounded,
+      'Consoles e Games': Symbols.sports_esports_rounded,
+      'TVs': Symbols.tv_rounded,
+    };
 
-class _BlinkingDot extends StatefulWidget {
-  @override
-  State<_BlinkingDot> createState() => _BlinkingDotState();
-}
-
-class _BlinkingDotState extends State<_BlinkingDot> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(_controller);
+    return Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: GestureDetector(
+        onTap: () {
+          // Navegar para produtos da categoria
+        },
+        child: Container(
+          width: 80,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF2F2F7),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icons[categoria['nome']] ?? Symbols.category_rounded,
+                size: 32,
+                color: const Color(0xFF007AFF),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                categoria['nome'] ?? '',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  Widget _buildProdutosDestaqueSection(AppState appState) {
+    if (appState.produtos.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Produtos em Destaque',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.7,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: appState.produtosDestaque.length,
+              itemBuilder: (context, index) {
+                return _buildProdutoCard(appState.produtosDestaque[index]);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _animation,
+  Widget _buildProdutoCard(dynamic produto) {
+    return GestureDetector(
+      onTap: () {
+        context.read<AppState>().setProdutoSelecionado(produto);
+        // Navigator para página de detalhes
+      },
       child: Container(
-        width: 7,
-        height: 7,
-        decoration: const BoxDecoration(
-          color: Colors.red,
-          shape: BoxShape.circle,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 140,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F2F7),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Center(
+                child: Icon(
+                  Symbols.devices_rounded,
+                  size: 64,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    produto['marca'] ?? '',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    produto['nome'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Symbols.star_rounded,
+                        size: 16,
+                        color: Colors.amber.shade600,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        produto['avaliacao']?.toString() ?? '0.0',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'R\$ ${produto['preco']?.toStringAsFixed(2) ?? '0.00'}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF007AFF),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
