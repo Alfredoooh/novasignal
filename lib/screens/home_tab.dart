@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../core/app_state.dart';
-import '../utils/formatters.dart';
 import '../widgets/cors_image.dart';
 import 'jogo_detalhes_page.dart';
-import 'home_config_page.dart';
 import 'news_detail_page.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -150,13 +149,12 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         return (jogo['match_date']?.toString() ?? '') == dataAmanha;
       }).toList();
 
-      // Ordenar: Real Madrid sempre primeiro
       jogosHoje.sort((a, b) {
         final aIsRealMadrid = (a['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
                               (a['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
         final bIsRealMadrid = (b['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
                               (b['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
-        
+
         if (aIsRealMadrid && !bIsRealMadrid) return -1;
         if (!aIsRealMadrid && bIsRealMadrid) return 1;
         return 0;
@@ -167,7 +165,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                               (a['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
         final bIsRealMadrid = (b['match_hometeam_name']?.toString().toLowerCase().contains('real madrid') ?? false) ||
                               (b['match_awayteam_name']?.toString().toLowerCase().contains('real madrid') ?? false);
-        
+
         if (aIsRealMadrid && !bIsRealMadrid) return -1;
         if (!aIsRealMadrid && bIsRealMadrid) return 1;
         return 0;
@@ -228,14 +226,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     }
   }
 
-  void _openHomeConfig() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const HomeConfigPage(),
-      ),
-    );
-  }
-
   void _openNewsDetail(Map<String, dynamic> noticia) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -247,7 +237,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   bool _isJogoAoVivo(dynamic jogo) {
     final status = (jogo['match_status']?.toString() ?? '').toLowerCase();
     if (status.isEmpty) return false;
-    
+
     final isNumeric = int.tryParse(status.replaceAll(RegExp(r'\D'), '')) != null && status.trim().isNotEmpty;
     return RegExp(r"live|1h|2h|'|\bminute\b", caseSensitive: false).hasMatch(status) || 
            isNumeric ||
@@ -270,10 +260,10 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
             if (type.contains('possession') || type.contains('ball')) {
               final homeVal = stat['home']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '';
               final awayVal = stat['away']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '';
-              
+
               home = int.tryParse(homeVal) ?? 0;
               away = int.tryParse(awayVal) ?? 0;
-              
+
               if (home > 0 || away > 0) break;
             }
           }
@@ -286,12 +276,10 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     home = home.clamp(0, 100);
     away = away.clamp(0, 100);
 
-    // Se não tem dados válidos, retorna 0
     if (home == 0 && away == 0) {
       return {'home': 0, 'away': 0};
     }
 
-    // Normalizar para somar 100
     final sum = home + away;
     if (sum != 100 && sum > 0) {
       home = ((home / sum) * 100).round();
@@ -306,11 +294,7 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     super.build(context);
 
     if (_isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: Theme.of(context).colorScheme.primary,
-        ),
-      );
+      return _buildSkeletonLoader();
     }
 
     return RefreshIndicator(
@@ -324,6 +308,129 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
+    );
+  }
+
+  Widget _buildSkeletonLoader() {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(
+                    width: 150,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 190,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: 3,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Shimmer.fromColors(
+                        baseColor: Colors.grey.shade300,
+                        highlightColor: Colors.grey.shade100,
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 0.85,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
+              ...List.generate(5, (index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    children: [
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey.shade300,
+                        highlightColor: Colors.grey.shade100,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey.shade300,
+                              highlightColor: Colors.grey.shade100,
+                              child: Container(
+                                width: double.infinity,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey.shade300,
+                              highlightColor: Colors.grey.shade100,
+                              child: Container(
+                                width: double.infinity,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey.shade300,
+                              highlightColor: Colors.grey.shade100,
+                              child: Container(
+                                width: 100,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -341,22 +448,11 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Ainda Hoje',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                ),
-                IconButton(
-                  onPressed: _openHomeConfig,
-                  icon: const Icon(Symbols.more_horiz_rounded),
-                  padding: const EdgeInsets.all(12),
-                  tooltip: 'Configurar Tela Inicial',
-                ),
-              ],
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Ainda Hoje',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: 16),
@@ -470,6 +566,67 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
   }
 
   Widget _buildNewsSection() {
+    if (_loadingNews) {
+      return SliverToBoxAdapter(
+        child: Column(
+          children: List.generate(5, (index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Shimmer.fromColors(
+                          baseColor: Colors.grey.shade300,
+                          highlightColor: Colors.grey.shade100,
+                          child: Container(
+                            width: double.infinity,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Shimmer.fromColors(
+                          baseColor: Colors.grey.shade300,
+                          highlightColor: Colors.grey.shade100,
+                          child: Container(
+                            width: double.infinity,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ),
+      );
+    }
+
     if (_noticias.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -621,7 +778,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
     final homeWon = isFinished && homeScore > awayScore;
     final awayWon = isFinished && awayScore > homeScore;
 
-    // Mostrar data se jogo terminou, senão mostra hora
     final displayDateTime = isFinished ? matchDate : matchTime;
 
     return AnimatedBuilder(
@@ -667,7 +823,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
           ),
           child: Column(
             children: [
-              // Header com badge ao vivo
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -728,7 +883,6 @@ class _HomeTabState extends State<HomeTab> with AutomaticKeepAliveClientMixin {
                 ],
               ),
               const SizedBox(height: 12),
-              // Placar e times
               Row(
                 children: [
                   Expanded(
@@ -1102,7 +1256,6 @@ class _WinnerBadgeState extends State<_WinnerBadge> with SingleTickerProviderSta
   }
 }
 
-// Transparent image for placeholder
 const kTransparentImage = <int>[
   0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
   0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
