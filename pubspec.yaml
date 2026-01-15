@@ -1,80 +1,62 @@
-name: novasignal
-description: A modern Flutter application with theme and language support
+name: sportshub
+description: A new Flutter project.
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ^3.0.0
 
 dependencies:
   flutter:
     sdk: flutter
-
-  cached_network_image: any
-  url_launcher: any
-  ionicons: any
-  cupertino_icons: any
-  webview_flutter: any
-  mobile_scanner: any
-  image_picker: any
-  http: any
-  qr_flutter: any
-  flutter_staggered_grid_view: any
-  intl: ^0.18.1
-  flutter_html: any
-  dynamic_color: any
-  shimmer: any
-  glassmorphism: any
-
-  # Nova dependência obrigatória para extração de cor
-  palette_generator: any
-  material_symbols_icons: any
-
-  dio: any
-  open_file: any
-
-  # State management and storage
-  shared_preferences: ^2.2.2
-
-  # SVG support
-  flutter_svg: ^2.0.9
-
-  # UI & Animations
-
-  # Sharing & Export
-  share_plus: any
-  pdf: any
-  path_provider: any
-  animations: any
   
-  # State Management (se necessário)
-  provider: any
+  # WebView
+  webview_flutter: ^4.4.4
+  webview_flutter_android: ^3.14.0
+  webview_flutter_wkwebview: ^3.10.0
+  
+  # HTTP
+  http: ^1.1.2
+  
+  # Splash Screen
+  flutter_native_splash: ^2.3.8
+  
+  # SVG
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_native_splash: ^2.3.8
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
-
+  
   assets:
-    - assets/gold_medal.png
-    - assets/silver_medal.png
-    - assets/bronze_medal.png
-    - assets/icons/soccer_ball.png
-    - assets/icons/assist.png
-    - assets/icons/var.png
-    - assets/images/trading_background.png
-    - assets/winner.gif
-    - assets/icon/home.svg
-    - assets/icon/soccer.svg
-    - assets/icon/category.svg
-    - assets/icon/community.svg
-    - assets/icon/search.svg
-    - assets/icon/user.svg
-    - assets/icon/home_filled.svg
-    - assets/icon/soccer_filled.svg
-    - assets/icon/category_filled.svg
-    - assets/icon/community_filled.svg
-    - assets/products.json
+    - assets/splash_logo.png
+    - assets/splash_text.svg
+
+# Configuração do Splash Screen
+flutter_native_splash:
+  color: "#18191A"
+  image: assets/splash_logo.png
+  
+  color_dark: "#18191A"
+  image_dark: assets/splash_logo.png
+  
+  android_12:
+    image: assets/splash_logo.png
+    color: "#18191A"
+    icon_background_color: "#18191A"
+  
+  ios: true
+  web: false
+  
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true
+  
+  android: true
+  android_disable_fullscreen: false
