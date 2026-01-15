@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- android/app/src/main/res/drawable/launch_background.xml -->
+<!-- Splash Screen MODO CLARO com imagem de fundo em tela cheia -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <!-- Imagem de fundo em tela cheia -->
+    <item>
         <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:gravity="fill"
+            android:src="@drawable/splash_background_light" />
+    </item>
 </layer-list>
