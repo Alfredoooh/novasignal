@@ -1,330 +1,905 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'dart:io';
+import 'package:flutter_svg/flutter_svg.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.dark,
-      systemNavigationBarDividerColor: Colors.transparent,
-    ),
-  );
-  
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.edgeToEdge,
-  );
-  
-  runApp(const MyApp());
+  runApp(const SportsApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class ThemeProvider extends InheritedWidget {
+  final bool isDark;
+  final Function(bool) toggleTheme;
+
+  const ThemeProvider({
+    Key? key,
+    required this.isDark,
+    required this.toggleTheme,
+    required Widget child,
+  }) : super(key: key, child: child);
+
+  static ThemeProvider? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ThemeProvider>();
+  }
+
+  @override
+  bool updateShouldNotify(ThemeProvider oldWidget) {
+    return isDark != oldWidget.isDark;
+  }
+}
+
+class LocaleProvider extends InheritedWidget {
+  final String locale;
+  final Function(String) changeLocale;
+
+  const LocaleProvider({
+    Key? key,
+    required this.locale,
+    required this.changeLocale,
+    required Widget child,
+  }) : super(key: key, child: child);
+
+  static LocaleProvider? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<LocaleProvider>();
+  }
+
+  @override
+  bool updateShouldNotify(LocaleProvider oldWidget) {
+    return locale != oldWidget.locale;
+  }
+}
+
+class AppStrings {
+  static Map<String, Map<String, String>> translations = {
+    'pt': {
+      'app_name': 'Bet Manager',
+      'home': 'Início',
+      'my_games': 'Meus Jogos',
+      'settings': 'Configurações',
+      'about': 'Sobre',
+      'theme': 'Tema',
+      'dark_mode': 'Modo Escuro',
+      'language': 'Idioma',
+      'choose_language': 'Escolher Idioma',
+      'portuguese': 'Português',
+      'english': 'English',
+      'cancel': 'Cancelar',
+      'confirm': 'Confirmar',
+      'warning': 'Aviso',
+      'error_occurred': 'Ocorreu um erro',
+      'close': 'Fechar',
+    },
+    'en': {
+      'app_name': 'Bet Manager',
+      'home': 'Home',
+      'my_games': 'My Games',
+      'settings': 'Settings',
+      'about': 'About',
+      'theme': 'Theme',
+      'dark_mode': 'Dark Mode',
+      'language': 'Language',
+      'choose_language': 'Choose Language',
+      'portuguese': 'Português',
+      'english': 'English',
+      'cancel': 'Cancel',
+      'confirm': 'Confirm',
+      'warning': 'Warning',
+      'error_occurred': 'An error occurred',
+      'close': 'Close',
+    },
+  };
+
+  static String get(String key, String locale) {
+    return translations[locale]?[key] ?? translations['en']?[key] ?? key;
+  }
+}
+
+class SportsApp extends StatefulWidget {
+  const SportsApp({Key? key}) : super(key: key);
+
+  @override
+  State<SportsApp> createState() => _SportsAppState();
+}
+
+class _SportsAppState extends State<SportsApp> {
+  bool _isDark = false;
+  String _locale = 'pt';
+
+  void _toggleTheme(bool value) {
+    setState(() => _isDark = value);
+  }
+
+  void _changeLocale(String value) {
+    setState(() => _locale = value);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    final isDark = brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF18191A) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black;
-    
-    if (isDark) {
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor: Colors.transparent,
-          systemNavigationBarIconBrightness: Brightness.light,
-          systemNavigationBarDividerColor: Colors.transparent,
-        ),
-      );
-    }
-    
-    return MaterialApp(
-      title: 'WebView App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: bgColor,
-        dialogBackgroundColor: bgColor,
-        colorScheme: ColorScheme.light(
-          surface: bgColor,
-          primary: bgColor,
-          onSurface: textColor,
-        ),
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(color: textColor),
-          bodyMedium: TextStyle(color: textColor),
-          titleLarge: TextStyle(color: textColor),
-        ),
-        dialogTheme: DialogTheme(
-          backgroundColor: bgColor,
-          surfaceTintColor: Colors.transparent,
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: textColor,
-          ),
+    return ThemeProvider(
+      isDark: _isDark,
+      toggleTheme: _toggleTheme,
+      child: LocaleProvider(
+        locale: _locale,
+        changeLocale: _changeLocale,
+        child: WidgetsApp(
+          color: const Color(0xFFFFFFFF),
+          onGenerateRoute: (settings) {
+            Widget page;
+            switch (settings.name) {
+              case '/settings':
+                page = const SettingsScreen();
+                break;
+              default:
+                page = const HomeScreen();
+            }
+            return PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => page,
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                const begin = Offset(1.0, 0.0);
+                const end = Offset.zero;
+                const curve = Curves.easeInOut;
+                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                return SlideTransition(position: animation.drive(tween), child: child);
+              },
+            );
+          },
         ),
       ),
-      darkTheme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFF18191A),
-        dialogBackgroundColor: const Color(0xFF18191A),
-        colorScheme: const ColorScheme.dark(
-          surface: Color(0xFF18191A),
-          primary: Color(0xFF18191A),
-          onSurface: Colors.white,
-        ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white),
-          titleLarge: TextStyle(color: Colors.white),
-        ),
-        dialogTheme: const DialogTheme(
-          backgroundColor: Color(0xFF18191A),
-          surfaceTintColor: Colors.transparent,
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ),
-      themeMode: ThemeMode.system,
-      home: const WebViewScreen(),
     );
   }
 }
 
-class WebViewScreen extends StatefulWidget {
-  const WebViewScreen({Key? key}) : super(key: key);
-
-  @override
-  State<WebViewScreen> createState() => _WebViewScreenState();
+class AppIcons {
+  static const String homeOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.121,9.069,15.536,1.483a5.008,5.008,0,0,0-7.072,0L.879,9.069A2.978,2.978,0,0,0,0,11.19v9.817a3,3,0,0,0,3,3H21a3,3,0,0,0,3-3V11.19A2.978,2.978,0,0,0,23.121,9.069ZM15,22.007H9V18.073a3,3,0,0,1,6,0Zm7-1a1,1,0,0,1-1,1H17V18.073a5,5,0,0,0-10,0v3.934H3a1,1,0,0,1-1-1V11.19a1.008,1.008,0,0,1,.293-.707L9.878,2.9a3.008,3.008,0,0,1,4.244,0l7.585,7.586A1.008,1.008,0,0,1,22,11.19Z"/></svg>''';
+  
+  static const String homeFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/><path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/></svg>''';
+  
+  static const String matchesOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19,3H5C2.243,3,0,5.243,0,8v8c0,2.757,2.243,5,5,5h14c2.757,0,5-2.243,5-5v-8c0-2.757-2.243-5-5-5Zm3,11h-2v-4h2v4Zm-10,0c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM2,10h2v4h-2v-4Zm0,6h2c1.103,0,2-.897,2-2v-4c0-1.103-.897-2-2-2h-2c0-1.654,1.346-3,3-3h6v3.142c-1.72.447-3,1.999-3,3.858s1.28,3.411,3,3.858v3.142h-6c-1.654,0-3-1.346-3-3Zm17,3h-6v-3.142c1.72-.447,3-1.999,3-3.858s-1.28-3.411-3-3.858v-3.142h6c1.654,0,3,1.346,3,3h-2c-1.103,0-2,.897-2,2v4c0,1.103.897,2,2,2h2c0,1.654-1.346,3-3,3Z"/></svg>''';
+  
+  static const String matchesFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12,14c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM3,10H0v4h3v-4Zm18,4h3v-4h-3v4Zm-2,0v-4c0-1.103.897-2,2-2h3c0-2.757-2.243-5-5-5h-6v5.142c1.72.447,3,1.999,3,3.858s-1.28,3.411-3,3.858v5.142h6c2.757,0,5-2.243,5-5h-3c-1.103,0-2-.897-2-2Zm-8,1.858c-1.72-.447-3-1.999-3-3.858s1.28-3.411,3-3.858V3h-6C2.243,3,0,5.243,0,8h3c1.103,0,2,.897,2,2v4c0,1.103-.897,2-2,2H0c0,2.757,2.243,5,5,5h6v-5.142Z"/></svg>''';
 }
 
-class _WebViewScreenState extends State<WebViewScreen> {
-  late final WebViewController _controller;
-  bool _hasError = false;
-  String _errorMessage = '';
-  String? _pageUrl;
-  bool _isInitialized = false;
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
 
-  final String _jsonUrl = 'https://alfredoooh.github.io/database/API/config.json';
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  int _selectedBottomIndex = 0;
+  late AnimationController _drawerController;
+  late Animation<double> _drawerAnimation;
+  bool _isDrawerOpen = false;
 
   @override
   void initState() {
     super.initState();
-    _checkConnectionAndInitialize();
+    _drawerController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _drawerAnimation = CurvedAnimation(
+      parent: _drawerController,
+      curve: Curves.easeInOut,
+    );
   }
 
-  Color get _bgColor {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    return brightness == Brightness.dark ? const Color(0xFF18191A) : Colors.white;
+  @override
+  void dispose() {
+    _drawerController.dispose();
+    super.dispose();
   }
 
-  Color get _textColor {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    return brightness == Brightness.dark ? Colors.white : Colors.black;
-  }
-
-  Color get _textSecondaryColor {
-    final brightness = MediaQuery.of(context).platformBrightness;
-    return brightness == Brightness.dark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
-  }
-
-  Future<void> _checkConnectionAndInitialize() async {
-    try {
-      final result = await InternetAddress.lookup('google.com').timeout(
-        const Duration(seconds: 5),
-      );
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        _initializeWebView();
-      }
-    } catch (_) {
-      _showDialog('Sem conexão', 'Verifique sua conexão com a internet.');
+  void _toggleDrawer() {
+    if (_isDrawerOpen) {
+      _drawerController.reverse();
+    } else {
+      _drawerController.forward();
     }
+    setState(() => _isDrawerOpen = !_isDrawerOpen);
   }
 
-  void _showDialog(String title, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _checkConnectionAndInitialize();
+  @override
+  Widget build(BuildContext context) {
+    final theme = ThemeProvider.of(context);
+    final locale = LocaleProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+    final currentLocale = locale?.locale ?? 'pt';
+
+    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
+    final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFFFFFFFF);
+
+    return Stack(
+      children: [
+        AnimatedBuilder(
+          animation: _drawerAnimation,
+          builder: (context, child) {
+            final slideValue = _drawerAnimation.value * 280;
+            final scaleValue = 1.0 - (_drawerAnimation.value * 0.2);
+            
+            return Transform.translate(
+              offset: Offset(slideValue, 0),
+              child: Transform.scale(
+                scale: scaleValue,
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
+                    boxShadow: _isDrawerOpen
+                        ? [
+                            BoxShadow(
+                              color: const Color(0x40000000),
+                              blurRadius: 20,
+                              offset: const Offset(-5, 0),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
+                    child: Container(
+                      color: bgColor,
+                      child: SafeArea(
+                        child: Column(
+                          children: [
+                            _buildAppBar(appBarColor, textColor, currentLocale),
+                            Expanded(
+                              child: _buildContent(bgColor),
+                            ),
+                            _buildBottomBar(isDark, currentLocale),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        CustomDrawer(
+          isOpen: _isDrawerOpen,
+          onClose: _toggleDrawer,
+        ),
+        if (_isDrawerOpen)
+          GestureDetector(
+            onTap: _toggleDrawer,
+            child: Container(color: const Color(0x00000000)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAppBar(Color bgColor, Color textColor, String locale) {
+    return Container(
+      color: bgColor,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _toggleDrawer,
+            child: Icon(
+              const IconData(0xe3c7, fontFamily: 'MaterialIcons'),
+              color: textColor,
+              size: 24,
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                AppStrings.get('app_name', locale),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              showCustomDialog(
+                context,
+                title: AppStrings.get('warning', locale),
+                message: AppStrings.get('error_occurred', locale),
+              );
             },
-            child: const Text('Tentar Novamente'),
+            child: Icon(
+              const IconData(0xe5d3, fontFamily: 'MaterialIcons'),
+              color: textColor,
+              size: 24,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _initializeWebView() async {
-    if (_isInitialized) return;
+  Widget _buildContent(Color bgColor) {
+    return Container(
+      color: bgColor,
+      child: IndexedStack(
+        index: _selectedBottomIndex,
+        children: const [
+          HomeView(),
+          MeusJogosView(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(bool isDark, String locale) {
+    final bgColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
+    final borderColor = isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(top: BorderSide(color: borderColor, width: 1)),
+      ),
+      child: Row(
+        children: [
+          _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', locale), isDark),
+          _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', locale), isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomItem(int index, String outlineIcon, String filledIcon, String label, bool isDark) {
+    final isSelected = _selectedBottomIndex == index;
+    final inactiveColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D);
     
-    setState(() {
-      _hasError = false;
-    });
-
-    try {
-      final url = await _fetchUrlFromGitHub();
-      
-      if (url == null || url.isEmpty) {
-        _showDialog('Erro', 'URL não encontrada no arquivo de configuração.');
-        return;
-      }
-
-      final uri = Uri.tryParse(url);
-      if (uri == null || !uri.hasScheme || (!uri.scheme.startsWith('http'))) {
-        _showDialog('Erro', 'URL inválida: $url');
-        return;
-      }
-
-      setState(() {
-        _pageUrl = url;
-      });
-
-      late final PlatformWebViewControllerCreationParams params;
-      
-      if (WebViewPlatform.instance is WebKitWebViewPlatform) {
-        params = WebKitWebViewControllerCreationParams(
-          allowsInlineMediaPlayback: true,
-          mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
-        );
-      } else {
-        params = const PlatformWebViewControllerCreationParams();
-      }
-
-      final WebViewController controller = WebViewController.fromPlatformCreationParams(params);
-
-      await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
-      await controller.setBackgroundColor(_bgColor);
-      await controller.enableZoom(false);
-
-      if (controller.platform is AndroidWebViewController) {
-        AndroidWebViewController.enableDebugging(false);
-        (controller.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
-        
-        // Configurações para melhor qualidade de renderização
-        await (controller.platform as AndroidWebViewController).setGeolocationPermissionsPromptCallbacks(
-          onShowPrompt: (request) async {
-            return GeolocationPermissionsResponse(
-              allow: true,
-              retain: true,
-            );
-          },
-        );
-      }
-
-      await controller.setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            setState(() {
-              _hasError = false;
-            });
-          },
-          onPageFinished: (String url) {},
-          onWebResourceError: (WebResourceError error) {
-            if (error.errorType == WebResourceErrorType.hostLookup ||
-                error.errorType == WebResourceErrorType.connect ||
-                error.errorType == WebResourceErrorType.timeout) {
-              _showDialog('Erro de conexão', 'Não foi possível carregar a página.');
-            }
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            return NavigationDecision.navigate;
-          },
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedBottomIndex = index),
+        child: Container(
+          color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: SvgPicture.string(
+                  isSelected ? filledIcon : outlineIcon,
+                  color: isSelected ? const Color(0xFF3498DB) : inactiveColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isSelected ? const Color(0xFF3498DB) : inactiveColor,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
         ),
-      );
-
-      // User Agent mais moderno para melhor renderização
-      await controller.setUserAgent(
-        'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
-      );
-
-      await controller.loadRequest(Uri.parse(url));
-
-      setState(() {
-        _controller = controller;
-        _isInitialized = true;
-      });
-
-    } catch (e) {
-      _showDialog('Erro', 'Erro ao inicializar o aplicativo.');
-    }
+      ),
+    );
   }
+}
 
-  Future<String?> _fetchUrlFromGitHub() async {
-    try {
-      print('Buscando URL de: $_jsonUrl');
-      
-      final response = await http.get(
-        Uri.parse(_jsonUrl),
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0',
-        },
-      ).timeout(
-        const Duration(seconds: 10),
-      );
-      
-      print('Status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
-      
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        final url = jsonData['url'] as String?;
-        
-        print('URL extraída: $url');
-        
-        if (url == null || url.isEmpty) {
-          print('ERRO: URL vazia ou nula no JSON');
-          return null;
-        }
-        
-        return url;
-      } else {
-        print('ERRO: Status code ${response.statusCode}');
-        return null;
-      }
-    } catch (e) {
-      print('ERRO ao buscar URL: $e');
-      return null;
-    }
-  }
+class CustomDrawer extends StatelessWidget {
+  final bool isOpen;
+  final VoidCallback onClose;
+
+  const CustomDrawer({
+    Key? key,
+    required this.isOpen,
+    required this.onClose,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bgColor,
-      extendBodyBehindAppBar: true,
-      extendBody: true,
-      body: Container(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height,
-        color: _bgColor,
-        child: _isInitialized && _pageUrl != null
-            ? WebViewWidget(controller: _controller)
-            : Container(
+    final theme = ThemeProvider.of(context);
+    final locale = LocaleProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+    final currentLocale = locale?.locale ?? 'pt';
+
+    final bgColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
+    final headerColor = isDark ? const Color(0xFF3A3B3C) : const Color(0xFF2C3E50);
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
+    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFFECF0F1);
+
+    return Positioned(
+      left: 0,
+      top: 0,
+      bottom: 0,
+      child: Container(
+        width: 280,
+        color: bgColor,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
                 width: double.infinity,
-                height: double.infinity,
-                color: _bgColor,
+                padding: const EdgeInsets.all(20),
+                color: headerColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    Text(
+                      AppStrings.get('app_name', currentLocale),
+                      style: const TextStyle(
+                        color: Color(0xFFFFFFFF),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Menu',
+                      style: TextStyle(
+                        color: subtitleColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    children: [
+                      _buildDrawerItem(
+                        AppStrings.get('home', currentLocale),
+                        const IconData(0xe318, fontFamily: 'MaterialIcons'),
+                        textColor,
+                        () => onClose(),
+                      ),
+                      _buildDrawerItem(
+                        AppStrings.get('my_games', currentLocale),
+                        const IconData(0xe8f4, fontFamily: 'MaterialIcons'),
+                        textColor,
+                        () => onClose(),
+                      ),
+                      Container(
+                        height: 1,
+                        color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      _buildDrawerItem(
+                        AppStrings.get('about', currentLocale),
+                        const IconData(0xe88e, fontFamily: 'MaterialIcons'),
+                        textColor,
+                        () => onClose(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: GestureDetector(
+                  onTap: () {
+                    onClose();
+                    Navigator.of(context).pushNamed('/settings');
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3498DB),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          IconData(0xe8b8, fontFamily: 'MaterialIcons'),
+                          color: Color(0xFFFFFFFF),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppStrings.get('settings', currentLocale),
+                          style: const TextStyle(
+                            color: Color(0xFFFFFFFF),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(String title, IconData icon, Color textColor, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Row(
+          children: [
+            Icon(icon, size: 24, color: textColor),
+            const SizedBox(width: 16),
+            Text(title, style: TextStyle(fontSize: 16, color: textColor)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ThemeProvider.of(context);
+    final locale = LocaleProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+    final currentLocale = locale?.locale ?? 'pt';
+
+    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
+    final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
+    final cardColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
+    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D);
+
+    return Container(
+      color: bgColor,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              color: appBarColor,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Icon(
+                      IconData(0xe5c4, fontFamily: 'MaterialIcons'),
+                      color: Color(0xFFFFFFFF),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    AppStrings.get('settings', currentLocale),
+                    style: const TextStyle(
+                      color: Color(0xFFFFFFFF),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.get('theme', currentLocale),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: subtitleColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: GestureDetector(
+                        onTap: () => theme?.toggleTheme(!isDark),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                const IconData(0xe3a9, fontFamily: 'MaterialIcons'),
+                                color: textColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  AppStrings.get('dark_mode', currentLocale),
+                                  style: TextStyle(fontSize: 16, color: textColor),
+                                ),
+                              ),
+                              Container(
+                                width: 50,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: isDark ? const Color(0xFF3498DB) : const Color(0xFFCED0D4),
+                                ),
+                                child: AnimatedAlign(
+                                  duration: const Duration(milliseconds: 200),
+                                  alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Color(0xFFFFFFFF),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      AppStrings.get('language', currentLocale),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: subtitleColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: GestureDetector(
+                        onTap: () => _showLanguageDialog(context, currentLocale, locale),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                const IconData(0xe8e2, fontFamily: 'MaterialIcons'),
+                                color: textColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      AppStrings.get('language', currentLocale),
+                                      style: TextStyle(fontSize: 16, color: textColor),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      currentLocale == 'pt' 
+                                          ? AppStrings.get('portuguese', currentLocale)
+                                          : AppStrings.get('english', currentLocale),
+                                      style: TextStyle(fontSize: 14, color: subtitleColor),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                const IconData(0xe5df, fontFamily: 'MaterialIcons'),
+                                color: subtitleColor,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context, String currentLocale, LocaleProvider? localeProvider) {
+    final theme = ThemeProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: const Color(0x80000000),
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    AppStrings.get('choose_language', currentLocale),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
+                    ),
+                  ),
+                ),
+                _buildLanguageOption(context, 'pt', AppStrings.get('portuguese', currentLocale), currentLocale == 'pt', localeProvider, isDark),
+                Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+                _buildLanguageOption(context, 'en', AppStrings.get('english', currentLocale), currentLocale == 'en', localeProvider, isDark),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(BuildContext context, String localeCode, String label, bool isSelected, LocaleProvider? localeProvider, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        localeProvider?.changeLocale(localeCode);
+        Navigator.of(context).pop();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 16, color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+              ),
+            ),
+            if (isSelected)
+              const Icon(IconData(0xe5ca, fontFamily: 'MaterialIcons'), color: Color(0xFF3498DB), size: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void showCustomDialog(BuildContext context, {required String title, required String message}) {
+  final theme = ThemeProvider.of(context);
+  final locale = LocaleProvider.of(context);
+  final isDark = theme?.isDark ?? false;
+  final currentLocale = locale?.locale ?? 'pt';
+
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierLabel: '',
+    barrierColor: const Color(0x80000000),
+    transitionDuration: const Duration(milliseconds: 250),
+    pageBuilder: (context, animation, secondaryAnimation) {
+      return ScaleTransition(
+        scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 20, offset: Offset(0, 10))],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF6B6B),
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(color: const Color(0xFFFFFFFF), borderRadius: BorderRadius.circular(30)),
+                        child: const Center(
+                          child: Text('!', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Color(0xFFFF6B6B))),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        message,
+                        style: TextStyle(fontSize: 14, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D)),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(color: const Color(0xFFFF6B6B), borderRadius: BorderRadius.circular(8)),
+                          child: Center(
+                            child: Text(
+                              AppStrings.get('close', currentLocale),
+                              style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class HomeView extends StatelessWidget {
+  const HomeView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ThemeProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+    
+    return Container(
+      color: isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0),
+      child: Center(
+        child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))),
+      ),
+    );
+  }
+}
+
+class MeusJogosView extends StatelessWidget {
+  const MeusJogosView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ThemeProvider.of(context);
+    final locale = LocaleProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+    final currentLocale = locale?.locale ?? 'pt';
+    
+    return Container(
+      color: isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0),
+      child: Center(
+        child: Text(
+          AppStrings.get('my_games', currentLocale),
+          style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D)),
+        ),
       ),
     );
   }
