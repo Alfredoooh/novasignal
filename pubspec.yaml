@@ -12,11 +12,11 @@ dependencies:
     sdk: flutter
 
   # WebView - SÓ Android (remove iOS webview)
-  webview_flutter: ^4.11.2
-  webview_flutter_android: ^3.18.2
+  #webview_flutter: ^4.11.2
+  #webview_flutter_android: ^3.18.2
   
   # HTTP - versão específica mais leve
-  http: ^1.2.2
+  #http: ^1.2.2
 
   # SVG - versão específica
   flutter_svg: ^2.0.10
