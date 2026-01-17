@@ -12,18 +12,20 @@ dependencies:
     sdk: flutter
   
   # WebView
-  webview_flutter: ^4.4.4
-  webview_flutter_android: ^3.14.0
-  webview_flutter_wkwebview: ^3.10.0
+  webview_flutter: any
+  material_symbols_icons: any
+  webview_flutter_android: any
+  webview_flutter_wkwebview: any
   
   # HTTP
-  http: ^1.1.2
+  http: any
   
   # Splash Screen
-  flutter_native_splash: ^2.3.8
+  flutter_native_splash: any
   
   # SVG
-  flutter_svg: ^2.0.9
+  flutter_svg: any
+  lints: any
 
 dev_dependencies:
   flutter_test:
