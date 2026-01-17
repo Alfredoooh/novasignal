@@ -25,6 +25,11 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        
+        // Força limpar os abiFilters do build.gradle raiz
+        ndk {
+            abiFilters.clear()
+        }
     }
 
     buildTypes {
