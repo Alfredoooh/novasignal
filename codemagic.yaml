@@ -1,0 +1,23 @@
+workflows:
+  android-release:
+    name: Android Release
+    max_build_duration: 120
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      
+      - name: Build APK otimizado (arm64 only + ProGuard)
+        script: |
+          flutter build apk \
+            --release \
+            --target-platform android-arm64 \
+            --obfuscate \
+            --split-debug-info=build/app/outputs/symbols
+    
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
