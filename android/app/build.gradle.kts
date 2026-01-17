@@ -2,7 +2,6 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    // REMOVIDO: id("com.google.gms.google-services")
 }
 
 android {
@@ -26,11 +25,24 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
+            minifyEnabled = true
+            shrinkResources = true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    splits {
+        abi {
+            enable = true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a'
+            universalApk = false
         }
     }
 }
@@ -40,12 +52,5 @@ flutter {
 }
 
 dependencies {
-    // REMOVIDAS todas as dependências do Firebase:
-    // implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
-    // implementation("com.google.firebase:firebase-analytics")
-    // implementation("com.google.firebase:firebase-auth")
-    // implementation("com.google.firebase:firebase-firestore")
-    // implementation("com.google.firebase:firebase-storage")
-    
     implementation("androidx.multidex:multidex:2.0.1")
 }
