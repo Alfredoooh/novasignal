@@ -26,9 +26,10 @@ android {
         versionName = flutter.versionName
         multiDexEnabled = true
         
-        // Força limpar os abiFilters do build.gradle raiz
+        // Força usar SÓ arm64 (elimina 50% do tamanho)
         ndk {
             abiFilters.clear()
+            abiFilters += "arm64-v8a"
         }
     }
 
@@ -40,15 +41,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "armeabi-v7a")
-            isUniversalApk = false
-        }
-    }
+}
 }
 
 flutter {
