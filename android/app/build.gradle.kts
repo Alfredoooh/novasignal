@@ -25,24 +25,26 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
-        ndk.abiFilters 'arm64-v8a', 'armeabi-v7a'
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
-            minifyEnabled = true
-            shrinkResources = true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
     splits {
         abi {
-            enable = true
+            isEnable = true
             reset()
-            include 'arm64-v8a', 'armeabi-v7a'
-            universalApk = false
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = false
         }
     }
 }
