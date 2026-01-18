@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 void main() {
   runApp(const SportsApp());
@@ -47,13 +49,13 @@ class AppStrings {
   static Map<String, Map<String, String>> translations = {
     'pt': {
       'app_name': 'Bet Manager',
-      'home': 'Início',
+      'home': 'Inicio',
       'my_games': 'Meus Jogos',
-      'settings': 'Configurações',
+      'settings': 'Configuracoes',
       'dark_mode': 'Modo Escuro',
       'language': 'Idioma',
       'choose_language': 'Escolher Idioma',
-      'portuguese': 'Português',
+      'portuguese': 'Portugues',
       'english': 'English',
     },
     'en': {
@@ -64,7 +66,7 @@ class AppStrings {
       'dark_mode': 'Dark Mode',
       'language': 'Language',
       'choose_language': 'Choose Language',
-      'portuguese': 'Português',
+      'portuguese': 'Portugues',
       'english': 'English',
     },
   };
@@ -175,152 +177,162 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
     final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
 
-    return Stack(
-      children: [
-        AnimatedBuilder(
-          animation: _drawerAnimation,
-          builder: (context, child) {
-            final slideValue = _drawerAnimation.value * 280;
-            final scaleValue = 1.0 - (_drawerAnimation.value * 0.2);
-            
-            return Transform.translate(
-              offset: Offset(slideValue, 0),
-              child: Transform.scale(
-                scale: scaleValue,
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
-                    boxShadow: _isDrawerOpen ? [BoxShadow(color: const Color(0x40000000), blurRadius: 20, offset: const Offset(-5, 0))] : null,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
-                    child: Container(
-                      color: bgColor,
-                      child: SafeArea(
-                        child: Column(
-                          children: [
-                            Container(
-                              color: appBarColor,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              child: Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: _toggleDrawer,
-                                    child: const Icon(IconData(0xe5d2, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
-                                  ),
-                                  Expanded(
-                                    child: Center(
-                                      child: Text(
-                                        AppStrings.get('app_name', currentLocale),
-                                        style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
+    return AnnotatedRegion(
+      value: SystemUiOverlayStyle(
+        statusBarColor: appBarColor,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Stack(
+        children: [
+          AnimatedBuilder(
+            animation: _drawerAnimation,
+            builder: (context, child) {
+              final slideValue = _drawerAnimation.value * 280;
+              final scaleValue = 1.0 - (_drawerAnimation.value * 0.2);
+              
+              return Transform.translate(
+                offset: Offset(slideValue, 0),
+                child: Transform.scale(
+                  scale: scaleValue,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
+                      boxShadow: _isDrawerOpen ? [const BoxShadow(color: Color(0x40000000), blurRadius: 20, offset: Offset(-5, 0))] : null,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
+                      child: Container(
+                        color: bgColor,
+                        child: SafeArea(
+                          child: Column(
+                            children: [
+                              Container(
+                                color: appBarColor,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: _toggleDrawer,
+                                      child: const Icon(Symbols.menu_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          AppStrings.get('app_name', currentLocale),
+                                          style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () => Navigator.of(context).pushNamed('/settings'),
-                                    child: const Icon(IconData(0xe5d3, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
-                                  ),
-                                ],
+                                    GestureDetector(
+                                      onTap: () => Navigator.of(context).pushNamed('/settings'),
+                                      child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Expanded(
-                              child: IndexedStack(
-                                index: _selectedIndex,
-                                children: [
-                                  Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                                  Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                                ],
+                              Expanded(
+                                child: IndexedStack(
+                                  index: _selectedIndex,
+                                  children: [
+                                    Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                    Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                                border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                                  border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
+                                    _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                children: [
-                                  _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
-                                  _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
-                                ],
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
-        _buildDrawer(isDark, currentLocale),
-        if (_isDrawerOpen)
-          GestureDetector(
-            onTap: _toggleDrawer,
-            child: Container(color: const Color(0x00000000)),
+              );
+            },
           ),
-      ],
+          if (_isDrawerOpen)
+            GestureDetector(
+              onTap: _toggleDrawer,
+              child: Container(color: const Color(0x80000000)),
+            ),
+          AnimatedBuilder(
+            animation: _drawerAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(-280 + (_drawerAnimation.value * 280), 0),
+                child: _buildDrawer(isDark, currentLocale),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildDrawer(bool isDark, String currentLocale) {
-    final bgColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
-    final headerColor = isDark ? const Color(0xFF3A3B3C) : const Color(0xFF2C3E50);
+    final drawerBgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5);
+    final headerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE0E0E0);
 
-    return Positioned(
-      left: 0,
-      top: 0,
-      bottom: 0,
-      child: Container(
-        width: 280,
-        color: bgColor,
-        child: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                color: headerColor,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    Text(
-                      AppStrings.get('app_name', currentLocale),
-                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
+    return Container(
+      width: 280,
+      color: drawerBgColor,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              color: headerColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  Text(
+                    AppStrings.get('app_name', currentLocale),
+                    style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              Expanded(child: Container()),
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: GestureDetector(
-                  onTap: () {
-                    _toggleDrawer();
-                    Navigator.of(context).pushNamed('/settings');
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(color: const Color(0xFF3498DB), borderRadius: BorderRadius.circular(8)),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(IconData(0xe8b8, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppStrings.get('settings', currentLocale),
-                          style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
+            ),
+            Expanded(child: Container()),
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: GestureDetector(
+                onTap: () {
+                  _toggleDrawer();
+                  Navigator.of(context).pushNamed('/settings');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(color: const Color(0xFF3498DB), borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Symbols.settings_rounded, color: Color(0xFFFFFFFF), size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppStrings.get('settings', currentLocale),
+                        style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -392,7 +404,7 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(IconData(0xe5c4, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
+                    child: const Icon(Symbols.arrow_back_rounded, color: Color(0xFFFFFFFF), size: 24),
                   ),
                   const SizedBox(width: 16),
                   Text(
@@ -416,7 +428,7 @@ class SettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(const IconData(0xe3a9, fontFamily: 'MaterialIcons'), color: textColor, size: 24),
+                              Icon(Symbols.dark_mode_rounded, color: textColor, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
@@ -456,7 +468,7 @@ class SettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(const IconData(0xe8e2, fontFamily: 'MaterialIcons'), color: textColor, size: 24),
+                              Icon(Symbols.language_rounded, color: textColor, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
@@ -474,7 +486,7 @@ class SettingsScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              Icon(const IconData(0xe5df, fontFamily: 'MaterialIcons'), color: subtitleColor, size: 20),
+                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
                             ],
                           ),
                         ),
@@ -547,7 +559,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(IconData(0xe5ca, fontFamily: 'MaterialIcons'), color: Color(0xFF3498DB), size: 24),
+              const Icon(Symbols.check_rounded, color: Color(0xFF3498DB), size: 24),
           ],
         ),
       ),
