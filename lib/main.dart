@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:animations/animations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const Color transparent = Color(0x00000000);
 
@@ -62,6 +63,9 @@ class AppStrings {
       'choose_language': 'Escolher Idioma',
       'portuguese': 'Portugues',
       'english': 'English',
+      'help': 'Ajuda',
+      'security': 'Seguranca e Privacidade',
+      'account': 'Configuracoes da Conta',
     },
     'en': {
       'app_name': 'Bet Manager',
@@ -74,6 +78,9 @@ class AppStrings {
       'choose_language': 'Choose Language',
       'portuguese': 'Portugues',
       'english': 'English',
+      'help': 'Help',
+      'security': 'Security and Privacy',
+      'account': 'Account Settings',
     },
   };
 
@@ -94,13 +101,39 @@ class _SportsAppState extends State<SportsApp> {
   String _locale = 'pt';
 
   @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDark = prefs.getBool('isDark') ?? false;
+      _locale = prefs.getString('locale') ?? 'pt';
+    });
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDark', _isDark);
+    await prefs.setString('locale', _locale);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ThemeProvider(
       isDark: _isDark,
-      toggleTheme: (v) => setState(() => _isDark = v),
+      toggleTheme: (v) {
+        setState(() => _isDark = v);
+        _savePreferences();
+      },
       child: LocaleProvider(
         locale: _locale,
-        changeLocale: (v) => setState(() => _locale = v),
+        changeLocale: (v) {
+          setState(() => _locale = v);
+          _savePreferences();
+        },
         child: WidgetsApp(
           color: const Color(0xFFFFFFFF),
           pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
@@ -112,6 +145,7 @@ class _SportsAppState extends State<SportsApp> {
                   animation: animation,
                   secondaryAnimation: secondaryAnimation,
                   transitionType: SharedAxisTransitionType.horizontal,
+                  fillColor: transparent,
                   child: child,
                 );
               },
@@ -122,6 +156,15 @@ class _SportsAppState extends State<SportsApp> {
             switch (settings.name) {
               case '/settings':
                 page = const SettingsScreen();
+                break;
+              case '/help':
+                page = const HelpScreen();
+                break;
+              case '/security':
+                page = const SecurityScreen();
+                break;
+              case '/account':
+                page = const AccountScreen();
                 break;
               default:
                 page = const HomeScreen();
@@ -134,6 +177,7 @@ class _SportsAppState extends State<SportsApp> {
                   animation: animation,
                   secondaryAnimation: secondaryAnimation,
                   transitionType: SharedAxisTransitionType.horizontal,
+                  fillColor: transparent,
                   child: child,
                 );
               },
@@ -174,6 +218,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Animation<double> _drawerAnimation;
   bool _isDrawerOpen = false;
   late YoutubePlayerController _youtubeController;
+  bool _showVideoLoading = true;
+  bool _showPopupMenu = false;
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
 
   @override
   void initState() {
@@ -195,6 +243,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         controlsVisibleAtStart: false,
       ),
     );
+    
+    _youtubeController.addListener(() {
+      if (_selectedIndex == 2 && _youtubeController.value.isPlaying && _showVideoLoading) {
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted) {
+            setState(() => _showVideoLoading = false);
+          }
+        });
+      }
+    });
   }
 
   @override
@@ -203,6 +261,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     if (_selectedIndex == 2) {
       if (!_youtubeController.value.isPlaying) {
         _youtubeController.play();
+        setState(() => _showVideoLoading = true);
       }
     } else {
       if (_youtubeController.value.isPlaying) {
@@ -288,9 +347,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       ),
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () => Navigator.of(context).pushNamed('/settings'),
-                                    child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                  CompositedTransformTarget(
+                                    link: _layerLink,
+                                    child: GestureDetector(
+                                      onTap: _togglePopupMenu,
+                                      child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                    ),
                                   ),
                                 ],
                               ),
