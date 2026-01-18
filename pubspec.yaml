@@ -18,7 +18,9 @@ dependencies:
   animations: any
 
   # HTTP - versão específica mais leve
-  #http: ^1.2.2
+  http: any
+  xml: any
+  url_launcher: any
 
   # SVG - versão específica
   flutter_svg: ^2.0.10
