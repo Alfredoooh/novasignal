@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
@@ -47,22 +47,22 @@ class RSSService {
 
   static Future<List<NewsItem>> fetchAllNews() async {
     List<NewsItem> allNews = [];
-    
+
     for (var feed in feeds) {
       try {
         final response = await http.get(Uri.parse(feed['url']!));
         if (response.statusCode == 200) {
           final document = xml.XmlDocument.parse(response.body);
           final items = document.findAllElements('item');
-          
+
           for (var item in items.take(5)) {
             String? imageUrl;
-            
+
             // Try different image tags
             final mediaContent = item.findElements('media:content').firstOrNull;
             final enclosure = item.findElements('enclosure').firstOrNull;
             final mediaThumbnail = item.findElements('media:thumbnail').firstOrNull;
-            
+
             if (mediaContent != null) {
               imageUrl = mediaContent.getAttribute('url');
             } else if (enclosure != null && enclosure.getAttribute('type')?.contains('image') == true) {
@@ -70,7 +70,7 @@ class RSSService {
             } else if (mediaThumbnail != null) {
               imageUrl = mediaThumbnail.getAttribute('url');
             }
-            
+
             allNews.add(NewsItem(
               title: item.findElements('title').first.text,
               description: item.findElements('description').firstOrNull?.text,
@@ -86,7 +86,7 @@ class RSSService {
         print('Error fetching ${feed['name']}: $e');
       }
     }
-    
+
     return allNews;
   }
 }
@@ -277,7 +277,7 @@ class AppIcons {
 
   static const String homeFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/><path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/></svg>''';
 
-  static const String matchesOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19,3H5C2.243,3,0,5.243,0,8v8c0,2.757,2.243,5,5,5h14c2.757,0,5-2.243,5-5v-8c0-2.757-2.243-5-5-5Zm3,11h-2v-4h2v4Zm-10,0c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM2,10h2v4h-2v-4Zm0,6h2c1.103,0,2-.897,2-2v-4c0-1.103-.897-2-2-2h-2c0-1.654,1.346-3,3-3h6v3.142c-1.72.447-3,1.999-3,3.858s1.28,3.411,3,3.858v3.142h-6c-1.654,0-3-1.346-3-3Zm17,3h-6v-3.142c1.72-.447,3-1.999,3-3.858s-1.28-3.411-3-3.858v-3.142h6c1.654,0,3,1.346,3,3h-2c-1.103,0-2,.897-2,2v4c0,1.103.897,2,2,2h2c0,1.654-1.346,3-3,3Z"/></svg>''';
+  static const String matchesOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19,3H5C2.243,3,0,5.243,0,8v8c0,2.757,2.243,5,5,5h14c2.757,0,5-2.243,5-5v-8c0-2.757-2.243-5-5-5Zm3,11h-2v-4h2v4Zm-10,0c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM2,10h2v4h-2v-4Zm0,6h2c1.103,0,2-.897,2-2v-4c0-1.103-.897-2-2-2h-2c0-1.654,1.346-3,3-3h6v3.142c-1.72.447-3,1.999-3,3.858s1.28,3.411,3,3.858v3.142h-6c-1.654,0-3-1.346-3-3Zm17,3h-6v-3.142c1.72-.447,3-1.999,3-3.858s-1.28,3.411-3,3.858v-3.142h6c1.654,0,3,1.346,3,3h-2c1.103,0-2,.897-2,2v4c0,1.103.897,2,2,2h2c0,1.654-1.346,3-3,3Z"/></svg>''';
 
   static const String matchesFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12,14c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM3,10H0v4h3v-4Zm18,4h3v-4h-3v4Zm-2,0v-4c0-1.103.897-2,2-2h3c0-2.757-2.243-5-5-5h-6v5.142c1.72.447,3,1.999,3,3.858s-1.28,3.411-3,3.858v5.142h6c2.757,0,5-2.243,5-5h-3c-1.103,0-2-.897-2-2Zm-8,1.858c-1.72-.447-3-1.999-3-3.858s1.28-3.411,3-3.858V3h-6C2.243,3,0,5.243,0,8h3c1.103,0,2,.897,2,2v4c0,1.103-.897,2-2,2H0c0,2.757,2.243,5,5,5h6v-5.142Z"/></svg>''';
 
@@ -414,7 +414,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         final screenHeight = MediaQuery.of(context).size.height;
         final videoHeight = MediaQuery.of(context).size.width * 9 / 16;
         final maxHeight = screenHeight - videoHeight - MediaQuery.of(context).padding.top - 10;
-        
+
         return Align(
           alignment: Alignment.bottomCenter,
           child: Container(
@@ -810,7 +810,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         builder: (context, snapshot) {
                                           final position = _youtubeController.value.position.inSeconds.toDouble();
                                           final duration = _youtubeController.metadata.duration.inSeconds.toDouble();
-                                          
+
                                           return Column(
                                             children: [
                                               SliderTheme(
@@ -1093,6 +1093,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 }
 
+// === SettingsScreen, HelpScreen, SecurityScreen, AccountScreen ===
+// (substituído pelo bloco que você enviou)
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
