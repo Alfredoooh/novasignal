@@ -367,51 +367,55 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: Container(color: const Color(0x00000000)),
                     ),
                   ),
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0x80000000),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'AO VIVO',
-                        style: TextStyle(
-                          color: Color(0xFFFF0000),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                  if (!_youtubeController.value.isReady || _youtubeController.value.isBuffering)
+                    Positioned.fill(
+                      child: Container(
+                        color: const Color(0xFF000000),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Carregando',
+                              style: TextStyle(
+                                color: Color(0xFFFFFFFF),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(3, (index) {
+                                return TweenAnimationBuilder<double>(
+                                  tween: Tween(begin: 0.0, end: 1.0),
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.easeInOut,
+                                  builder: (context, value, child) {
+                                    return Opacity(
+                                      opacity: value,
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFFFFFFF),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  onEnd: () {
+                                    Future.delayed(Duration(milliseconds: index * 200), () {
+                                      if (mounted) setState(() {});
+                                    });
+                                  },
+                                );
+                              }),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0x80000000),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Symbols.person_rounded, size: 14, color: Color(0xFFFFFFFF)),
-                          SizedBox(width: 4),
-                          Text(
-                            '2.3K',
-                            style: TextStyle(
-                              color: Color(0xFFFFFFFF),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
