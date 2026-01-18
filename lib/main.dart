@@ -112,11 +112,21 @@ class _SportsAppState extends State<SportsApp> {
             return PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) => page,
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                const begin = Offset(1.0, 0.0);
+                const end = Offset.zero;
+                const curve = Curves.easeInOut;
+                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                var offsetAnimation = animation.drive(tween);
+                
                 return SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(animation),
-                  child: child,
+                  position: offsetAnimation,
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
                 );
               },
+              transitionDuration: const Duration(milliseconds: 300),
             );
           },
         ),
@@ -137,6 +147,8 @@ class AppIcons {
   static const String tvOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,3H5A5.006,5.006,0,0,0,0,8v6a5.006,5.006,0,0,0,5,5h6v1H8a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H13V19h6a5.006,5.006,0,0,0,5-5V8A5.006,5.006,0,0,0,19,3Zm3,11a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V8A3,3,0,0,1,5,5H19a3,3,0,0,1,3,3Z"/></svg>''';
   
   static const String tvFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,3H5A5.006,5.006,0,0,0,0,8v6a5.006,5.006,0,0,0,5,5h6v1H8a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H13V19h6a5.006,5.006,0,0,0,5-5V8A5.006,5.006,0,0,0,19,3Z"/></svg>''';
+  
+  static const String settingsIcon = '''<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M844.8 580.266667c2.133333-14.933333 4.266667-29.866667 4.266667-46.933334s-2.133333-32-4.266667-46.933333l96-68.266667c8.533333-6.4 12.8-19.2 6.4-29.866666L853.333333 230.4c-6.4-10.666667-17.066667-14.933333-27.733333-8.533333l-106.666667 49.066666c-25.6-19.2-51.2-34.133333-81.066666-46.933333L627.2 106.666667c-2.133333-10.666667-10.666667-19.2-21.333333-19.2h-183.466667c-10.666667 0-21.333333 8.533333-21.333333 19.2l-10.666667 117.333333c-29.866667 12.8-57.6 27.733333-81.066667 46.933333l-106.666666-49.066666c-10.666667-4.266667-23.466667 0-27.733334 8.533333l-91.733333 157.866667c-6.4 10.666667-2.133333 23.466667 6.4 29.866666l96 68.266667c-2.133333 14.933333-4.266667 29.866667-4.266667 46.933333s2.133333 32 4.266667 46.933334L85.333333 648.533333c-8.533333 6.4-12.8 19.2-6.4 29.866667L170.666667 836.266667c6.4 10.666667 17.066667 14.933333 27.733333 8.533333l106.666667-49.066667c25.6 19.2 51.2 34.133333 81.066666 46.933334l10.666667 117.333333c2.133333 10.666667 10.666667 19.2 21.333333 19.2h183.466667c10.666667 0 21.333333-8.533333 21.333333-19.2l10.666667-117.333333c29.866667-12.8 57.6-27.733333 81.066667-46.933334l106.666666 49.066667c10.666667 4.266667 23.466667 0 27.733334-8.533333l91.733333-157.866667c6.4-10.666667 2.133333-23.466667-6.4-29.866667l-89.6-68.266666zM512 746.666667c-117.333333 0-213.333333-96-213.333333-213.333334s96-213.333333 213.333333-213.333333 213.333333 96 213.333333 213.333333-96 213.333333-213.333333 213.333334z" fill="#607D8B"/><path d="M512 277.333333c-140.8 0-256 115.2-256 256s115.2 256 256 256 256-115.2 256-256-115.2-256-256-256z m0 362.666667c-59.733333 0-106.666667-46.933333-106.666667-106.666667s46.933333-106.666667 106.666667-106.666666 106.666667 46.933333 106.666667 106.666666-46.933333 106.666667-106.666667 106.666667z" fill="#455A64"/></svg>''';
 }
 
 class HomeScreen extends StatefulWidget {
@@ -213,75 +225,66 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             animation: _drawerAnimation,
             builder: (context, child) {
               final slideValue = _drawerAnimation.value * 280;
-              final scaleValue = 1.0 - (_drawerAnimation.value * 0.2);
               
               return Transform.translate(
                 offset: Offset(slideValue, 0),
-                child: Transform.scale(
-                  scale: scaleValue,
-                  alignment: Alignment.centerLeft,
+                child: Container(
+                  decoration: BoxDecoration(
+                    boxShadow: _isDrawerOpen ? [const BoxShadow(color: Color(0x40000000), blurRadius: 20, offset: Offset(-5, 0))] : null,
+                  ),
                   child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
-                      boxShadow: _isDrawerOpen ? [const BoxShadow(color: Color(0x40000000), blurRadius: 20, offset: Offset(-5, 0))] : null,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
-                      child: Container(
-                        color: bgColor,
-                        child: SafeArea(
-                          child: Column(
-                            children: [
-                              Container(
-                                color: appBarColor,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                child: Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: _toggleDrawer,
-                                      child: const Icon(Symbols.menu_rounded, color: Color(0xFFFFFFFF), size: 24),
+                    color: bgColor,
+                    child: SafeArea(
+                      child: Column(
+                        children: [
+                          Container(
+                            color: appBarColor,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: _toggleDrawer,
+                                  child: const Icon(Symbols.menu_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                ),
+                                Expanded(
+                                  child: Center(
+                                    child: Text(
+                                      AppStrings.get('app_name', currentLocale),
+                                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
                                     ),
-                                    Expanded(
-                                      child: Center(
-                                        child: Text(
-                                          AppStrings.get('app_name', currentLocale),
-                                          style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () => Navigator.of(context).pushNamed('/settings'),
-                                      child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: IndexedStack(
-                                  index: _selectedIndex,
-                                  children: [
-                                    Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                                    Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                                    _buildTVScreen(bgColor),
-                                  ],
+                                GestureDetector(
+                                  onTap: () => Navigator.of(context).pushNamed('/settings'),
+                                  child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
                                 ),
-                              ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                                  border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
-                                    _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
-                                    _buildBottomItem(2, AppIcons.tvOutline, AppIcons.tvFilled, AppStrings.get('tv', currentLocale), isDark),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
+                          Expanded(
+                            child: IndexedStack(
+                              index: _selectedIndex,
+                              children: [
+                                Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                _buildTVScreen(bgColor),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                              border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
+                            ),
+                            child: Row(
+                              children: [
+                                _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
+                                _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
+                                _buildBottomItem(2, AppIcons.tvOutline, AppIcons.tvFilled, AppStrings.get('tv', currentLocale), isDark),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -401,8 +404,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildDrawer(bool isDark, String currentLocale) {
-    final drawerBgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5);
-    final headerColor = isDark ? const Color(0xFF2C2C2C) : const Color(0xFFE0E0E0);
+    final drawerBgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFF2C3E50);
 
     return Container(
       width: 280,
@@ -413,7 +415,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              color: headerColor,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -426,30 +427,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
             Expanded(child: Container()),
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: GestureDetector(
-                onTap: () {
-                  _toggleDrawer();
-                  Navigator.of(context).pushNamed('/settings');
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(color: const Color(0xFF3498DB), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Symbols.settings_rounded, color: Color(0xFFFFFFFF), size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppStrings.get('settings', currentLocale),
-                        style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+            GestureDetector(
+              onTap: () {
+                _toggleDrawer();
+                Navigator.of(context).pushNamed('/settings');
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: SvgPicture.string(
+                        AppIcons.settingsIcon,
+                        color: const Color(0xFFFFFFFF),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      AppStrings.get('settings', currentLocale),
+                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
