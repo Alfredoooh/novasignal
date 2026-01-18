@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 void main() {
   runApp(const SportsApp());
@@ -51,6 +52,7 @@ class AppStrings {
       'app_name': 'Bet Manager',
       'home': 'Inicio',
       'my_games': 'Meus Jogos',
+      'tv': 'TV',
       'settings': 'Configuracoes',
       'dark_mode': 'Modo Escuro',
       'language': 'Idioma',
@@ -62,6 +64,7 @@ class AppStrings {
       'app_name': 'Bet Manager',
       'home': 'Home',
       'my_games': 'My Games',
+      'tv': 'TV',
       'settings': 'Settings',
       'dark_mode': 'Dark Mode',
       'language': 'Language',
@@ -130,6 +133,10 @@ class AppIcons {
   static const String matchesOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19,3H5C2.243,3,0,5.243,0,8v8c0,2.757,2.243,5,5,5h14c2.757,0,5-2.243,5-5v-8c0-2.757-2.243-5-5-5Zm3,11h-2v-4h2v4Zm-10,0c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM2,10h2v4h-2v-4Zm0,6h2c1.103,0,2-.897,2-2v-4c0-1.103-.897-2-2-2h-2c0-1.654,1.346-3,3-3h6v3.142c-1.72.447-3,1.999-3,3.858s1.28,3.411,3,3.858v3.142h-6c-1.654,0-3-1.346-3-3Zm17,3h-6v-3.142c1.72-.447,3-1.999,3-3.858s-1.28-3.411-3-3.858v-3.142h6c1.654,0,3,1.346,3,3h-2c-1.103,0-2,.897-2,2v4c0,1.103.897,2,2,2h2c0,1.654-1.346,3-3,3Z"/></svg>''';
   
   static const String matchesFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12,14c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM3,10H0v4h3v-4Zm18,4h3v-4h-3v4Zm-2,0v-4c0-1.103.897-2,2-2h3c0-2.757-2.243-5-5-5h-6v5.142c1.72.447,3,1.999,3,3.858s-1.28,3.411-3,3.858v5.142h6c2.757,0,5-2.243,5-5h-3c-1.103,0-2-.897-2-2Zm-8,1.858c-1.72-.447-3-1.999-3-3.858s1.28-3.411,3-3.858V3h-6C2.243,3,0,5.243,0,8h3c1.103,0,2,.897,2,2v4c0,1.103-.897,2-2,2H0c0,2.757,2.243,5,5,5h6v-5.142Z"/></svg>''';
+  
+  static const String tvOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,3H5A5.006,5.006,0,0,0,0,8v6a5.006,5.006,0,0,0,5,5h6v1H8a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H13V19h6a5.006,5.006,0,0,0,5-5V8A5.006,5.006,0,0,0,19,3Zm3,11a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V8A3,3,0,0,1,5,5H19a3,3,0,0,1,3,3Z"/></svg>''';
+  
+  static const String tvFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,3H5A5.006,5.006,0,0,0,0,8v6a5.006,5.006,0,0,0,5,5h6v1H8a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H13V19h6a5.006,5.006,0,0,0,5-5V8A5.006,5.006,0,0,0,19,3Z"/></svg>''';
 }
 
 class HomeScreen extends StatefulWidget {
@@ -144,17 +151,34 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _drawerController;
   late Animation<double> _drawerAnimation;
   bool _isDrawerOpen = false;
+  late YoutubePlayerController _youtubeController;
 
   @override
   void initState() {
     super.initState();
     _drawerController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
     _drawerAnimation = CurvedAnimation(parent: _drawerController, curve: Curves.easeInOut);
+    
+    _youtubeController = YoutubePlayerController(
+      initialVideoId: '3Np1_JcC36c',
+      flags: const YoutubePlayerFlags(
+        autoPlay: true,
+        mute: false,
+        hideControls: true,
+        disableDragSeek: true,
+        hideThumbnail: true,
+        enableCaption: false,
+        loop: true,
+        forceHD: true,
+        controlsVisibleAtStart: false,
+      ),
+    );
   }
 
   @override
   void dispose() {
     _drawerController.dispose();
+    _youtubeController.dispose();
     super.dispose();
   }
 
@@ -238,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   children: [
                                     Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
                                     Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                    _buildTVScreen(bgColor),
                                   ],
                                 ),
                               ),
@@ -250,6 +275,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   children: [
                                     _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
                                     _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
+                                    _buildBottomItem(2, AppIcons.tvOutline, AppIcons.tvFilled, AppStrings.get('tv', currentLocale), isDark),
                                   ],
                                 ),
                               ),
@@ -276,6 +302,98 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 child: _buildDrawer(isDark, currentLocale),
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTVScreen(Color bgColor) {
+    return Container(
+      color: bgColor,
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                children: [
+                  YoutubePlayer(
+                    controller: _youtubeController,
+                    showVideoProgressIndicator: false,
+                    progressIndicatorColor: const Color(0x00000000),
+                    bottomActions: const [],
+                    topActions: const [],
+                  ),
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: Container(color: const Color(0x00000000)),
+                    ),
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0x80000000),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'AO VIVO',
+                        style: TextStyle(
+                          color: Color(0xFFFF0000),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0x80000000),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Symbols.person_rounded, size: 14, color: Color(0xFFFFFFFF)),
+                          SizedBox(width: 4),
+                          Text(
+                            '2.3K',
+                            style: TextStyle(
+                              color: Color(0xFFFFFFFF),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              color: bgColor,
+              child: Center(
+                child: Text(
+                  'Conteudo adicional',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: const Color(0xFFB0B3B8),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
