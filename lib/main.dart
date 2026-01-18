@@ -5,6 +5,8 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:animations/animations.dart';
 
+const Color transparent = Color(0x00000000);
+
 void main() {
   runApp(const SportsApp());
 }
@@ -367,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: Container(color: const Color(0x00000000)),
                     ),
                   ),
-                  if (!_youtubeController.value.isReady || _youtubeController.value.isBuffering)
+                  if (!_youtubeController.value.isReady)
                     Positioned.fill(
                       child: Container(
                         color: const Color(0xFF000000),
@@ -526,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   vertical: isSelected ? 4 : 0,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF3498DB).withOpacity(0.15) : Colors.transparent,
+                  color: isSelected ? const Color(0xFF3498DB).withOpacity(0.15) : transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: SizedBox(
