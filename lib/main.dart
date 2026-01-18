@@ -1,94 +1,15 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
-import 'package:xml/xml.dart' as xml;
-import 'package:url_launcher/url_launcher.dart';
-import 'dart:async';
 
 const Color transparent = Color(0x00000000);
 
 void main() {
   runApp(const SportsApp());
-}
-
-class NewsItem {
-  final String title;
-  final String? description;
-  final String link;
-  final String? imageUrl;
-  final String source;
-  final String? pubDate;
-  final String faviconUrl;
-
-  NewsItem({
-    required this.title,
-    this.description,
-    required this.link,
-    this.imageUrl,
-    required this.source,
-    this.pubDate,
-    required this.faviconUrl,
-  });
-}
-
-class RSSService {
-  static final List<Map<String, String>> feeds = [
-    {'url': 'https://www.zerozero.pt/rss/noticias.php', 'name': 'ZeroZero', 'favicon': 'https://www.zerozero.pt/img/logos/logo_zz_mobile.png'},
-    {'url': 'https://www.101greatgoals.com/feed/', 'name': '101 Great Goals', 'favicon': 'https://www.101greatgoals.com/wp-content/uploads/2019/01/cropped-101gg-icon-32x32.png'},
-    {'url': 'https://www.90min.com/posts.rss', 'name': '90min', 'favicon': 'https://www.90min.com/favicon.ico'},
-    {'url': 'https://www.fourfourtwo.com/feeds.xml', 'name': 'FourFourTwo', 'favicon': 'https://www.fourfourtwo.com/favicon.ico'},
-    {'url': 'https://www.europeansportsmedia.com/news/feed/', 'name': 'ESM', 'favicon': 'https://www.europeansportsmedia.com/favicon.ico'},
-  ];
-
-  static Future<List<NewsItem>> fetchAllNews() async {
-    List<NewsItem> allNews = [];
-
-    for (var feed in feeds) {
-      try {
-        final response = await http.get(Uri.parse(feed['url']!));
-        if (response.statusCode == 200) {
-          final document = xml.XmlDocument.parse(response.body);
-          final items = document.findAllElements('item');
-
-          for (var item in items.take(5)) {
-            String? imageUrl;
-
-            // Try different image tags
-            final mediaContent = item.findElements('media:content').firstOrNull;
-            final enclosure = item.findElements('enclosure').firstOrNull;
-            final mediaThumbnail = item.findElements('media:thumbnail').firstOrNull;
-
-            if (mediaContent != null) {
-              imageUrl = mediaContent.getAttribute('url');
-            } else if (enclosure != null && enclosure.getAttribute('type')?.contains('image') == true) {
-              imageUrl = enclosure.getAttribute('url');
-            } else if (mediaThumbnail != null) {
-              imageUrl = mediaThumbnail.getAttribute('url');
-            }
-
-            allNews.add(NewsItem(
-              title: item.findElements('title').first.text,
-              description: item.findElements('description').firstOrNull?.text,
-              link: item.findElements('link').first.text,
-              imageUrl: imageUrl,
-              source: feed['name']!,
-              pubDate: item.findElements('pubDate').firstOrNull?.text,
-              faviconUrl: feed['favicon']!,
-            ));
-          }
-        }
-      } catch (e) {
-        print('Error fetching ${feed['name']}: $e');
-      }
-    }
-
-    return allNews;
-  }
 }
 
 class ThemeProvider extends InheritedWidget {
@@ -145,8 +66,6 @@ class AppStrings {
       'help': 'Ajuda',
       'security': 'Seguranca e Privacidade',
       'account': 'Configuracoes da Conta',
-      'news': 'Notícias',
-      'loading': 'Carregando',
     },
     'en': {
       'app_name': 'Bet Manager',
@@ -162,8 +81,6 @@ class AppStrings {
       'help': 'Help',
       'security': 'Security and Privacy',
       'account': 'Account Settings',
-      'news': 'News',
-      'loading': 'Loading',
     },
   };
 
@@ -277,7 +194,7 @@ class AppIcons {
 
   static const String homeFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/><path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/></svg>''';
 
-  static const String matchesOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19,3H5C2.243,3,0,5.243,0,8v8c0,2.757,2.243,5,5,5h14c2.757,0,5-2.243,5-5v-8c0-2.757-2.243-5-5-5Zm3,11h-2v-4h2v4Zm-10,0c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM2,10h2v4h-2v-4Zm0,6h2c1.103,0,2-.897,2-2v-4c0-1.103-.897-2-2-2h-2c0-1.654,1.346-3,3-3h6v3.142c-1.72.447-3,1.999-3,3.858s1.28,3.411,3,3.858v3.142h-6c-1.654,0-3-1.346-3-3Zm17,3h-6v-3.142c1.72-.447,3-1.999,3-3.858s-1.28,3.411-3,3.858v-3.142h6c1.654,0,3,1.346,3,3h-2c1.103,0-2,.897-2,2v4c0,1.103.897,2,2,2h2c0,1.654-1.346,3-3,3Z"/></svg>''';
+  static const String matchesOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19,3H5C2.243,3,0,5.243,0,8v8c0,2.757,2.243,5,5,5h14c2.757,0,5-2.243,5-5v-8c0-2.757-2.243-5-5-5Zm3,11h-2v-4h2v4Zm-10,0c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM2,10h2v4h-2v-4Zm0,6h2c1.103,0,2-.897,2-2v-4c0-1.103-.897-2-2-2h-2c0-1.654,1.346-3,3-3h6v3.142c-1.72.447-3,1.999-3,3.858s1.28,3.411,3,3.858v3.142h-6c-1.654,0-3-1.346-3-3Zm17,3h-6v-3.142c1.72-.447,3-1.999,3-3.858s-1.28-3.411-3-3.858v-3.142h6c1.654,0,3,1.346,3,3h-2c-1.103,0-2,.897-2,2v4c0,1.103.897,2,2,2h2c0,1.654-1.346,3-3,3Z"/></svg>''';
 
   static const String matchesFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12,14c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM3,10H0v4h3v-4Zm18,4h3v-4h-3v4Zm-2,0v-4c0-1.103.897-2,2-2h3c0-2.757-2.243-5-5-5h-6v5.142c1.72.447,3,1.999,3,3.858s-1.28,3.411-3,3.858v5.142h6c2.757,0,5-2.243,5-5h-3c-1.103,0-2-.897-2-2Zm-8,1.858c-1.72-.447-3-1.999-3-3.858s1.28-3.411,3-3.858V3h-6C2.243,3,0,5.243,0,8h3c1.103,0,2,.897,2,2v4c0,1.103-.897,2-2,2H0c0,2.757,2.243,5,5,5h6v-5.142Z"/></svg>''';
 
@@ -305,10 +222,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _showPopupMenu = false;
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
-  List<NewsItem> _news = [];
-  bool _isLoadingNews = false;
-  bool _showVideoControls = false;
-  Timer? _hideControlsTimer;
 
   @override
   void initState() {
@@ -322,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         autoPlay: false,
         mute: false,
         hideControls: true,
-        disableDragSeek: false,
+        disableDragSeek: true,
         hideThumbnail: true,
         enableCaption: false,
         loop: true,
@@ -333,40 +246,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     _youtubeController.addListener(() {
       if (_selectedIndex == 2 && _youtubeController.value.isPlaying && _showVideoLoading) {
-        Future.delayed(const Duration(seconds: 2), () {
+        Future.delayed(const Duration(seconds: 5), () {
           if (mounted) {
             setState(() => _showVideoLoading = false);
           }
         });
-      }
-    });
-
-    _loadNews();
-  }
-
-  Future<void> _loadNews() async {
-    setState(() => _isLoadingNews = true);
-    try {
-      final news = await RSSService.fetchAllNews();
-      if (mounted) {
-        setState(() {
-          _news = news;
-          _isLoadingNews = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingNews = false);
-      }
-    }
-  }
-
-  void _toggleVideoControls() {
-    setState(() => _showVideoControls = true);
-    _hideControlsTimer?.cancel();
-    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && _youtubeController.value.isPlaying) {
-        setState(() => _showVideoControls = false);
       }
     });
   }
@@ -390,7 +274,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void dispose() {
     _drawerController.dispose();
     _youtubeController.dispose();
-    _hideControlsTimer?.cancel();
     super.dispose();
   }
 
@@ -401,183 +284,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       _drawerController.forward();
     }
     setState(() => _isDrawerOpen = !_isDrawerOpen);
-  }
-
-  void _showNewsModal(BuildContext context, bool isDark) {
-    showModal(
-      context: context,
-      configuration: const FadeScaleTransitionConfiguration(
-        transitionDuration: Duration(milliseconds: 300),
-        reverseTransitionDuration: Duration(milliseconds: 200),
-      ),
-      builder: (context) {
-        final screenHeight = MediaQuery.of(context).size.height;
-        final videoHeight = MediaQuery.of(context).size.width * 9 / 16;
-        final maxHeight = screenHeight - videoHeight - MediaQuery.of(context).padding.top - 10;
-
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            height: maxHeight,
-            margin: const EdgeInsets.only(top: 10),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(4),
-                topRight: Radius.circular(4),
-              ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Notícias',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Icon(
-                          Symbols.close_rounded,
-                          color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: _news.isEmpty
-                      ? Center(
-                          child: Text(
-                            'Carregando notícias...',
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _news.length,
-                          itemBuilder: (context, index) {
-                            final item = _news[index];
-                            return _buildNewsCard(item, isDark);
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildNewsCard(NewsItem item, bool isDark) {
-    return GestureDetector(
-      onTap: () async {
-        final url = Uri.parse(item.link);
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.inAppWebView);
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF18191A) : const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item.imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image.network(
-                  item.imageUrl!,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 80,
-                    height: 80,
-                    color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
-                    child: const Icon(Symbols.image_rounded, size: 32, color: Color(0xFF7F8C8D)),
-                  ),
-                ),
-              )
-            else
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(Symbols.article_rounded, size: 32, color: Color(0xFF7F8C8D)),
-              ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Image.network(
-                        item.faviconUrl,
-                        width: 16,
-                        height: 16,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Symbols.language_rounded,
-                          size: 16,
-                          color: Color(0xFF7F8C8D),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        item.source,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: const Color(0xFF3498DB),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    item.title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -644,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   CompositedTransformTarget(
                                     link: _layerLink,
                                     child: GestureDetector(
-                                      onTap: () {},
+                                      onTap: _togglePopupMenu,
                                       child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
                                     ),
                                   ),
@@ -657,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               children: [
                                 Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
                                 Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                                _buildTVScreen(bgColor, isDark),
+                                _buildTVScreen(bgColor),
                               ],
                             ),
                           ),
@@ -701,270 +407,100 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildTVScreen(Color bgColor, bool isDark) {
-    return Stack(
-      children: [
-        Container(
-          color: bgColor,
-          child: Column(
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: GestureDetector(
-                    onTap: _toggleVideoControls,
-                    child: Stack(
-                      children: [
-                        YoutubePlayer(
-                          controller: _youtubeController,
-                          showVideoProgressIndicator: false,
-                          progressIndicatorColor: const Color(0x00000000),
-                          bottomActions: const [],
-                          topActions: const [],
-                        ),
-                        if (_showVideoControls)
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  const Color(0x80000000),
-                                  const Color(0x00000000),
-                                  const Color(0x80000000),
-                                ],
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const SizedBox(height: 40),
-                                Center(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          _youtubeController.seekTo(
-                                            Duration(seconds: _youtubeController.value.position.inSeconds - 10),
-                                          );
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0x40000000),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Symbols.replay_10_rounded, color: Color(0xFFFFFFFF), size: 32),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 40),
-                                      GestureDetector(
-                                        onTap: () {
-                                          if (_youtubeController.value.isPlaying) {
-                                            _youtubeController.pause();
-                                          } else {
-                                            _youtubeController.play();
-                                          }
-                                          setState(() {});
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0x60000000),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            _youtubeController.value.isPlaying ? Symbols.pause_rounded : Symbols.play_arrow_rounded,
-                                            color: const Color(0xFFFFFFFF),
-                                            size: 48,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 40),
-                                      GestureDetector(
-                                        onTap: () {
-                                          _youtubeController.seekTo(
-                                            Duration(seconds: _youtubeController.value.position.inSeconds + 10),
-                                          );
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0x40000000),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Symbols.forward_10_rounded, color: Color(0xFFFFFFFF), size: 32),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    children: [
-                                      StreamBuilder(
-                                        stream: Stream.periodic(const Duration(milliseconds: 500)),
-                                        builder: (context, snapshot) {
-                                          final position = _youtubeController.value.position.inSeconds.toDouble();
-                                          final duration = _youtubeController.metadata.duration.inSeconds.toDouble();
-
-                                          return Column(
-                                            children: [
-                                              SliderTheme(
-                                                data: SliderThemeData(
-                                                  trackHeight: 3,
-                                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                                                  activeTrackColor: const Color(0xFF3498DB),
-                                                  inactiveTrackColor: const Color(0x40FFFFFF),
-                                                  thumbColor: const Color(0xFFFFFFFF),
-                                                ),
-                                                child: Slider(
-                                                  value: position.clamp(0, duration),
-                                                  max: duration > 0 ? duration : 1,
-                                                  onChanged: (value) {
-                                                    _youtubeController.seekTo(Duration(seconds: value.toInt()));
-                                                  },
-                                                ),
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                                child: Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Text(
-                                                      _formatDuration(Duration(seconds: position.toInt())),
-                                                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 12),
-                                                    ),
-                                                    Text(
-                                                      _formatDuration(Duration(seconds: duration.toInt())),
-                                                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 12),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (!_youtubeController.value.isReady)
-                          Positioned.fill(
-                            child: Container(
-                              color: const Color(0xFF000000),
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 40,
-                                  height: 40,
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFF3498DB),
-                                    strokeWidth: 3,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+  Widget _buildTVScreen(Color bgColor) {
+    return Container(
+      color: bgColor,
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Stack(
+                children: [
+                  YoutubePlayer(
+                    controller: _youtubeController,
+                    showVideoProgressIndicator: false,
+                    progressIndicatorColor: const Color(0x00000000),
+                    bottomActions: const [],
+                    topActions: const [],
+                  ),
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: Container(color: const Color(0x00000000)),
                     ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  color: bgColor,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Notícias',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
+                  if (!_youtubeController.value.isReady)
+                    Positioned.fill(
+                      child: Container(
+                        color: const Color(0xFF000000),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Carregando',
+                              style: TextStyle(
+                                color: Color(0xFFFFFFFF),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(3, (index) {
+                                return TweenAnimationBuilder<double>(
+                                  tween: Tween(begin: 0.0, end: 1.0),
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.easeInOut,
+                                  builder: (context, value, child) {
+                                    return Opacity(
+                                      opacity: value,
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFFFFFFF),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  onEnd: () {
+                                    Future.delayed(Duration(milliseconds: index * 200), () {
+                                      if (mounted) setState(() {});
+                                    });
+                                  },
+                                );
+                              }),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      if (_isLoadingNews)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF3498DB),
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        )
-                      else if (_news.isEmpty)
-                        Center(
-                          child: Text(
-                            'Nenhuma notícia disponível',
-                            style: TextStyle(
-                              color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
-                            ),
-                          ),
-                        )
-                      else
-                        Expanded(
-                          child: ListView.builder(
-                            itemCount: _news.length > 10 ? 10 : _news.length,
-                            itemBuilder: (context, index) {
-                              return _buildNewsCard(_news[index], isDark);
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (_selectedIndex == 2)
-          Positioned(
-            right: 16,
-            bottom: 80,
-            child: GestureDetector(
-              onTap: () => _showNewsModal(context, isDark),
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3498DB),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF3498DB).withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Symbols.list_rounded,
-                  color: Color(0xFFFFFFFF),
-                  size: 28,
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              color: bgColor,
+              child: Center(
+                child: Text(
+                  'Conteudo adicional',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: const Color(0xFFB0B3B8),
+                  ),
                 ),
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return '$minutes:$seconds';
   }
 
   Widget _buildDrawer(bool isDark, String currentLocale) {
@@ -1093,8 +629,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 }
 
-// === SettingsScreen, HelpScreen, SecurityScreen, AccountScreen ===
-// (substituído pelo bloco que você enviou)
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
@@ -1363,153 +897,6 @@ class SettingsScreen extends StatelessWidget {
             ),
             if (isSelected)
               const Icon(Symbols.check_rounded, color: Color(0xFF3498DB), size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class HelpScreen extends StatelessWidget {
-  const HelpScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ThemeProvider.of(context);
-    final locale = LocaleProvider.of(context);
-    final isDark = theme?.isDark ?? false;
-    final currentLocale = locale?.locale ?? 'pt';
-    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
-    final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
-
-    return Container(
-      color: bgColor,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              color: appBarColor,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Symbols.arrow_back_rounded, color: Color(0xFFFFFFFF), size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    AppStrings.get('help', currentLocale),
-                    style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  AppStrings.get('help', currentLocale),
-                  style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class SecurityScreen extends StatelessWidget {
-  const SecurityScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ThemeProvider.of(context);
-    final locale = LocaleProvider.of(context);
-    final isDark = theme?.isDark ?? false;
-    final currentLocale = locale?.locale ?? 'pt';
-    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
-    final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
-
-    return Container(
-      color: bgColor,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              color: appBarColor,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Symbols.arrow_back_rounded, color: Color(0xFFFFFFFF), size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    AppStrings.get('security', currentLocale),
-                    style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  AppStrings.get('security', currentLocale),
-                  style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class AccountScreen extends StatelessWidget {
-  const AccountScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = ThemeProvider.of(context);
-    final locale = LocaleProvider.of(context);
-    final isDark = theme?.isDark ?? false;
-    final currentLocale = locale?.locale ?? 'pt';
-    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
-    final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
-
-    return Container(
-      color: bgColor,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              color: appBarColor,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Symbols.arrow_back_rounded, color: Color(0xFFFFFFFF), size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    AppStrings.get('account', currentLocale),
-                    style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  AppStrings.get('account', currentLocale),
-                  style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D)),
-                ),
-              ),
-            ),
           ],
         ),
       ),
