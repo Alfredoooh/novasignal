@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:animations/animations.dart';
 
 void main() {
   runApp(const SportsApp());
@@ -100,6 +101,20 @@ class _SportsAppState extends State<SportsApp> {
         changeLocale: (v) => setState(() => _locale = v),
         child: WidgetsApp(
           color: const Color(0xFFFFFFFF),
+          pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
+            return PageRouteBuilder<T>(
+              settings: settings,
+              pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return SharedAxisTransition(
+                  animation: animation,
+                  secondaryAnimation: secondaryAnimation,
+                  transitionType: SharedAxisTransitionType.horizontal,
+                  child: child,
+                );
+              },
+            );
+          },
           onGenerateRoute: (settings) {
             Widget page;
             switch (settings.name) {
@@ -110,23 +125,16 @@ class _SportsAppState extends State<SportsApp> {
                 page = const HomeScreen();
             }
             return PageRouteBuilder(
+              settings: settings,
               pageBuilder: (context, animation, secondaryAnimation) => page,
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                const begin = Offset(1.0, 0.0);
-                const end = Offset.zero;
-                const curve = Curves.easeInOut;
-                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                var offsetAnimation = animation.drive(tween);
-                
-                return SlideTransition(
-                  position: offsetAnimation,
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
+                return SharedAxisTransition(
+                  animation: animation,
+                  secondaryAnimation: secondaryAnimation,
+                  transitionType: SharedAxisTransitionType.horizontal,
+                  child: child,
                 );
               },
-              transitionDuration: const Duration(milliseconds: 300),
             );
           },
         ),
@@ -174,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _youtubeController = YoutubePlayerController(
       initialVideoId: '3Np1_JcC36c',
       flags: const YoutubePlayerFlags(
-        autoPlay: true,
+        autoPlay: false,
         mute: false,
         hideControls: true,
         disableDragSeek: true,
@@ -185,6 +193,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         controlsVisibleAtStart: false,
       ),
     );
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_selectedIndex == 2) {
+      if (!_youtubeController.value.isPlaying) {
+        _youtubeController.play();
+      }
+    } else {
+      if (_youtubeController.value.isPlaying) {
+        _youtubeController.pause();
+      }
+    }
   }
 
   @override
@@ -213,9 +235,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
     final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
 
+    String appBarTitle = AppStrings.get('app_name', currentLocale);
+    if (_selectedIndex == 1) {
+      appBarTitle = AppStrings.get('my_games', currentLocale);
+    }
+
     return AnnotatedRegion(
       value: SystemUiOverlayStyle(
-        statusBarColor: appBarColor,
+        statusBarColor: _selectedIndex == 2 ? const Color(0xFF000000) : appBarColor,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
@@ -235,32 +262,37 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: Container(
                     color: bgColor,
                     child: SafeArea(
+                      top: _selectedIndex != 2,
                       child: Column(
                         children: [
-                          Container(
-                            color: appBarColor,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: _toggleDrawer,
-                                  child: const Icon(Symbols.menu_rounded, color: Color(0xFFFFFFFF), size: 24),
-                                ),
-                                Expanded(
-                                  child: Center(
+                          if (_selectedIndex != 2)
+                            Container(
+                              color: appBarColor,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: _toggleDrawer,
+                                    child: const Icon(Symbols.menu_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
                                     child: Text(
-                                      AppStrings.get('app_name', currentLocale),
-                                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
+                                      appBarTitle,
+                                      style: TextStyle(
+                                        color: const Color(0xFFFFFFFF),
+                                        fontSize: 20,
+                                        fontWeight: _selectedIndex == 0 ? FontWeight.w900 : FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                GestureDetector(
-                                  onTap: () => Navigator.of(context).pushNamed('/settings'),
-                                  child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
-                                ),
-                              ],
+                                  GestureDetector(
+                                    onTap: () => Navigator.of(context).pushNamed('/settings'),
+                                    child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
                           Expanded(
                             child: IndexedStack(
                               index: _selectedIndex,
@@ -466,26 +498,57 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _selectedIndex = index),
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+            if (index == 2) {
+              _youtubeController.play();
+            } else {
+              _youtubeController.pause();
+            }
+          });
+        },
         child: Container(
           color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: SvgPicture.string(
-                  isSelected ? filledIcon : outlineIcon,
-                  color: isSelected ? const Color(0xFF3498DB) : inactiveColor,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSelected ? 16 : 0,
+                  vertical: isSelected ? 4 : 0,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF3498DB).withOpacity(0.15) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.8, end: 1.0),
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.elasticOut,
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: SvgPicture.string(
+                          isSelected ? filledIcon : outlineIcon,
+                          color: isSelected ? const Color(0xFF3498DB) : inactiveColor,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: isSelected ? const Color(0xFF3498DB) : inactiveColor,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
@@ -625,13 +688,13 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showLanguageDialog(BuildContext context, String currentLocale, LocaleProvider? localeProvider, bool isDark) {
-    showGeneralDialog(
+    showModal(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: '',
-      barrierColor: const Color(0x80000000),
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (context, animation, secondaryAnimation) {
+      configuration: const FadeScaleTransitionConfiguration(
+        transitionDuration: Duration(milliseconds: 300),
+        reverseTransitionDuration: Duration(milliseconds: 200),
+      ),
+      builder: (context) {
         return Center(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 40),
