@@ -673,10 +673,33 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
-                      child: GestureDetector(
-                        onTap: () => theme?.toggleTheme(!isDark),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pushNamed('/account'),
+                      child: Container(
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(Symbols.person_rounded, color: textColor, size: 24),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  AppStrings.get('account', currentLocale),
+                                  style: TextStyle(fontSize: 16, color: textColor),
+                                ),
+                              ),
+                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () => theme?.toggleTheme(!isDark),
+                      child: Container(
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -713,10 +736,10 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
-                      child: GestureDetector(
-                        onTap: () => _showLanguageDialog(context, currentLocale, locale, isDark),
+                    GestureDetector(
+                      onTap: () => _showLanguageDialog(context, currentLocale, locale, isDark),
+                      child: Container(
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -737,6 +760,52 @@ class SettingsScreen extends StatelessWidget {
                                       style: TextStyle(fontSize: 14, color: subtitleColor),
                                     ),
                                   ],
+                                ),
+                              ),
+                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pushNamed('/security'),
+                      child: Container(
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(Symbols.lock_rounded, color: textColor, size: 24),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  AppStrings.get('security', currentLocale),
+                                  style: TextStyle(fontSize: 16, color: textColor),
+                                ),
+                              ),
+                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pushNamed('/help'),
+                      child: Container(
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(Symbols.help_rounded, color: textColor, size: 24),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  AppStrings.get('help', currentLocale),
+                                  style: TextStyle(fontSize: 16, color: textColor),
                                 ),
                               ),
                               Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
@@ -775,13 +844,27 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  child: Text(
-                    AppStrings.get('choose_language', currentLocale),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
-                    ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          AppStrings.get('choose_language', currentLocale),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Icon(
+                          Symbols.close_rounded,
+                          size: 24,
+                          color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 _buildLanguageOption(context, 'pt', AppStrings.get('portuguese', currentLocale), currentLocale == 'pt', localeProvider, isDark),
@@ -802,6 +885,7 @@ class SettingsScreen extends StatelessWidget {
         Navigator.of(context).pop();
       },
       child: Container(
+        color: transparent,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
