@@ -14,6 +14,7 @@ dependencies:
   # WebView - SÓ Android (remove iOS webview)
   #webview_flutter: ^4.11.2
   #webview_flutter_android: ^3.18.2
+  youtube_player_flutter: any
   
   # HTTP - versão específica mais leve
   #http: ^1.2.2
