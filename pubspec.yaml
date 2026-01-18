@@ -22,6 +22,7 @@ dependencies:
 
   # SVG - versão específica
   flutter_svg: ^2.0.10
+  shared_preferences: any
   
   # Ícones - versão específica
   material_symbols_icons: ^4.2785.1
