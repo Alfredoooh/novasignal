@@ -55,9 +55,6 @@ class AppStrings {
       'choose_language': 'Escolher Idioma',
       'portuguese': 'Português',
       'english': 'English',
-      'warning': 'Aviso',
-      'error_occurred': 'Ocorreu um erro',
-      'close': 'Fechar',
     },
     'en': {
       'app_name': 'Bet Manager',
@@ -69,9 +66,6 @@ class AppStrings {
       'choose_language': 'Choose Language',
       'portuguese': 'Português',
       'english': 'English',
-      'warning': 'Warning',
-      'error_occurred': 'An error occurred',
-      'close': 'Close',
     },
   };
 
@@ -201,7 +195,60 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(_drawerAnimation.value * 20),
-                    child: _buildMainContent(bgColor, appBarColor, currentLocale, isDark),
+                    child: Container(
+                      color: bgColor,
+                      child: SafeArea(
+                        child: Column(
+                          children: [
+                            Container(
+                              color: appBarColor,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: _toggleDrawer,
+                                    child: const Icon(IconData(0xe5d2, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
+                                  ),
+                                  Expanded(
+                                    child: Center(
+                                      child: Text(
+                                        AppStrings.get('app_name', currentLocale),
+                                        style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => Navigator.of(context).pushNamed('/settings'),
+                                    child: const Icon(IconData(0xe5d3, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: IndexedStack(
+                                index: _selectedIndex,
+                                children: [
+                                  Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                  Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                                border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
+                              ),
+                              child: Row(
+                                children: [
+                                  _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
+                                  _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -218,71 +265,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildMainContent(Color bgColor, Color appBarColor, String currentLocale, bool isDark) {
-    return Container(
-      color: bgColor,
-      child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              color: appBarColor,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: _toggleDrawer,
-                    child: const Icon(IconData(0xe5d2, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
-                  ),
-                  GestureDetector(
-                    onTap: _toggleDrawer,
-                    child: const Icon(IconData(0xe5d2, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        AppStrings.get('app_name', currentLocale),
-                        style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pushNamed('/settings'),
-                    child: const Icon(IconData(0xe5d3, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: [
-                  Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                  Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
-              ),
-              child: Row(
-                children: [
-                  _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
-                  _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildDrawer(bool isDark, String currentLocale) {
     final bgColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
     final headerColor = isDark ? const Color(0xFF3A3B3C) : const Color(0xFF2C3E50);
-    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
 
     return Positioned(
       left: 0,
@@ -302,7 +287,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 20),
-                    Text(AppStrings.get('app_name', currentLocale), style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text(
+                      AppStrings.get('app_name', currentLocale),
+                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ),
@@ -322,7 +310,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       children: [
                         const Icon(IconData(0xe8b8, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 20),
                         const SizedBox(width: 8),
-                        Text(AppStrings.get('settings', currentLocale), style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600)),
+                        Text(
+                          AppStrings.get('settings', currentLocale),
+                          style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
                       ],
                     ),
                   ),
@@ -330,46 +321,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-                    child: Center(
-                      child: Text(
-                        AppStrings.get('app_name', currentLocale),
-                        style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pushNamed('/settings'),
-                    child: const Icon(IconData(0xe5d3, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: [
-                  Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                  Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                ],
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
-              ),
-              child: Row(
-                children: [
-                  _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
-                  _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -444,7 +395,10 @@ class SettingsScreen extends StatelessWidget {
                     child: const Icon(IconData(0xe5c4, fontFamily: 'MaterialIcons'), color: Color(0xFFFFFFFF), size: 24),
                   ),
                   const SizedBox(width: 16),
-                  Text(AppStrings.get('settings', currentLocale), style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text(
+                    AppStrings.get('settings', currentLocale),
+                    style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             ),
@@ -464,11 +418,19 @@ class SettingsScreen extends StatelessWidget {
                             children: [
                               Icon(const IconData(0xe3a9, fontFamily: 'MaterialIcons'), color: textColor, size: 24),
                               const SizedBox(width: 16),
-                              Expanded(child: Text(AppStrings.get('dark_mode', currentLocale), style: TextStyle(fontSize: 16, color: textColor))),
+                              Expanded(
+                                child: Text(
+                                  AppStrings.get('dark_mode', currentLocale),
+                                  style: TextStyle(fontSize: 16, color: textColor),
+                                ),
+                              ),
                               Container(
                                 width: 50,
                                 height: 28,
-                                decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: isDark ? const Color(0xFF3498DB) : const Color(0xFFCED0D4)),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: isDark ? const Color(0xFF3498DB) : const Color(0xFFCED0D4),
+                                ),
                                 child: AnimatedAlign(
                                   duration: const Duration(milliseconds: 200),
                                   alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
@@ -500,7 +462,10 @@ class SettingsScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(AppStrings.get('language', currentLocale), style: TextStyle(fontSize: 16, color: textColor)),
+                                    Text(
+                                      AppStrings.get('language', currentLocale),
+                                      style: TextStyle(fontSize: 16, color: textColor),
+                                    ),
                                     const SizedBox(height: 4),
                                     Text(
                                       currentLocale == 'pt' ? AppStrings.get('portuguese', currentLocale) : AppStrings.get('english', currentLocale),
@@ -536,13 +501,23 @@ class SettingsScreen extends StatelessWidget {
         return Center(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 40),
-            decoration: BoxDecoration(color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   padding: const EdgeInsets.all(20),
-                  child: Text(AppStrings.get('choose_language', currentLocale), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50))),
+                  child: Text(
+                    AppStrings.get('choose_language', currentLocale),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
+                    ),
+                  ),
                 ),
                 _buildLanguageOption(context, 'pt', AppStrings.get('portuguese', currentLocale), currentLocale == 'pt', localeProvider, isDark),
                 Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
@@ -565,8 +540,14 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
           children: [
-            Expanded(child: Text(label, style: TextStyle(fontSize: 16, color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)))),
-            if (isSelected) const Icon(IconData(0xe5ca, fontFamily: 'MaterialIcons'), color: Color(0xFF3498DB), size: 24),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 16, color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+              ),
+            ),
+            if (isSelected)
+              const Icon(IconData(0xe5ca, fontFamily: 'MaterialIcons'), color: Color(0xFF3498DB), size: 24),
           ],
         ),
       ),
