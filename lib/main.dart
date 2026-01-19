@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
@@ -7,6 +7,7 @@ import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const Color transparent = Color(0x00000000);
+const Color primaryColor = Color(0xFF2C3E50);
 
 void main() {
   runApp(const SportsApp());
@@ -53,10 +54,10 @@ class LocaleProvider extends InheritedWidget {
 class AppStrings {
   static Map<String, Map<String, String>> translations = {
     'pt': {
-      'app_name': 'Bet Manager',
+      'app_name': 'TVgo',
       'home': 'Inicio',
-      'my_games': 'Meus Jogos',
-      'tv': 'TV',
+      'channels': 'Canais',
+      'live_tv': 'TV Ao Vivo',
       'settings': 'Configuracoes',
       'dark_mode': 'Modo Escuro',
       'language': 'Idioma',
@@ -68,10 +69,10 @@ class AppStrings {
       'account': 'Configuracoes da Conta',
     },
     'en': {
-      'app_name': 'Bet Manager',
+      'app_name': 'TVgo',
       'home': 'Home',
-      'my_games': 'My Games',
-      'tv': 'TV',
+      'channels': 'Channels',
+      'live_tv': 'Live TV',
       'settings': 'Settings',
       'dark_mode': 'Dark Mode',
       'language': 'Language',
@@ -194,9 +195,9 @@ class AppIcons {
 
   static const String homeFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/><path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/></svg>''';
 
-  static const String matchesOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19,3H5C2.243,3,0,5.243,0,8v8c0,2.757,2.243,5,5,5h14c2.757,0,5-2.243,5-5v-8c0-2.757-2.243-5-5-5Zm3,11h-2v-4h2v4Zm-10,0c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM2,10h2v4h-2v-4Zm0,6h2c1.103,0,2-.897,2-2v-4c0-1.103-.897-2-2-2h-2c0-1.654,1.346-3,3-3h6v3.142c-1.72.447-3,1.999-3,3.858s1.28,3.411,3,3.858v3.142h-6c-1.654,0-3-1.346-3-3Zm17,3h-6v-3.142c1.72-.447,3-1.999,3-3.858s-1.28-3.411-3-3.858v-3.142h6c1.654,0,3,1.346,3,3h-2c-1.103,0-2,.897-2,2v4c0,1.103.897,2,2,2h2c0,1.654-1.346,3-3,3Z"/></svg>''';
+  static const String channelsOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,3H5A5.006,5.006,0,0,0,0,8v6a5.006,5.006,0,0,0,5,5h6v1H8a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H13V19h6a5.006,5.006,0,0,0,5-5V8A5.006,5.006,0,0,0,19,3Zm3,11a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V8A3,3,0,0,1,5,5H19a3,3,0,0,1,3,3Z"/><path d="M10,13.5a.5.5,0,0,1-.5.5h-3a.5.5,0,0,1-.5-.5v-3a.5.5,0,0,1,.5-.5h3a.5.5,0,0,1,.5.5ZM18,10H14a1,1,0,0,0,0,2h4a1,1,0,0,0,0-2Z"/></svg>''';
 
-  static const String matchesFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12,14c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2ZM3,10H0v4h3v-4Zm18,4h3v-4h-3v4Zm-2,0v-4c0-1.103.897-2,2-2h3c0-2.757-2.243-5-5-5h-6v5.142c1.72.447,3,1.999,3,3.858s-1.28,3.411-3,3.858v5.142h6c2.757,0,5-2.243,5-5h-3c-1.103,0-2-.897-2-2Zm-8,1.858c-1.72-.447-3-1.999-3-3.858s1.28-3.411,3-3.858V3h-6C2.243,3,0,5.243,0,8h3c1.103,0,2,.897,2,2v4c0,1.103-.897,2-2,2H0c0,2.757,2.243,5,5,5h6v-5.142Z"/></svg>''';
+  static const String channelsFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,3H5A5.006,5.006,0,0,0,0,8v6a5.006,5.006,0,0,0,5,5h6v1H8a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H13V19h6a5.006,5.006,0,0,0,5-5V8A5.006,5.006,0,0,0,19,3ZM10,13.5a.5.5,0,0,1-.5.5h-3a.5.5,0,0,1-.5-.5v-3a.5.5,0,0,1,.5-.5h3a.5.5,0,0,1,.5.5ZM18,12H14a1,1,0,0,1,0-2h4a1,1,0,0,1,0,2Z"/></svg>''';
 
   static const String tvOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,3H5A5.006,5.006,0,0,0,0,8v6a5.006,5.006,0,0,0,5,5h6v1H8a1,1,0,0,0,0,2h8a1,1,0,0,0,0-2H13V19h6a5.006,5.006,0,0,0,5-5V8A5.006,5.006,0,0,0,19,3Zm3,11a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V8A3,3,0,0,1,5,5H19a3,3,0,0,1,3,3Z"/></svg>''';
 
@@ -204,6 +205,27 @@ class AppIcons {
 
   static const String settingsIcon = '''<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M844.8 580.266667c2.133333-14.933333 4.266667-29.866667 4.266667-46.933334s-2.133333-32-4.266667-46.933333l96-68.266667c8.533333-6.4 12.8-19.2 6.4-29.866666L853.333333 230.4c-6.4-10.666667-17.066667-14.933333-27.733333-8.533333l-106.666667 49.066666c-25.6-19.2-51.2-34.133333-81.066666-46.933333L627.2 106.666667c-2.133333-10.666667-10.666667-19.2-21.333333-19.2h-183.466667c-10.666667 0-21.333333 8.533333-21.333333 19.2l-10.666667 117.333333c-29.866667 12.8-57.6 27.733333-81.066667 46.933333l-106.666666-49.066666c-10.666667-4.266667-23.466667 0-27.733334 8.533333l-91.733333 157.866667c-6.4 10.666667-2.133333 23.466667 6.4 29.866666l96 68.266667c-2.133333 14.933333-4.266667 29.866667-4.266667 46.933333s2.133333 32 4.266667 46.933334L85.333333 648.533333c-8.533333 6.4-12.8 19.2-6.4 29.866667L170.666667 836.266667c6.4 10.666667 17.066667 14.933333 27.733333 8.533333l106.666667-49.066667c25.6 19.2 51.2 34.133333 81.066666 46.933334l10.666667 117.333333c2.133333 10.666667 10.666667 19.2 21.333333 19.2h183.466667c10.666667 0 21.333333-8.533333 21.333333-19.2l10.666667-117.333333c29.866667-12.8 57.6-27.733333 81.066667-46.933334l106.666666 49.066667c10.666667 4.266667 23.466667 0 27.733334-8.533333l91.733333-157.866667c6.4-10.666667 2.133333-23.466667-6.4-29.866667l-89.6-68.266666zM512 746.666667c-117.333333 0-213.333333-96-213.333333-213.333334s96-213.333333 213.333333-213.333333 213.333333 96 213.333333 213.333333-96 213.333333-213.333333 213.333334z" fill="#607D8B"/><path d="M512 277.333333c-140.8 0-256 115.2-256 256s115.2 256 256 256 256-115.2 256-256-115.2-256-256-256z m0 362.666667c-59.733333 0-106.666667-46.933333-106.666667-106.666667s46.933333-106.666667 106.666667-106.666666 106.666667 46.933333 106.666667 106.666666-46.933333 106.666667-106.666667 106.666667z" fill="#455A64"/></svg>''';
 }
+
+// Classes vazias necessárias
+class HelpScreen extends StatelessWidget {
+  const HelpScreen({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) => Container();
+}
+
+class SecurityScreen extends StatelessWidget {
+  const SecurityScreen({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) => Container();
+}
+
+class AccountScreen extends StatelessWidget {
+  const AccountScreen({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) => Container();
+}
+
+// CONTINUAÇÃO - Cole esta parte após a Parte 1
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -218,9 +240,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Animation<double> _drawerAnimation;
   bool _isDrawerOpen = false;
   late YoutubePlayerController _youtubeController;
-  bool _showVideoLoading = true;
-  bool _showPopupMenu = false;
-  final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
 
   @override
@@ -243,37 +262,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         controlsVisibleAtStart: false,
       ),
     );
-
-    _youtubeController.addListener(() {
-      if (_selectedIndex == 2 && _youtubeController.value.isPlaying && _showVideoLoading) {
-        Future.delayed(const Duration(seconds: 5), () {
-          if (mounted) {
-            setState(() => _showVideoLoading = false);
-          }
-        });
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_selectedIndex == 2) {
-      if (!_youtubeController.value.isPlaying) {
-        _youtubeController.play();
-        setState(() => _showVideoLoading = true);
-      }
-    } else {
-      if (_youtubeController.value.isPlaying) {
-        _youtubeController.pause();
-      }
-    }
   }
 
   @override
   void dispose() {
     _drawerController.dispose();
     _youtubeController.dispose();
+    _overlayEntry?.remove();
     super.dispose();
   }
 
@@ -294,11 +289,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final currentLocale = locale?.locale ?? 'pt';
 
     final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
-    final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
+    final appBarColor = primaryColor;
 
     String appBarTitle = AppStrings.get('app_name', currentLocale);
     if (_selectedIndex == 1) {
-      appBarTitle = AppStrings.get('my_games', currentLocale);
+      appBarTitle = AppStrings.get('channels', currentLocale);
+    } else if (_selectedIndex == 2) {
+      appBarTitle = AppStrings.get('live_tv', currentLocale);
     }
 
     return AnnotatedRegion(
@@ -340,20 +337,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   Expanded(
                                     child: Text(
                                       appBarTitle,
-                                      style: TextStyle(
-                                        color: const Color(0xFFFFFFFF),
+                                      style: const TextStyle(
+                                        color: Color(0xFFFFFFFF),
                                         fontSize: 20,
-                                        fontWeight: _selectedIndex == 0 ? FontWeight.w900 : FontWeight.w600,
+                                        fontWeight: FontWeight.w900,
                                       ),
                                     ),
                                   ),
-                                  CompositedTransformTarget(
-                                    link: _layerLink,
-                                    child: GestureDetector(
-                                      onTap: _togglePopupMenu,
-                                      child: const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
-                                    ),
-                                  ),
+                                  const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
                                 ],
                               ),
                             ),
@@ -361,8 +352,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: IndexedStack(
                               index: _selectedIndex,
                               children: [
-                                Container(color: bgColor, child: Center(child: Text('Home', style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
-                                Container(color: bgColor, child: Center(child: Text(AppStrings.get('my_games', currentLocale), style: TextStyle(fontSize: 24, color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D))))),
+                                _buildHomeScreen(bgColor, isDark),
+                                _buildChannelsScreen(bgColor, isDark, currentLocale),
                                 _buildTVScreen(bgColor),
                               ],
                             ),
@@ -375,8 +366,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: Row(
                               children: [
                                 _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
-                                _buildBottomItem(1, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('my_games', currentLocale), isDark),
-                                _buildBottomItem(2, AppIcons.tvOutline, AppIcons.tvFilled, AppStrings.get('tv', currentLocale), isDark),
+                                _buildBottomItem(1, AppIcons.channelsOutline, AppIcons.channelsFilled, AppStrings.get('channels', currentLocale), isDark),
+                                _buildBottomItem(2, AppIcons.tvOutline, AppIcons.tvFilled, AppStrings.get('live_tv', currentLocale), isDark),
                               ],
                             ),
                           ),
@@ -407,6 +398,109 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  Widget _buildHomeScreen(Color bgColor, bool isDark) {
+    return Container(
+      color: bgColor,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: List.generate(5, (index) => _buildSkeletonCard(isDark)),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                _buildShimmer(40, 40, isDark, isCircle: true),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildShimmer(120, 12, isDark),
+                      const SizedBox(height: 6),
+                      _buildShimmer(80, 10, isDark),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildShimmer(double.infinity, 200, isDark),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildShimmer(double.infinity, 12, isDark),
+                const SizedBox(height: 6),
+                _buildShimmer(250, 12, isDark),
+                const SizedBox(height: 6),
+                _buildShimmer(180, 12, isDark),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmer(double width, double height, bool isDark, {bool isCircle = false}) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.3, end: 1.0),
+      duration: const Duration(milliseconds: 1000),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+              shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
+              borderRadius: isCircle ? null : BorderRadius.circular(4),
+            ),
+          ),
+        );
+      },
+      onEnd: () {
+        if (mounted) {
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) setState(() {});
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildChannelsScreen(Color bgColor, bool isDark, String currentLocale) {
+    return Container(
+      color: bgColor,
+      child: Center(
+        child: Text(
+          AppStrings.get('channels', currentLocale),
+          style: TextStyle(
+            fontSize: 24,
+            color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTVScreen(Color bgColor) {
     return Container(
       color: bgColor,
@@ -431,55 +525,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       child: Container(color: const Color(0x00000000)),
                     ),
                   ),
-                  if (!_youtubeController.value.isReady)
-                    Positioned.fill(
-                      child: Container(
-                        color: const Color(0xFF000000),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Carregando',
-                              style: TextStyle(
-                                color: Color(0xFFFFFFFF),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(3, (index) {
-                                return TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: const Duration(milliseconds: 600),
-                                  curve: Curves.easeInOut,
-                                  builder: (context, value, child) {
-                                    return Opacity(
-                                      opacity: value,
-                                      child: Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFFFFFFF),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  onEnd: () {
-                                    Future.delayed(Duration(milliseconds: index * 200), () {
-                                      if (mounted) setState(() {});
-                                    });
-                                  },
-                                );
-                              }),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -487,13 +532,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Expanded(
             child: Container(
               color: bgColor,
-              child: Center(
+              child: const Center(
                 child: Text(
                   'Conteudo adicional',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: const Color(0xFFB0B3B8),
-                  ),
+                  style: TextStyle(fontSize: 16, color: Color(0xFFB0B3B8)),
                 ),
               ),
             ),
@@ -504,7 +546,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildDrawer(bool isDark, String currentLocale) {
-    final drawerBgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFF2C3E50);
+    final drawerBgColor = primaryColor;
 
     return Container(
       width: 280,
@@ -539,10 +581,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     SizedBox(
                       width: 24,
                       height: 24,
-                      child: SvgPicture.string(
-                        AppIcons.settingsIcon,
-                        color: const Color(0xFFFFFFFF),
-                      ),
+                      child: SvgPicture.string(AppIcons.settingsIcon, color: const Color(0xFFFFFFFF)),
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -582,42 +621,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSelected ? 16 : 0,
-                  vertical: isSelected ? 4 : 0,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF3498DB).withOpacity(0.15) : transparent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.8, end: 1.0),
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.elasticOut,
-                    builder: (context, scale, child) {
-                      return Transform.scale(
-                        scale: scale,
-                        child: SvgPicture.string(
-                          isSelected ? filledIcon : outlineIcon,
-                          color: isSelected ? const Color(0xFF3498DB) : inactiveColor,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+              _PulseIcon(
+                icon: isSelected ? filledIcon : outlineIcon,
+                color: isSelected ? primaryColor : inactiveColor,
+                isSelected: isSelected,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  color: isSelected ? const Color(0xFF3498DB) : inactiveColor,
+                  color: isSelected ? primaryColor : inactiveColor,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
@@ -628,6 +642,71 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 }
+
+class _PulseIcon extends StatefulWidget {
+  final String icon;
+  final Color color;
+  final bool isSelected;
+
+  const _PulseIcon({
+    required this.icon,
+    required this.color,
+    required this.isSelected,
+  });
+
+  @override
+  State<_PulseIcon> createState() => _PulseIconState();
+}
+
+class _PulseIconState extends State<_PulseIcon> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_PulseIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected && widget.isSelected) {
+      _controller.forward().then((_) => _controller.reverse());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _animation.value,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: SvgPicture.string(widget.icon, color: widget.color),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// PARTE 3 - FINAL - Cole esta parte após a Parte 2
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -640,7 +719,7 @@ class SettingsScreen extends StatelessWidget {
     final currentLocale = locale?.locale ?? 'pt';
 
     final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
-    final appBarColor = isDark ? const Color(0xFF242526) : const Color(0xFF2C3E50);
+    final appBarColor = primaryColor;
     final cardColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
     final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D);
@@ -717,7 +796,7 @@ class SettingsScreen extends StatelessWidget {
                                 height: 28,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(14),
-                                  color: isDark ? const Color(0xFF3498DB) : const Color(0xFFCED0D4),
+                                  color: isDark ? primaryColor : const Color(0xFFCED0D4),
                                 ),
                                 child: AnimatedAlign(
                                   duration: const Duration(milliseconds: 200),
@@ -896,7 +975,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(Symbols.check_rounded, color: Color(0xFF3498DB), size: 24),
+              const Icon(Symbols.check_rounded, color: primaryColor, size: 24),
           ],
         ),
       ),
