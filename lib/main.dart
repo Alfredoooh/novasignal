@@ -351,7 +351,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: Row(
                               children: [
                                 _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
-                                _buildBottomItemCenter(1, AppIcons.walletOutline, AppIcons.walletFilled, AppStrings.get('channels', currentLocale), isDark),
+                                _buildBottomItem(1, AppIcons.walletOutline, AppIcons.walletFilled, AppStrings.get('channels', currentLocale), isDark),
                                 _buildBottomItem(2, AppIcons.matchesOutline, AppIcons.matchesFilled, AppStrings.get('live_tv', currentLocale), isDark),
                               ],
                             ),
@@ -588,7 +588,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         },
         child: Container(
           color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -603,53 +603,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 style: TextStyle(
                   fontSize: 11,
                   color: isSelected ? selectedColor : inactiveColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomItemCenter(int index, String outlineIcon, String filledIcon, String label, bool isDark) {
-    final isSelected = _selectedIndex == index;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        child: Container(
-          color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: SvgPicture.string(
-                    isSelected ? filledIcon : outlineIcon,
-                    color: const Color(0xFFFFFFFF),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? (isDark ? const Color(0xFFFFFFFF) : primaryColor) : (isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D)),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
