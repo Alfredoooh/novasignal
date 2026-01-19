@@ -206,7 +206,6 @@ class AppIcons {
   static const String settingsIcon = '''<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M844.8 580.266667c2.133333-14.933333 4.266667-29.866667 4.266667-46.933334s-2.133333-32-4.266667-46.933333l96-68.266667c8.533333-6.4 12.8-19.2 6.4-29.866666L853.333333 230.4c-6.4-10.666667-17.066667-14.933333-27.733333-8.533333l-106.666667 49.066666c-25.6-19.2-51.2-34.133333-81.066666-46.933333L627.2 106.666667c-2.133333-10.666667-10.666667-19.2-21.333333-19.2h-183.466667c-10.666667 0-21.333333 8.533333-21.333333 19.2l-10.666667 117.333333c-29.866667 12.8-57.6 27.733333-81.066667 46.933333l-106.666666-49.066666c-10.666667-4.266667-23.466667 0-27.733334 8.533333l-91.733333 157.866667c-6.4 10.666667-2.133333 23.466667 6.4 29.866666l96 68.266667c-2.133333 14.933333-4.266667 29.866667-4.266667 46.933333s2.133333 32 4.266667 46.933334L85.333333 648.533333c-8.533333 6.4-12.8 19.2-6.4 29.866667L170.666667 836.266667c6.4 10.666667 17.066667 14.933333 27.733333 8.533333l106.666667-49.066667c25.6 19.2 51.2 34.133333 81.066666 46.933334l10.666667 117.333333c2.133333 10.666667 10.666667 19.2 21.333333 19.2h183.466667c10.666667 0 21.333333-8.533333 21.333333-19.2l10.666667-117.333333c29.866667-12.8 57.6-27.733333 81.066667-46.933334l106.666666 49.066667c10.666667 4.266667 23.466667 0 27.733334-8.533333l91.733333-157.866667c6.4-10.666667 2.133333-23.466667-6.4-29.866667l-89.6-68.266666zM512 746.666667c-117.333333 0-213.333333-96-213.333333-213.333334s96-213.333333 213.333333-213.333333 213.333333 96 213.333333 213.333333-96 213.333333-213.333333 213.333334z" fill="#607D8B"/><path d="M512 277.333333c-140.8 0-256 115.2-256 256s115.2 256 256 256 256-115.2 256-256-115.2-256-256-256z m0 362.666667c-59.733333 0-106.666667-46.933333-106.666667-106.666667s46.933333-106.666667 106.666667-106.666666 106.666667 46.933333 106.666667 106.666666-46.933333 106.666667-106.666667 106.666667z" fill="#455A64"/></svg>''';
 }
 
-// Classes vazias necessárias
 class HelpScreen extends StatelessWidget {
   const HelpScreen({Key? key}) : super(key: key);
   @override
@@ -224,8 +223,6 @@ class AccountScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container();
 }
-
-// CONTINUAÇÃO - Cole esta parte após a Parte 1
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -402,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Container(
       color: bgColor,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         children: List.generate(5, (index) => _buildSkeletonCard(isDark)),
       ),
     );
@@ -413,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
       ),
       child: Column(
@@ -601,6 +598,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildBottomItem(int index, String outlineIcon, String filledIcon, String label, bool isDark) {
     final isSelected = _selectedIndex == index;
+    final selectedColor = isDark ? const Color(0xFFFFFFFF) : primaryColor;
     final inactiveColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D);
 
     return Expanded(
@@ -623,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               _PulseIcon(
                 icon: isSelected ? filledIcon : outlineIcon,
-                color: isSelected ? primaryColor : inactiveColor,
+                color: isSelected ? selectedColor : inactiveColor,
                 isSelected: isSelected,
               ),
               const SizedBox(height: 4),
@@ -631,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 label,
                 style: TextStyle(
                   fontSize: 11,
-                  color: isSelected ? primaryColor : inactiveColor,
+                  color: isSelected ? selectedColor : inactiveColor,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
@@ -666,10 +664,10 @@ class _PulseIconState extends State<_PulseIcon> with SingleTickerProviderStateMi
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _animation = Tween<double>(begin: 1.0, end: 1.3).animate(
+    _animation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -705,9 +703,6 @@ class _PulseIconState extends State<_PulseIcon> with SingleTickerProviderStateMi
     );
   }
 }
-
-// PARTE 3 - FINAL - Cole esta parte após a Parte 2
-
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
@@ -748,14 +743,14 @@ class SettingsScreen extends StatelessWidget {
             ),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.of(context).pushNamed('/account'),
                       child: Container(
-                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(4)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -778,7 +773,7 @@ class SettingsScreen extends StatelessWidget {
                     GestureDetector(
                       onTap: () => theme?.toggleTheme(!isDark),
                       child: Container(
-                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(4)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -818,7 +813,7 @@ class SettingsScreen extends StatelessWidget {
                     GestureDetector(
                       onTap: () => _showLanguageDialog(context, currentLocale, locale, isDark),
                       child: Container(
-                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(4)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -851,7 +846,7 @@ class SettingsScreen extends StatelessWidget {
                     GestureDetector(
                       onTap: () => Navigator.of(context).pushNamed('/security'),
                       child: Container(
-                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(4)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -874,7 +869,7 @@ class SettingsScreen extends StatelessWidget {
                     GestureDetector(
                       onTap: () => Navigator.of(context).pushNamed('/help'),
                       child: Container(
-                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(4)),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
