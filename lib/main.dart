@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 const Color transparent = Color(0x00000000);
 const Color primaryColor = Color(0xFF2C3E50);
@@ -55,8 +57,8 @@ class AppStrings {
     'pt': {
       'app_name': 'TVgo',
       'home': 'Inicio',
-      'channels': 'Canais',
-      'live_tv': 'Partidas',
+      'channels': 'Loja',
+      'live_tv': 'Cesta',
       'settings': 'Configuracoes',
       'dark_mode': 'Modo Escuro',
       'language': 'Idioma',
@@ -70,8 +72,8 @@ class AppStrings {
     'en': {
       'app_name': 'TVgo',
       'home': 'Home',
-      'channels': 'Channels',
-      'live_tv': 'Matches',
+      'channels': 'Store',
+      'live_tv': 'Basket',
       'settings': 'Settings',
       'dark_mode': 'Dark Mode',
       'language': 'Language',
@@ -166,6 +168,9 @@ class _SportsAppState extends State<SportsApp> {
               case '/account':
                 page = const AccountScreen();
                 break;
+              case '/new_product':
+                page = const NewProductScreen();
+                break;
               default:
                 page = const HomeScreen();
             }
@@ -194,13 +199,13 @@ class AppIcons {
 
   static const String homeFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/><path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/></svg>''';
 
-  static const String channelsOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1 .9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>''';
+  static const String storeOutline = '''<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" width="512" height="512"><path d="M24,10a.988.988,0,0,0-.024-.217l-1.3-5.868A4.968,4.968,0,0,0,17.792,0H6.208a4.968,4.968,0,0,0-4.88,3.915L.024,9.783A.988.988,0,0,0,0,10v1a3.984,3.984,0,0,0,1,2.643V19a5.006,5.006,0,0,0,5,5H18a5.006,5.006,0,0,0,5-5V13.643A3.984,3.984,0,0,0,24,11ZM2,10.109l1.28-5.76A2.982,2.982,0,0,1,6.208,2H7V5A1,1,0,0,0,9,5V2h6V5a1,1,0,0,0,2,0V2h.792A2.982,2.982,0,0,1,20.72,4.349L22,10.109V11a2,2,0,0,1-2,2H19a2,2,0,0,1-2-2,1,1,0,0,0-2,0,2,2,0,0,1-2,2H11a2,2,0,0,1-2-2,1,1,0,0,0-2,0,2,2,0,0,1-2,2H4a2,2,0,0,1-2-2ZM18,22H6a3,3,0,0,1-3-3V14.873A3.978,3.978,0,0,0,4,15H5a3.99,3.99,0,0,0,3-1.357A3.99,3.99,0,0,0,11,15h2a3.99,3.99,0,0,0,3-1.357A3.99,3.99,0,0,0,19,15h1a3.978,3.978,0,0,0,1-.127V19A3,3,0,0,1,18,22Z"/></svg>''';
 
-  static const String channelsFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1 .9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>''';
+  static const String storeFilled = '''<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" id="Filled" viewBox="0 0 24 24" width="512" height="512"><path d="M16,13a5,5,0,0,1-8,0,4.956,4.956,0,0,1-7,.977V19a5.006,5.006,0,0,0,5,5H18a5.006,5.006,0,0,0,5-5V13.974A4.956,4.956,0,0,1,16,13Z"/><path d="M21.7,3.131A3.975,3.975,0,0,0,17.792,0H17V3a1,1,0,0,1-2,0V0H9V3A1,1,0,0,1,7,3V0H6.208A3.975,3.975,0,0,0,2.3,3.132L1.022,8.9,1,10.02A3,3,0,0,0,7,10a1,1,0,0,1,2,0,3,3,0,1,0,6,0,1,1,0,0,1,2,0,3,3,0,1,0,6,0V9.107Z"/></svg>''';
 
-  static const String liveOutline = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M9 10v8l7-4zm12-4h-7.58l3.29-3.29-.71-.71-4 4h0l-4-4-.71.71L10.42 6H3c-1.1 0-2 .9-2 2v12c0 1.1 .9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H3V8h18v10z"/></svg>''';
+  static const String basketOutline = '''<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" width="512" height="512"><path d="M22.713,4.077A2.993,2.993,0,0,0,20.41,3H4.242L4.2,2.649A3,3,0,0,0,1.222,0H1A1,1,0,0,0,1,2h.222a1,1,0,0,1,.993.883l1.376,11.7A5,5,0,0,0,8.557,19H19a1,1,0,0,0,0-2H8.557a3,3,0,0,1-2.82-2h11.92a5,5,0,0,0,4.921-4.113l.785-4.354A2.994,2.994,0,0,0,22.713,4.077ZM21.4,6.178l-.786,4.354A3,3,0,0,1,17.657,13H5.419L4.478,5H20.41A1,1,0,0,1,21.4,6.178Z"/><circle cx="7" cy="22" r="2"/><circle cx="17" cy="22" r="2"/></svg>''';
 
-  static const String liveFilled = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 6h-7.59l3.29-3.29-1.41-1.41-4 4h0l-4-4-1.41 1.41L10.41 6H3c-1.1 0-2 .9-2 2v12c0 1.1 .9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H3V8h18v10zM9 10v8l7-4z"/></svg>''';
+  static const String basketFilled = '''<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" id="Filled" viewBox="0 0 24 24" width="512" height="512"><path d="M22.713,4.077A2.993,2.993,0,0,0,20.41,3H4.242L4.2,2.649A3,3,0,0,0,1.222,0H1A1,1,0,0,0,1,2h.222a1,1,0,0,1,.993.883l1.376,11.7A5,5,0,0,0,8.557,19H19a1,1,0,0,0,0-2H8.557a3,3,0,0,1-2.82-2h11.92a5,5,0,0,0,4.921-4.113l.785-4.354A2.994,2.994,0,0,0,22.713,4.077Z"/><circle cx="7" cy="22" r="2"/><circle cx="17" cy="22" r="2"/></svg>''';
 
   static const String settingsIcon = '''<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M844.8 580.266667c2.133333-14.933333 4.266667-29.866667 4.266667-46.933334s-2.133333-32 4.266667-46.933333l96-68.266667c8.533333-6.4 12.8-19.2 6.4-29.866666L853.333333 230.4c-6.4-10.666667-17.066667-14.933333-27.733333-8.533333l-106.666667 49.066666c-25.6-19.2-51.2-34.133333-81.066666-46.933333L627.2 106.666667c-2.133333-10.666667-10.666667-19.2-21.333333-19.2h-183.466667c-10.666667 0-21.333333 8.533333-21.333333 19.2l-10.666667 117.333333c-29.866667 12.8-57.6 27.733333-81.066667 46.933333l-106.666666-49.066666c-10.666667-4.266667-23.466667 0-27.733334 8.533333l-91.733333 157.866667c-6.4 10.666667-2.133333 23.466667 6.4 29.866666l96 68.266667c-2.133333 14.933333-4.266667 29.866667-4.266667 46.933333s2.133333 32 4.266667 46.933334L85.333333 648.533333c-8.533333 6.4-12.8 19.2-6.4 29.866667L170.666667 836.266667c6.4 10.666667 17.066667 14.933333 27.733333 8.533333l106.666667-49.066667c25.6 19.2 51.2 34.133333 81.066666 46.933334l10.666667 117.333333c2.133333 10.666667 10.666667 19.2 21.333333 19.2h183.466667c10.666667 0 21.333333-8.533333 21.333333-19.2l10.666667-117.333333c29.866667-12.8 57.6-27.733333 81.066667-46.933334l106.666666 49.066667c10.666667 4.266667 23.466667 0 27.733334-8.533333l91.733333-157.866667c6.4-10.666667 2.133333-23.466667-6.4-29.866667l-89.6-68.266666zM512 746.666667c-117.333333 0-213.333333-96-213.333333-213.333334s96-213.333333 213.333333-213.333333 213.333333 96 213.333333 213.333333-96 213.333333-213.333333 213.333334z" fill="#607D8B"/><path d="M512 277.333333c-140.8 0-256 115.2-256 256s115.2 256 256 256 256-115.2 256-256-115.2-256-256-256z m0 362.666667c-59.733333 0-106.666667-46.933333-106.666667-106.666667s46.933333-106.666667 106.666667-106.666666 106.666667 46.933333 106.666667 106.666666-46.933333 106.666667-106.666667 106.666667z" fill="#455A64"/></svg>''';
 }
@@ -223,6 +228,12 @@ class AccountScreen extends StatelessWidget {
   Widget build(BuildContext context) => Container();
 }
 
+class NewProductScreen extends StatelessWidget {
+  const NewProductScreen({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) => Container();
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -235,12 +246,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late AnimationController _drawerController;
   late Animation<double> _drawerAnimation;
   bool _isDrawerOpen = false;
+  late Future<List<dynamic>> _productsFuture;
 
   @override
   void initState() {
     super.initState();
     _drawerController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
     _drawerAnimation = CurvedAnimation(parent: _drawerController, curve: Curves.easeInOut);
+    _productsFuture = fetchProducts();
+  }
+
+  Future<List<dynamic>> fetchProducts() async {
+    final response = await http.get(Uri.parse('https://dummyjson.com/products'));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['products'];
+    } else {
+      throw Exception('Failed to load products');
+    }
   }
 
   @override
@@ -321,6 +344,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       ),
                                     ),
                                   ),
+                                  IconButton(
+                                    icon: const Icon(Symbols.add_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                    onPressed: () {
+                                      Navigator.of(context).pushNamed('/new_product');
+                                    },
+                                  ),
                                   const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
                                 ],
                               ),
@@ -330,8 +359,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               index: _selectedIndex,
                               children: [
                                 _buildHomeScreen(bgColor, isDark),
-                                _buildChannelsScreen(bgColor, isDark, currentLocale),
-                                _buildMatchesScreen(bgColor),
+                                _buildStoreScreen(bgColor, isDark, currentLocale),
+                                _buildBasketScreen(bgColor, isDark, currentLocale),
                               ],
                             ),
                           ),
@@ -343,8 +372,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: Row(
                               children: [
                                 _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
-                                _buildBottomItem(1, AppIcons.channelsOutline, AppIcons.channelsFilled, AppStrings.get('channels', currentLocale), isDark),
-                                _buildBottomItem(2, AppIcons.liveOutline, AppIcons.liveFilled, AppStrings.get('live_tv', currentLocale), isDark),
+                                _buildBottomItem(1, AppIcons.storeOutline, AppIcons.storeFilled, AppStrings.get('channels', currentLocale), isDark),
+                                _buildBottomItem(2, AppIcons.basketOutline, AppIcons.basketFilled, AppStrings.get('live_tv', currentLocale), isDark),
                               ],
                             ),
                           ),
@@ -378,55 +407,126 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildHomeScreen(Color bgColor, bool isDark) {
     return Container(
       color: bgColor,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: List.generate(5, (index) => _buildSkeletonCard(isDark)),
+      child: FutureBuilder<List<dynamic>>(
+        future: _productsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return GridView.count(
+              crossAxisCount: 2,
+              padding: const EdgeInsets.all(8),
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              children: List.generate(10, (index) => _buildSkeletonProductCard(isDark)),
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else {
+            final products = snapshot.data!;
+            return GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.7,
+              ),
+              padding: const EdgeInsets.all(8),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                        child: Image.network(
+                          product['thumbnail'],
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 120,
+                              color: Colors.grey,
+                              child: const Icon(Icons.error),
+                            );
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product['title'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '\$${product['price']}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _buildSkeletonCard(bool isDark) {
+  Widget _buildSkeletonProductCard(bool isDark) {
     return Container(
-      margin: EdgeInsets.zero,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-        border: Border(
-          bottom: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 8),
-        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+            blurRadius: 2,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildShimmer(double.infinity, 120, isDark),
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                _buildShimmer(40, 40, isDark, isCircle: true),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildShimmer(120, 12, isDark),
-                      const SizedBox(height: 6),
-                      _buildShimmer(80, 10, isDark),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _buildShimmer(double.infinity, 200, isDark),
-          Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildShimmer(double.infinity, 12, isDark),
-                const SizedBox(height: 6),
-                _buildShimmer(250, 12, isDark),
-                const SizedBox(height: 6),
-                _buildShimmer(180, 12, isDark),
+                _buildShimmer(100, 12, isDark),
+                const SizedBox(height: 4),
+                _buildShimmer(60, 10, isDark),
+                const SizedBox(height: 4),
+                _buildShimmer(80, 12, isDark),
               ],
             ),
           ),
@@ -464,51 +564,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildChannelsScreen(Color bgColor, bool isDark, String currentLocale) {
+  Widget _buildStoreScreen(Color bgColor, bool isDark, String currentLocale) {
     return Container(
       color: bgColor,
-      child: Center(
-        child: Text(
-          AppStrings.get('channels', currentLocale),
-          style: TextStyle(
-            fontSize: 24,
-            color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
-          ),
-        ),
-      ),
+      child: const SizedBox.shrink(),
     );
   }
 
-  Widget _buildMatchesScreen(Color bgColor) {
+  Widget _buildBasketScreen(Color bgColor, bool isDark, String currentLocale) {
     return Container(
       color: bgColor,
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            height: MediaQuery.of(context).size.width * 9 / 16,
-            color: const Color(0xFF000000),
-            child: const Center(
-              child: Icon(
-                Symbols.sports_soccer,
-                color: Color(0xFF666666),
-                size: 80,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              color: bgColor,
-              child: const Center(
-                child: Text(
-                  'Conteudo adicional',
-                  style: TextStyle(fontSize: 16, color: Color(0xFFB0B3B8)),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      child: const SizedBox.shrink(),
     );
   }
 
