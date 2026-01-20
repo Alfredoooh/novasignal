@@ -371,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Future<List<dynamic>> _productsFuture;
   String _selectedCategory = 'Todos';
 
-  final List<String> _categories = ['Todos', 'Mais Vendidos', 'Em Promoção', 'Segunda Mão', 'Novidades', 'Recomendados', 'Eletrônicos', 'Moda', 'Casa', 'Beleza'];
+  final List<String> _categories = ['Todos', 'Mais Vendidos', 'Em Promoção', 'Segunda Mão'];
 
   @override
   void initState() {
@@ -389,12 +389,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } else {
       throw Exception('Failed to load products');
     }
-  }
-
-  Future<void> _refreshProducts() async {
-    setState(() {
-      _productsFuture = fetchProducts();
-    });
   }
 
   @override
@@ -416,7 +410,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final theme = ThemeProvider.of(context);
     final locale = LocaleProvider.of(context);
-    final cartProvider = CartProvider.of(context);
     final isDark = theme?.isDark ?? false;
     final currentLocale = locale?.locale ?? 'pt';
 
@@ -512,12 +505,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: IndexedStack(
                               index: _selectedIndex,
                               children: [
-                                RefreshIndicator(
-                                  onRefresh: _refreshProducts,
-                                  child: _buildHomeScreen(bgColor, isDark),
-                                ),
+                                _buildHomeScreen(bgColor, isDark),
                                 _buildStoreScreen(bgColor, isDark, currentLocale),
-                                _buildBasketScreen(bgColor, isDark, currentLocale, cartProvider?.cart ?? []),
+                                _buildBasketScreen(bgColor, isDark, currentLocale),
                               ],
                             ),
                           ),
@@ -530,35 +520,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               children: [
                                 _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
                                 _buildBottomItem(1, AppIcons.storeOutline, AppIcons.storeFilled, AppStrings.get('channels', currentLocale), isDark),
-                                Stack(
-                                  children: [
-                                    _buildBottomItem(2, AppIcons.basketOutline, AppIcons.basketFilled, AppStrings.get('live_tv', currentLocale), isDark),
-                                    if ((cartProvider?.cart.length ?? 0) > 0)
-                                      Positioned(
-                                        right: 10,
-                                        top: 5,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 16,
-                                            minHeight: 16,
-                                          ),
-                                          child: Text(
-                                            '${cartProvider?.cart.length ?? 0}',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                _buildBottomItem(2, AppIcons.basketOutline, AppIcons.basketFilled, AppStrings.get('live_tv', currentLocale), isDark),
                               ],
                             ),
                           ),
@@ -612,7 +574,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           } else {
             List<dynamic> products = snapshot.data!;
             if (_selectedCategory != 'Todos') {
-              // Simulate filtering by shuffling or taking subset
+              // Simulate filtering, in real app implement actual filter
               products = List.from(products)..shuffle();
               products = products.take(10).toList();
             }
@@ -782,20 +744,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildStoreScreen(Color bgColor, bool isDark, String currentLocale) {
     return Container(
       color: bgColor,
-      child: Center(
-        child: Text(
-          'Loja em construção',
-          style: TextStyle(
-            fontSize: 24,
-            color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
-          ),
-        ),
-      ),
+      child: const SizedBox.shrink(),
     );
   }
 
-  Widget _buildBasketScreen(Color bgColor, bool isDark, String currentLocale, List<Map<String, dynamic>> cart) {
+  Widget _buildBasketScreen(Color bgColor, bool isDark, String currentLocale) {
+    final cartProvider = CartProvider.of(context);
+    final cart = cartProvider?.cart ?? [];
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
+
     if (cart.isEmpty) {
       return Center(
         child: Text(
@@ -811,11 +768,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         return ListTile(
           leading: Image.network(product['thumbnail'], width: 50, height: 50, fit: BoxFit.cover),
           title: Text(product['title'], style: TextStyle(color: textColor)),
-          subtitle: Text('\$${product['price']}', style: TextStyle(color: primaryColor)),
+          subtitle: Text(
+            '\$${product['price']}',
+            style: TextStyle(color: primaryColor),
+          ),
           trailing: IconButton(
             icon: const Icon(Icons.remove_circle),
             onPressed: () {
-              CartProvider.of(context)?.removeFromCart(product);
+              cartProvider?.removeFromCart(product);
             },
           ),
         );
@@ -864,42 +824,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     const SizedBox(width: 12),
                     Text(
                       AppStrings.get('settings', currentLocale),
-                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                // Additional drawer item
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.help, color: Color(0xFFFFFFFF), size: 24),
-                    const SizedBox(width: 12),
-                    Text(
-                      AppStrings.get('help', currentLocale),
-                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                // Additional drawer item
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.security, color: Color(0xFFFFFFFF), size: 24),
-                    const SizedBox(width: 12),
-                    Text(
-                      AppStrings.get('security', currentLocale),
                       style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -1202,56 +1126,6 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Container(height: 1, color: dividerColor),
-                    GestureDetector(
-                      onTap: () {
-                        // Additional settings item to prolong code
-                      },
-                      child: Container(
-                        color: cardColor,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Icon(Icons.info, color: textColor, size: 24),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  'Sobre',
-                                  style: TextStyle(fontSize: 16, color: textColor),
-                                ),
-                              ),
-                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Container(height: 1, color: dividerColor),
-                    GestureDetector(
-                      onTap: () {
-                        // Additional settings item
-                      },
-                      child: Container(
-                        color: cardColor,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Icon(Icons.logout, color: textColor, size: 24),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Text(
-                                  'Sair',
-                                  style: TextStyle(fontSize: 16, color: textColor),
-                                ),
-                              ),
-                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1313,11 +1187,6 @@ class SettingsScreen extends StatelessWidget {
                 _buildLanguageOption(context, 'pt', AppStrings.get('portuguese', currentLocale), currentLocale == 'pt', localeProvider, isDark),
                 Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
                 _buildLanguageOption(context, 'en', AppStrings.get('english', currentLocale), currentLocale == 'en', localeProvider, isDark),
-                Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
-                // Additional language options to prolong
-                _buildLanguageOption(context, 'es', 'Español', false, localeProvider, isDark),
-                Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
-                _buildLanguageOption(context, 'fr', 'Français', false, localeProvider, isDark),
               ],
             ),
           ),
