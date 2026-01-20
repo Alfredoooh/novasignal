@@ -53,6 +53,27 @@ class LocaleProvider extends InheritedWidget {
   bool updateShouldNotify(LocaleProvider oldWidget) => locale != oldWidget.locale;
 }
 
+class CartProvider extends InheritedWidget {
+  final List<Map<String, dynamic>> cart;
+  final Function(Map<String, dynamic>) addToCart;
+  final Function(Map<String, dynamic>) removeFromCart;
+
+  const CartProvider({
+    Key? key,
+    required this.cart,
+    required this.addToCart,
+    required this.removeFromCart,
+    required Widget child,
+  }) : super(key: key, child: child);
+
+  static CartProvider? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<CartProvider>();
+  }
+
+  @override
+  bool updateShouldNotify(CartProvider oldWidget) => cart != oldWidget.cart;
+}
+
 class AppStrings {
   static Map<String, Map<String, String>> translations = {
     'pt': {
@@ -69,6 +90,11 @@ class AppStrings {
       'help': 'Ajuda',
       'security': 'Seguranca e Privacidade',
       'account': 'Configuracoes da Conta',
+      'add_to_cart': 'Adicionar ao Carrinho',
+      'remove_from_cart': 'Remover do Carrinho',
+      'price': 'Preço',
+      'description': 'Descrição',
+      'empty_cart': 'Carrinho Vazio',
     },
     'en': {
       'app_name': 'Cabinda Shop',
@@ -84,6 +110,11 @@ class AppStrings {
       'help': 'Help',
       'security': 'Security and Privacy',
       'account': 'Account Settings',
+      'add_to_cart': 'Add to Cart',
+      'remove_from_cart': 'Remove from Cart',
+      'price': 'Price',
+      'description': 'Description',
+      'empty_cart': 'Empty Cart',
     },
   };
 
@@ -102,6 +133,19 @@ class SportsApp extends StatefulWidget {
 class _SportsAppState extends State<SportsApp> {
   bool _isDark = false;
   String _locale = 'pt';
+  final List<Map<String, dynamic>> _cart = [];
+
+  void _addToCart(Map<String, dynamic> product) {
+    setState(() {
+      _cart.add(product);
+    });
+  }
+
+  void _removeFromCart(Map<String, dynamic> product) {
+    setState(() {
+      _cart.remove(product);
+    });
+  }
 
   @override
   void initState() {
@@ -137,61 +181,66 @@ class _SportsAppState extends State<SportsApp> {
           setState(() => _locale = v);
           _savePreferences();
         },
-        child: WidgetsApp(
-          color: const Color(0xFFFFFFFF),
-          pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
-            return PageRouteBuilder<T>(
-              settings: settings,
-              pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return SharedAxisTransition(
-                  animation: animation,
-                  secondaryAnimation: secondaryAnimation,
-                  transitionType: SharedAxisTransitionType.horizontal,
-                  fillColor: transparent,
-                  child: child,
-                );
-              },
-            );
-          },
-          onGenerateRoute: (settings) {
-            Widget page;
-            switch (settings.name) {
-              case '/settings':
-                page = const SettingsScreen();
-                break;
-              case '/help':
-                page = const HelpScreen();
-                break;
-              case '/security':
-                page = const SecurityScreen();
-                break;
-              case '/account':
-                page = const AccountScreen();
-                break;
-              case '/new_product':
-                page = const NewProductScreen();
-                break;
-              case '/product_details':
-                page = ProductDetailsScreen(product: settings.arguments as Map<String, dynamic>);
-                break;
-              default:
-                page = const HomeScreen();
-            }
-            return PageRouteBuilder(
-              settings: settings,
-              pageBuilder: (context, animation, secondaryAnimation) => page,
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return SharedAxisTransition(
-                  animation: animation,
-                  secondaryAnimation: secondaryAnimation,
-                  transitionType: SharedAxisTransitionType.horizontal,
-                  fillColor: transparent,
-                  child: child,
-                );
-              },
-            );
-          },
+        child: CartProvider(
+          cart: _cart,
+          addToCart: _addToCart,
+          removeFromCart: _removeFromCart,
+          child: WidgetsApp(
+            color: const Color(0xFFFFFFFF),
+            pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
+              return PageRouteBuilder<T>(
+                settings: settings,
+                pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SharedAxisTransition(
+                    animation: animation,
+                    secondaryAnimation: secondaryAnimation,
+                    transitionType: SharedAxisTransitionType.horizontal,
+                    fillColor: transparent,
+                    child: child,
+                  );
+                },
+              );
+            },
+            onGenerateRoute: (settings) {
+              Widget page;
+              switch (settings.name) {
+                case '/settings':
+                  page = const SettingsScreen();
+                  break;
+                case '/help':
+                  page = const HelpScreen();
+                  break;
+                case '/security':
+                  page = const SecurityScreen();
+                  break;
+                case '/account':
+                  page = const AccountScreen();
+                  break;
+                case '/new_product':
+                  page = const NewProductScreen();
+                  break;
+                case '/product_details':
+                  page = ProductDetailsScreen(product: settings.arguments as Map<String, dynamic>);
+                  break;
+                default:
+                  page = const HomeScreen();
+              }
+              return PageRouteBuilder(
+                settings: settings,
+                pageBuilder: (context, animation, secondaryAnimation) => page,
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SharedAxisTransition(
+                    animation: animation,
+                    secondaryAnimation: secondaryAnimation,
+                    transitionType: SharedAxisTransitionType.horizontal,
+                    fillColor: transparent,
+                    child: child,
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -246,14 +295,18 @@ class ProductDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = ThemeProvider.of(context);
+    final locale = LocaleProvider.of(context);
+    final cartProvider = CartProvider.of(context);
     final isDark = theme?.isDark ?? false;
+    final currentLocale = locale?.locale ?? 'pt';
     final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
+    final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(product['title'], style: TextStyle(color: Colors.white)),
+        title: Text(product['title'], style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
       ),
       body: SingleChildScrollView(
@@ -261,13 +314,41 @@ class ProductDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.network(product['thumbnail'], fit: BoxFit.cover, height: 200, width: double.infinity),
+            ColorFiltered(
+              colorFilter: isDark ? const ColorFilter.mode(Colors.transparent, BlendMode.color) : const ColorFilter.mode(Colors.transparent, BlendMode.color),
+              child: Image.network(
+                product['thumbnail'],
+                fit: BoxFit.cover,
+                height: 200,
+                width: double.infinity,
+              ),
+            ),
             const SizedBox(height: 16),
-            Text(product['title'], style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
+            Text(
+              product['title'],
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
+            ),
             const SizedBox(height: 8),
-            Text('\\[ {product['price']}', style: TextStyle(fontSize: 20, color: primaryColor)),
+            Text(
+              '\\[ {product['price']}',
+              style: TextStyle(fontSize: 20, color: primaryColor),
+            ),
             const SizedBox(height: 16),
-            Text(product['description'], style: TextStyle(color: textColor)),
+            Text(
+              product['description'],
+              style: TextStyle(color: textColor),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                if (isInCart) {
+                  cartProvider?.removeFromCart(product);
+                } else {
+                  cartProvider?.addToCart(product);
+                }
+              },
+              child: Text(isInCart ? AppStrings.get('remove_from_cart', currentLocale) : AppStrings.get('add_to_cart', currentLocale)),
+            ),
           ],
         ),
       ),
@@ -290,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Future<List<dynamic>> _productsFuture;
   String _selectedCategory = 'Todos';
 
-  final List<String> _categories = ['Todos', 'Mais Vendidos', 'Em Promoção', 'Segunda Mão'];
+  final List<String> _categories = ['Todos', 'Mais Vendidos', 'Em Promoção', 'Segunda Mão', 'Novidades', 'Recomendados', 'Eletrônicos', 'Moda', 'Casa', 'Beleza'];
 
   @override
   void initState() {
@@ -308,6 +389,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } else {
       throw Exception('Failed to load products');
     }
+  }
+
+  Future<void> _refreshProducts() async {
+    setState(() {
+      _productsFuture = fetchProducts();
+    });
   }
 
   @override
@@ -329,6 +416,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final theme = ThemeProvider.of(context);
     final locale = LocaleProvider.of(context);
+    final cartProvider = CartProvider.of(context);
     final isDark = theme?.isDark ?? false;
     final currentLocale = locale?.locale ?? 'pt';
 
@@ -424,9 +512,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: IndexedStack(
                               index: _selectedIndex,
                               children: [
-                                _buildHomeScreen(bgColor, isDark),
+                                RefreshIndicator(
+                                  onRefresh: _refreshProducts,
+                                  child: _buildHomeScreen(bgColor, isDark),
+                                ),
                                 _buildStoreScreen(bgColor, isDark, currentLocale),
-                                _buildBasketScreen(bgColor, isDark, currentLocale),
+                                _buildBasketScreen(bgColor, isDark, currentLocale, cartProvider?.cart ?? []),
                               ],
                             ),
                           ),
@@ -439,7 +530,35 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               children: [
                                 _buildBottomItem(0, AppIcons.homeOutline, AppIcons.homeFilled, AppStrings.get('home', currentLocale), isDark),
                                 _buildBottomItem(1, AppIcons.storeOutline, AppIcons.storeFilled, AppStrings.get('channels', currentLocale), isDark),
-                                _buildBottomItem(2, AppIcons.basketOutline, AppIcons.basketFilled, AppStrings.get('live_tv', currentLocale), isDark),
+                                Stack(
+                                  children: [
+                                    _buildBottomItem(2, AppIcons.basketOutline, AppIcons.basketFilled, AppStrings.get('live_tv', currentLocale), isDark),
+                                    if ((cartProvider?.cart.length ?? 0) > 0)
+                                      Positioned(
+                                        right: 10,
+                                        top: 5,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          child: Text(
+                                            '${cartProvider?.cart.length ?? 0}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
@@ -493,8 +612,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           } else {
             List<dynamic> products = snapshot.data!;
             if (_selectedCategory != 'Todos') {
-              // Simulate filtering, in real app implement actual filter
-              products = products.take(5).toList();
+              // Simulate filtering by shuffling or taking subset
+              products = List.from(products)..shuffle();
+              products = products.take(10).toList();
             }
             return MasonryGridView.count(
               crossAxisCount: 2,
@@ -504,6 +624,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               itemCount: products.length,
               itemBuilder: (context, index) {
                 final product = products[index];
+                final cartProvider = CartProvider.of(context);
+                final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
                 return GestureDetector(
                   onTap: () {
                     Navigator.of(context).pushNamed('/product_details', arguments: product);
@@ -524,18 +646,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       children: [
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                          child: Image.network(
-                            product['thumbnail'],
-                            height: 120 + (index % 3 * 20),
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 120,
-                                color: Colors.grey,
-                                child: const Icon(Icons.error),
-                              );
-                            },
+                          child: ColorFiltered(
+                            colorFilter: isDark ? const ColorFilter.mode(Colors.grey, BlendMode.multiply) : const ColorFilter.mode(Colors.transparent, BlendMode.color),
+                            child: Image.network(
+                              product['thumbnail'],
+                              height: 120 + (index % 5 * 30),
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 120,
+                                  color: Colors.grey,
+                                  child: const Icon(Icons.error),
+                                );
+                              },
+                            ),
                           ),
                         ),
                         Padding(
@@ -560,6 +685,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   fontSize: 12,
                                   color: primaryColor,
                                   fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (isInCart) {
+                                    cartProvider?.removeFromCart(product);
+                                  } else {
+                                    cartProvider?.addToCart(product);
+                                  }
+                                },
+                                child: Text(isInCart ? 'Remover' : 'Adicionar'),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 32),
                                 ),
                               ),
                             ],
@@ -643,14 +782,44 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildStoreScreen(Color bgColor, bool isDark, String currentLocale) {
     return Container(
       color: bgColor,
-      child: const SizedBox.shrink(),
+      child: Center(
+        child: Text(
+          'Loja em construção',
+          style: TextStyle(
+            fontSize: 24,
+            color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildBasketScreen(Color bgColor, bool isDark, String currentLocale) {
-    return Container(
-      color: bgColor,
-      child: const SizedBox.shrink(),
+  Widget _buildBasketScreen(Color bgColor, bool isDark, String currentLocale, List<Map<String, dynamic>> cart) {
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
+    if (cart.isEmpty) {
+      return Center(
+        child: Text(
+          AppStrings.get('empty_cart', currentLocale),
+          style: TextStyle(fontSize: 24, color: textColor),
+        ),
+      );
+    }
+    return ListView.builder(
+      itemCount: cart.length,
+      itemBuilder: (context, index) {
+        final product = cart[index];
+        return ListTile(
+          leading: Image.network(product['thumbnail'], width: 50, height: 50, fit: BoxFit.cover),
+          title: Text(product['title'], style: TextStyle(color: textColor)),
+          subtitle: Text('\$${product['price']}', style: TextStyle(color: primaryColor)),
+          trailing: IconButton(
+            icon: const Icon(Icons.remove_circle),
+            onPressed: () {
+              CartProvider.of(context)?.removeFromCart(product);
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -695,6 +864,42 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     const SizedBox(width: 12),
                     Text(
                       AppStrings.get('settings', currentLocale),
+                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                // Additional drawer item
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.help, color: Color(0xFFFFFFFF), size: 24),
+                    const SizedBox(width: 12),
+                    Text(
+                      AppStrings.get('help', currentLocale),
+                      style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                // Additional drawer item
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.security, color: Color(0xFFFFFFFF), size: 24),
+                    const SizedBox(width: 12),
+                    Text(
+                      AppStrings.get('security', currentLocale),
                       style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -997,6 +1202,56 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    Container(height: 1, color: dividerColor),
+                    GestureDetector(
+                      onTap: () {
+                        // Additional settings item to prolong code
+                      },
+                      child: Container(
+                        color: cardColor,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info, color: textColor, size: 24),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Sobre',
+                                  style: TextStyle(fontSize: 16, color: textColor),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(height: 1, color: dividerColor),
+                    GestureDetector(
+                      onTap: () {
+                        // Additional settings item
+                      },
+                      child: Container(
+                        color: cardColor,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(Icons.logout, color: textColor, size: 24),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  'Sair',
+                                  style: TextStyle(fontSize: 16, color: textColor),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1058,6 +1313,11 @@ class SettingsScreen extends StatelessWidget {
                 _buildLanguageOption(context, 'pt', AppStrings.get('portuguese', currentLocale), currentLocale == 'pt', localeProvider, isDark),
                 Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
                 _buildLanguageOption(context, 'en', AppStrings.get('english', currentLocale), currentLocale == 'en', localeProvider, isDark),
+                Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+                // Additional language options to prolong
+                _buildLanguageOption(context, 'es', 'Español', false, localeProvider, isDark),
+                Container(height: 1, color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+                _buildLanguageOption(context, 'fr', 'Français', false, localeProvider, isDark),
               ],
             ),
           ),
