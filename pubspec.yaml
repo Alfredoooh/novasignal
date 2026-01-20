@@ -28,6 +28,7 @@ dependencies:
   
   # Ícones - versão específica
   material_symbols_icons: ^4.2785.1
+  flutter_staggered_grid_view: any
 
 dev_dependencies:
   flutter_test:
