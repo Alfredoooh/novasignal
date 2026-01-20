@@ -6,6 +6,7 @@ import 'package:animations/animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 const Color transparent = Color(0x00000000);
 const Color primaryColor = Color(0xFF2C3E50);
@@ -55,7 +56,7 @@ class LocaleProvider extends InheritedWidget {
 class AppStrings {
   static Map<String, Map<String, String>> translations = {
     'pt': {
-      'app_name': 'TVgo',
+      'app_name': 'Cabinda Shop',
       'home': 'Inicio',
       'channels': 'Loja',
       'live_tv': 'Cesta',
@@ -70,7 +71,7 @@ class AppStrings {
       'account': 'Configuracoes da Conta',
     },
     'en': {
-      'app_name': 'TVgo',
+      'app_name': 'Cabinda Shop',
       'home': 'Home',
       'channels': 'Store',
       'live_tv': 'Basket',
@@ -171,6 +172,9 @@ class _SportsAppState extends State<SportsApp> {
               case '/new_product':
                 page = const NewProductScreen();
                 break;
+              case '/product_details':
+                page = ProductDetailsScreen(product: settings.arguments as Map<String, dynamic>);
+                break;
               default:
                 page = const HomeScreen();
             }
@@ -234,6 +238,43 @@ class NewProductScreen extends StatelessWidget {
   Widget build(BuildContext context) => Container();
 }
 
+class ProductDetailsScreen extends StatelessWidget {
+  final Map<String, dynamic> product;
+
+  const ProductDetailsScreen({Key? key, required this.product}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ThemeProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        title: Text(product['title'], style: TextStyle(color: Colors.white)),
+        backgroundColor: primaryColor,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Image.network(product['thumbnail'], fit: BoxFit.cover, height: 200, width: double.infinity),
+            const SizedBox(height: 16),
+            Text(product['title'], style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor)),
+            const SizedBox(height: 8),
+            Text('\\[ {product['price']}', style: TextStyle(fontSize: 20, color: primaryColor)),
+            const SizedBox(height: 16),
+            Text(product['description'], style: TextStyle(color: textColor)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -247,6 +288,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Animation<double> _drawerAnimation;
   bool _isDrawerOpen = false;
   late Future<List<dynamic>> _productsFuture;
+  String _selectedCategory = 'Todos';
+
+  final List<String> _categories = ['Todos', 'Mais Vendidos', 'Em Promoção', 'Segunda Mão'];
 
   @override
   void initState() {
@@ -292,10 +336,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final appBarColor = primaryColor;
 
     String appBarTitle = AppStrings.get('app_name', currentLocale);
+    FontWeight titleWeight = FontWeight.w900;
     if (_selectedIndex == 1) {
       appBarTitle = AppStrings.get('channels', currentLocale);
+      titleWeight = FontWeight.w600;
     } else if (_selectedIndex == 2) {
       appBarTitle = AppStrings.get('live_tv', currentLocale);
+      titleWeight = FontWeight.w600;
     }
 
     return AnnotatedRegion(
@@ -326,32 +373,51 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           if (_selectedIndex != 2)
                             Container(
                               color: appBarColor,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               child: Row(
                                 children: [
                                   GestureDetector(
                                     onTap: _toggleDrawer,
-                                    child: const Icon(Symbols.menu_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                    child: const Icon(Icons.menu, color: Color(0xFFFFFFFF), size: 24),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Text(
                                       appBarTitle,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: Color(0xFFFFFFFF),
                                         fontSize: 20,
-                                        fontWeight: FontWeight.w900,
+                                        fontWeight: titleWeight,
                                       ),
                                     ),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Symbols.add_rounded, color: Color(0xFFFFFFFF), size: 24),
-                                    onPressed: () {
-                                      Navigator.of(context).pushNamed('/new_product');
-                                    },
-                                  ),
-                                  const Icon(Symbols.more_vert_rounded, color: Color(0xFFFFFFFF), size: 24),
+                                  const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 24),
                                 ],
+                              ),
+                            ),
+                          if (_selectedIndex == 0)
+                            Container(
+                              height: 40,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _categories.length,
+                                itemBuilder: (context, index) {
+                                  final category = _categories[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: FilterChip(
+                                      label: Text(category),
+                                      selected: _selectedCategory == category,
+                                      onSelected: (selected) {
+                                        setState(() {
+                                          _selectedCategory = selected ? category : 'Todos';
+                                        });
+                                      },
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           Expanded(
@@ -411,86 +477,96 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         future: _productsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return GridView.count(
+            return MasonryGridView.count(
               crossAxisCount: 2,
               padding: const EdgeInsets.all(8),
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
-              children: List.generate(10, (index) => _buildSkeletonProductCard(isDark)),
+              itemCount: 10,
+              itemBuilder: (context, index) => StaggeredGridTile.fit(
+                crossAxisCellCount: 1,
+                child: _buildSkeletonProductCard(isDark),
+              ),
             );
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
-            final products = snapshot.data!;
-            return GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 0.7,
-              ),
+            List<dynamic> products = snapshot.data!;
+            if (_selectedCategory != 'Todos') {
+              // Simulate filtering, in real app implement actual filter
+              products = products.take(5).toList();
+            }
+            return MasonryGridView.count(
+              crossAxisCount: 2,
               padding: const EdgeInsets.all(8),
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
               itemCount: products.length,
               itemBuilder: (context, index) {
                 final product = products[index];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
-                        blurRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                        child: Image.network(
-                          product['thumbnail'],
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 120,
-                              color: Colors.grey,
-                              child: const Icon(Icons.error),
-                            );
-                          },
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pushNamed('/product_details', arguments: product);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+                          blurRadius: 2,
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product['title'],
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '\$${product['price']}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: primaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                          child: Image.network(
+                            product['thumbnail'],
+                            height: 120 + (index % 3 * 20),
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 120,
+                                color: Colors.grey,
+                                child: const Icon(Icons.error),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product['title'],
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '\ \]{product['price']}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -759,12 +835,12 @@ class SettingsScreen extends StatelessWidget {
           children: [
             Container(
               color: appBarColor,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Symbols.arrow_back_rounded, color: Color(0xFFFFFFFF), size: 24),
+                    child: const Icon(Icons.arrow_back, color: Color(0xFFFFFFFF), size: 24),
                   ),
                   const SizedBox(width: 16),
                   Text(
@@ -788,7 +864,7 @@ class SettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(Symbols.person_rounded, color: textColor, size: 24),
+                              Icon(Icons.person, color: textColor, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
@@ -796,7 +872,7 @@ class SettingsScreen extends StatelessWidget {
                                   style: TextStyle(fontSize: 16, color: textColor),
                                 ),
                               ),
-                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
+                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
                             ],
                           ),
                         ),
@@ -811,7 +887,7 @@ class SettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(Symbols.dark_mode_rounded, color: textColor, size: 24),
+                              Icon(Icons.dark_mode, color: textColor, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
@@ -851,7 +927,7 @@ class SettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(Symbols.language_rounded, color: textColor, size: 24),
+                              Icon(Icons.language, color: textColor, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
@@ -869,7 +945,7 @@ class SettingsScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
+                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
                             ],
                           ),
                         ),
@@ -884,7 +960,7 @@ class SettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(Symbols.lock_rounded, color: textColor, size: 24),
+                              Icon(Icons.lock, color: textColor, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
@@ -892,7 +968,7 @@ class SettingsScreen extends StatelessWidget {
                                   style: TextStyle(fontSize: 16, color: textColor),
                                 ),
                               ),
-                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
+                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
                             ],
                           ),
                         ),
@@ -907,7 +983,7 @@ class SettingsScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              Icon(Symbols.help_rounded, color: textColor, size: 24),
+                              Icon(Icons.help, color: textColor, size: 24),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(
@@ -915,7 +991,7 @@ class SettingsScreen extends StatelessWidget {
                                   style: TextStyle(fontSize: 16, color: textColor),
                                 ),
                               ),
-                              Icon(Symbols.chevron_right_rounded, color: subtitleColor, size: 20),
+                              Icon(Icons.chevron_right, color: subtitleColor, size: 20),
                             ],
                           ),
                         ),
@@ -971,7 +1047,7 @@ class SettingsScreen extends StatelessWidget {
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
                         child: Icon(
-                          Symbols.close_rounded,
+                          Icons.close,
                           size: 24,
                           color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D),
                         ),
@@ -1008,7 +1084,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(Symbols.check_rounded, color: primaryColor, size: 24),
+              const Icon(Icons.check, color: primaryColor, size: 24),
           ],
         ),
       ),
