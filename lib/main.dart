@@ -8,7 +8,6 @@ import 'screens/settings_screen.dart';
 import 'screens/help_screen.dart';
 import 'screens/security_screen.dart';
 import 'screens/account_screen.dart';
-import 'screens/new_product_screen.dart';
 import 'screens/product_details_screen.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
@@ -114,9 +113,6 @@ class _SportsAppState extends State<SportsApp> {
                   break;
                 case '/account':
                   page = const AccountScreen();
-                  break;
-                case '/new_product':
-                  page = const NewProductScreen();
                   break;
                 case '/product_details':
                   page = ProductDetailsScreen(product: settings.arguments as Map<String, dynamic>);
