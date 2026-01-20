@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../providers/theme_provider.dart';
+import '../providers/locale_provider.dart';
+import '../utils/app_strings.dart';
+import '../widgets/bottom_bar.dart';
+import '../widgets/drawer_menu.dart';
+import '../tabs/inicio_tab_screen.dart';
+import '../tabs/loja_tab_screen.dart';
+import '../tabs/basket_tab_screen.dart';
+
+const Color transparent = Color(0x00000000);
+const Color primaryColor = Color(0xFF2C3E50);
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  int _selectedIndex = 0;
+  late AnimationController _drawerController;
+  late Animation<double> _drawerAnimation;
+  bool _isDrawerOpen = false;
+  late Future<List<dynamic>> _productsFuture;
+  String _selectedCategory = 'Todos';
+
+  final List<String> _categories = ['Todos', 'Mais Vendidos', 'Em Promoção', 'Segunda Mão'];
+
+  @override
+  void initState() {
+    super.initState();
+    _drawerController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _drawerAnimation = CurvedAnimation(parent: _drawerController, curve: Curves.easeInOut);
+    _productsFuture = fetchProducts();
+  }
+
+  Future<List<dynamic>> fetchProducts() async {
+    try {
+      final response = await http.get(Uri.parse('https://dummyjson.com/products?limit=50'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['products'];
+      }
+    } catch (e) {
+      print('Error fetching from dummyjson: $e');
+    }
+
+    try {
+      final response = await http.get(Uri.parse('https://fakestoreapi.com/products'));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print('Error fetching from fakestoreapi: $e');
+    }
+
+    throw Exception('Failed to load products from all APIs');
+  }
+
+  @override
+  void dispose() {
+    _drawerController.dispose();
+    super.dispose();
+  }
+
+  void _toggleDrawer() {
+    if (_isDrawerOpen) {
+      _drawerController.reverse();
+    } else {
+      _drawerController.forward();
+    }
+    setState(() => _isDrawerOpen = !_isDrawerOpen);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ThemeProvider.of(context);
+    final locale = LocaleProvider.of(context);
+    final isDark = theme?.isDark ?? false;
+    final currentLocale = locale?.locale ?? 'pt';
+
+    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF0F0F0);
+    final appBarColor = primaryColor;
+
+    String appBarTitle = AppStrings.get('app_name', currentLocale);
+    FontWeight titleWeight = FontWeight.w900;
+    if (_selectedIndex == 1) {
+      appBarTitle = AppStrings.get('channels', currentLocale);
+      titleWeight = FontWeight.w600;
+    } else if (_selectedIndex == 2) {
+      appBarTitle = AppStrings.get('basket', currentLocale);
+      titleWeight = FontWeight.w600;
+    }
+
+    return AnnotatedRegion(
+      value: SystemUiOverlayStyle(
+        statusBarColor: appBarColor,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Stack(
+        children: [
+          AnimatedBuilder(
+            animation: _drawerAnimation,
+            builder: (context, child) {
+              final slideValue = _drawerAnimation.value * 280;
+
+              return Transform.translate(
+                offset: Offset(slideValue, 0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    boxShadow: _isDrawerOpen ? [const BoxShadow(color: Color(0x40000000), blurRadius: 20, offset: Offset(-5, 0))] : null,
+                  ),
+                  child: Container(
+                    color: bgColor,
+                    child: SafeArea(
+                      child: Column(
+                        children: [
+                          Container(
+                            color: appBarColor,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: _toggleDrawer,
+                                  child: const Icon(Icons.menu, color: Color(0xFFFFFFFF), size: 24),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    appBarTitle,
+                                    style: TextStyle(
+                                      color: Color(0xFFFFFFFF),
+                                      fontSize: 20,
+                                      fontWeight: titleWeight,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 24),
+                              ],
+                            ),
+                          ),
+                          if (_selectedIndex == 0)
+                            Container(
+                              height: 40,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _categories.length,
+                                itemBuilder: (context, index) {
+                                  final category = _categories[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: FilterChip(
+                                      label: Text(category),
+                                      selected: _selectedCategory == category,
+                                      onSelected: (selected) {
+                                        setState(() {
+                                          _selectedCategory = selected ? category : 'Todos';
+                                        });
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          Expanded(
+                            child: IndexedStack(
+                              index: _selectedIndex,
+                              children: [
+                                InicioTabScreen(
+                                  bgColor: bgColor,
+                                  isDark: isDark,
+                                  productsFuture: _productsFuture,
+                                  selectedCategory: _selectedCategory,
+                                  categories: _categories,
+                                ),
+                                LojaTabScreen(
+                                  bgColor: bgColor,
+                                  isDark: isDark,
+                                  currentLocale: currentLocale,
+                                ),
+                                BasketTabScreen(
+                                  bgColor: bgColor,
+                                  isDark: isDark,
+                                  currentLocale: currentLocale,
+                                ),
+                              ],
+                            ),
+                          ),
+                          BottomBar(
+                            selectedIndex: _selectedIndex,
+                            onItemSelected: (index) {
+                              setState(() {
+                                _selectedIndex = index;
+                              });
+                            },
+                            isDark: isDark,
+                            homeLabel: AppStrings.get('home', currentLocale),
+                            storeLabel: AppStrings.get('channels', currentLocale),
+                            basketLabel: AppStrings.get('basket', currentLocale),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          if (_isDrawerOpen)
+            GestureDetector(
+              onTap: _toggleDrawer,
+              child: Container(color: const Color(0x80000000)),
+            ),
+          AnimatedBuilder(
+            animation: _drawerAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(-280 + (_drawerAnimation.value * 280), 0),
+                child: DrawerMenu(
+                  appName: AppStrings.get('app_name', currentLocale),
+                  settingsLabel: AppStrings.get('settings', currentLocale),
+                  onSettingsTap: () {
+                    _toggleDrawer();
+                    Navigator.of(context).pushNamed('/settings');
+                  },
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
