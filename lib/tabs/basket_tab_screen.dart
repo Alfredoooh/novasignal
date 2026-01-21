@@ -56,7 +56,7 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cartProvider = context.watch<CartProvider>();
+    final cartProvider = Provider.of<CartProvider>(context);
     final cart = cartProvider.cart;
     final textColor = widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
     final subtitleColor = widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
