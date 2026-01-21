@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:animated_icon/animated_icon.dart';
+import 'package:translator/translator.dart';
 import '../providers/cart_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/locale_provider.dart';
+import '../utils/app_strings.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -20,6 +23,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   String? _selectedSize;
   final PageController _pageController = PageController();
   late AnimationController _iconController;
+  final translator = GoogleTranslator();
+  
+  String? _translatedTitle;
+  String? _translatedDescription;
+  bool _isTranslating = false;
 
   @override
   void initState() {
@@ -28,12 +36,67 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     if (widget.product['colors'] != null && (widget.product['colors'] as List).isNotEmpty) {
       _selectedColor = widget.product['colors'][0]['name'];
     }
     if (widget.product['sizes'] != null && (widget.product['sizes'] as List).isNotEmpty) {
       _selectedSize = widget.product['sizes'][0];
+    }
+
+    // Traduzir conteúdo ao iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _translateContent();
+    });
+  }
+
+  Future<void> _translateContent() async {
+    final locale = LocaleProvider.of(context);
+    final currentLocale = locale?.locale ?? 'pt';
+    
+    // Só traduz se o idioma for português
+    if (currentLocale != 'pt') {
+      setState(() {
+        _translatedTitle = widget.product['title'];
+        _translatedDescription = widget.product['description'];
+      });
+      return;
+    }
+
+    setState(() => _isTranslating = true);
+
+    try {
+      // Traduzir título
+      if (widget.product['title'] != null) {
+        final titleTranslation = await translator.translate(
+          widget.product['title'],
+          from: 'en',
+          to: 'pt',
+        );
+        _translatedTitle = titleTranslation.text;
+      }
+
+      // Traduzir descrição
+      if (widget.product['description'] != null) {
+        final descTranslation = await translator.translate(
+          widget.product['description'],
+          from: 'en',
+          to: 'pt',
+        );
+        _translatedDescription = descTranslation.text;
+      }
+
+      if (mounted) {
+        setState(() => _isTranslating = false);
+      }
+    } catch (e) {
+      print('Erro ao traduzir: $e');
+      // Em caso de erro, usar o texto original
+      setState(() {
+        _translatedTitle = widget.product['title'];
+        _translatedDescription = widget.product['description'];
+        _isTranslating = false;
+      });
     }
   }
 
@@ -66,16 +129,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   @override
   Widget build(BuildContext context) {
     final themeProvider = ThemeProvider.of(context);
+    final localeProvider = LocaleProvider.of(context);
     final isDark = themeProvider?.isDark ?? false;
+    final currentLocale = localeProvider?.locale ?? 'pt';
     final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFFFFFFF);
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
     final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
-    
+
     final images = _getImages();
     final colors = widget.product['colors'] as List?;
     final sizes = widget.product['sizes'] as List?;
     final price = widget.product['price'] ?? 0;
-    final description = widget.product['description'] ?? 'Sem descrição disponível';
+    
+    // Usar título e descrição traduzidos ou originais
+    final title = _translatedTitle ?? widget.product['title'] ?? AppStrings.get('product_details', currentLocale);
+    final description = _translatedDescription ?? widget.product['description'] ?? AppStrings.get('description', currentLocale);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -87,8 +155,19 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
             child: Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: const BoxDecoration(
-                color: Color(0xFF2C3E50),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C3E50),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0x15000000),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -100,7 +179,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                   _NavigationButton(
                     svgPath: _leftArrowSvg,
                     onTap: () {
-                      // Navegar para produto anterior
                       if (_currentImageIndex > 0) {
                         _pageController.previousPage(
                           duration: const Duration(milliseconds: 300),
@@ -113,7 +191,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                   _NavigationButton(
                     svgPath: _rightArrowSvg,
                     onTap: () {
-                      // Navegar para próximo produto
                       if (_currentImageIndex < images.length - 1) {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 300),
@@ -126,7 +203,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
               ),
             ),
           ),
-          
+
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -194,24 +271,35 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                             ],
                           ),
                   ),
-                  
+
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Título
-                        Text(
-                          widget.product['title'] ?? 'Produto',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                            height: 1.3,
-                          ),
-                        ),
+                        _isTranslating
+                            ? Shimmer(
+                                child: Container(
+                                  height: 26,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: subtitleColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                  height: 1.3,
+                                ),
+                              ),
                         const SizedBox(height: 16),
-                        
+
                         // Preço
                         Text(
                           'AOA ${price.toStringAsFixed(2)}',
@@ -222,10 +310,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                           ),
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Descrição do produto
                         Text(
-                          'Detalhes do Produto',
+                          AppStrings.get('product_details', currentLocale),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -233,20 +321,39 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: textColor,
-                            height: 1.5,
-                          ),
-                        ),
-                        
+                        _isTranslating
+                            ? Column(
+                                children: List.generate(
+                                  3,
+                                  (index) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Shimmer(
+                                      child: Container(
+                                        height: 16,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          color: subtitleColor.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                description,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: textColor,
+                                  height: 1.5,
+                                ),
+                              ),
+
                         // Cores
                         if (colors != null && colors.isNotEmpty) ...[
                           const SizedBox(height: 24),
                           Text(
-                            'Cor: ${_selectedColor ?? ''}',
+                            '${AppStrings.get('select_color', currentLocale)}: ${_selectedColor ?? ''}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -261,7 +368,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                               final colorName = color['name'] as String;
                               final colorHex = color['hex'] as String;
                               final isSelected = _selectedColor == colorName;
-                              
+
                               return GestureDetector(
                                 onTap: () {
                                   setState(() => _selectedColor = colorName);
@@ -282,12 +389,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                             }).toList(),
                           ),
                         ],
-                        
+
                         // Tamanhos
                         if (sizes != null && sizes.isNotEmpty) ...[
                           const SizedBox(height: 24),
                           Text(
-                            'Tamanho: ${_selectedSize ?? ''}',
+                            '${AppStrings.get('select_size', currentLocale)}: ${_selectedSize ?? ''}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -301,7 +408,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                             children: sizes.map((size) {
                               final sizeStr = size as String;
                               final isSelected = _selectedSize == sizeStr;
-                              
+
                               return GestureDetector(
                                 onTap: () {
                                   setState(() => _selectedSize = sizeStr);
@@ -309,9 +416,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                   decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? textColor
-                                        : Colors.transparent,
+                                    color: isSelected ? textColor : Colors.transparent,
                                     border: Border.all(
                                       color: textColor,
                                       width: 1.5,
@@ -331,7 +436,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                             }).toList(),
                           ),
                         ],
-                        
+
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -350,6 +455,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
         textColor: textColor,
         bgColor: bgColor,
         iconController: _iconController,
+        currentLocale: currentLocale,
       ),
     );
   }
@@ -363,7 +469,48 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   }
 }
 
-class _NavigationButton extends StatelessWidget {
+class Shimmer extends StatefulWidget {
+  final Widget child;
+
+  const Shimmer({Key? key, required this.child}) : super(key: key);
+
+  @override
+  State<Shimmer> createState() => _ShimmerState();
+}
+
+class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Opacity(
+          opacity: 0.3 + (_controller.value * 0.4),
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
+class _NavigationButton extends StatefulWidget {
   final String svgPath;
   final VoidCallback onTap;
 
@@ -373,19 +520,32 @@ class _NavigationButton extends StatelessWidget {
   });
 
   @override
+  State<_NavigationButton> createState() => _NavigationButtonState();
+}
+
+class _NavigationButtonState extends State<_NavigationButton> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: 36,
         height: 36,
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.2),
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(_isPressed ? 8 : 18),
         ),
         child: Center(
           child: SvgPicture.string(
-            svgPath,
+            widget.svgPath,
             width: 16,
             height: 16,
             colorFilter: const ColorFilter.mode(
@@ -407,6 +567,7 @@ class _AddToCartBar extends StatefulWidget {
   final Color textColor;
   final Color bgColor;
   final AnimationController iconController;
+  final String currentLocale;
 
   const _AddToCartBar({
     required this.product,
@@ -416,6 +577,7 @@ class _AddToCartBar extends StatefulWidget {
     required this.textColor,
     required this.bgColor,
     required this.iconController,
+    required this.currentLocale,
   });
 
   @override
@@ -433,7 +595,7 @@ class _AddToCartBarState extends State<_AddToCartBar> {
   @override
   Widget build(BuildContext context) {
     final isInCart = _isInCart();
-    
+
     return Container(
       decoration: BoxDecoration(
         color: widget.bgColor,
@@ -458,24 +620,22 @@ class _AddToCartBarState extends State<_AddToCartBar> {
             onTapUp: (_) {
               setState(() => _isPressed = false);
               final cartProvider = CartProvider.of(context);
-              
+
               if (isInCart) {
-                // Remover da cesta
                 cartProvider?.cart.removeWhere((item) => item['id'] == widget.product['id']);
                 cartProvider?.removeFromCart(widget.product);
                 widget.iconController.reverse();
               } else {
-                // Adicionar à cesta
                 final productToAdd = Map<String, dynamic>.from(widget.product);
                 productToAdd['selectedColor'] = widget.selectedColor;
                 productToAdd['selectedSize'] = widget.selectedSize;
                 productToAdd['quantity'] = 1;
                 cartProvider?.addToCart(productToAdd);
                 widget.iconController.forward();
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text('Adicionado à cesta'),
+                    content: Text(AppStrings.get('added_to_cart', widget.currentLocale)),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                     backgroundColor: widget.isDark ? const Color(0xFF242526) : const Color(0xFF1C1E21),
@@ -488,17 +648,17 @@ class _AddToCartBarState extends State<_AddToCartBar> {
               duration: const Duration(milliseconds: 200),
               height: 52,
               decoration: BoxDecoration(
-                color: isInCart 
-                    ? const Color(0xFFFF3B30) // Vermelho/Rosa Apple
-                    : const Color(0xFF007AFF), // Azul Apple
+                color: isInCart ? const Color(0xFFFF3B30) : const Color(0xFF007AFF),
                 borderRadius: BorderRadius.circular(_isPressed ? 12 : 26),
-                boxShadow: _isPressed ? [] : [
-                  BoxShadow(
-                    color: (isInCart ? const Color(0xFFFF3B30) : const Color(0xFF007AFF)).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow: _isPressed
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: (isInCart ? const Color(0xFFFF3B30) : const Color(0xFF007AFF)).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
               alignment: Alignment.center,
               child: Row(
@@ -514,7 +674,9 @@ class _AddToCartBarState extends State<_AddToCartBar> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    isInCart ? 'Remover da cesta' : 'Adicionar à cesta',
+                    isInCart
+                        ? AppStrings.get('remove_from_cart', widget.currentLocale)
+                        : AppStrings.get('add_to_cart', widget.currentLocale),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
