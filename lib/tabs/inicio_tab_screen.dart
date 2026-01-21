@@ -30,10 +30,8 @@ class InicioTabScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildSkeletonView();
-          } else if (snapshot.hasError) {
+          } else if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
             return _buildErrorState();
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return _buildEmptyState();
           } else {
             List<dynamic> products = snapshot.data!;
             if (selectedCategory != 'Todos') {
@@ -48,50 +46,6 @@ class InicioTabScreen extends StatelessWidget {
             }
           }
         },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
-    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/empty_products.png',
-            width: 200,
-            height: 200,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                Icons.inventory_2_outlined,
-                size: 100,
-                color: subtitleColor.withOpacity(0.5),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Nenhum produto disponível',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-              letterSpacing: 0.1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tente novamente mais tarde',
-            style: TextStyle(
-              fontSize: 14,
-              color: subtitleColor,
-              letterSpacing: 0.1,
-            ),
-          ),
-        ],
       ),
     );
   }
