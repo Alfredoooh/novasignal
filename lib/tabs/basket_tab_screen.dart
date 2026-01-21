@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../utils/app_strings.dart';
 
@@ -37,21 +38,25 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setState(() {
-          _aoaRate = data['rates']['AOA'] ?? 900.0;
-        });
+        if (mounted) {
+          setState(() {
+            _aoaRate = data['rates']['AOA'] ?? 900.0;
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _aoaRate = 900.0;
-      });
+      if (mounted) {
+        setState(() {
+          _aoaRate = 900.0;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cartProvider = CartProvider.of(context);
-    final cart = cartProvider?.cart ?? [];
+    final cartProvider = Provider.of<CartProvider>(context);
+    final cart = cartProvider.cart;
     final textColor = widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
     final subtitleColor = widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
     final cardColor = widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
@@ -62,18 +67,35 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Symbols.shopping_basket,
-              size: 80,
-              color: subtitleColor,
+            Image.asset(
+              'assets/empty_cart.png',
+              width: 200,
+              height: 200,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Symbols.shopping_basket,
+                  size: 100,
+                  color: subtitleColor.withOpacity(0.5),
+                );
+              },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
               AppStrings.get('empty_cart', widget.currentLocale),
               style: TextStyle(
-                fontSize: 18,
-                color: subtitleColor,
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
+                color: textColor,
+                letterSpacing: 0.1,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Adicione produtos ao carrinho',
+              style: TextStyle(
+                fontSize: 14,
+                color: subtitleColor,
+                letterSpacing: 0.1,
               ),
             ),
           ],
@@ -124,10 +146,8 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
               const Spacer(),
               GestureDetector(
                 onTap: () {
-                  cartProvider?.cart.clear();
-                  if (cartProvider != null) {
-                    (cartProvider as ChangeNotifier).notifyListeners();
-                  }
+                  cartProvider.cart.clear();
+                  cartProvider.notifyListeners();
                 },
                 child: const Text(
                   'Esvaziar',
@@ -202,12 +222,10 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
                       currentLocale: widget.currentLocale,
                       aoaRate: _aoaRate ?? 900,
                       onQuantityChanged: () {
-                        if (cartProvider != null) {
-                          (cartProvider as ChangeNotifier).notifyListeners();
-                        }
+                        cartProvider.notifyListeners();
                       },
                       onRemove: () {
-                        cartProvider?.removeFromCart(item);
+                        cartProvider.removeFromCart(item);
                       },
                     )),
                   ],
@@ -311,13 +329,29 @@ class _CartItem extends StatefulWidget {
 class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixin {
   bool _isSelected = false;
   late AnimationController _checkController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _checkAnimation;
 
   @override
   void initState() {
     super.initState();
     _checkController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _checkController,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
+    );
+    
+    _checkAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _checkController,
+        curve: const Interval(0.3, 1.0, curve: Curves.elasticOut),
+      ),
     );
   }
 
@@ -372,23 +406,27 @@ class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixi
               animation: _checkController,
               builder: (context, child) {
                 return Container(
-                  width: 20,
-                  height: 20,
+                  width: 24,
+                  height: 24,
                   margin: const EdgeInsets.only(top: 4),
                   decoration: BoxDecoration(
-                    color: _isSelected ? const Color(0xFF007AFF) : Colors.transparent,
+                    color: _isSelected 
+                        ? const Color(0xFF007AFF) 
+                        : Colors.transparent,
                     border: Border.all(
-                      color: _isSelected ? const Color(0xFF007AFF) : widget.subtitleColor,
-                      width: 1.5,
+                      color: _isSelected 
+                          ? const Color(0xFF007AFF) 
+                          : widget.subtitleColor,
+                      width: 2,
                     ),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: _isSelected
                       ? Transform.scale(
-                          scale: _checkController.value,
+                          scale: _checkAnimation.value,
                           child: const Icon(
-                            Icons.check,
-                            size: 14,
+                            Icons.check_rounded,
+                            size: 16,
                             color: Colors.white,
                           ),
                         )
@@ -404,17 +442,17 @@ class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixi
             height: 80,
             decoration: BoxDecoration(
               color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: imageUrl.isNotEmpty
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     child: Image.network(
                       imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Icon(
-                          Symbols.image,
+                          Icons.image_not_supported_rounded,
                           size: 32,
                           color: widget.subtitleColor,
                         );
@@ -422,7 +460,7 @@ class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixi
                     ),
                   )
                 : Icon(
-                    Symbols.image,
+                    Icons.image_not_supported_rounded,
                     size: 32,
                     color: widget.subtitleColor,
                   ),
@@ -442,6 +480,7 @@ class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixi
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: widget.textColor,
+                      letterSpacing: 0.1,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -456,6 +495,7 @@ class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixi
                       style: TextStyle(
                         fontSize: 12,
                         color: widget.subtitleColor,
+                        letterSpacing: 0.1,
                       ),
                     ),
 
@@ -467,6 +507,7 @@ class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixi
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: widget.textColor,
+                          letterSpacing: -0.3,
                         ),
                       ),
                       const Spacer(),
@@ -517,32 +558,33 @@ class _QuantityControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 28,
+      height: 32,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
-        borderRadius: BorderRadius.circular(14),
+        color: isDark ? const Color(0xFF3E4042) : const Color(0xFFF2F2F7),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         children: [
           _QuantityButton(
-            icon: Icons.remove,
+            icon: Icons.remove_rounded,
             onTap: onDecrement,
             isDark: isDark,
           ),
           Container(
-            width: 32,
+            width: 36,
             alignment: Alignment.center,
             child: Text(
               '$quantity',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: textColor,
+                letterSpacing: 0.1,
               ),
             ),
           ),
           _QuantityButton(
-            icon: Icons.add,
+            icon: Icons.add_rounded,
             onTap: onIncrement,
             isDark: isDark,
           ),
@@ -580,16 +622,18 @@ class _QuantityButtonState extends State<_QuantityButton> {
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 28,
-        height: 28,
+        duration: const Duration(milliseconds: 150),
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
-          color: widget.isDark ? const Color(0xFF4E5052) : const Color(0xFFE0E2E5),
-          borderRadius: BorderRadius.circular(_isPressed ? 10 : 14),
+          color: _isPressed
+              ? (widget.isDark ? const Color(0xFF4E5052) : const Color(0xFFE0E2E5))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
           widget.icon,
-          size: 16,
+          size: 18,
           color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
         ),
       ),
@@ -635,6 +679,7 @@ class _CheckoutButtonState extends State<_CheckoutButton> {
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.white,
+            letterSpacing: 0.2,
           ),
         ),
       ),
