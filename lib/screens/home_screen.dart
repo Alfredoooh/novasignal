@@ -28,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   int _selectedIndex = 0;
   late AnimationController _drawerController;
   late Animation<double> _drawerAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
   bool _isDrawerOpen = false;
   late Future<List<dynamic>> _productsFuture;
   String _selectedCategory = 'Todos';
@@ -37,8 +39,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _drawerController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
-    _drawerAnimation = CurvedAnimation(parent: _drawerController, curve: Curves.easeInOut);
+    _drawerController = AnimationController(
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+    );
+    
+    _drawerAnimation = CurvedAnimation(
+      parent: _drawerController,
+      curve: Curves.easeOutCubic,
+    );
+    
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.88,
+    ).animate(CurvedAnimation(
+      parent: _drawerController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.4,
+    ).animate(CurvedAnimation(
+      parent: _drawerController,
+      curve: Curves.easeOutCubic,
+    ));
+    
     _productsFuture = fetchProducts();
   }
 
@@ -108,48 +134,89 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       child: Stack(
         children: [
+          // Drawer Menu
+          DrawerMenu(
+            appName: AppStrings.get('app_name', currentLocale),
+            settingsLabel: AppStrings.get('settings', currentLocale),
+            onSettingsTap: () {
+              _toggleDrawer();
+              Navigator.of(context).pushNamed('/settings');
+            },
+          ),
+          
+          // Main Content with iOS-style push animation
           AnimatedBuilder(
             animation: _drawerAnimation,
             builder: (context, child) {
               final slideValue = _drawerAnimation.value * 280;
+              final scale = _scaleAnimation.value;
 
               return Transform.translate(
                 offset: Offset(slideValue, 0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    boxShadow: _isDrawerOpen ? [const BoxShadow(color: Color(0x40000000), blurRadius: 20, offset: Offset(-5, 0))] : null,
-                  ),
+                child: Transform.scale(
+                  scale: scale,
+                  alignment: Alignment.centerLeft,
                   child: Container(
-                    color: bgColor,
-                    child: SafeArea(
-                      child: Column(
-                        children: [
-                          Container(
-                            color: appBarColor,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: _toggleDrawer,
-                                  child: const Icon(Icons.menu, color: Color(0xFFFFFFFF), size: 24),
+                    decoration: BoxDecoration(
+                      boxShadow: _isDrawerOpen 
+                        ? [
+                            BoxShadow(
+                              color: const Color(0x30000000),
+                              blurRadius: 30,
+                              spreadRadius: -5,
+                              offset: const Offset(-8, 0),
+                            )
+                          ] 
+                        : null,
+                      borderRadius: _isDrawerOpen 
+                        ? BorderRadius.circular(16)
+                        : BorderRadius.zero,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      color: bgColor,
+                      child: SafeArea(
+                        child: Column(
+                          children: [
+                            // AppBar com bordas curvas
+                            Container(
+                              decoration: BoxDecoration(
+                                color: appBarColor,
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(20),
+                                  bottomRight: Radius.circular(20),
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    appBarTitle,
-                                    style: TextStyle(
-                                      color: Color(0xFFFFFFFF),
-                                      fontSize: 20,
-                                      fontWeight: titleWeight,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0x15000000),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  _AnimatedIconButton(
+                                    onTap: _toggleDrawer,
+                                    child: const Icon(Icons.menu, color: Color(0xFFFFFFFF), size: 24),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      appBarTitle,
+                                      style: TextStyle(
+                                        color: const Color(0xFFFFFFFF),
+                                        fontSize: 20,
+                                        fontWeight: titleWeight,
+                                        letterSpacing: 0.3,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    // TODO: Implementar pesquisa
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4),
+                                  _AnimatedIconButton(
+                                    onTap: () {
+                                      // TODO: Implementar pesquisa
+                                    },
                                     child: SvgPicture.string(
                                       AppIcons.searchIcon,
                                       width: 22,
@@ -157,94 +224,87 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       color: const Color(0xFFFFFFFF),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 24),
-                              ],
-                            ),
-                          ),
-                          if (_selectedIndex == 0)
-                            Container(
-                              height: 50,
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _categories.length,
-                                itemBuilder: (context, index) {
-                                  final category = _categories[index];
-                                  final isSelected = _selectedCategory == category;
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedCategory = category;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: isSelected 
-                                              ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
-                                              : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            category,
-                                            style: TextStyle(
-                                              color: isSelected 
-                                                  ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
-                                                  : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
-                                              fontSize: 14,
-                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
+                                  const SizedBox(width: 8),
+                                  _AnimatedIconButton(
+                                    onTap: () {
+                                      // TODO: Implementar menu
+                                    },
+                                    child: const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 24),
+                                  ),
+                                ],
                               ),
                             ),
-                          Expanded(
-                            child: IndexedStack(
-                              index: _selectedIndex,
-                              children: [
-                                InicioTabScreen(
-                                  bgColor: bgColor,
-                                  isDark: isDark,
-                                  productsFuture: _productsFuture,
-                                  selectedCategory: _selectedCategory,
-                                  categories: _categories,
+                            
+                            // Categories
+                            if (_selectedIndex == 0)
+                              Container(
+                                height: 56,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _categories.length,
+                                  itemBuilder: (context, index) {
+                                    final category = _categories[index];
+                                    final isSelected = _selectedCategory == category;
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      child: _AnimatedCategoryChip(
+                                        category: category,
+                                        isSelected: isSelected,
+                                        isDark: isDark,
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedCategory = category;
+                                          });
+                                        },
+                                      ),
+                                    );
+                                  },
                                 ),
-                                LojaTabScreen(
-                                  bgColor: bgColor,
-                                  isDark: isDark,
-                                  currentLocale: currentLocale,
-                                ),
-                                BasketTabScreen(
-                                  bgColor: bgColor,
-                                  isDark: isDark,
-                                  currentLocale: currentLocale,
-                                ),
-                              ],
+                              ),
+                            
+                            // Content
+                            Expanded(
+                              child: IndexedStack(
+                                index: _selectedIndex,
+                                children: [
+                                  InicioTabScreen(
+                                    bgColor: bgColor,
+                                    isDark: isDark,
+                                    productsFuture: _productsFuture,
+                                    selectedCategory: _selectedCategory,
+                                    categories: _categories,
+                                  ),
+                                  LojaTabScreen(
+                                    bgColor: bgColor,
+                                    isDark: isDark,
+                                    currentLocale: currentLocale,
+                                  ),
+                                  BasketTabScreen(
+                                    bgColor: bgColor,
+                                    isDark: isDark,
+                                    currentLocale: currentLocale,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          BottomBar(
-                            selectedIndex: _selectedIndex,
-                            onItemSelected: (index) {
-                              setState(() {
-                                _selectedIndex = index;
-                              });
-                            },
-                            isDark: isDark,
-                            homeLabel: AppStrings.get('home', currentLocale),
-                            storeLabel: AppStrings.get('channels', currentLocale),
-                            basketLabel: AppStrings.get('basket', currentLocale),
-                          ),
-                        ],
+                            
+                            // Bottom Bar
+                            BottomBar(
+                              selectedIndex: _selectedIndex,
+                              onItemSelected: (index) {
+                                setState(() {
+                                  _selectedIndex = index;
+                                });
+                              },
+                              isDark: isDark,
+                              homeLabel: AppStrings.get('home', currentLocale),
+                              storeLabel: AppStrings.get('channels', currentLocale),
+                              basketLabel: AppStrings.get('basket', currentLocale),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -252,28 +312,130 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               );
             },
           ),
+          
+          // Overlay when drawer is open
           if (_isDrawerOpen)
-            GestureDetector(
-              onTap: _toggleDrawer,
-              child: Container(color: const Color(0x80000000)),
+            AnimatedBuilder(
+              animation: _fadeAnimation,
+              builder: (context, child) {
+                return GestureDetector(
+                  onTap: _toggleDrawer,
+                  child: Container(
+                    color: Color.lerp(
+                      const Color(0x00000000),
+                      const Color(0x66000000),
+                      _fadeAnimation.value,
+                    ),
+                  ),
+                );
+              },
             ),
-          AnimatedBuilder(
-            animation: _drawerAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(-280 + (_drawerAnimation.value * 280), 0),
-                child: DrawerMenu(
-                  appName: AppStrings.get('app_name', currentLocale),
-                  settingsLabel: AppStrings.get('settings', currentLocale),
-                  onSettingsTap: () {
-                    _toggleDrawer();
-                    Navigator.of(context).pushNamed('/settings');
-                  },
-                ),
-              );
-            },
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _AnimatedIconButton extends StatefulWidget {
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _AnimatedIconButton({
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  State<_AnimatedIconButton> createState() => _AnimatedIconButtonState();
+}
+
+class _AnimatedIconButtonState extends State<_AnimatedIconButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0x08FFFFFF),
+          borderRadius: BorderRadius.circular(_isPressed ? 8 : 50),
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _AnimatedCategoryChip extends StatefulWidget {
+  final String category;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _AnimatedCategoryChip({
+    required this.category,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnimatedCategoryChip> createState() => _AnimatedCategoryChipState();
+}
+
+class _AnimatedCategoryChipState extends State<_AnimatedCategoryChip> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: widget.isSelected 
+              ? (widget.isDark ? const Color(0xFFFFFFFF) : primaryColor)
+              : (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE8E8E8)),
+          borderRadius: BorderRadius.circular(_isPressed ? 12 : 100),
+          boxShadow: widget.isSelected
+              ? [
+                  BoxShadow(
+                    color: (widget.isDark ? const Color(0x20FFFFFF) : primaryColor).withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Text(
+            widget.category,
+            style: TextStyle(
+              color: widget.isSelected 
+                  ? (widget.isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
+                  : (widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+              fontSize: 14,
+              fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
       ),
     );
   }
