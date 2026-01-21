@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:animated_check/animated_check.dart';
 import '../providers/cart_provider.dart';
 import '../utils/app_strings.dart';
 import 'dart:math';
@@ -89,47 +90,6 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-            border: Border(
-              bottom: BorderSide(
-                color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
-                width: 1,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              _SelectAllCheckbox(
-                isSelected: selectAll,
-                isDark: widget.isDark,
-                onTap: () {
-                  setState(() {
-                    selectAll = !selectAll;
-                    if (selectAll) {
-                      for (var item in cart) {
-                        selectedItems.add('${item['id']}');
-                      }
-                    } else {
-                      selectedItems.clear();
-                    }
-                  });
-                },
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'All',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-        ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.only(bottom: 16),
@@ -157,6 +117,9 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
                   });
                 },
                 onRemove: (item) => cartProvider?.removeFromCart(item),
+                onQuantityChange: (item, newQuantity) {
+                  // Add quantity change logic here
+                },
               );
             },
           ),
@@ -167,53 +130,8 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
           textColor: textColor,
           currentLocale: widget.currentLocale,
           itemCount: selectedCount,
-          selectAll: selectAll,
-          onSelectAllToggle: () {
-            setState(() {
-              selectAll = !selectAll;
-              if (selectAll) {
-                for (var item in cart) {
-                  selectedItems.add('${item['id']}');
-                }
-              } else {
-                selectedItems.clear();
-              }
-            });
-          },
         ),
       ],
-    );
-  }
-}
-
-class _SelectAllCheckbox extends StatelessWidget {
-  final bool isSelected;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _SelectAllCheckbox({
-    required this.isSelected,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.red : Colors.transparent,
-          border: Border.all(
-            color: isSelected ? Colors.red : (isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8)),
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: isSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
-      ),
     );
   }
 }
@@ -226,6 +144,7 @@ class _StoreSection extends StatelessWidget {
   final Set<String> selectedItems;
   final Function(String) onItemToggle;
   final Function(Map<String, dynamic>) onRemove;
+  final Function(Map<String, dynamic>, int) onQuantityChange;
 
   const _StoreSection({
     required this.storeName,
@@ -235,6 +154,7 @@ class _StoreSection extends StatelessWidget {
     required this.selectedItems,
     required this.onItemToggle,
     required this.onRemove,
+    required this.onQuantityChange,
   });
 
   @override
@@ -243,7 +163,7 @@ class _StoreSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
             border: Border(
@@ -253,29 +173,13 @@ class _StoreSection extends StatelessWidget {
               ),
             ),
           ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.store_outlined,
-                size: 18,
-                color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                storeName,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8),
-              ),
-            ],
+          child: Text(
+            storeName,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
           ),
         ),
         ...items.map((item) => _CartItemCard(
@@ -285,6 +189,7 @@ class _StoreSection extends StatelessWidget {
               isSelected: selectedItems.contains('${item['id']}'),
               onToggle: () => onItemToggle('${item['id']}'),
               onRemove: () => onRemove(item),
+              onQuantityChange: (newQuantity) => onQuantityChange(item, newQuantity),
             )),
       ],
     );
@@ -298,6 +203,7 @@ class _CartItemCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onToggle;
   final VoidCallback onRemove;
+  final Function(int) onQuantityChange;
 
   const _CartItemCard({
     required this.product,
@@ -306,6 +212,7 @@ class _CartItemCard extends StatelessWidget {
     required this.isSelected,
     required this.onToggle,
     required this.onRemove,
+    required this.onQuantityChange,
   });
 
   @override
@@ -315,7 +222,7 @@ class _CartItemCard extends StatelessWidget {
     final hasLowStock = stock <= 5 && stock > 0;
     final originalPrice = (product['price'] ?? 0) * 1.3;
     final random = Random(product['id']);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -330,22 +237,10 @@ class _CartItemCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
+          _AnimatedCheckbox(
+            isSelected: isSelected,
+            isDark: isDark,
             onTap: onToggle,
-            child: Container(
-              width: 20,
-              height: 20,
-              margin: const EdgeInsets.only(top: 4),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.red : Colors.transparent,
-                border: Border.all(
-                  color: isSelected ? Colors.red : (isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8)),
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
-            ),
           ),
           const SizedBox(width: 12),
           Stack(
@@ -487,6 +382,7 @@ class _CartItemCard extends StatelessWidget {
                     _QuantitySelector(
                       quantity: product['quantity'] ?? 1,
                       isDark: isDark,
+                      onChanged: onQuantityChange,
                     ),
                   ],
                 ),
@@ -499,13 +395,94 @@ class _CartItemCard extends StatelessWidget {
   }
 }
 
+class _AnimatedCheckbox extends StatefulWidget {
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _AnimatedCheckbox({
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnimatedCheckbox> createState() => _AnimatedCheckboxState();
+}
+
+class _AnimatedCheckboxState extends State<_AnimatedCheckbox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    if (widget.isSelected) {
+      _controller.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedCheckbox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      if (widget.isSelected) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        width: 24,
+        height: 24,
+        margin: const EdgeInsets.only(top: 4),
+        decoration: BoxDecoration(
+          color: widget.isSelected ? Colors.red : Colors.transparent,
+          border: Border.all(
+            color: widget.isSelected
+                ? Colors.red
+                : (widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8)),
+            width: 2,
+          ),
+          shape: BoxShape.circle,
+        ),
+        child: widget.isSelected
+            ? AnimatedCheck(
+                progress: _controller,
+                color: Colors.white,
+                size: 16,
+              )
+            : null,
+      ),
+    );
+  }
+}
+
 class _QuantitySelector extends StatelessWidget {
   final int quantity;
   final bool isDark;
+  final Function(int) onChanged;
 
   const _QuantitySelector({
     required this.quantity,
     required this.isDark,
+    required this.onChanged,
   });
 
   @override
@@ -516,14 +493,21 @@ class _QuantitySelector extends StatelessWidget {
           color: isDark ? const Color(0xFF5E6266) : const Color(0xFFE4E6EB),
           width: 1,
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _QuantityButton(icon: Icons.remove, isDark: isDark),
+          _QuantityButton(
+            icon: Icons.remove,
+            isDark: isDark,
+            onPressed: () {
+              if (quantity > 1) onChanged(quantity - 1);
+            },
+          ),
           Container(
-            width: 40,
+            constraints: const BoxConstraints(minWidth: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             alignment: Alignment.center,
             child: Text(
               quantity.toString(),
@@ -534,7 +518,11 @@ class _QuantitySelector extends StatelessWidget {
               ),
             ),
           ),
-          _QuantityButton(icon: Icons.add, isDark: isDark),
+          _QuantityButton(
+            icon: Icons.add,
+            isDark: isDark,
+            onPressed: () => onChanged(quantity + 1),
+          ),
         ],
       ),
     );
@@ -544,10 +532,12 @@ class _QuantitySelector extends StatelessWidget {
 class _QuantityButton extends StatefulWidget {
   final IconData icon;
   final bool isDark;
+  final VoidCallback onPressed;
 
   const _QuantityButton({
     required this.icon,
     required this.isDark,
+    required this.onPressed,
   });
 
   @override
@@ -561,14 +551,20 @@ class _QuantityButtonState extends State<_QuantityButton> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onPressed();
+      },
       onTapCancel: () => setState(() => _isPressed = false),
       child: Container(
         width: 32,
         height: 32,
-        color: _isPressed
-            ? (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5))
-            : Colors.transparent,
+        decoration: BoxDecoration(
+          color: _isPressed
+              ? (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5))
+              : Colors.transparent,
+          shape: BoxShape.circle,
+        ),
         child: Icon(
           widget.icon,
           size: 18,
@@ -585,8 +581,6 @@ class _CheckoutBar extends StatefulWidget {
   final Color textColor;
   final String currentLocale;
   final int itemCount;
-  final bool selectAll;
-  final VoidCallback onSelectAllToggle;
 
   const _CheckoutBar({
     required this.totalPrice,
@@ -594,8 +588,6 @@ class _CheckoutBar extends StatefulWidget {
     required this.textColor,
     required this.currentLocale,
     required this.itemCount,
-    required this.selectAll,
-    required this.onSelectAllToggle,
   });
 
   @override
@@ -608,14 +600,11 @@ class _CheckoutBarState extends State<_CheckoutBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-        border: Border(
-          top: BorderSide(
-            color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
-            width: 1,
-          ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
         ),
         boxShadow: [
           BoxShadow(
@@ -627,88 +616,70 @@ class _CheckoutBarState extends State<_CheckoutBar> {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: widget.onSelectAllToggle,
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: widget.selectAll ? Colors.red : Colors.transparent,
-                  border: Border.all(
-                    color: widget.selectAll ? Colors.red : (widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8)),
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: widget.selectAll ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'All',
-              style: TextStyle(
-                fontSize: 14,
-                color: widget.textColor,
-              ),
-            ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Total:',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B),
-                  ),
-                ),
-                Text(
-                  'AOA${widget.totalPrice.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: widget.textColor,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            GestureDetector(
-              onTapDown: (_) => setState(() => _isPressed = true),
-              onTapUp: (_) {
-                setState(() => _isPressed = false);
-                if (widget.itemCount > 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(AppStrings.get('checkout', widget.currentLocale)),
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Total:',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B),
                     ),
-                  );
-                }
-              },
-              onTapCancel: () => setState(() => _isPressed = false),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                decoration: BoxDecoration(
-                  color: widget.itemCount > 0 ? Colors.red : (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB)),
-                  borderRadius: BorderRadius.circular(_isPressed ? 6 : 20),
-                ),
-                child: Text(
-                  'Checkout (${widget.itemCount})',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: widget.itemCount > 0 ? Colors.white : (widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8)),
+                  ),
+                  Text(
+                    'AOA${widget.totalPrice.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: widget.textColor,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTapDown: (_) => setState(() => _isPressed = true),
+                onTapUp: (_) {
+                  setState(() => _isPressed = false);
+                  if (widget.itemCount > 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(AppStrings.get('checkout', widget.currentLocale)),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                onTapCancel: () => setState(() => _isPressed = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: widget.itemCount > 0
+                        ? Colors.red
+                        : (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB)),
+                    borderRadius: BorderRadius.circular(_isPressed ? 6 : 20),
+                  ),
+                  child: Text(
+                    'Checkout (${widget.itemCount})',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: widget.itemCount > 0
+                          ? Colors.white
+                          : (widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8)),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
