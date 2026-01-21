@@ -43,6 +43,10 @@ flutter:
   assets:
     - assets/splash_logo.png
     - assets/splash_text.svg
+    - assets/flash_icon.png
+    - assets/shop_icon.png
+    - assets/fire_icon.png
+    - assets/like_animation.gif
 
 # Configuração do Splash Screen
 flutter_native_splash:
