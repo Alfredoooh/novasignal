@@ -148,24 +148,44 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
                           if (_selectedIndex == 0)
                             Container(
-                              height: 40,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              height: 50,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
                               child: ListView.builder(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: _categories.length,
                                 itemBuilder: (context, index) {
                                   final category = _categories[index];
+                                  final isSelected = _selectedCategory == category;
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: FilterChip(
-                                      label: Text(category),
-                                      selected: _selectedCategory == category,
-                                      onSelected: (selected) {
+                                    child: GestureDetector(
+                                      onTap: () {
                                         setState(() {
-                                          _selectedCategory = selected ? category : 'Todos';
+                                          _selectedCategory = category;
                                         });
                                       },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: isSelected 
+                                              ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
+                                              : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            category,
+                                            style: TextStyle(
+                                              color: isSelected 
+                                                  ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
+                                                  : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+                                              fontSize: 14,
+                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   );
                                 },
