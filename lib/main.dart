@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'package:animations/animations.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
@@ -105,17 +103,11 @@ class _SportsAppState extends State<SportsApp> {
                 default:
                   page = const HomeScreen();
               }
-              return PageRouteBuilder(
+              
+              // Transição nativa do iOS
+              return CupertinoPageRoute(
                 settings: settings,
-                pageBuilder: (context, animation, secondaryAnimation) => page,
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.easeInOut;
-                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                  var offsetAnimation = animation.drive(tween);
-                  return SlideTransition(position: offsetAnimation, child: child);
-                },
+                builder: (context) => page,
               );
             },
           ),
