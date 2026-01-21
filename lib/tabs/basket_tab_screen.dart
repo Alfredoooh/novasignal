@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import '../providers/cart_provider.dart';
 import '../utils/app_strings.dart';
+import 'dart:math';
 
 const Color primaryColor = Color(0xFF2C3E50);
 
-class BasketTabScreen extends StatelessWidget {
+class BasketTabScreen extends StatefulWidget {
   final Color bgColor;
   final bool isDark;
   final String currentLocale;
@@ -18,173 +19,698 @@ class BasketTabScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<BasketTabScreen> createState() => _BasketTabScreenState();
+}
+
+class _BasketTabScreenState extends State<BasketTabScreen> {
+  final Set<String> selectedItems = {};
+  bool selectAll = false;
+
+  @override
   Widget build(BuildContext context) {
     final cartProvider = CartProvider.of(context);
     final cart = cartProvider?.cart ?? [];
-    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
-    final cardColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
+    final textColor = widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
 
     if (cart.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_basket_outlined, size: 100, color: textColor.withOpacity(0.3)),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.shopping_cart_outlined,
+                size: 80,
+                color: widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8),
+              ),
+            ),
+            const SizedBox(height: 24),
             Text(
-              AppStrings.get('empty_cart', currentLocale),
-              style: TextStyle(fontSize: 24, color: textColor),
+              AppStrings.get('empty_cart', widget.currentLocale),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Adicione produtos ao carrinho',
+              style: TextStyle(
+                fontSize: 15,
+                color: widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B),
+              ),
             ),
           ],
         ),
       );
     }
 
-    double totalPrice = 0;
+    final groupedByStore = <String, List<Map<String, dynamic>>>{};
     for (var item in cart) {
-      totalPrice += (item['price'] ?? 0) * (item['quantity'] ?? 1);
+      final store = item['brand'] ?? 'Loja Desconhecida';
+      groupedByStore.putIfAbsent(store, () => []).add(item);
+    }
+
+    double totalPrice = 0;
+    int selectedCount = 0;
+    for (var item in cart) {
+      final itemId = '${item['id']}';
+      if (selectedItems.contains(itemId)) {
+        totalPrice += (item['price'] ?? 0) * (item['quantity'] ?? 1);
+        selectedCount++;
+      }
     }
 
     return Column(
       children: [
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(8),
-            itemCount: cart.length,
-            itemBuilder: (context, index) {
-              final product = cart[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Image.network(
-                      product['thumbnail'] ?? product['image'] ?? '',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 60,
-                          height: 60,
-                          color: Colors.grey,
-                          child: const Icon(Icons.error),
-                        );
-                      },
-                    ),
-                  ),
-                  title: Text(
-                    product['title'],
-                    style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '\$${product['price']}',
-                        style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
-                      ),
-                      if (product['selectedColor'] != null)
-                        Text(
-                          'Cor: ${product['selectedColor']}',
-                          style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.7)),
-                        ),
-                      if (product['selectedSize'] != null)
-                        Text(
-                          'Tamanho: ${product['selectedSize']}',
-                          style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.7)),
-                        ),
-                      if (product['quantity'] != null)
-                        Text(
-                          'Qtd: ${product['quantity']}',
-                          style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.7)),
-                        ),
-                    ],
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      cartProvider?.removeFromCart(product);
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: cardColor,
+            color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
             border: Border(
-              top: BorderSide(
-                color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+              bottom: BorderSide(
+                color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
                 width: 1,
               ),
             ),
           ),
-          child: Column(
+          child: Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    AppStrings.get('total', currentLocale),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                    ),
-                  ),
-                  Text(
-                    '\$${totalPrice.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
-                    ),
-                  ),
-                ],
+              _SelectAllCheckbox(
+                isSelected: selectAll,
+                isDark: widget.isDark,
+                onTap: () {
+                  setState(() {
+                    selectAll = !selectAll;
+                    if (selectAll) {
+                      for (var item in cart) {
+                        selectedItems.add('${item['id']}');
+                      }
+                    } else {
+                      selectedItems.clear();
+                    }
+                  });
+                },
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(AppStrings.get('checkout', currentLocale)),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text(
-                    AppStrings.get('checkout', currentLocale),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+              const SizedBox(width: 12),
+              Text(
+                'All',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
                 ),
               ),
             ],
           ),
         ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 16),
+            itemCount: groupedByStore.length,
+            itemBuilder: (context, index) {
+              final store = groupedByStore.keys.elementAt(index);
+              final items = groupedByStore[store]!;
+              return _StoreSection(
+                storeName: store,
+                items: items,
+                isDark: widget.isDark,
+                textColor: textColor,
+                selectedItems: selectedItems,
+                onItemToggle: (itemId) {
+                  setState(() {
+                    if (selectedItems.contains(itemId)) {
+                      selectedItems.remove(itemId);
+                      selectAll = false;
+                    } else {
+                      selectedItems.add(itemId);
+                      if (selectedItems.length == cart.length) {
+                        selectAll = true;
+                      }
+                    }
+                  });
+                },
+                onRemove: (item) => cartProvider?.removeFromCart(item),
+              );
+            },
+          ),
+        ),
+        _CheckoutBar(
+          totalPrice: totalPrice,
+          isDark: widget.isDark,
+          textColor: textColor,
+          currentLocale: widget.currentLocale,
+          itemCount: selectedCount,
+          selectAll: selectAll,
+          onSelectAllToggle: () {
+            setState(() {
+              selectAll = !selectAll;
+              if (selectAll) {
+                for (var item in cart) {
+                  selectedItems.add('${item['id']}');
+                }
+              } else {
+                selectedItems.clear();
+              }
+            });
+          },
+        ),
       ],
+    );
+  }
+}
+
+class _SelectAllCheckbox extends StatelessWidget {
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _SelectAllCheckbox({
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.red : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? Colors.red : (isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8)),
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: isSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+      ),
+    );
+  }
+}
+
+class _StoreSection extends StatelessWidget {
+  final String storeName;
+  final List<Map<String, dynamic>> items;
+  final bool isDark;
+  final Color textColor;
+  final Set<String> selectedItems;
+  final Function(String) onItemToggle;
+  final Function(Map<String, dynamic>) onRemove;
+
+  const _StoreSection({
+    required this.storeName,
+    required this.items,
+    required this.isDark,
+    required this.textColor,
+    required this.selectedItems,
+    required this.onItemToggle,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+            border: Border(
+              bottom: BorderSide(
+                color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.store_outlined,
+                size: 18,
+                color: isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                storeName,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8),
+              ),
+            ],
+          ),
+        ),
+        ...items.map((item) => _CartItemCard(
+              product: item,
+              isDark: isDark,
+              textColor: textColor,
+              isSelected: selectedItems.contains('${item['id']}'),
+              onToggle: () => onItemToggle('${item['id']}'),
+              onRemove: () => onRemove(item),
+            )),
+      ],
+    );
+  }
+}
+
+class _CartItemCard extends StatelessWidget {
+  final Map<String, dynamic> product;
+  final bool isDark;
+  final Color textColor;
+  final bool isSelected;
+  final VoidCallback onToggle;
+  final VoidCallback onRemove;
+
+  const _CartItemCard({
+    required this.product,
+    required this.isDark,
+    required this.textColor,
+    required this.isSelected,
+    required this.onToggle,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
+    final stock = product['stock'] ?? 100;
+    final hasLowStock = stock <= 5 && stock > 0;
+    final originalPrice = (product['price'] ?? 0) * 1.3;
+    final random = Random(product['id']);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: onToggle,
+            child: Container(
+              width: 20,
+              height: 20,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.red : Colors.transparent,
+                border: Border.all(
+                  color: isSelected ? Colors.red : (isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8)),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  product['thumbnail'] ?? product['image'] ?? '',
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 90,
+                      height: 90,
+                      color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              if (hasLowStock)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
+                    ),
+                    child: Text(
+                      stock == 1 ? 'Only 1 left' : 'Only $stock left',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product['title'],
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                if (product['selectedColor'] != null || product['selectedSize'] != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      [
+                        if (product['selectedColor'] != null) product['selectedColor'],
+                        if (product['selectedSize'] != null) product['selectedSize'],
+                      ].join(' / '),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: subtitleColor,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'AOA${product['price'].toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 17,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'AOA${originalPrice.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: subtitleColor,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'New shoppers save AOA${(originalPrice - product['price']).toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Free shipping',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: subtitleColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Spacer(),
+                    _QuantitySelector(
+                      quantity: product['quantity'] ?? 1,
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuantitySelector extends StatelessWidget {
+  final int quantity;
+  final bool isDark;
+
+  const _QuantitySelector({
+    required this.quantity,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: isDark ? const Color(0xFF5E6266) : const Color(0xFFE4E6EB),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _QuantityButton(icon: Icons.remove, isDark: isDark),
+          Container(
+            width: 40,
+            alignment: Alignment.center,
+            child: Text(
+              quantity.toString(),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
+              ),
+            ),
+          ),
+          _QuantityButton(icon: Icons.add, isDark: isDark),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuantityButton extends StatefulWidget {
+  final IconData icon;
+  final bool isDark;
+
+  const _QuantityButton({
+    required this.icon,
+    required this.isDark,
+  });
+
+  @override
+  State<_QuantityButton> createState() => _QuantityButtonState();
+}
+
+class _QuantityButtonState extends State<_QuantityButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: Container(
+        width: 32,
+        height: 32,
+        color: _isPressed
+            ? (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5))
+            : Colors.transparent,
+        child: Icon(
+          widget.icon,
+          size: 18,
+          color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
+        ),
+      ),
+    );
+  }
+}
+
+class _CheckoutBar extends StatefulWidget {
+  final double totalPrice;
+  final bool isDark;
+  final Color textColor;
+  final String currentLocale;
+  final int itemCount;
+  final bool selectAll;
+  final VoidCallback onSelectAllToggle;
+
+  const _CheckoutBar({
+    required this.totalPrice,
+    required this.isDark,
+    required this.textColor,
+    required this.currentLocale,
+    required this.itemCount,
+    required this.selectAll,
+    required this.onSelectAllToggle,
+  });
+
+  @override
+  State<_CheckoutBar> createState() => _CheckoutBarState();
+}
+
+class _CheckoutBarState extends State<_CheckoutBar> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+        border: Border(
+          top: BorderSide(
+            color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: widget.isDark ? const Color(0x40000000) : const Color(0x10000000),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: widget.onSelectAllToggle,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: widget.selectAll ? Colors.red : Colors.transparent,
+                  border: Border.all(
+                    color: widget.selectAll ? Colors.red : (widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8)),
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: widget.selectAll ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'All',
+              style: TextStyle(
+                fontSize: 14,
+                color: widget.textColor,
+              ),
+            ),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Total:',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B),
+                  ),
+                ),
+                Text(
+                  'AOA${widget.totalPrice.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: widget.textColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            GestureDetector(
+              onTapDown: (_) => setState(() => _isPressed = true),
+              onTapUp: (_) {
+                setState(() => _isPressed = false);
+                if (widget.itemCount > 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(AppStrings.get('checkout', widget.currentLocale)),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              onTapCancel: () => setState(() => _isPressed = false),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                decoration: BoxDecoration(
+                  color: widget.itemCount > 0 ? Colors.red : (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB)),
+                  borderRadius: BorderRadius.circular(_isPressed ? 6 : 20),
+                ),
+                child: Text(
+                  'Checkout (${widget.itemCount})',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: widget.itemCount > 0 ? Colors.white : (widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
