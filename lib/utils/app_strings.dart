@@ -18,7 +18,8 @@ class AppStrings {
       'remove_from_cart': 'Remover do Carrinho',
       'price': 'Preço',
       'description': 'Descrição',
-      'empty_cart': 'Carrinho Vazio',
+      'empty_cart': 'Cesta Vazia',
+      'clear_cart': 'Esvaziar',
       'select_color': 'Selecionar Cor',
       'select_size': 'Selecionar Tamanho',
       'quantity': 'Quantidade',
@@ -32,6 +33,7 @@ class AppStrings {
       'out_of_stock': 'Fora de Estoque',
       'brand': 'Marca',
       'category': 'Categoria',
+      'explore_more': 'explorar mais',
     },
     'en': {
       'app_name': 'Cabinda Shop',
@@ -51,7 +53,8 @@ class AppStrings {
       'remove_from_cart': 'Remove from Cart',
       'price': 'Price',
       'description': 'Description',
-      'empty_cart': 'Empty Cart',
+      'empty_cart': 'Empty Basket',
+      'clear_cart': 'Clear',
       'select_color': 'Select Color',
       'select_size': 'Select Size',
       'quantity': 'Quantity',
@@ -65,6 +68,7 @@ class AppStrings {
       'out_of_stock': 'Out of Stock',
       'brand': 'Brand',
       'category': 'Category',
+      'explore_more': 'explore more',
     },
   };
 
