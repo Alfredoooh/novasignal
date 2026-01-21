@@ -14,7 +14,47 @@ class LojaTabScreen extends StatefulWidget {
     required this.bgColor,
     required this.isDark,
     required this.currentLocale,
-  }) : super(key: key);
+    Widget _buildEmptyState(Color textColor, Color subtitleColor) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/empty_store.png',
+            width: 200,
+            height: 200,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.store_mall_directory_outlined,
+                size: 100,
+                color: subtitleColor.withOpacity(0.5),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Nenhuma loja disponível',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tente novamente mais tarde',
+            style: TextStyle(
+              fontSize: 14,
+              color: subtitleColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}) : super(key: key);
 
   @override
   State<LojaTabScreen> createState() => _LojaTabScreenState();
