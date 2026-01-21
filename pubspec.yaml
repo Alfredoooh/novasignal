@@ -17,6 +17,7 @@ dependencies:
   youtube_player_flutter: any
   animations: any
   translator: any
+  provider: any 
 
   # HTTP - versão específica mais leve
   http: any
