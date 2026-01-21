@@ -24,10 +24,20 @@ class BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Remove a linha divisória quando estiver no tab da cesta (index 2)
+    final showBorder = selectedIndex != 2;
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-        border: Border(top: BorderSide(color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0), width: 1)),
+        border: showBorder
+            ? Border(
+                top: BorderSide(
+                  color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+                  width: 1,
+                ),
+              )
+            : null,
       ),
       child: Row(
         children: [
