@@ -58,16 +58,16 @@ class InicioTabScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         if (lowPriceProducts.isNotEmpty) ...[
-          _buildSectionTitle('Ofertas Relâmpago', '⚡'),
+          _buildSectionTitle('Ofertas Relâmpago', 'assets/flash_icon.png'),
           _buildHorizontalProductList(lowPriceProducts),
           const SizedBox(height: 16),
         ],
         if (midPriceProducts.isNotEmpty) ...[
-          _buildSectionTitle('Escolha do Editor', '🔥'),
+          _buildSectionTitle('Escolha do Editor', 'assets/fire_icon.png'),
           _buildHorizontalProductList(midPriceProducts),
           const SizedBox(height: 16),
         ],
-        _buildSectionTitle('Todos os Produtos', '🛍️'),
+        _buildSectionTitle('Todos os Produtos', 'assets/shop_icon.png'),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: MasonryGridView.count(
@@ -104,14 +104,18 @@ class InicioTabScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, String emoji) {
+  Widget _buildSectionTitle(String title, String iconPath) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         children: [
-          Text(
-            emoji,
-            style: const TextStyle(fontSize: 20),
+          Image.asset(
+            iconPath,
+            width: 20,
+            height: 20,
+            errorBuilder: (context, error, stackTrace) {
+              return const SizedBox(width: 20, height: 20);
+            },
           ),
           const SizedBox(width: 8),
           Text(
