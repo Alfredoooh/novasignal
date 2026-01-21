@@ -23,6 +23,7 @@ dependencies:
   xml: any
   url_launcher: any
   animated_check: any
+  animated_icon: any
 
   # SVG - versão específica
   flutter_svg: ^2.0.10
