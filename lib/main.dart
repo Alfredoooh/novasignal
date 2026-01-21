@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/help_screen.dart';
@@ -28,19 +29,6 @@ class SportsApp extends StatefulWidget {
 class _SportsAppState extends State<SportsApp> {
   bool _isDark = false;
   String _locale = 'pt';
-  final List<Map<String, dynamic>> _cart = [];
-
-  void _addToCart(Map<String, dynamic> product) {
-    setState(() {
-      _cart.add(product);
-    });
-  }
-
-  void _removeFromCart(Map<String, dynamic> product) {
-    setState(() {
-      _cart.remove(product);
-    });
-  }
 
   @override
   void initState() {
@@ -76,10 +64,8 @@ class _SportsAppState extends State<SportsApp> {
           setState(() => _locale = v);
           _savePreferences();
         },
-        child: CartProvider(
-          cart: _cart,
-          addToCart: _addToCart,
-          removeFromCart: _removeFromCart,
+        child: ChangeNotifierProvider(
+          create: (context) => CartProvider(),
           child: WidgetsApp(
             color: const Color(0xFFFFFFFF),
             onGenerateRoute: (settings) {
@@ -103,7 +89,7 @@ class _SportsAppState extends State<SportsApp> {
                 default:
                   page = const HomeScreen();
               }
-              
+
               // Transição nativa do iOS
               return CupertinoPageRoute(
                 settings: settings,
