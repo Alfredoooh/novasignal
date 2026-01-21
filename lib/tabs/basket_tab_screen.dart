@@ -27,6 +27,21 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
   final Set<String> selectedItems = {};
   bool selectAll = false;
 
+  void _toggleSelectAll(List<Map<String, dynamic>> cart) {
+    setState(() {
+      if (selectAll) {
+        selectedItems.clear();
+        selectAll = false;
+      } else {
+        selectedItems.clear();
+        for (var item in cart) {
+          selectedItems.add('${item['id']}');
+        }
+        selectAll = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartProvider = CartProvider.of(context);
@@ -90,6 +105,37 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
 
     return Column(
       children: [
+        // Select All checkbox
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+            border: Border(
+              bottom: BorderSide(
+                color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              _AnimatedCheckbox(
+                isSelected: selectAll,
+                isDark: widget.isDark,
+                onTap: () => _toggleSelectAll(cart),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'All',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.only(bottom: 16),
@@ -158,6 +204,7 @@ class _StoreSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
@@ -218,7 +265,6 @@ class _CartItemCardState extends State<_CartItemCard> {
     final stock = widget.product['stock'] ?? 100;
     final hasLowStock = stock <= 5 && stock > 0;
     final originalPrice = (widget.product['price'] ?? 0) * 1.3;
-    final random = Random(widget.product['id']);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -240,54 +286,59 @@ class _CartItemCardState extends State<_CartItemCard> {
             onTap: widget.onToggle,
           ),
           const SizedBox(width: 12),
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  widget.product['thumbnail'] ?? widget.product['image'] ?? '',
-                  width: 90,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 90,
-                      height: 90,
-                      color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
-                      ),
-                    );
-                  },
+          Container(
+            decoration: BoxDecoration(
+              color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    widget.product['thumbnail'] ?? widget.product['image'] ?? '',
+                    width: 90,
+                    height: 90,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 90,
+                        height: 90,
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              if (hasLowStock)
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(8),
-                        bottomRight: Radius.circular(8),
+                if (hasLowStock)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(8),
+                          bottomRight: Radius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      stock == 1 ? 'Only 1 left' : 'Only $stock left',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                      child: Text(
+                        stock == 1 ? 'Only 1 left' : 'Only $stock left',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -485,14 +536,10 @@ class _QuantitySelector extends StatelessWidget {
   void _updateQuantity(BuildContext context, int delta) {
     final newQuantity = quantity + delta;
     final stock = product['stock'] ?? 100;
-    
+
     if (newQuantity >= 1 && newQuantity <= stock) {
       final cartProvider = CartProvider.of(context);
-      
-      // Atualiza a quantidade no produto
       product['quantity'] = newQuantity;
-      
-      // Remove e adiciona novamente para forçar atualização
       cartProvider?.removeFromCart(product);
       cartProvider?.addToCart(product);
     }
@@ -501,7 +548,7 @@ class _QuantitySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stock = product['stock'] ?? 100;
-    
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
@@ -577,9 +624,9 @@ class _QuantityButtonState extends State<_QuantityButton> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: _isPressed
+          color: widget.enabled
               ? (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5))
-              : Colors.transparent,
+              : (widget.isDark ? const Color(0xFF2A2B2C) : const Color(0xFFE4E6EB)),
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -622,8 +669,8 @@ class _CheckoutBarState extends State<_CheckoutBar> {
       decoration: BoxDecoration(
         color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
         ),
         boxShadow: [
           BoxShadow(
