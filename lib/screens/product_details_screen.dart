@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
-import 'package:animated_icon/animated_icon.dart';
 import 'package:translator/translator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,12 +19,11 @@ class ProductDetailsScreen extends StatefulWidget {
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
 }
 
-class _ProductDetailsScreenState extends State<ProductDetailsScreen> with TickerProviderStateMixin {
+class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   int _currentImageIndex = 0;
   String? _selectedColor;
   String? _selectedSize;
   final PageController _pageController = PageController();
-  late AnimationController _iconController;
   final translator = GoogleTranslator();
 
   String? _translatedTitle;
@@ -37,10 +35,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   @override
   void initState() {
     super.initState();
-    _iconController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
 
     if (widget.product['colors'] != null && (widget.product['colors'] as List).isNotEmpty) {
       _selectedColor = widget.product['colors'][0]['name'];
@@ -142,7 +136,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   @override
   void dispose() {
     _pageController.dispose();
-    _iconController.dispose();
     super.dispose();
   }
 
@@ -513,7 +506,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
         isDark: isDark,
         textColor: textColor,
         bgColor: bgColor,
-        iconController: _iconController,
         currentLocale: currentLocale,
       ),
     );
@@ -657,7 +649,6 @@ class _AddToCartBar extends StatefulWidget {
   final bool isDark;
   final Color textColor;
   final Color bgColor;
-  final AnimationController iconController;
   final String currentLocale;
 
   const _AddToCartBar({
@@ -667,7 +658,6 @@ class _AddToCartBar extends StatefulWidget {
     required this.isDark,
     required this.textColor,
     required this.bgColor,
-    required this.iconController,
     required this.currentLocale,
   });
 
@@ -703,14 +693,12 @@ class _AddToCartBarState extends State<_AddToCartBar> {
 
               if (isInCart) {
                 cart.removeFromCart(widget.product);
-                widget.iconController.reverse();
               } else {
                 final productToAdd = Map<String, dynamic>.from(widget.product);
                 productToAdd['selectedColor'] = widget.selectedColor;
                 productToAdd['selectedSize'] = widget.selectedSize;
                 productToAdd['quantity'] = 1;
                 cart.addToCart(productToAdd);
-                widget.iconController.forward();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -734,13 +722,10 @@ class _AddToCartBarState extends State<_AddToCartBar> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AnimateIcon(
-                    onTap: () {},
-                    iconType: IconType.continueAnimation,
-                    animateIcon: AnimateIcons.add,
-                    controller: widget.iconController,
+                  Icon(
+                    isInCart ? Icons.remove_shopping_cart_rounded : Icons.add_shopping_cart_rounded,
                     color: Colors.white,
-                    size: 24,
+                    size: 22,
                   ),
                   const SizedBox(width: 8),
                   Text(
