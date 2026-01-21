@@ -16,6 +16,7 @@ dependencies:
   #webview_flutter_android: ^3.18.2
   youtube_player_flutter: any
   animations: any
+  translator: any
 
   # HTTP - versão específica mais leve
   http: any
