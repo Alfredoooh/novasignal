@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:provider/provider.dart';
+import 'package:animated_check/animated_check.dart';
 import '../providers/cart_provider.dart';
 import '../utils/app_strings.dart';
 
@@ -329,29 +330,13 @@ class _CartItem extends StatefulWidget {
 class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixin {
   bool _isSelected = false;
   late AnimationController _checkController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _checkAnimation;
 
   @override
   void initState() {
     super.initState();
     _checkController = AnimationController(
-      duration: const Duration(milliseconds: 400),
       vsync: this,
-    );
-    
-    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _checkController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-      ),
-    );
-    
-    _checkAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _checkController,
-        curve: const Interval(0.3, 1.0, curve: Curves.elasticOut),
-      ),
+      duration: const Duration(milliseconds: 400),
     );
   }
 
@@ -402,37 +387,26 @@ class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixi
                 _checkController.reverse();
               }
             },
-            child: AnimatedBuilder(
-              animation: _checkController,
-              builder: (context, child) {
-                return Container(
-                  width: 24,
-                  height: 24,
-                  margin: const EdgeInsets.only(top: 4),
-                  decoration: BoxDecoration(
-                    color: _isSelected 
-                        ? const Color(0xFF007AFF) 
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: _isSelected 
-                          ? const Color(0xFF007AFF) 
-                          : widget.subtitleColor,
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: _isSelected
-                      ? Transform.scale(
-                          scale: _checkAnimation.value,
-                          child: const Icon(
-                            Icons.check_rounded,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        )
-                      : null,
-                );
-              },
+            child: Container(
+              width: 28,
+              height: 28,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                color: _isSelected ? const Color(0xFF007AFF) : Colors.transparent,
+                border: Border.all(
+                  color: _isSelected ? const Color(0xFF007AFF) : widget.subtitleColor,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: _isSelected
+                  ? AnimatedCheck(
+                      progress: _checkController,
+                      color: Colors.white,
+                      size: 20,
+                      strokeWidth: 2.5,
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 12),
