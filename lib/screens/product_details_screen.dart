@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../providers/cart_provider.dart';
 import '../providers/theme_provider.dart';
-import '../providers/locale_provider.dart';
-import 'dart:math';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -19,11 +17,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   String? _selectedColor;
   String? _selectedSize;
   final PageController _pageController = PageController();
+  bool _imageLoadError = false;
 
   @override
   void initState() {
     super.initState();
-    // Define cor padrão se houver cores disponíveis
     if (widget.product['colors'] != null && (widget.product['colors'] as List).isNotEmpty) {
       _selectedColor = widget.product['colors'][0]['name'];
     }
@@ -63,7 +61,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final images = _getImages();
     final colors = widget.product['colors'] as List?;
     final sizes = widget.product['sizes'] as List?;
-    final originalPrice = (widget.product['price'] ?? 0) * 1.3;
+    final price = widget.product['price'] ?? 0;
+    final originalPrice = price * 1.3;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -75,6 +74,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             child: Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: bgColor,
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+                    width: 1,
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   _NavigationButton(
@@ -109,77 +117,115 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Galeria de imagens
-                  SizedBox(
+                  Container(
                     height: 400,
-                    child: Stack(
-                      children: [
-                        PageView.builder(
-                          controller: _pageController,
-                          onPageChanged: (index) {
-                            setState(() => _currentImageIndex = index);
-                          },
-                          itemCount: images.length,
-                          itemBuilder: (context, index) {
-                            return Image.network(
-                              images[index],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
-                                  child: Icon(
-                                    Icons.image_not_supported_outlined,
-                                    size: 80,
-                                    color: isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        if (images.length > 1)
-                          Positioned(
-                            bottom: 16,
-                            left: 0,
-                            right: 0,
-                            child: Row(
+                    color: isDark ? const Color(0xFF242526) : const Color(0xFFF0F2F5),
+                    child: images.isEmpty || _imageLoadError
+                        ? Center(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                images.length,
-                                (index) => Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                                  width: 6,
-                                  height: 6,
+                              children: [
+                                Icon(
+                                  Icons.image_outlined,
+                                  size: 80,
+                                  color: isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Image not available',
+                                  style: TextStyle(
+                                    color: subtitleColor,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Stack(
+                            children: [
+                              PageView.builder(
+                                controller: _pageController,
+                                onPageChanged: (index) {
+                                  setState(() => _currentImageIndex = index);
+                                },
+                                itemCount: images.length,
+                                itemBuilder: (context, index) {
+                                  return Image.network(
+                                    images[index],
+                                    fit: BoxFit.contain,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                          color: Colors.red,
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted) {
+                                          setState(() => _imageLoadError = true);
+                                        }
+                                      });
+                                      return Center(
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          size: 80,
+                                          color: isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              if (images.length > 1)
+                                Positioned(
+                                  bottom: 16,
+                                  left: 0,
+                                  right: 0,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(
+                                      images.length,
+                                      (index) => Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _currentImageIndex == index
+                                              ? Colors.red
+                                              : Colors.grey.withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              Positioned(
+                                top: 16,
+                                left: 16,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: _currentImageIndex == index
-                                        ? Colors.white
-                                        : Colors.white.withOpacity(0.4),
+                                    color: Colors.black.withOpacity(0.6),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Item ${_currentImageIndex + 1}/${images.length}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                        Positioned(
-                          top: 16,
-                          left: 16,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Item ${_currentImageIndex + 1}/${images.length}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                   
                   Padding(
@@ -189,7 +235,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       children: [
                         // Título
                         Text(
-                          widget.product['title'] ?? '',
+                          widget.product['title'] ?? 'Product',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -263,7 +309,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    'AOA${widget.product['price'].toStringAsFixed(2)}',
+                                    'AOA${price.toStringAsFixed(2)}',
                                     style: const TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.w700,
@@ -647,22 +693,18 @@ class _AddToCartBarState extends State<_AddToCartBar> {
     return Container(
       decoration: BoxDecoration(
         color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
-        ),
         boxShadow: [
           BoxShadow(
             color: widget.isDark ? const Color(0x40000000) : const Color(0x10000000),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: GestureDetector(
             onTapDown: (_) => setState(() => _isPressed = true),
             onTapUp: (_) {
@@ -685,11 +727,10 @@ class _AddToCartBarState extends State<_AddToCartBar> {
             onTapCancel: () => setState(() => _isPressed = false),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              height: 48,
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(_isPressed ? 6 : 100),
+                borderRadius: BorderRadius.circular(_isPressed ? 8 : 24),
               ),
               alignment: Alignment.center,
               child: const Text(
