@@ -95,7 +95,9 @@ class BasketTabScreen extends StatelessWidget {
                 onTap: () {
                   // Esvaziar cesta
                   cartProvider?.cart.clear();
-                  cartProvider?.notifyListeners();
+                  if (cartProvider != null) {
+                    (cartProvider as ChangeNotifier).notifyListeners();
+                  }
                 },
                 child: Text(
                   AppStrings.get('clear_cart', currentLocale),
@@ -180,7 +182,9 @@ class BasketTabScreen extends StatelessWidget {
                       dividerColor: dividerColor,
                       currentLocale: currentLocale,
                       onQuantityChanged: () {
-                        cartProvider?.notifyListeners();
+                        if (cartProvider != null) {
+                          (cartProvider as ChangeNotifier).notifyListeners();
+                        }
                       },
                       onRemove: () {
                         cartProvider?.removeFromCart(item);
@@ -594,7 +598,7 @@ class _CheckoutButtonState extends State<_CheckoutButton> {
         ),
         alignment: Alignment.center,
         child: Text(
-          AppStrings.get('checkout', currentLocale),
+          AppStrings.get('checkout', widget.currentLocale),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
