@@ -5,6 +5,7 @@ import 'package:animated_icon/animated_icon.dart';
 import 'package:translator/translator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
@@ -55,6 +56,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   }
 
   Future<void> _convertPrice() async {
+    if (!mounted) return;
     setState(() => _isLoadingPrice = true);
     try {
       final response = await http.get(
@@ -64,32 +66,41 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
         final data = json.decode(response.body);
         final aoaRate = data['rates']['AOA'] ?? 900.0;
         final priceUSD = (widget.product['price'] ?? 0).toDouble();
+        if (mounted) {
+          setState(() {
+            _priceInAOA = priceUSD * aoaRate;
+            _isLoadingPrice = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          _priceInAOA = priceUSD * aoaRate;
+          _priceInAOA = (widget.product['price'] ?? 0).toDouble() * 900;
           _isLoadingPrice = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _priceInAOA = (widget.product['price'] ?? 0).toDouble() * 900;
-        _isLoadingPrice = false;
-      });
     }
   }
 
   Future<void> _translateContent() async {
-    final locale = LocaleProvider.of(context);
-    final currentLocale = locale?.locale ?? 'pt';
+    if (!mounted) return;
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+    final currentLocale = localeProvider.locale;
 
     if (currentLocale != 'pt') {
-      setState(() {
-        _translatedTitle = widget.product['title'];
-        _translatedDescription = widget.product['description'];
-      });
+      if (mounted) {
+        setState(() {
+          _translatedTitle = widget.product['title'];
+          _translatedDescription = widget.product['description'];
+        });
+      }
       return;
     }
 
-    setState(() => _isTranslating = true);
+    if (mounted) {
+      setState(() => _isTranslating = true);
+    }
 
     try {
       if (widget.product['title'] != null) {
@@ -98,7 +109,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
           from: 'en',
           to: 'pt',
         );
-        _translatedTitle = titleTranslation.text;
+        if (mounted) {
+          _translatedTitle = titleTranslation.text;
+        }
       }
 
       if (widget.product['description'] != null) {
@@ -107,18 +120,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
           from: 'en',
           to: 'pt',
         );
-        _translatedDescription = descTranslation.text;
+        if (mounted) {
+          _translatedDescription = descTranslation.text;
+        }
       }
 
       if (mounted) {
         setState(() => _isTranslating = false);
       }
     } catch (e) {
-      setState(() {
-        _translatedTitle = widget.product['title'];
-        _translatedDescription = widget.product['description'];
-        _isTranslating = false;
-      });
+      if (mounted) {
+        setState(() {
+          _translatedTitle = widget.product['title'];
+          _translatedDescription = widget.product['description'];
+          _isTranslating = false;
+        });
+      }
     }
   }
 
@@ -145,10 +162,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = ThemeProvider.of(context);
-    final localeProvider = LocaleProvider.of(context);
-    final isDark = themeProvider?.isDark ?? false;
-    final currentLocale = localeProvider?.locale ?? 'pt';
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final localeProvider = Provider.of<LocaleProvider>(context);
+    final isDark = themeProvider.isDark;
+    final currentLocale = localeProvider.locale;
     final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFFFFFFF);
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
     final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
@@ -305,7 +322,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
 
                         Row(
                           children: [
-                            Icon(Icons.star, color: Colors.amber, size: 18),
+                            const Icon(Icons.star, color: Colors.amber, size: 18),
                             const SizedBox(width: 4),
                             Text(
                               '$rating',
@@ -661,14 +678,10 @@ class _AddToCartBar extends StatefulWidget {
 class _AddToCartBarState extends State<_AddToCartBar> {
   bool _isPressed = false;
 
-  bool _isInCart() {
-    final cartProvider = CartProvider.of(context);
-    return cartProvider?.cart.any((item) => item['id'] == widget.product['id']) ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isInCart = _isInCart();
+    final cartProvider = Provider.of<CartProvider>(context);
+    final isInCart = cartProvider.cart.any((item) => item['id'] == widget.product['id']);
 
     return Container(
       decoration: BoxDecoration(
@@ -686,23 +699,22 @@ class _AddToCartBarState extends State<_AddToCartBar> {
             onTapDown: (_) => setState(() => _isPressed = true),
             onTapUp: (_) {
               setState(() => _isPressed = false);
-              final cartProvider = CartProvider.of(context);
+              final cart = Provider.of<CartProvider>(context, listen: false);
 
               if (isInCart) {
-                cartProvider?.cart.removeWhere((item) => item['id'] == widget.product['id']);
-                cartProvider?.removeFromCart(widget.product);
+                cart.removeFromCart(widget.product);
                 widget.iconController.reverse();
               } else {
                 final productToAdd = Map<String, dynamic>.from(widget.product);
                 productToAdd['selectedColor'] = widget.selectedColor;
                 productToAdd['selectedSize'] = widget.selectedSize;
                 productToAdd['quantity'] = 1;
-                cartProvider?.addToCart(productToAdd);
+                cart.addToCart(productToAdd);
                 widget.iconController.forward();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Adicionado ao carrinho'),
+                    content: const Text('Adicionado ao carrinho'),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                     backgroundColor: widget.isDark ? const Color(0xFF242526) : const Color(0xFF1C1E21),
