@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/product_card.dart';
 
@@ -30,14 +31,16 @@ class InicioTabScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildSkeletonView();
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return _buildErrorState();
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return _buildEmptyState();
           } else {
             List<dynamic> products = snapshot.data!;
             if (selectedCategory != 'Todos') {
               products = List.from(products)..shuffle();
               products = products.take(10).toList();
             }
-            
+
             if (selectedCategory == 'Todos') {
               return _buildAllProductsView(products);
             } else {
@@ -45,6 +48,94 @@ class InicioTabScreen extends StatelessWidget {
             }
           }
         },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
+    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/empty_products.png',
+            width: 200,
+            height: 200,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.inventory_2_outlined,
+                size: 100,
+                color: subtitleColor.withOpacity(0.5),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Nenhum produto disponível',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tente novamente mais tarde',
+            style: TextStyle(
+              fontSize: 14,
+              color: subtitleColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
+    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/error_state.png',
+            width: 200,
+            height: 200,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.error_outline_rounded,
+                size: 100,
+                color: subtitleColor.withOpacity(0.5),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Erro ao carregar produtos',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Verifique sua conexão',
+            style: TextStyle(
+              fontSize: 14,
+              color: subtitleColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -58,16 +149,16 @@ class InicioTabScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         if (lowPriceProducts.isNotEmpty) ...[
-          _buildSectionTitle('Ofertas Relâmpago', 'assets/flash_icon.png'),
+          _buildSectionTitle('Ofertas Relâmpago', Icons.flash_on_rounded),
           _buildHorizontalProductList(lowPriceProducts),
           const SizedBox(height: 16),
         ],
         if (midPriceProducts.isNotEmpty) ...[
-          _buildSectionTitle('Escolha do Editor', 'assets/fire_icon.png'),
+          _buildSectionTitle('Escolha do Editor', Icons.local_fire_department_rounded),
           _buildHorizontalProductList(midPriceProducts),
           const SizedBox(height: 16),
         ],
-        _buildSectionTitle('Todos os Produtos', 'assets/shop_icon.png'),
+        _buildSectionTitle('Todos os Produtos', Icons.shopping_bag_rounded),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: MasonryGridView.count(
@@ -79,8 +170,8 @@ class InicioTabScreen extends StatelessWidget {
             itemCount: allProducts.length,
             itemBuilder: (context, index) {
               final product = allProducts[index];
-              final cartProvider = CartProvider.of(context);
-              final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
+              final cartProvider = Provider.of<CartProvider>(context);
+              final isInCart = cartProvider.cart.any((item) => item['id'] == product['id']);
               return ProductCard(
                 product: product,
                 isDark: isDark,
@@ -91,9 +182,9 @@ class InicioTabScreen extends StatelessWidget {
                 },
                 onCartAction: () {
                   if (isInCart) {
-                    cartProvider?.removeFromCart(product);
+                    cartProvider.removeFromCart(product);
                   } else {
-                    cartProvider?.addToCart(product);
+                    cartProvider.addToCart(product);
                   }
                 },
               );
@@ -104,26 +195,26 @@ class InicioTabScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, String iconPath) {
+  Widget _buildSectionTitle(String title, IconData icon) {
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         children: [
-          Image.asset(
-            iconPath,
-            width: 20,
-            height: 20,
-            errorBuilder: (context, error, stackTrace) {
-              return const SizedBox(width: 20, height: 20);
-            },
+          Icon(
+            icon,
+            size: 24,
+            color: const Color(0xFF007AFF),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Text(
             title,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
+              color: textColor,
+              letterSpacing: -0.3,
             ),
           ),
         ],
@@ -140,8 +231,8 @@ class InicioTabScreen extends StatelessWidget {
         itemCount: products.length,
         itemBuilder: (context, index) {
           final product = products[index];
-          final cartProvider = CartProvider.of(context);
-          final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
+          final cartProvider = Provider.of<CartProvider>(context);
+          final isInCart = cartProvider.cart.any((item) => item['id'] == product['id']);
           return Container(
             width: 160,
             margin: EdgeInsets.only(right: index == products.length - 1 ? 0 : 8),
@@ -155,9 +246,9 @@ class InicioTabScreen extends StatelessWidget {
               },
               onCartAction: () {
                 if (isInCart) {
-                  cartProvider?.removeFromCart(product);
+                  cartProvider.removeFromCart(product);
                 } else {
-                  cartProvider?.addToCart(product);
+                  cartProvider.addToCart(product);
                 }
               },
             ),
@@ -176,8 +267,8 @@ class InicioTabScreen extends StatelessWidget {
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        final cartProvider = CartProvider.of(context);
-        final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
+        final cartProvider = Provider.of<CartProvider>(context);
+        final isInCart = cartProvider.cart.any((item) => item['id'] == product['id']);
         return ProductCard(
           product: product,
           isDark: isDark,
@@ -188,9 +279,9 @@ class InicioTabScreen extends StatelessWidget {
           },
           onCartAction: () {
             if (isInCart) {
-              cartProvider?.removeFromCart(product);
+              cartProvider.removeFromCart(product);
             } else {
-              cartProvider?.addToCart(product);
+              cartProvider.addToCart(product);
             }
           },
         );
@@ -205,37 +296,44 @@ class InicioTabScreen extends StatelessWidget {
       crossAxisSpacing: 8,
       mainAxisSpacing: 8,
       itemCount: 10,
-      itemBuilder: (context, index) => StaggeredGridTile.fit(
-        crossAxisCellCount: 1,
-        child: _buildSkeletonProductCard(isDark),
-      ),
+      itemBuilder: (context, index) => _buildSkeletonProductCard(),
     );
   }
 
-  Widget _buildSkeletonProductCard(bool isDark) {
+  Widget _buildSkeletonProductCard() {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildShimmer(double.infinity, 120, isDark),
+          _ShimmerBox(
+            width: double.infinity,
+            height: 160,
+            borderRadius: 16,
+            isDark: isDark,
+          ),
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildShimmer(100, 12, isDark),
-                const SizedBox(height: 4),
-                _buildShimmer(60, 10, isDark),
-                const SizedBox(height: 4),
-                _buildShimmer(80, 12, isDark),
+                _ShimmerBox(width: double.infinity, height: 14, borderRadius: 4, isDark: isDark),
+                const SizedBox(height: 8),
+                _ShimmerBox(width: 120, height: 14, borderRadius: 4, isDark: isDark),
+                const SizedBox(height: 12),
+                _ShimmerBox(width: 80, height: 20, borderRadius: 4, isDark: isDark),
               ],
             ),
           ),
@@ -243,23 +341,59 @@ class InicioTabScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildShimmer(double width, double height, bool isDark, {bool isCircle = false}) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.3, end: 1.0),
-      duration: const Duration(milliseconds: 1000),
-      curve: Curves.easeInOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
-              shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-              borderRadius: isCircle ? null : BorderRadius.zero,
-            ),
+class _ShimmerBox extends StatefulWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+  final bool isDark;
+
+  const _ShimmerBox({
+    required this.width,
+    required this.height,
+    required this.borderRadius,
+    required this.isDark,
+  });
+
+  @override
+  State<_ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<_ShimmerBox> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.3, end: 0.6).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF2F2F7))
+                .withOpacity(_animation.value),
+            borderRadius: BorderRadius.circular(widget.borderRadius),
           ),
         );
       },
