@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../providers/cart_provider.dart';
 import '../utils/app_strings.dart';
 
-class BasketTabScreen extends StatelessWidget {
+class BasketTabScreen extends StatefulWidget {
   final Color bgColor;
   final bool isDark;
   final String currentLocale;
@@ -16,13 +18,44 @@ class BasketTabScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<BasketTabScreen> createState() => _BasketTabScreenState();
+}
+
+class _BasketTabScreenState extends State<BasketTabScreen> {
+  double? _aoaRate;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchExchangeRate();
+  }
+
+  Future<void> _fetchExchangeRate() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.exchangerate-api.com/v4/latest/USD'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _aoaRate = data['rates']['AOA'] ?? 900.0;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _aoaRate = 900.0;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cartProvider = CartProvider.of(context);
     final cart = cartProvider?.cart ?? [];
-    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
-    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
-    final cardColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
-    final dividerColor = isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB);
+    final textColor = widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
+    final subtitleColor = widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
+    final cardColor = widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
+    final dividerColor = widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB);
 
     if (cart.isEmpty) {
       return Center(
@@ -36,7 +69,7 @@ class BasketTabScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              AppStrings.get('empty_cart', currentLocale),
+              AppStrings.get('empty_cart', widget.currentLocale),
               style: TextStyle(
                 fontSize: 18,
                 color: subtitleColor,
@@ -48,27 +81,25 @@ class BasketTabScreen extends StatelessWidget {
       );
     }
 
-    // Agrupar produtos por loja/marca
     final Map<String, List<Map<String, dynamic>>> groupedCart = {};
     for (var item in cart) {
-      final brand = item['brand'] ?? AppStrings.get('brand', currentLocale);
+      final brand = item['brand'] ?? 'Loja Geral';
       if (!groupedCart.containsKey(brand)) {
         groupedCart[brand] = [];
       }
       groupedCart[brand]!.add(item);
     }
 
-    // Calcular total
     double total = 0;
     for (var item in cart) {
       final price = (item['price'] ?? 0).toDouble();
       final quantity = item['quantity'] ?? 1;
       total += price * quantity;
     }
+    final totalAOA = total * (_aoaRate ?? 900);
 
     return Column(
       children: [
-        // Header com "All" e "Esvaziar"
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -93,15 +124,14 @@ class BasketTabScreen extends StatelessWidget {
               const Spacer(),
               GestureDetector(
                 onTap: () {
-                  // Esvaziar cesta
                   cartProvider?.cart.clear();
                   if (cartProvider != null) {
                     (cartProvider as ChangeNotifier).notifyListeners();
                   }
                 },
-                child: Text(
-                  AppStrings.get('clear_cart', currentLocale),
-                  style: const TextStyle(
+                child: const Text(
+                  'Esvaziar',
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFFFF3B30),
@@ -112,7 +142,6 @@ class BasketTabScreen extends StatelessWidget {
           ),
         ),
 
-        // Lista de produtos agrupados
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
@@ -135,17 +164,10 @@ class BasketTabScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header da loja/marca
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                       child: Row(
                         children: [
-                          Icon(
-                            Symbols.store,
-                            size: 18,
-                            color: subtitleColor,
-                          ),
-                          const SizedBox(width: 8),
                           Text(
                             brand,
                             style: TextStyle(
@@ -154,13 +176,11 @@ class BasketTabScreen extends StatelessWidget {
                               color: textColor,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const Spacer(),
                           GestureDetector(
-                            onTap: () {
-                              // TODO: Navegar para a página da loja
-                            },
+                            onTap: () {},
                             child: Text(
-                              AppStrings.get('explore_more', currentLocale),
+                              'Explorar mais',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
@@ -172,15 +192,15 @@ class BasketTabScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Produtos da loja
                     ...items.map((item) => _CartItem(
                       item: item,
-                      isDark: isDark,
+                      isDark: widget.isDark,
                       textColor: textColor,
                       subtitleColor: subtitleColor,
                       cardColor: cardColor,
                       dividerColor: dividerColor,
-                      currentLocale: currentLocale,
+                      currentLocale: widget.currentLocale,
+                      aoaRate: _aoaRate ?? 900,
                       onQuantityChanged: () {
                         if (cartProvider != null) {
                           (cartProvider as ChangeNotifier).notifyListeners();
@@ -197,23 +217,19 @@ class BasketTabScreen extends StatelessWidget {
           ),
         ),
 
-        // Bottom bar com total e checkout
         Container(
           decoration: BoxDecoration(
             color: cardColor,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
             border: Border(
               top: BorderSide(
                 color: dividerColor.withOpacity(0.3),
                 width: 0.5,
               ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark ? const Color(0x40000000) : const Color(0x1A000000),
-                blurRadius: 12,
-                offset: const Offset(0, -2),
-              ),
-            ],
           ),
           child: SafeArea(
             top: false,
@@ -227,7 +243,7 @@ class BasketTabScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          AppStrings.get('total', currentLocale),
+                          AppStrings.get('total', widget.currentLocale),
                           style: TextStyle(
                             fontSize: 13,
                             color: subtitleColor,
@@ -236,7 +252,7 @@ class BasketTabScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'AOA ${total.toStringAsFixed(2)}',
+                          'AOA ${totalAOA.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
@@ -249,8 +265,8 @@ class BasketTabScreen extends StatelessWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: _CheckoutButton(
-                      isDark: isDark,
-                      currentLocale: currentLocale,
+                      isDark: widget.isDark,
+                      currentLocale: widget.currentLocale,
                     ),
                   ),
                 ],
@@ -271,6 +287,7 @@ class _CartItem extends StatefulWidget {
   final Color cardColor;
   final Color dividerColor;
   final String currentLocale;
+  final double aoaRate;
   final VoidCallback onQuantityChanged;
   final VoidCallback onRemove;
 
@@ -282,6 +299,7 @@ class _CartItem extends StatefulWidget {
     required this.cardColor,
     required this.dividerColor,
     required this.currentLocale,
+    required this.aoaRate,
     required this.onQuantityChanged,
     required this.onRemove,
   });
@@ -290,8 +308,24 @@ class _CartItem extends StatefulWidget {
   State<_CartItem> createState() => _CartItemState();
 }
 
-class _CartItemState extends State<_CartItem> {
+class _CartItemState extends State<_CartItem> with SingleTickerProviderStateMixin {
   bool _isSelected = false;
+  late AnimationController _checkController;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _checkController.dispose();
+    super.dispose();
+  }
 
   String _getImageUrl() {
     if (widget.item['thumbnail'] != null) return widget.item['thumbnail'];
@@ -306,7 +340,8 @@ class _CartItemState extends State<_CartItem> {
   Widget build(BuildContext context) {
     final imageUrl = _getImageUrl();
     final title = widget.item['title'] ?? 'Produto';
-    final price = (widget.item['price'] ?? 0).toDouble();
+    final priceUSD = (widget.item['price'] ?? 0).toDouble();
+    final priceAOA = priceUSD * widget.aoaRate;
     final quantity = widget.item['quantity'] ?? 1;
     final selectedColor = widget.item['selectedColor'];
     final selectedSize = widget.item['selectedSize'];
@@ -324,35 +359,46 @@ class _CartItemState extends State<_CartItem> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Checkbox
           GestureDetector(
             onTap: () {
               setState(() => _isSelected = !_isSelected);
+              if (_isSelected) {
+                _checkController.forward();
+              } else {
+                _checkController.reverse();
+              }
             },
-            child: Container(
-              width: 20,
-              height: 20,
-              margin: const EdgeInsets.only(top: 4),
-              decoration: BoxDecoration(
-                color: _isSelected ? const Color(0xFF007AFF) : Colors.transparent,
-                border: Border.all(
-                  color: _isSelected ? const Color(0xFF007AFF) : widget.subtitleColor,
-                  width: 1.5,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: _isSelected
-                  ? const Icon(
-                      Icons.check,
-                      size: 14,
-                      color: Colors.white,
-                    )
-                  : null,
+            child: AnimatedBuilder(
+              animation: _checkController,
+              builder: (context, child) {
+                return Container(
+                  width: 20,
+                  height: 20,
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: _isSelected ? const Color(0xFF007AFF) : Colors.transparent,
+                    border: Border.all(
+                      color: _isSelected ? const Color(0xFF007AFF) : widget.subtitleColor,
+                      width: 1.5,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: _isSelected
+                      ? Transform.scale(
+                          scale: _checkController.value,
+                          child: const Icon(
+                            Icons.check,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
+                );
+              },
             ),
           ),
           const SizedBox(width: 12),
 
-          // Imagem do produto
           Container(
             width: 80,
             height: 80,
@@ -383,7 +429,6 @@ class _CartItemState extends State<_CartItem> {
           ),
           const SizedBox(width: 12),
 
-          // Informações do produto
           Expanded(
             child: SizedBox(
               height: 80,
@@ -391,7 +436,6 @@ class _CartItemState extends State<_CartItem> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Título
                   Text(
                     title,
                     style: TextStyle(
@@ -403,7 +447,6 @@ class _CartItemState extends State<_CartItem> {
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  // Cor e tamanho
                   if (selectedColor != null || selectedSize != null)
                     Text(
                       [
@@ -416,11 +459,10 @@ class _CartItemState extends State<_CartItem> {
                       ),
                     ),
 
-                  // Preço e controles de quantidade
                   Row(
                     children: [
                       Text(
-                        'AOA ${price.toStringAsFixed(2)}',
+                        'AOA ${priceAOA.toStringAsFixed(2)}',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -478,7 +520,7 @@ class _QuantityControl extends StatelessWidget {
       height: 28,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
@@ -543,7 +585,7 @@ class _QuantityButtonState extends State<_QuantityButton> {
         height: 28,
         decoration: BoxDecoration(
           color: widget.isDark ? const Color(0xFF4E5052) : const Color(0xFFE0E2E5),
-          borderRadius: BorderRadius.circular(_isPressed ? 4 : 6),
+          borderRadius: BorderRadius.circular(_isPressed ? 10 : 14),
         ),
         child: Icon(
           widget.icon,
@@ -577,7 +619,6 @@ class _CheckoutButtonState extends State<_CheckoutButton> {
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
-        // TODO: Implementar checkout
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
@@ -586,15 +627,6 @@ class _CheckoutButtonState extends State<_CheckoutButton> {
         decoration: BoxDecoration(
           color: const Color(0xFF007AFF),
           borderRadius: BorderRadius.circular(_isPressed ? 12 : 24),
-          boxShadow: _isPressed
-              ? []
-              : [
-                  BoxShadow(
-                    color: const Color(0xFF007AFF).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
         ),
         alignment: Alignment.center,
         child: Text(
