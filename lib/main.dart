@@ -84,20 +84,6 @@ class _SportsAppState extends State<SportsApp> {
           removeFromCart: _removeFromCart,
           child: WidgetsApp(
             color: const Color(0xFFFFFFFF),
-            pageRouteBuilder: <T>(RouteSettings settings, WidgetBuilder builder) {
-              return PageRouteBuilder<T>(
-                settings: settings,
-                pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  const begin = Offset(1.0, 0.0);
-                  const end = Offset.zero;
-                  const curve = Curves.easeInOut;
-                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                  var offsetAnimation = animation.drive(tween);
-                  return SlideTransition(position: offsetAnimation, child: child);
-                },
-              );
-            },
             onGenerateRoute: (settings) {
               Widget page;
               switch (settings.name) {
