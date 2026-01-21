@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:translator/translator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../providers/cart_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
@@ -28,6 +30,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   String? _translatedTitle;
   String? _translatedDescription;
   bool _isTranslating = false;
+  double? _priceInAOA;
+  bool _isLoadingPrice = false;
 
   @override
   void initState() {
@@ -44,17 +48,39 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
       _selectedSize = widget.product['sizes'][0];
     }
 
-    // Traduzir conteúdo ao iniciar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _translateContent();
+      _convertPrice();
     });
+  }
+
+  Future<void> _convertPrice() async {
+    setState(() => _isLoadingPrice = true);
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.exchangerate-api.com/v4/latest/USD'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final aoaRate = data['rates']['AOA'] ?? 900.0;
+        final priceUSD = (widget.product['price'] ?? 0).toDouble();
+        setState(() {
+          _priceInAOA = priceUSD * aoaRate;
+          _isLoadingPrice = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _priceInAOA = (widget.product['price'] ?? 0).toDouble() * 900;
+        _isLoadingPrice = false;
+      });
+    }
   }
 
   Future<void> _translateContent() async {
     final locale = LocaleProvider.of(context);
     final currentLocale = locale?.locale ?? 'pt';
 
-    // Só traduz se o idioma for português
     if (currentLocale != 'pt') {
       setState(() {
         _translatedTitle = widget.product['title'];
@@ -66,7 +92,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
     setState(() => _isTranslating = true);
 
     try {
-      // Traduzir título
       if (widget.product['title'] != null) {
         final titleTranslation = await translator.translate(
           widget.product['title'],
@@ -76,7 +101,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
         _translatedTitle = titleTranslation.text;
       }
 
-      // Traduzir descrição
       if (widget.product['description'] != null) {
         final descTranslation = await translator.translate(
           widget.product['description'],
@@ -90,8 +114,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
         setState(() => _isTranslating = false);
       }
     } catch (e) {
-      print('Erro ao traduzir: $e');
-      // Em caso de erro, usar o texto original
       setState(() {
         _translatedTitle = widget.product['title'];
         _translatedDescription = widget.product['description'];
@@ -121,11 +143,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
     return images;
   }
 
-  bool _isInCart() {
-    final cartProvider = CartProvider.of(context);
-    return cartProvider?.cart.any((item) => item['id'] == widget.product['id']) ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = ThemeProvider.of(context);
@@ -139,36 +156,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
     final images = _getImages();
     final colors = widget.product['colors'] as List?;
     final sizes = widget.product['sizes'] as List?;
-    final price = widget.product['price'] ?? 0;
 
-    // Usar título e descrição traduzidos ou originais
     final title = _translatedTitle ?? widget.product['title'] ?? AppStrings.get('product_details', currentLocale);
-    final description = _translatedDescription ?? widget.product['description'] ?? AppStrings.get('description', currentLocale);
+    final description = _translatedDescription ?? widget.product['description'] ?? '';
+    final rating = widget.product['rating'] ?? 4.5;
+    final brand = widget.product['brand'];
+    final category = widget.product['category'];
+    final stock = widget.product['stock'] ?? 0;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: Column(
         children: [
-          // AppBar com cor primária
           SafeArea(
             bottom: false,
             child: Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C3E50),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0x15000000),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+              color: const Color(0xFF2C3E50),
               child: Row(
                 children: [
                   _NavigationButton(
@@ -209,7 +214,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Galeria de imagens
                   Container(
                     height: 350,
                     color: isDark ? const Color(0xFF242526) : const Color(0xFFF0F2F5),
@@ -277,7 +281,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Título
                         _isTranslating
                             ? Shimmer(
                                 child: Container(
@@ -298,22 +301,63 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                                   height: 1.3,
                                 ),
                               ),
+                        const SizedBox(height: 12),
+
+                        Row(
+                          children: [
+                            Icon(Icons.star, color: Colors.amber, size: 18),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$rating',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${widget.product['reviews']?.length ?? 0} avaliações',
+                              style: TextStyle(fontSize: 13, color: subtitleColor),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
 
-                        // Preço
-                        Text(
-                          'AOA ${price.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                          ),
-                        ),
+                        _isLoadingPrice
+                            ? Shimmer(
+                                child: Container(
+                                  height: 32,
+                                  width: 200,
+                                  decoration: BoxDecoration(
+                                    color: subtitleColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'AOA ${_priceInAOA?.toStringAsFixed(2) ?? '0.00'}',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
                         const SizedBox(height: 24),
 
-                        // Descrição do produto
+                        if (brand != null) ...[
+                          _InfoRow('Marca', brand, textColor, subtitleColor),
+                          const SizedBox(height: 12),
+                        ],
+                        if (category != null) ...[
+                          _InfoRow('Categoria', category, textColor, subtitleColor),
+                          const SizedBox(height: 12),
+                        ],
+                        _InfoRow('Disponibilidade', stock > 0 ? 'Em estoque ($stock)' : 'Esgotado', textColor, stock > 0 ? Colors.green : Colors.red),
+                        const SizedBox(height: 24),
+
                         Text(
-                          AppStrings.get('product_details', currentLocale),
+                          'Descrição do Produto',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -349,11 +393,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                                 ),
                               ),
 
-                        // Cores
                         if (colors != null && colors.isNotEmpty) ...[
                           const SizedBox(height: 24),
                           Text(
-                            '${AppStrings.get('select_color', currentLocale)}: ${_selectedColor ?? ''}',
+                            'Cor: ${_selectedColor ?? ''}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -390,11 +433,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
                           ),
                         ],
 
-                        // Tamanhos
                         if (sizes != null && sizes.isNotEmpty) ...[
                           const SizedBox(height: 24),
                           Text(
-                            '${AppStrings.get('select_size', currentLocale)}: ${_selectedSize ?? ''}',
+                            'Tamanho: ${_selectedSize ?? ''}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -466,6 +508,38 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
       return Color(int.parse('FF$hex', radix: 16));
     }
     return Colors.grey;
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color textColor;
+  final Color valueColor;
+
+  const _InfoRow(this.label, this.value, this.textColor, this.valueColor);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 15,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -603,13 +677,6 @@ class _AddToCartBarState extends State<_AddToCartBar> {
           topLeft: Radius.circular(12),
           topRight: Radius.circular(12),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: widget.isDark ? const Color(0x40000000) : const Color(0x1A000000),
-            blurRadius: 12,
-            offset: const Offset(0, -2),
-          ),
-        ],
       ),
       child: SafeArea(
         top: false,
@@ -635,7 +702,7 @@ class _AddToCartBarState extends State<_AddToCartBar> {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(AppStrings.get('added_to_cart', widget.currentLocale)),
+                    content: Text('Adicionado ao carrinho'),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                     backgroundColor: widget.isDark ? const Color(0xFF242526) : const Color(0xFF1C1E21),
@@ -650,30 +717,22 @@ class _AddToCartBarState extends State<_AddToCartBar> {
               decoration: BoxDecoration(
                 color: isInCart ? const Color(0xFFFF3B30) : const Color(0xFF007AFF),
                 borderRadius: BorderRadius.circular(_isPressed ? 12 : 26),
-                boxShadow: _isPressed
-                    ? []
-                    : [
-                        BoxShadow(
-                          color: (isInCart ? const Color(0xFFFF3B30) : const Color(0xFF007AFF)).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
               ),
               alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    isInCart ? Icons.remove_shopping_cart : Icons.add_shopping_cart,
-                    size: 24,
+                  AnimateIcon(
+                    onTap: () {},
+                    iconType: IconType.continueAnimation,
+                    animateIcon: AnimateIcons.add,
+                    controller: widget.iconController,
                     color: Colors.white,
+                    size: 24,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    isInCart
-                        ? AppStrings.get('remove_from_cart', widget.currentLocale)
-                        : AppStrings.get('add_to_cart', widget.currentLocale),
+                    isInCart ? 'Remover do Carrinho' : 'Adicionar ao Carrinho',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -690,20 +749,8 @@ class _AddToCartBarState extends State<_AddToCartBar> {
   }
 }
 
-const _backIconSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-</svg>
-''';
+const _backIconSvg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>''';
 
-const _leftArrowSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-</svg>
-''';
+const _leftArrowSvg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>''';
 
-const _rightArrowSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
-</svg>
-''';
+const _rightArrowSvg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>''';
