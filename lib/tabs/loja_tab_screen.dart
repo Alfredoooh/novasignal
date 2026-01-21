@@ -14,47 +14,7 @@ class LojaTabScreen extends StatefulWidget {
     required this.bgColor,
     required this.isDark,
     required this.currentLocale,
-    Widget _buildEmptyState(Color textColor, Color subtitleColor) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/empty_store.png',
-            width: 200,
-            height: 200,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                Icons.store_mall_directory_outlined,
-                size: 100,
-                color: subtitleColor.withOpacity(0.5),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Nenhuma loja disponível',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-              letterSpacing: 0.1,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tente novamente mais tarde',
-            style: TextStyle(
-              fontSize: 14,
-              color: subtitleColor,
-              letterSpacing: 0.1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}) : super(key: key);
+  }) : super(key: key);
 
   @override
   State<LojaTabScreen> createState() => _LojaTabScreenState();
@@ -90,7 +50,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final products = data['products'] as List;
-        
+
         // Extrair lojas únicas com base na marca
         final storesMap = <String, Map<String, dynamic>>{};
         for (var product in products) {
@@ -107,13 +67,13 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
             storesMap[brand]!['productCount'] = (storesMap[brand]!['productCount'] ?? 0) + 1;
           }
         }
-        
+
         if (mounted) {
           setState(() {
             _stores = storesMap.values.toList()..sort((a, b) => 
               (b['productCount'] as int).compareTo(a['productCount'] as int));
             _isLoadingStores = false;
-            
+
             // Selecionar primeira loja automaticamente
             if (_stores.isNotEmpty) {
               _selectedStore = _stores[0]['name'];
@@ -136,12 +96,12 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final products = data['products'] as List;
-        
+
         final filteredProducts = products
             .where((p) => (p['brand'] ?? 'Sem Marca') == storeName)
             .map((p) => p as Map<String, dynamic>)
             .toList();
-        
+
         if (mounted) {
           setState(() {
             _storeProducts = filteredProducts;
@@ -168,18 +128,18 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
 
   List<Map<String, dynamic>> _getFilteredProducts() {
     var filtered = _storeProducts;
-    
+
     if (_selectedCategory != 'Todos') {
       filtered = filtered.where((p) => p['category'] == _selectedCategory).toList();
     }
-    
+
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((p) => 
         (p['title'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) ||
         (p['description'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase())
       ).toList();
     }
-    
+
     return filtered;
   }
 
@@ -213,7 +173,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                     itemBuilder: (context, index) {
                       final store = _stores[index];
                       final isSelected = _selectedStore == store['name'];
-                      
+
                       return GestureDetector(
                         onTap: () {
                           setState(() => _selectedStore = store['name']);
@@ -358,7 +318,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Barra de Pesquisa
                         Container(
                           height: 44,
@@ -408,9 +368,9 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 12),
-                        
+
                         // Filtro de Categorias
                         SizedBox(
                           height: 36,
@@ -420,7 +380,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                             itemBuilder: (context, index) {
                               final category = _getCategories()[index];
                               final isSelected = _selectedCategory == category;
-                              
+
                               return GestureDetector(
                                 onTap: () {
                                   setState(() => _selectedCategory = category);
