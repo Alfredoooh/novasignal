@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/app_strings.dart';
@@ -24,7 +25,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late AnimationController _drawerController;
   late Animation<double> _drawerAnimation;
@@ -50,23 +52,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<List<dynamic>> fetchProducts() async {
+    // Tenta dummyjson, se falhar, tenta fakestoreapi
     try {
       final response = await http.get(Uri.parse('https://dummyjson.com/products?limit=50'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return data['products'];
+        if (data is Map && data.containsKey('products')) {
+          return List<dynamic>.from(data['products']);
+        }
       }
     } catch (e) {
-      print('Error fetching from dummyjson: $e');
+      // ignore and fallback
+      debugPrint('Error fetching from dummyjson: $e');
     }
 
     try {
       final response = await http.get(Uri.parse('https://fakestoreapi.com/products'));
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        return List<dynamic>.from(json.decode(response.body));
       }
     } catch (e) {
-      print('Error fetching from fakestoreapi: $e');
+      debugPrint('Error fetching from fakestoreapi: $e');
     }
 
     throw Exception('Failed to load products from all APIs');
@@ -107,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       titleWeight = FontWeight.w600;
     }
 
-    return AnnotatedRegion(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: appBarColor,
         statusBarIconBrightness: Brightness.light,
@@ -119,7 +125,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             animation: _drawerAnimation,
             builder: (context, child) {
               final slideValue = _drawerAnimation.value * 280;
-
               return Transform.translate(
                 offset: Offset(slideValue, 0),
                 child: Container(
@@ -127,155 +132,154 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   child: SafeArea(
                     child: Column(
                       children: [
-                          Container(
-                            color: appBarColor,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: _toggleDrawer,
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.menu, color: Color(0xFFFFFFFF), size: 22),
+                        Container(
+                          color: appBarColor,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: _toggleDrawer,
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.menu, color: Color(0xFFFFFFFF), size: 22),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  appBarTitle,
+                                  style: TextStyle(
+                                    color: const Color(0xFFFFFFFF),
+                                    fontSize: 20,
+                                    fontWeight: titleWeight,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    appBarTitle,
-                                    style: TextStyle(
-                                      color: Color(0xFFFFFFFF),
-                                      fontSize: 20,
-                                      fontWeight: titleWeight,
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  // TODO: Implementar pesquisa
+                                },
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: SvgPicture.string(
+                                      AppIcons.searchIcon,
+                                      color: const Color(0xFFFFFFFF),
                                     ),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () {
-                                    // TODO: Implementar pesquisa
-                                  },
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(10),
-                                      child: SvgPicture.string(
-                                        AppIcons.searchIcon,
-                                        color: const Color(0xFFFFFFFF),
-                                      ),
-                                    ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  // TODO: Menu de opções
+                                },
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
                                   ),
+                                  child: const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 22),
                                 ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: () {
-                                    // TODO: Menu de opções
-                                  },
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 22),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          if (_selectedIndex == 0)
-                            Container(
-                              height: 50,
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _categories.length,
-                                itemBuilder: (context, index) {
-                                  final category = _categories[index];
-                                  final isSelected = _selectedCategory == category;
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedCategory = category;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: isSelected 
-                                              ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
-                                              : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            category,
-                                            style: TextStyle(
-                                              color: isSelected 
-                                                  ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
-                                                  : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
-                                              fontSize: 14,
-                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                            ),
+                        ),
+                        if (_selectedIndex == 0)
+                          Container(
+                            height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _categories.length,
+                              itemBuilder: (context, index) {
+                                final category = _categories[index];
+                                final isSelected = _selectedCategory == category;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategory = category;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
+                                            : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          category,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
+                                                : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+                                            fontSize: 14,
+                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                                           ),
                                         ),
                                       ),
                                     ),
-                                  );
-                                },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        Expanded(
+                          child: IndexedStack(
+                            index: _selectedIndex,
+                            children: [
+                              InicioTabScreen(
+                                bgColor: bgColor,
+                                isDark: isDark,
+                                productsFuture: _productsFuture,
+                                selectedCategory: _selectedCategory,
+                                categories: _categories,
                               ),
-                            ),
-                          Expanded(
-                            child: IndexedStack(
-                              index: _selectedIndex,
-                              children: [
-                                InicioTabScreen(
-                                  bgColor: bgColor,
-                                  isDark: isDark,
-                                  productsFuture: _productsFuture,
-                                  selectedCategory: _selectedCategory,
-                                  categories: _categories,
-                                ),
-                                LojaTabScreen(
-                                  bgColor: bgColor,
-                                  isDark: isDark,
-                                  currentLocale: currentLocale,
-                                ),
-                                BasketTabScreen(
-                                  bgColor: bgColor,
-                                  isDark: isDark,
-                                  currentLocale: currentLocale,
-                                ),
-                              ],
-                            ),
+                              LojaTabScreen(
+                                bgColor: bgColor,
+                                isDark: isDark,
+                                currentLocale: currentLocale,
+                              ),
+                              BasketTabScreen(
+                                bgColor: bgColor,
+                                isDark: isDark,
+                                currentLocale: currentLocale,
+                              ),
+                            ],
                           ),
-                          BottomBar(
-                            selectedIndex: _selectedIndex,
-                            onItemSelected: (index) {
-                              setState(() {
-                                _selectedIndex = index;
-                              });
-                            },
-                            isDark: isDark,
-                            homeLabel: AppStrings.get('home', currentLocale),
-                            storeLabel: AppStrings.get('channels', currentLocale),
-                            basketLabel: AppStrings.get('basket', currentLocale),
-                          ),
-                        ],
-                      ),
+                        ),
+                        BottomBar(
+                          selectedIndex: _selectedIndex,
+                          onItemSelected: (index) {
+                            setState(() {
+                              _selectedIndex = index;
+                            });
+                          },
+                          isDark: isDark,
+                          homeLabel: AppStrings.get('home', currentLocale),
+                          storeLabel: AppStrings.get('channels', currentLocale),
+                          basketLabel: AppStrings.get('basket', currentLocale),
+                        ),
+                      ],
                     ),
                   ),
                 ),
