@@ -24,7 +24,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   final PageController _pageController = PageController();
   late AnimationController _iconController;
   final translator = GoogleTranslator();
-  
+
   String? _translatedTitle;
   String? _translatedDescription;
   bool _isTranslating = false;
@@ -53,7 +53,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
   Future<void> _translateContent() async {
     final locale = LocaleProvider.of(context);
     final currentLocale = locale?.locale ?? 'pt';
-    
+
     // Só traduz se o idioma for português
     if (currentLocale != 'pt') {
       setState(() {
@@ -140,7 +140,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> with Ticker
     final colors = widget.product['colors'] as List?;
     final sizes = widget.product['sizes'] as List?;
     final price = widget.product['price'] ?? 0;
-    
+
     // Usar título e descrição traduzidos ou originais
     final title = _translatedTitle ?? widget.product['title'] ?? AppStrings.get('product_details', currentLocale);
     final description = _translatedDescription ?? widget.product['description'] ?? AppStrings.get('description', currentLocale);
@@ -664,13 +664,10 @@ class _AddToCartBarState extends State<_AddToCartBar> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AnimateIcon(
-                    onTap: () {},
-                    iconType: IconType.continueAnimation,
-                    height: 24,
-                    width: 24,
+                  Icon(
+                    isInCart ? Icons.remove_shopping_cart : Icons.add_shopping_cart,
+                    size: 24,
                     color: Colors.white,
-                    animateIcon: isInCart ? AnimateIcons.minusToX : AnimateIcons.add,
                   ),
                   const SizedBox(width: 8),
                   Text(
