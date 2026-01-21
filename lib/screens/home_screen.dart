@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
 import '../utils/app_strings.dart';
+import '../assets/app_icons.dart';
 import '../widgets/bottom_bar.dart';
 import '../widgets/drawer_menu.dart';
 import '../tabs/inicio_tab_screen.dart';
@@ -142,6 +144,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     ),
                                   ),
                                 ),
+                                GestureDetector(
+                                  onTap: () {
+                                    // TODO: Implementar pesquisa
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: SvgPicture.string(
+                                      AppIcons.searchIcon,
+                                      width: 22,
+                                      height: 22,
+                                      color: const Color(0xFFFFFFFF),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
                                 const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 24),
                               ],
                             ),
