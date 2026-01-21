@@ -117,9 +117,6 @@ class _BasketTabScreenState extends State<BasketTabScreen> {
                   });
                 },
                 onRemove: (item) => cartProvider?.removeFromCart(item),
-                onQuantityChange: (item, newQuantity) {
-                  // Add quantity change logic here
-                },
               );
             },
           ),
@@ -144,7 +141,6 @@ class _StoreSection extends StatelessWidget {
   final Set<String> selectedItems;
   final Function(String) onItemToggle;
   final Function(Map<String, dynamic>) onRemove;
-  final Function(Map<String, dynamic>, int) onQuantityChange;
 
   const _StoreSection({
     required this.storeName,
@@ -154,7 +150,6 @@ class _StoreSection extends StatelessWidget {
     required this.selectedItems,
     required this.onItemToggle,
     required this.onRemove,
-    required this.onQuantityChange,
   });
 
   @override
@@ -189,21 +184,19 @@ class _StoreSection extends StatelessWidget {
               isSelected: selectedItems.contains('${item['id']}'),
               onToggle: () => onItemToggle('${item['id']}'),
               onRemove: () => onRemove(item),
-              onQuantityChange: (newQuantity) => onQuantityChange(item, newQuantity),
             )),
       ],
     );
   }
 }
 
-class _CartItemCard extends StatelessWidget {
+class _CartItemCard extends StatefulWidget {
   final Map<String, dynamic> product;
   final bool isDark;
   final Color textColor;
   final bool isSelected;
   final VoidCallback onToggle;
   final VoidCallback onRemove;
-  final Function(int) onQuantityChange;
 
   const _CartItemCard({
     required this.product,
@@ -212,24 +205,28 @@ class _CartItemCard extends StatelessWidget {
     required this.isSelected,
     required this.onToggle,
     required this.onRemove,
-    required this.onQuantityChange,
   });
 
   @override
+  State<_CartItemCard> createState() => _CartItemCardState();
+}
+
+class _CartItemCardState extends State<_CartItemCard> {
+  @override
   Widget build(BuildContext context) {
-    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
-    final stock = product['stock'] ?? 100;
+    final subtitleColor = widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
+    final stock = widget.product['stock'] ?? 100;
     final hasLowStock = stock <= 5 && stock > 0;
-    final originalPrice = (product['price'] ?? 0) * 1.3;
-    final random = Random(product['id']);
+    final originalPrice = (widget.product['price'] ?? 0) * 1.3;
+    final random = Random(widget.product['id']);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+        color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
         border: Border(
           bottom: BorderSide(
-            color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+            color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
             width: 1,
           ),
         ),
@@ -238,9 +235,9 @@ class _CartItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _AnimatedCheckbox(
-            isSelected: isSelected,
-            isDark: isDark,
-            onTap: onToggle,
+            isSelected: widget.isSelected,
+            isDark: widget.isDark,
+            onTap: widget.onToggle,
           ),
           const SizedBox(width: 12),
           Stack(
@@ -248,7 +245,7 @@ class _CartItemCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  product['thumbnail'] ?? product['image'] ?? '',
+                  widget.product['thumbnail'] ?? widget.product['image'] ?? '',
                   width: 90,
                   height: 90,
                   fit: BoxFit.cover,
@@ -256,10 +253,10 @@ class _CartItemCard extends StatelessWidget {
                     return Container(
                       width: 90,
                       height: 90,
-                      color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
+                      color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
                       child: Icon(
                         Icons.image_not_supported_outlined,
-                        color: isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
+                        color: widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
                       ),
                     );
                   },
@@ -298,9 +295,9 @@ class _CartItemCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product['title'],
+                  widget.product['title'],
                   style: TextStyle(
-                    color: textColor,
+                    color: widget.textColor,
                     fontSize: 14,
                     height: 1.3,
                   ),
@@ -308,17 +305,17 @@ class _CartItemCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
-                if (product['selectedColor'] != null || product['selectedSize'] != null)
+                if (widget.product['selectedColor'] != null || widget.product['selectedSize'] != null)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
+                      color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
                       borderRadius: BorderRadius.circular(3),
                     ),
                     child: Text(
                       [
-                        if (product['selectedColor'] != null) product['selectedColor'],
-                        if (product['selectedSize'] != null) product['selectedSize'],
+                        if (widget.product['selectedColor'] != null) widget.product['selectedColor'],
+                        if (widget.product['selectedSize'] != null) widget.product['selectedSize'],
                       ].join(' / '),
                       style: TextStyle(
                         fontSize: 11,
@@ -336,7 +333,7 @@ class _CartItemCard extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              'AOA${product['price'].toStringAsFixed(2)}',
+                              'AOA${widget.product['price'].toStringAsFixed(2)}',
                               style: const TextStyle(
                                 color: Colors.red,
                                 fontWeight: FontWeight.w700,
@@ -356,7 +353,7 @@ class _CartItemCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'New shoppers save AOA${(originalPrice - product['price']).toStringAsFixed(2)}',
+                          'New shoppers save AOA${(originalPrice - widget.product['price']).toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: Colors.red,
@@ -380,9 +377,9 @@ class _CartItemCard extends StatelessWidget {
                   children: [
                     const Spacer(),
                     _QuantitySelector(
-                      quantity: product['quantity'] ?? 1,
-                      isDark: isDark,
-                      onChanged: onQuantityChange,
+                      quantity: widget.product['quantity'] ?? 1,
+                      isDark: widget.isDark,
+                      product: widget.product,
                     ),
                   ],
                 ),
@@ -474,23 +471,49 @@ class _AnimatedCheckboxState extends State<_AnimatedCheckbox>
   }
 }
 
-class _QuantitySelector extends StatelessWidget {
+class _QuantitySelector extends StatefulWidget {
   final int quantity;
   final bool isDark;
-  final Function(int) onChanged;
+  final Map<String, dynamic> product;
 
   const _QuantitySelector({
     required this.quantity,
     required this.isDark,
-    required this.onChanged,
+    required this.product,
   });
+
+  @override
+  State<_QuantitySelector> createState() => _QuantitySelectorState();
+}
+
+class _QuantitySelectorState extends State<_QuantitySelector> {
+  late int currentQuantity;
+
+  @override
+  void initState() {
+    super.initState();
+    currentQuantity = widget.quantity;
+  }
+
+  void _updateQuantity(int delta) {
+    final newQuantity = currentQuantity + delta;
+    if (newQuantity >= 1 && newQuantity <= (widget.product['stock'] ?? 100)) {
+      setState(() {
+        currentQuantity = newQuantity;
+        widget.product['quantity'] = newQuantity;
+      });
+      
+      final cartProvider = CartProvider.of(context);
+      cartProvider?.updateQuantity(widget.product, newQuantity);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: isDark ? const Color(0xFF5E6266) : const Color(0xFFE4E6EB),
+          color: widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFE4E6EB),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(100),
@@ -500,28 +523,28 @@ class _QuantitySelector extends StatelessWidget {
         children: [
           _QuantityButton(
             icon: Icons.remove,
-            isDark: isDark,
-            onPressed: () {
-              if (quantity > 1) onChanged(quantity - 1);
-            },
+            isDark: widget.isDark,
+            onPressed: () => _updateQuantity(-1),
+            enabled: currentQuantity > 1,
           ),
           Container(
             constraints: const BoxConstraints(minWidth: 40),
             padding: const EdgeInsets.symmetric(horizontal: 8),
             alignment: Alignment.center,
             child: Text(
-              quantity.toString(),
+              currentQuantity.toString(),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
+                color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
               ),
             ),
           ),
           _QuantityButton(
             icon: Icons.add,
-            isDark: isDark,
-            onPressed: () => onChanged(quantity + 1),
+            isDark: widget.isDark,
+            onPressed: () => _updateQuantity(1),
+            enabled: currentQuantity < (widget.product['stock'] ?? 100),
           ),
         ],
       ),
@@ -533,11 +556,13 @@ class _QuantityButton extends StatefulWidget {
   final IconData icon;
   final bool isDark;
   final VoidCallback onPressed;
+  final bool enabled;
 
   const _QuantityButton({
     required this.icon,
     required this.isDark,
     required this.onPressed,
+    this.enabled = true,
   });
 
   @override
@@ -550,11 +575,11 @@ class _QuantityButtonState extends State<_QuantityButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
+      onTapDown: widget.enabled ? (_) => setState(() => _isPressed = true) : null,
+      onTapUp: widget.enabled ? (_) {
         setState(() => _isPressed = false);
         widget.onPressed();
-      },
+      } : null,
       onTapCancel: () => setState(() => _isPressed = false),
       child: Container(
         width: 32,
@@ -568,7 +593,9 @@ class _QuantityButtonState extends State<_QuantityButton> {
         child: Icon(
           widget.icon,
           size: 18,
-          color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
+          color: widget.enabled 
+              ? (widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21))
+              : (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFCCD0D5)),
         ),
       ),
     );
