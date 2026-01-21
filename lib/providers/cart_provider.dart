@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
+
 class CartProvider extends InheritedWidget {
   final List<Map<String, dynamic>> cart;
   final Function(Map<String, dynamic>) addToCart;
   final Function(Map<String, dynamic>) removeFromCart;
-  final Function(Map<String, dynamic>, int)? updateQuantity; // Adicionar isto
+  final Function(Map<String, dynamic>, int)? updateQuantity;
 
   const CartProvider({
     Key? key,
