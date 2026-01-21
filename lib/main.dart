@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:animations/animations.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/help_screen.dart';
@@ -89,13 +88,12 @@ class _SportsAppState extends State<SportsApp> {
                 settings: settings,
                 pageBuilder: (context, animation, secondaryAnimation) => builder(context),
                 transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return SharedAxisTransition(
-                    animation: animation,
-                    secondaryAnimation: secondaryAnimation,
-                    transitionType: SharedAxisTransitionType.horizontal,
-                    fillColor: transparent,
-                    child: child,
-                  );
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.easeInOut;
+                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                  var offsetAnimation = animation.drive(tween);
+                  return SlideTransition(position: offsetAnimation, child: child);
                 },
               );
             },
@@ -124,13 +122,12 @@ class _SportsAppState extends State<SportsApp> {
                 settings: settings,
                 pageBuilder: (context, animation, secondaryAnimation) => page,
                 transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return SharedAxisTransition(
-                    animation: animation,
-                    secondaryAnimation: secondaryAnimation,
-                    transitionType: SharedAxisTransitionType.horizontal,
-                    fillColor: transparent,
-                    child: child,
-                  );
+                  const begin = Offset(1.0, 0.0);
+                  const end = Offset.zero;
+                  const curve = Curves.easeInOut;
+                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                  var offsetAnimation = animation.drive(tween);
+                  return SlideTransition(position: offsetAnimation, child: child);
                 },
               );
             },
