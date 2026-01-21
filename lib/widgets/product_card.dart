@@ -38,6 +38,8 @@ class _ProductCardState extends State<ProductCard> {
     final soldCount = 100 + random.nextInt(9900);
     final stock = widget.product['stock'] ?? (10 + random.nextInt(90));
     final hasLowStock = stock <= 5;
+    final productPrice = widget.product['price'];
+    final showFreeShipping = productPrice * 500 >= 500000;
     
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -64,10 +66,8 @@ class _ProductCardState extends State<ProductCard> {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                  child: ColorFiltered(
-                    colorFilter: widget.isDark 
-                        ? const ColorFilter.mode(Color(0xFFB0B3B8), BlendMode.modulate)
-                        : const ColorFilter.mode(Colors.transparent, BlendMode.color),
+                  child: Container(
+                    color: widget.isDark ? const Color(0xFFF5F5F5) : Colors.transparent,
                     child: Image.network(
                       widget.product['thumbnail'] ?? widget.product['image'] ?? '',
                       height: 160 + widget.imageHeightVariation.toDouble(),
@@ -76,11 +76,11 @@ class _ProductCardState extends State<ProductCard> {
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           height: 160,
-                          color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
+                          color: widget.isDark ? const Color(0xFFF5F5F5) : const Color(0xFFF0F2F5),
                           child: Icon(
                             Icons.image_not_supported_outlined,
                             size: 40,
-                            color: widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFB0B3B8),
+                            color: widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFFB0B3B8),
                           ),
                         );
                       },
@@ -183,8 +183,8 @@ class _ProductCardState extends State<ProductCard> {
                   Row(
                     children: [
                       Text(
-                        'AOA${widget.product['price'].toStringAsFixed(2)}',
-                        style: TextStyle(
+                        '\$${widget.product['price'].toStringAsFixed(2)}',
+                        style: const TextStyle(
                           fontSize: 17,
                           color: Colors.red,
                           fontWeight: FontWeight.w700,
@@ -193,7 +193,7 @@ class _ProductCardState extends State<ProductCard> {
                       if (hasDiscount) ...[
                         const SizedBox(width: 6),
                         Text(
-                          'AOA${originalPrice.toStringAsFixed(2)}',
+                          '\$${originalPrice.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 11,
                             color: widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8),
@@ -242,32 +242,35 @@ class _ProductCardState extends State<ProductCard> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.local_shipping_outlined,
-                          size: 11,
-                          color: widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8),
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Envio grátis',
-                          style: TextStyle(
-                            fontSize: 10,
+                  if (showFreeShipping) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF0F2F5),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.local_shipping_outlined,
+                            size: 11,
                             color: widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 3),
+                          Text(
+                            'Envio grátis',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: widget.isDark ? const Color(0xFF65676B) : const Color(0xFFB0B3B8),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ] else
+                    const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -287,62 +290,59 @@ class _FavoriteButton extends StatefulWidget {
   State<_FavoriteButton> createState() => _FavoriteButtonState();
 }
 
-class _FavoriteButtonState extends State<_FavoriteButton> with SingleTickerProviderStateMixin {
+class _FavoriteButtonState extends State<_FavoriteButton> {
   bool _isFavorite = false;
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  bool _showGif = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        setState(() => _isFavorite = !_isFavorite);
-        _controller.forward().then((_) => _controller.reverse());
+        if (!_isFavorite) {
+          setState(() {
+            _isFavorite = true;
+            _showGif = true;
+          });
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) {
+              setState(() => _showGif = false);
+            }
+          });
+        } else {
+          setState(() => _isFavorite = false);
+        }
       },
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: _showGif
+            ? Image.asset(
+                'assets/like_animation.gif',
+                width: 16,
+                height: 16,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.favorite,
+                    size: 16,
+                    color: Colors.red,
+                  );
+                },
+              )
+            : Icon(
                 _isFavorite ? Icons.favorite : Icons.favorite_border,
                 size: 16,
                 color: _isFavorite ? Colors.red : Colors.grey[700],
               ),
-            ),
-          );
-        },
       ),
     );
   }
