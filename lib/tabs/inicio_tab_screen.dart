@@ -124,7 +124,7 @@ class InicioTabScreen extends StatelessWidget {
             itemCount: allProducts.length,
             itemBuilder: (context, index) {
               final product = allProducts[index];
-              final cartProvider = Provider.of<CartProvider>(context);
+              final cartProvider = context.watch<CartProvider>();
               final isInCart = cartProvider.cart.any((item) => item['id'] == product['id']);
               return ProductCard(
                 product: product,
@@ -185,7 +185,7 @@ class InicioTabScreen extends StatelessWidget {
         itemCount: products.length,
         itemBuilder: (context, index) {
           final product = products[index];
-          final cartProvider = Provider.of<CartProvider>(context);
+          final cartProvider = context.watch<CartProvider>();
           final isInCart = cartProvider.cart.any((item) => item['id'] == product['id']);
           return Container(
             width: 160,
@@ -221,7 +221,7 @@ class InicioTabScreen extends StatelessWidget {
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        final cartProvider = Provider.of<CartProvider>(context);
+        final cartProvider = context.watch<CartProvider>();
         final isInCart = cartProvider.cart.any((item) => item['id'] == product['id']);
         return ProductCard(
           product: product,
