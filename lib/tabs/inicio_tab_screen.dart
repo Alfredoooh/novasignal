@@ -28,17 +28,7 @@ class InicioTabScreen extends StatelessWidget {
         future: productsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return MasonryGridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(8),
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              itemCount: 10,
-              itemBuilder: (context, index) => StaggeredGridTile.fit(
-                crossAxisCellCount: 1,
-                child: _buildSkeletonProductCard(isDark),
-              ),
-            );
+            return _buildSkeletonView();
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
@@ -47,36 +37,173 @@ class InicioTabScreen extends StatelessWidget {
               products = List.from(products)..shuffle();
               products = products.take(10).toList();
             }
-            return MasonryGridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(8),
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                final cartProvider = CartProvider.of(context);
-                final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
-                return ProductCard(
-                  product: product,
-                  isDark: isDark,
-                  isInCart: isInCart,
-                  imageHeightVariation: index % 5 * 30,
-                  onTap: () {
-                    Navigator.of(context).pushNamed('/product_details', arguments: product);
-                  },
-                  onCartAction: () {
-                    if (isInCart) {
-                      cartProvider?.removeFromCart(product);
-                    } else {
-                      cartProvider?.addToCart(product);
-                    }
-                  },
-                );
-              },
-            );
+            
+            if (selectedCategory == 'Todos') {
+              return _buildAllProductsView(products);
+            } else {
+              return _buildGridView(products);
+            }
           }
         },
+      ),
+    );
+  }
+
+  Widget _buildAllProductsView(List<dynamic> products) {
+    final lowPriceProducts = products.where((p) => (p['price'] ?? 0) < 30).toList();
+    final midPriceProducts = products.where((p) => (p['price'] ?? 0) >= 30 && (p['price'] ?? 0) < 100).toList();
+    final allProducts = List.from(products);
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        if (lowPriceProducts.isNotEmpty) ...[
+          _buildSectionTitle('Ofertas Relâmpago', '⚡'),
+          _buildHorizontalProductList(lowPriceProducts),
+          const SizedBox(height: 16),
+        ],
+        if (midPriceProducts.isNotEmpty) ...[
+          _buildSectionTitle('Escolha do Editor', '🔥'),
+          _buildHorizontalProductList(midPriceProducts),
+          const SizedBox(height: 16),
+        ],
+        _buildSectionTitle('Todos os Produtos', '🛍️'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: MasonryGridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            itemCount: allProducts.length,
+            itemBuilder: (context, index) {
+              final product = allProducts[index];
+              final cartProvider = CartProvider.of(context);
+              final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
+              return ProductCard(
+                product: product,
+                isDark: isDark,
+                isInCart: isInCart,
+                imageHeightVariation: index % 5 * 30,
+                onTap: () {
+                  Navigator.of(context).pushNamed('/product_details', arguments: product);
+                },
+                onCartAction: () {
+                  if (isInCart) {
+                    cartProvider?.removeFromCart(product);
+                  } else {
+                    cartProvider?.addToCart(product);
+                  }
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title, String emoji) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Row(
+        children: [
+          Text(
+            emoji,
+            style: const TextStyle(fontSize: 20),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHorizontalProductList(List<dynamic> products) {
+    return SizedBox(
+      height: 280,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          final product = products[index];
+          final cartProvider = CartProvider.of(context);
+          final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
+          return Container(
+            width: 160,
+            margin: EdgeInsets.only(right: index == products.length - 1 ? 0 : 8),
+            child: ProductCard(
+              product: product,
+              isDark: isDark,
+              isInCart: isInCart,
+              imageHeightVariation: 0,
+              onTap: () {
+                Navigator.of(context).pushNamed('/product_details', arguments: product);
+              },
+              onCartAction: () {
+                if (isInCart) {
+                  cartProvider?.removeFromCart(product);
+                } else {
+                  cartProvider?.addToCart(product);
+                }
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildGridView(List<dynamic> products) {
+    return MasonryGridView.count(
+      crossAxisCount: 2,
+      padding: const EdgeInsets.all(8),
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        final product = products[index];
+        final cartProvider = CartProvider.of(context);
+        final isInCart = cartProvider?.cart.any((item) => item['id'] == product['id']) ?? false;
+        return ProductCard(
+          product: product,
+          isDark: isDark,
+          isInCart: isInCart,
+          imageHeightVariation: index % 5 * 30,
+          onTap: () {
+            Navigator.of(context).pushNamed('/product_details', arguments: product);
+          },
+          onCartAction: () {
+            if (isInCart) {
+              cartProvider?.removeFromCart(product);
+            } else {
+              cartProvider?.addToCart(product);
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSkeletonView() {
+    return MasonryGridView.count(
+      crossAxisCount: 2,
+      padding: const EdgeInsets.all(8),
+      crossAxisSpacing: 8,
+      mainAxisSpacing: 8,
+      itemCount: 10,
+      itemBuilder: (context, index) => StaggeredGridTile.fit(
+        crossAxisCellCount: 1,
+        child: _buildSkeletonProductCard(isDark),
       ),
     );
   }
@@ -86,12 +213,10 @@ class InicioTabScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0),
-            blurRadius: 2,
-          ),
-        ],
+        border: Border.all(
+          color: isDark ? const Color(0xFF3E4042) : const Color(0xFFE4E6EB),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
