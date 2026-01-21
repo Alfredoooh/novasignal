@@ -471,7 +471,7 @@ class _AnimatedCheckboxState extends State<_AnimatedCheckbox>
   }
 }
 
-class _QuantitySelector extends StatefulWidget {
+class _QuantitySelector extends StatelessWidget {
   final int quantity;
   final bool isDark;
   final Map<String, dynamic> product;
@@ -482,38 +482,30 @@ class _QuantitySelector extends StatefulWidget {
     required this.product,
   });
 
-  @override
-  State<_QuantitySelector> createState() => _QuantitySelectorState();
-}
-
-class _QuantitySelectorState extends State<_QuantitySelector> {
-  late int currentQuantity;
-
-  @override
-  void initState() {
-    super.initState();
-    currentQuantity = widget.quantity;
-  }
-
-  void _updateQuantity(int delta) {
-    final newQuantity = currentQuantity + delta;
-    if (newQuantity >= 1 && newQuantity <= (widget.product['stock'] ?? 100)) {
-      setState(() {
-        currentQuantity = newQuantity;
-        widget.product['quantity'] = newQuantity;
-      });
-      
+  void _updateQuantity(BuildContext context, int delta) {
+    final newQuantity = quantity + delta;
+    final stock = product['stock'] ?? 100;
+    
+    if (newQuantity >= 1 && newQuantity <= stock) {
       final cartProvider = CartProvider.of(context);
-      cartProvider?.updateQuantity(widget.product, newQuantity);
+      
+      // Atualiza a quantidade no produto
+      product['quantity'] = newQuantity;
+      
+      // Remove e adiciona novamente para forçar atualização
+      cartProvider?.removeFromCart(product);
+      cartProvider?.addToCart(product);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final stock = product['stock'] ?? 100;
+    
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: widget.isDark ? const Color(0xFF5E6266) : const Color(0xFFE4E6EB),
+          color: isDark ? const Color(0xFF5E6266) : const Color(0xFFE4E6EB),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(100),
@@ -523,28 +515,28 @@ class _QuantitySelectorState extends State<_QuantitySelector> {
         children: [
           _QuantityButton(
             icon: Icons.remove,
-            isDark: widget.isDark,
-            onPressed: () => _updateQuantity(-1),
-            enabled: currentQuantity > 1,
+            isDark: isDark,
+            onPressed: () => _updateQuantity(context, -1),
+            enabled: quantity > 1,
           ),
           Container(
             constraints: const BoxConstraints(minWidth: 40),
             padding: const EdgeInsets.symmetric(horizontal: 8),
             alignment: Alignment.center,
             child: Text(
-              currentQuantity.toString(),
+              quantity.toString(),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
+                color: isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
               ),
             ),
           ),
           _QuantityButton(
             icon: Icons.add,
-            isDark: widget.isDark,
-            onPressed: () => _updateQuantity(1),
-            enabled: currentQuantity < (widget.product['stock'] ?? 100),
+            isDark: isDark,
+            onPressed: () => _updateQuantity(context, 1),
+            enabled: quantity < stock,
           ),
         ],
       ),
