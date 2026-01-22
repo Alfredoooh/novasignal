@@ -57,7 +57,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
             storesMap[brand] = {
               'name': brand,
               'id': brand.toLowerCase().replaceAll(' ', '_'),
-              'logo': product['thumbnail'] ?? product['image'],
+              'logo': product['thumbnail'] ?? product['images']?[0] ?? product['image'],
               'category': product['category'] ?? 'Geral',
               'productCount': 1,
             };
@@ -106,7 +106,6 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
             .map((p) => p as Map<String, dynamic>)
             .toList();
 
-        // Extrair categorias únicas dos produtos da loja
         final categoriesSet = <String>{'Todos'};
         for (var product in filteredProducts) {
           if (product['category'] != null) {
@@ -149,6 +148,20 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
     final textColor = widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
     final subtitleColor = widget.isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
 
+    if (_isLoadingStores) {
+      return Container(
+        color: widget.bgColor,
+        child: _buildLoadingFullScreen(),
+      );
+    }
+
+    if (_hasStoresError || _stores.isEmpty) {
+      return Container(
+        color: widget.bgColor,
+        child: _buildEmptyStoresFullScreen(textColor, subtitleColor),
+      );
+    }
+
     return Container(
       color: widget.bgColor,
       child: Row(
@@ -165,106 +178,98 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                 ),
               ),
             ),
-            child: _isLoadingStores
-                ? _buildLoadingSidebar()
-                : _hasStoresError
-                    ? _buildErrorStores(textColor, subtitleColor)
-                    : _stores.isEmpty
-                        ? _buildEmptyStores(textColor, subtitleColor)
-                        : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        itemCount: _stores.length,
-                        itemBuilder: (context, index) {
-                          final store = _stores[index];
-                          final isSelected = _selectedStore == store['name'];
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              itemCount: _stores.length,
+              itemBuilder: (context, index) {
+                final store = _stores[index];
+                final isSelected = _selectedStore == store['name'];
 
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() => _selectedStore = store['name']);
-                              _loadStoreProducts(store['name']);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isSelected 
-                                    ? const Color(0xFF007AFF).withOpacity(0.1)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected 
-                                      ? const Color(0xFF007AFF)
-                                      : Colors.transparent,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 56,
-                                    height: 56,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: widget.isDark 
-                                          ? const Color(0xFF3E4042) 
-                                          : const Color(0xFFFFFFFF),
-                                      border: Border.all(
-                                        color: widget.isDark 
-                                            ? const Color(0xFF4A4C4E) 
-                                            : const Color(0xFFE4E6EB),
-                                        width: 2,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipOval(
-                                      child: Image.network(
-                                        store['logo'] ?? '',
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Icon(
-                                            Icons.store_rounded,
-                                            size: 28,
-                                            color: subtitleColor,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    store['name'],
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                      color: isSelected ? const Color(0xFF007AFF) : textColor,
-                                      letterSpacing: 0.1,
-                                    ),
-                                    maxLines: 2,
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${store['productCount']} items',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      color: subtitleColor,
-                                      letterSpacing: 0.1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _selectedStore = store['name']);
+                    _loadStoreProducts(store['name']);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? const Color(0xFF007AFF).withOpacity(0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected 
+                            ? const Color(0xFF007AFF)
+                            : Colors.transparent,
+                        width: 2,
                       ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(
+                              color: widget.isDark 
+                                  ? const Color(0xFF4A4C4E) 
+                                  : const Color(0xFFE4E6EB),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.network(
+                              store['logo'] ?? '',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.store_rounded,
+                                  size: 28,
+                                  color: subtitleColor,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          store['name'],
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected ? const Color(0xFF007AFF) : textColor,
+                            letterSpacing: 0.1,
+                          ),
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${store['productCount']} items',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: subtitleColor,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
 
           // Área Principal
@@ -291,7 +296,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                       itemBuilder: (context, index) {
                         final category = _categories[index];
                         final isSelected = _selectedCategory == category;
-                        
+
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: GestureDetector(
@@ -347,14 +352,17 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                                 final product = _getFilteredProducts()[index];
                                 final cartProvider = Provider.of<CartProvider>(context);
                                 final isInCart = cartProvider.cart.any((item) => item['id'] == product['id']);
-                                
+
                                 return ProductCard(
                                   product: product,
                                   isDark: widget.isDark,
                                   isInCart: isInCart,
                                   imageHeightVariation: 0,
                                   onTap: () {
-                                    Navigator.of(context).pushNamed('/product_details', arguments: product);
+                                    Navigator.of(context).pushNamed(
+                                      '/product_details',
+                                      arguments: {'product': product},
+                                    );
                                   },
                                   onCartAction: () {
                                     if (isInCart) {
@@ -375,23 +383,52 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
     );
   }
 
-  Widget _buildLoadingSidebar() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: 6,
-      itemBuilder: (context, index) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            children: [
-              _ShimmerBox(width: 56, height: 56, borderRadius: 28, isDark: widget.isDark),
-              const SizedBox(height: 6),
-              _ShimmerBox(width: 60, height: 10, borderRadius: 4, isDark: widget.isDark),
-            ],
+  Widget _buildLoadingFullScreen() {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
+      ),
+    );
+  }
+
+  Widget _buildEmptyStoresFullScreen(Color textColor, Color subtitleColor) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/empty_cart.png',
+            width: 200,
+            height: 200,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                Icons.store_mall_directory_outlined,
+                size: 100,
+                color: subtitleColor.withOpacity(0.5),
+              );
+            },
           ),
-        );
-      },
+          const SizedBox(height: 24),
+          Text(
+            'Nenhuma loja disponível',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Verifique sua conexão',
+            style: TextStyle(
+              fontSize: 14,
+              color: subtitleColor,
+              letterSpacing: 0.1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -441,53 +478,6 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildErrorStores(Color textColor, Color subtitleColor) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/error_state.png',
-            width: 80,
-            height: 80,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(Icons.error_outline_rounded, size: 60, color: subtitleColor.withOpacity(0.5));
-            },
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Erro ao\ncarregar',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textColor, letterSpacing: 0.1),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyStores(Color textColor, Color subtitleColor) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/empty_store.png',
-            width: 80,
-            height: 80,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(Icons.store_mall_directory_outlined, size: 60, color: subtitleColor.withOpacity(0.5));
-            },
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Sem lojas',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor, letterSpacing: 0.1),
-          ),
-        ],
-      ),
     );
   }
 
