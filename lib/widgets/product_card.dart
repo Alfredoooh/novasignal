@@ -41,9 +41,7 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard> {
-  bool _isPressed = false;
-  bool _isImageLoading = true;
-  bool _hasImageError = false;
+  bool _imageLoaded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -56,9 +54,23 @@ class _ProductCardState extends State<ProductCard> {
     final hasLowStock = stock > 0 && stock <= 5;
     final rating = widget.product['rating'] ?? 0.0;
 
-    String imageUrl = widget.product['thumbnail'] ?? widget.product['image'] ?? '';
-    if (imageUrl.isEmpty && widget.product['images'] is List && (widget.product['images'] as List).isNotEmpty) {
-      imageUrl = (widget.product['images'] as List)[0];
+    String imageUrl = '';
+    
+    // DummyJSON retorna 'thumbnail' e 'images'
+    if (widget.product['thumbnail'] != null && widget.product['thumbnail'].toString().isNotEmpty) {
+      imageUrl = widget.product['thumbnail'].toString();
+    } else if (widget.product['images'] != null && widget.product['images'] is List) {
+      final images = widget.product['images'] as List;
+      if (images.isNotEmpty && images[0] != null) {
+        imageUrl = images[0].toString();
+      }
+    } else if (widget.product['image'] != null && widget.product['image'].toString().isNotEmpty) {
+      imageUrl = widget.product['image'].toString();
+    }
+    
+    // Garantir que é uma URL válida
+    if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+      imageUrl = '';
     }
 
     return GestureDetector(
@@ -76,30 +88,31 @@ class _ProductCardState extends State<ProductCard> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.zero,
-                  child: _hasImageError || _isImageLoading
+                  child: imageUrl.isEmpty
                       ? _buildImagePlaceholder()
                       : Image.network(
                           imageUrl,
                           height: 160 + widget.imageHeightVariation.toDouble(),
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) {
-                                  setState(() => _isImageLoading = false);
-                                }
-                              });
+                          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                            if (wasSynchronouslyLoaded) {
+                              _imageLoaded = true;
+                              return child;
+                            }
+                            if (frame != null) {
+                              if (!_imageLoaded) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (mounted) {
+                                    setState(() => _imageLoaded = true);
+                                  }
+                                });
+                              }
                               return child;
                             }
                             return _buildImagePlaceholder();
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted) {
-                                setState(() => _hasImageError = true);
-                              }
-                            });
                             return _buildImagePlaceholder();
                           },
                         ),
@@ -238,17 +251,7 @@ class _ProductCardState extends State<ProductCard> {
       height: 160 + widget.imageHeightVariation.toDouble(),
       width: double.infinity,
       color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE5E5EA),
-      child: _isImageLoading && !_hasImageError
-          ? _SkeletonLoader(isDark: widget.isDark)
-          : Center(
-              child: Icon(
-                Icons.image_not_supported_rounded,
-                size: 48,
-                color: widget.isDark 
-                    ? const Color(0xFF65676B) 
-                    : const Color(0xFFA0A0A5),
-              ),
-            ),
+      child: _SkeletonLoader(isDark: widget.isDark),
     );
   }
 }
