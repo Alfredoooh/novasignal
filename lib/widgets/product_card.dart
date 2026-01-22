@@ -290,6 +290,8 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
         }
       },
       child: Container(
+        width: 32,
+        height: 32,
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
@@ -302,24 +304,27 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
             ),
           ],
         ),
-        child: _showGif
-            ? Image.asset(
-                'assets/like_animation.gif',
-                width: 24,
-                height: 24,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.favorite,
-                    size: 16,
-                    color: Colors.red,
-                  );
-                },
-              )
-            : Icon(
-                _isFavorite ? Icons.favorite : Icons.favorite_border,
-                size: 16,
-                color: _isFavorite ? Colors.red : Colors.grey[700],
-              ),
+        child: Center(
+          child: _showGif
+              ? Image.asset(
+                  'assets/like_animation.gif',
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.favorite,
+                      size: 16,
+                      color: Colors.red,
+                    );
+                  },
+                )
+              : Icon(
+                  _isFavorite ? Icons.favorite : Icons.favorite_border,
+                  size: 16,
+                  color: _isFavorite ? Colors.red : Colors.grey[700],
+                ),
+        ),
       ),
     );
   }
