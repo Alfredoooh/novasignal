@@ -151,7 +151,7 @@ class InicioTabScreen extends StatelessWidget {
 
   Widget _buildSectionTitle(String title, IconData icon) {
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
-    
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
