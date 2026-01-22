@@ -16,7 +16,7 @@ import '../tabs/loja_tab_screen.dart';
 import '../tabs/basket_tab_screen.dart';
 
 const Color transparent = Color(0x00000000);
-const Color primaryColor = Color(0xFFFF444F);
+const Color primaryColor = Color(0xFF2C3E50);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
