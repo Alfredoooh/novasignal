@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 
 const Color primaryColor = Color(0xFF2C3E50);
 
@@ -30,7 +31,6 @@ class _ProductCardState extends State<ProductCard> {
   bool _isPressed = false;
   bool _isImageLoading = true;
   bool _hasImageError = false;
-  bool _isFavorite = false;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +88,11 @@ class _ProductCardState extends State<ProductCard> {
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) {
-                              _isImageLoading = false;
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() => _isImageLoading = false);
+                                }
+                              });
                               return child;
                             }
                             return _buildImagePlaceholder();
@@ -160,6 +164,13 @@ class _ProductCardState extends State<ProductCard> {
                       ),
                     ),
                   ),
+                
+                // Favorite Button no topo
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: _FavoriteButton(isDark: widget.isDark),
+                ),
               ],
             ),
             
@@ -214,66 +225,32 @@ class _ProductCardState extends State<ProductCard> {
                     const Spacer(),
                     
                     // Price Section
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (hasDiscount)
-                                Text(
-                                  '\$${originalPrice.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: widget.isDark 
-                                        ? const Color(0xFF65676B) 
-                                        : const Color(0xFF8E8E93),
-                                    decoration: TextDecoration.lineThrough,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              Text(
-                                '\$${productPrice.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: hasDiscount ? const Color(0xFFFF3B30) : (
-                                    widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21)
-                                  ),
-                                  letterSpacing: -0.5,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ],
+                        if (hasDiscount)
+                          Text(
+                            '\$${originalPrice.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: widget.isDark 
+                                  ? const Color(0xFF65676B) 
+                                  : const Color(0xFF8E8E93),
+                              decoration: TextDecoration.lineThrough,
+                              letterSpacing: 0.2,
+                            ),
                           ),
-                        ),
-                        
-                        // Like Button
-                        GestureDetector(
-                          onTap: () {
-                            setState(() => _isFavorite = !_isFavorite);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _isFavorite 
-                                  ? const Color(0xFFFF3B30).withOpacity(0.1)
-                                  : (widget.isDark 
-                                      ? const Color(0xFF3E4042) 
-                                      : const Color(0xFFF2F2F7)),
-                              borderRadius: BorderRadius.circular(10),
+                        Text(
+                          '\$${productPrice.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: hasDiscount ? const Color(0xFFFF3B30) : (
+                              widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21)
                             ),
-                            child: Icon(
-                              _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                              size: 20,
-                              color: _isFavorite 
-                                  ? const Color(0xFFFF3B30)
-                                  : (widget.isDark 
-                                      ? const Color(0xFFB0B3B8) 
-                                      : const Color(0xFF8E8E93)),
-                            ),
+                            letterSpacing: -0.5,
+                            height: 1.2,
                           ),
                         ),
                       ],
@@ -304,6 +281,73 @@ class _ProductCardState extends State<ProductCard> {
                     : const Color(0xFFB0B3B8),
               ),
             ),
+    );
+  }
+}
+
+class _FavoriteButton extends StatefulWidget {
+  final bool isDark;
+
+  const _FavoriteButton({required this.isDark});
+
+  @override
+  State<_FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends State<_FavoriteButton> {
+  bool _isFavorite = false;
+  bool _showGif = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (!_isFavorite) {
+          setState(() {
+            _isFavorite = true;
+            _showGif = true;
+          });
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) {
+              setState(() => _showGif = false);
+            }
+          });
+        } else {
+          setState(() => _isFavorite = false);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.9),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: _showGif
+            ? Image.asset(
+                'assets/like_animation.gif',
+                width: 16,
+                height: 16,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.favorite,
+                    size: 16,
+                    color: Colors.red,
+                  );
+                },
+              )
+            : Icon(
+                _isFavorite ? Icons.favorite : Icons.favorite_border,
+                size: 16,
+                color: _isFavorite ? Colors.red : Colors.grey[700],
+              ),
+      ),
     );
   }
 }
