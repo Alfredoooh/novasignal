@@ -222,282 +222,283 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           Expanded(
             child: SingleChildScrollView(
               child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 350,
-                  color: Colors.white,
-                  child: images.isEmpty
-                      ? Center(
-                          child: Icon(
-                            Symbols.image,
-                            size: 80,
-                            color: subtitleColor,
-                          ),
-                        )
-                      : Stack(
-                          children: [
-                            PageView.builder(
-                              controller: _pageController,
-                              onPageChanged: (index) {
-                                setState(() => _currentImageIndex = index);
-                              },
-                              itemCount: images.length,
-                              itemBuilder: (context, index) {
-                                return Image.network(
-                                  images[index],
-                                  fit: BoxFit.contain,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
-                                                loadingProgress.expectedTotalBytes!
-                                            : null,
-                                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Center(
-                                      child: Icon(
-                                        Symbols.broken_image,
-                                        size: 80,
-                                        color: subtitleColor,
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 350,
+                    color: Colors.white,
+                    child: images.isEmpty
+                        ? Center(
+                            child: Icon(
+                              Symbols.image,
+                              size: 80,
+                              color: subtitleColor,
                             ),
-                            if (images.length > 1)
-                              Positioned(
-                                bottom: 16,
-                                left: 0,
-                                right: 0,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: List.generate(
-                                    images.length,
-                                    (index) => Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: _currentImageIndex == index
-                                            ? textColor
-                                            : subtitleColor.withOpacity(0.4),
+                          )
+                        : Stack(
+                            children: [
+                              PageView.builder(
+                                controller: _pageController,
+                                onPageChanged: (index) {
+                                  setState(() => _currentImageIndex = index);
+                                },
+                                itemCount: images.length,
+                                itemBuilder: (context, index) {
+                                  return Image.network(
+                                    images[index],
+                                    fit: BoxFit.contain,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Center(
+                                        child: Icon(
+                                          Symbols.broken_image,
+                                          size: 80,
+                                          color: subtitleColor,
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              if (images.length > 1)
+                                Positioned(
+                                  bottom: 16,
+                                  left: 0,
+                                  right: 0,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(
+                                      images.length,
+                                      (index) => Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: _currentImageIndex == index
+                                              ? textColor
+                                              : subtitleColor.withOpacity(0.4),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _isTranslating
-                          ? Shimmer(
-                              child: Container(
-                                height: 26,
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  color: subtitleColor.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(4),
+                            ],
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _isTranslating
+                            ? Shimmer(
+                                child: Container(
+                                  height: 26,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: subtitleColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                title,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                  height: 1.3,
                                 ),
                               ),
-                            )
-                          : Text(
-                              title,
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(Icons.star, color: Colors.amber, size: 18),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$rating',
                               style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
                                 color: textColor,
-                                height: 1.3,
                               ),
                             ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 18),
-                          const SizedBox(width: 4),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${widget.product['reviews']?.length ?? 0} avaliações',
+                              style: TextStyle(fontSize: 13, color: subtitleColor),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _isLoadingPrice
+                            ? Shimmer(
+                                child: Container(
+                                  height: 32,
+                                  width: 200,
+                                  decoration: BoxDecoration(
+                                    color: subtitleColor.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'AOA ${_priceInAOA?.toStringAsFixed(2) ?? '0.00'}',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
+                              ),
+                        const SizedBox(height: 24),
+                        if (brand != null) ...[
+                          _InfoRow('Marca', brand, textColor, subtitleColor),
+                          const SizedBox(height: 12),
+                        ],
+                        if (category != null) ...[
+                          _InfoRow('Categoria', category, textColor, subtitleColor),
+                          const SizedBox(height: 12),
+                        ],
+                        _InfoRow('Disponibilidade', stock > 0 ? 'Em estoque ($stock)' : 'Esgotado', textColor, stock > 0 ? Colors.green : Colors.red),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Descrição do Produto',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _isTranslating
+                            ? Column(
+                                children: List.generate(
+                                  3,
+                                  (index) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Shimmer(
+                                      child: Container(
+                                        height: 16,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          color: subtitleColor.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                description,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: textColor,
+                                  height: 1.5,
+                                ),
+                              ),
+                        if (colors != null && colors.isNotEmpty) ...[
+                          const SizedBox(height: 24),
                           Text(
-                            '$rating',
+                            'Cor: ${_selectedColor ?? ''}',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: textColor,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '${widget.product['reviews']?.length ?? 0} avaliações',
-                            style: TextStyle(fontSize: 13, color: subtitleColor),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _isLoadingPrice
-                          ? Shimmer(
-                              child: Container(
-                                height: 32,
-                                width: 200,
-                                decoration: BoxDecoration(
-                                  color: subtitleColor.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            )
-                          : Text(
-                              'AOA ${_priceInAOA?.toStringAsFixed(2) ?? '0.00'}',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700,
-                                color: textColor,
-                              ),
-                            ),
-                      const SizedBox(height: 24),
-                      if (brand != null) ...[
-                        _InfoRow('Marca', brand, textColor, subtitleColor),
-                        const SizedBox(height: 12),
-                      ],
-                      if (category != null) ...[
-                        _InfoRow('Categoria', category, textColor, subtitleColor),
-                        const SizedBox(height: 12),
-                      ],
-                      _InfoRow('Disponibilidade', stock > 0 ? 'Em estoque ($stock)' : 'Esgotado', textColor, stock > 0 ? Colors.green : Colors.red),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Descrição do Produto',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _isTranslating
-                          ? Column(
-                              children: List.generate(
-                                3,
-                                (index) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Shimmer(
-                                    child: Container(
-                                      height: 16,
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        color: subtitleColor.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: colors.map((color) {
+                              final colorName = color['name'] as String;
+                              final colorHex = color['hex'] as String;
+                              final isSelected = _selectedColor == colorName;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() => _selectedColor = colorName);
+                                },
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _parseColor(colorHex),
+                                    border: Border.all(
+                                      color: isSelected ? textColor : subtitleColor,
+                                      width: isSelected ? 3 : 1.5,
                                     ),
                                   ),
                                 ),
-                              ),
-                            )
-                          : Text(
-                              description,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: textColor,
-                                height: 1.5,
-                              ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                        if (sizes != null && sizes.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            'Tamanho: ${_selectedSize ?? ''}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
                             ),
-                      if (colors != null && colors.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        Text(
-                          'Cor: ${_selectedColor ?? ''}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: colors.map((color) {
-                            final colorName = color['name'] as String;
-                            final colorHex = color['hex'] as String;
-                            final isSelected = _selectedColor == colorName;
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: sizes.map((size) {
+                              final sizeStr = size as String;
+                              final isSelected = _selectedSize == sizeStr;
 
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() => _selectedColor = colorName);
-                              },
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _parseColor(colorHex),
-                                  border: Border.all(
-                                    color: isSelected ? textColor : subtitleColor,
-                                    width: isSelected ? 3 : 1.5,
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() => _selectedSize = sizeStr);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? textColor : Colors.transparent,
+                                    border: Border.all(
+                                      color: textColor,
+                                      width: 1.5,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    sizeStr,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: isSelected ? bgColor : textColor,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                      if (sizes != null && sizes.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        Text(
-                          'Tamanho: ${_selectedSize ?? ''}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
+                              );
+                            }).toList(),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: sizes.map((size) {
-                            final sizeStr = size as String;
-                            final isSelected = _selectedSize == sizeStr;
-
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() => _selectedSize = sizeStr);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? textColor : Colors.transparent,
-                                  border: Border.all(
-                                    color: textColor,
-                                    width: 1.5,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  sizeStr,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: isSelected ? bgColor : textColor,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
+                        ],
+                        const SizedBox(height: 100),
                       ],
-                      const SizedBox(height: 100),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
