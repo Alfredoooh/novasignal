@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/product_card.dart';
+import '../screens/product_details_screen.dart';
 
 class InicioTabScreen extends StatelessWidget {
   final Color bgColor;
@@ -132,9 +133,10 @@ class InicioTabScreen extends StatelessWidget {
                 isInCart: isInCart,
                 imageHeightVariation: index % 5 * 30,
                 onTap: () {
-                  Navigator.of(context).pushNamed(
-                    '/product_details',
-                    arguments: {'product': product},
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailsScreen(product: product),
+                    ),
                   );
                 },
                 onCartAction: () {
@@ -199,9 +201,10 @@ class InicioTabScreen extends StatelessWidget {
               isInCart: isInCart,
               imageHeightVariation: 0,
               onTap: () {
-                Navigator.of(context).pushNamed(
-                  '/product_details',
-                  arguments: {'product': product},
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetailsScreen(product: product),
+                  ),
                 );
               },
               onCartAction: () {
@@ -235,9 +238,10 @@ class InicioTabScreen extends StatelessWidget {
           isInCart: isInCart,
           imageHeightVariation: index % 5 * 30,
           onTap: () {
-            Navigator.of(context).pushNamed(
-              '/product_details',
-              arguments: {'product': product},
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ProductDetailsScreen(product: product),
+              ),
             );
           },
           onCartAction: () {
