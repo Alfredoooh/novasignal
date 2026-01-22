@@ -11,9 +11,7 @@ import '../providers/locale_provider.dart';
 import '../utils/app_strings.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
-  final Map<String, dynamic> product;
-
-  const ProductDetailsScreen({Key? key, required this.product}) : super(key: key);
+  const ProductDetailsScreen({Key? key}) : super(key: key);
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -32,25 +30,34 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   double? _priceInAOA;
   bool _isLoadingPrice = false;
 
+  Map<String, dynamic>? _product;
+
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    if (_product == null) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args.containsKey('product')) {
+        _product = args['product'] as Map<String, dynamic>;
+        
+        if (_product!['colors'] != null && (_product!['colors'] as List).isNotEmpty) {
+          _selectedColor = _product!['colors'][0]['name'];
+        }
+        if (_product!['sizes'] != null && (_product!['sizes'] as List).isNotEmpty) {
+          _selectedSize = _product!['sizes'][0];
+        }
 
-    if (widget.product['colors'] != null && (widget.product['colors'] as List).isNotEmpty) {
-      _selectedColor = widget.product['colors'][0]['name'];
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _translateContent();
+          _convertPrice();
+        });
+      }
     }
-    if (widget.product['sizes'] != null && (widget.product['sizes'] as List).isNotEmpty) {
-      _selectedSize = widget.product['sizes'][0];
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _translateContent();
-      _convertPrice();
-    });
   }
 
   Future<void> _convertPrice() async {
-    if (!mounted) return;
+    if (!mounted || _product == null) return;
     setState(() => _isLoadingPrice = true);
     try {
       final response = await http.get(
@@ -59,7 +66,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final aoaRate = data['rates']['AOA'] ?? 900.0;
-        final priceUSD = (widget.product['price'] ?? 0).toDouble();
+        final priceUSD = (_product!['price'] ?? 0).toDouble();
         if (mounted) {
           setState(() {
             _priceInAOA = priceUSD * aoaRate;
@@ -70,7 +77,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _priceInAOA = (widget.product['price'] ?? 0).toDouble() * 900;
+          _priceInAOA = (_product!['price'] ?? 0).toDouble() * 900;
           _isLoadingPrice = false;
         });
       }
@@ -78,15 +85,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   Future<void> _translateContent() async {
-    if (!mounted) return;
+    if (!mounted || _product == null) return;
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     final currentLocale = localeProvider.locale;
 
     if (currentLocale != 'pt') {
       if (mounted) {
         setState(() {
-          _translatedTitle = widget.product['title'];
-          _translatedDescription = widget.product['description'];
+          _translatedTitle = _product!['title'];
+          _translatedDescription = _product!['description'];
         });
       }
       return;
@@ -97,9 +104,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     }
 
     try {
-      if (widget.product['title'] != null) {
+      if (_product!['title'] != null) {
         final titleTranslation = await translator.translate(
-          widget.product['title'],
+          _product!['title'],
           from: 'en',
           to: 'pt',
         );
@@ -108,9 +115,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         }
       }
 
-      if (widget.product['description'] != null) {
+      if (_product!['description'] != null) {
         final descTranslation = await translator.translate(
-          widget.product['description'],
+          _product!['description'],
           from: 'en',
           to: 'pt',
         );
@@ -125,8 +132,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _translatedTitle = widget.product['title'];
-          _translatedDescription = widget.product['description'];
+          _translatedTitle = _product!['title'];
+          _translatedDescription = _product!['description'];
           _isTranslating = false;
         });
       }
@@ -140,21 +147,38 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   List<String> _getImages() {
+    if (_product == null) return [];
+    
     final images = <String>[];
-    if (widget.product['thumbnail'] != null) {
-      images.add(widget.product['thumbnail']);
+    if (_product!['thumbnail'] != null) {
+      images.add(_product!['thumbnail']);
     }
-    if (widget.product['images'] != null) {
-      images.addAll(List<String>.from(widget.product['images']));
+    if (_product!['images'] != null && _product!['images'] is List) {
+      for (var img in _product!['images']) {
+        if (img is String && img.isNotEmpty) {
+          images.add(img);
+        }
+      }
     }
-    if (images.isEmpty && widget.product['image'] != null) {
-      images.add(widget.product['image']);
+    if (images.isEmpty && _product!['image'] != null) {
+      images.add(_product!['image']);
     }
     return images;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_product == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF18191A),
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
+          ),
+        ),
+      );
+    }
+
     final themeProvider = Provider.of<ThemeProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
     final isDark = themeProvider.isDark;
@@ -164,15 +188,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
 
     final images = _getImages();
-    final colors = widget.product['colors'] as List?;
-    final sizes = widget.product['sizes'] as List?;
+    final colors = _product!['colors'] as List?;
+    final sizes = _product!['sizes'] as List?;
 
-    final title = _translatedTitle ?? widget.product['title'] ?? AppStrings.get('product_details', currentLocale);
-    final description = _translatedDescription ?? widget.product['description'] ?? '';
-    final rating = widget.product['rating'] ?? 4.5;
-    final brand = widget.product['brand'];
-    final category = widget.product['category'];
-    final stock = widget.product['stock'] ?? 0;
+    final title = _translatedTitle ?? _product!['title'] ?? AppStrings.get('product_details', currentLocale);
+    final description = _translatedDescription ?? _product!['description'] ?? '';
+    final rating = _product!['rating'] ?? 4.5;
+    final brand = _product!['brand'];
+    final category = _product!['category'];
+    final stock = _product!['stock'] ?? 0;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -226,7 +250,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 children: [
                   Container(
                     height: 350,
-                    color: isDark ? const Color(0xFF242526) : const Color(0xFFF0F2F5),
+                    color: Colors.white,
                     child: images.isEmpty
                         ? Center(
                             child: Icon(
@@ -247,6 +271,18 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                   return Image.network(
                                     images[index],
                                     fit: BoxFit.contain,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
+                                        ),
+                                      );
+                                    },
                                     errorBuilder: (context, error, stackTrace) {
                                       return Center(
                                         child: Icon(
@@ -327,7 +363,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              '${widget.product['reviews']?.length ?? 0} avaliações',
+                              '${_product!['reviews']?.length ?? 0} avaliações',
                               style: TextStyle(fontSize: 13, color: subtitleColor),
                             ),
                           ],
@@ -500,7 +536,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ],
       ),
       bottomNavigationBar: _AddToCartBar(
-        product: widget.product,
+        product: _product!,
         selectedColor: _selectedColor,
         selectedSize: _selectedSize,
         isDark: isDark,
