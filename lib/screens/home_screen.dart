@@ -130,19 +130,12 @@ class _HomeScreenState extends State<HomeScreen>
             animation: _drawerAnimation,
             builder: (context, child) {
               final slideValue = _drawerAnimation.value * 280;
-              final scale = 1.0 - (_drawerAnimation.value * 0.02);
-              final borderRadius = _drawerAnimation.value * 16;
               
               return Transform.translate(
                 offset: Offset(slideValue, 0),
-                child: Transform.scale(
-                  scale: scale,
-                  alignment: Alignment.centerLeft,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    child: Container(
-                      color: bgColor,
-                      child: SafeArea(
+                child: Container(
+                  color: bgColor,
+                  child: SafeArea(
                         child: Column(
                           children: [
                             Container(
