@@ -193,18 +193,6 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isSelected 
-                          ? const Color(0xFF007AFF).withOpacity(0.1)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected 
-                            ? const Color(0xFF007AFF)
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -215,10 +203,10 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                             shape: BoxShape.circle,
                             color: Colors.white,
                             border: Border.all(
-                              color: widget.isDark 
-                                  ? const Color(0xFF4A4C4E) 
-                                  : const Color(0xFFE4E6EB),
-                              width: 2,
+                              color: isSelected
+                                  ? (widget.isDark ? const Color(0xFFFFFFFF) : const Color(0xFF2C3E50))
+                                  : (widget.isDark ? const Color(0xFF4A4C4E) : const Color(0xFFE4E6EB)),
+                              width: isSelected ? 3 : 2,
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -248,7 +236,9 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? const Color(0xFF007AFF) : textColor,
+                            color: isSelected 
+                                ? (widget.isDark ? const Color(0xFFFFFFFF) : const Color(0xFF2C3E50))
+                                : textColor,
                             letterSpacing: 0.1,
                           ),
                           maxLines: 2,
@@ -343,7 +333,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                               padding: const EdgeInsets.all(8),
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                childAspectRatio: 0.75,
+                                childAspectRatio: 0.68,
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
                               ),
@@ -437,7 +427,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.68,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
