@@ -87,10 +87,7 @@ class _ProductCardState extends State<ProductCard> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                   child: Container(
                     height: 140 + widget.imageHeightVariation.toDouble(),
                     width: double.infinity,
