@@ -132,7 +132,10 @@ class InicioTabScreen extends StatelessWidget {
                 isInCart: isInCart,
                 imageHeightVariation: index % 5 * 30,
                 onTap: () {
-                  Navigator.of(context).pushNamed('/product_details', arguments: product);
+                  Navigator.of(context).pushNamed(
+                    '/product_details',
+                    arguments: {'product': product},
+                  );
                 },
                 onCartAction: () {
                   if (isInCart) {
@@ -196,7 +199,10 @@ class InicioTabScreen extends StatelessWidget {
               isInCart: isInCart,
               imageHeightVariation: 0,
               onTap: () {
-                Navigator.of(context).pushNamed('/product_details', arguments: product);
+                Navigator.of(context).pushNamed(
+                  '/product_details',
+                  arguments: {'product': product},
+                );
               },
               onCartAction: () {
                 if (isInCart) {
@@ -229,7 +235,10 @@ class InicioTabScreen extends StatelessWidget {
           isInCart: isInCart,
           imageHeightVariation: index % 5 * 30,
           onTap: () {
-            Navigator.of(context).pushNamed('/product_details', arguments: product);
+            Navigator.of(context).pushNamed(
+              '/product_details',
+              arguments: {'product': product},
+            );
           },
           onCartAction: () {
             if (isInCart) {
