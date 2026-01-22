@@ -78,7 +78,7 @@ class _ProductCardState extends State<ProductCard> {
       child: Container(
         decoration: BoxDecoration(
           color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,70 +87,42 @@ class _ProductCardState extends State<ProductCard> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.zero,
-                  child: imageUrl.isEmpty
-                      ? _buildImagePlaceholder()
-                      : Image.network(
-                          imageUrl,
-                          height: 160 + widget.imageHeightVariation.toDouble(),
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                            if (wasSynchronouslyLoaded) {
-                              _imageLoaded = true;
-                              return child;
-                            }
-                            if (frame != null) {
-                              if (!_imageLoaded) {
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  if (mounted) {
-                                    setState(() => _imageLoaded = true);
-                                  }
-                                });
-                              }
-                              return child;
-                            }
-                            return _buildImagePlaceholder();
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildImagePlaceholder();
-                          },
-                        ),
-                ),
-
-                // Low Stock Badge
-                if (hasLowStock)
-                  Positioned(
-                    bottom: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF9500),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.local_fire_department_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            stock == 1 ? 'Último!' : 'Apenas $stock',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
                   ),
+                  child: Container(
+                    height: 140 + widget.imageHeightVariation.toDouble(),
+                    width: double.infinity,
+                    color: const Color(0xFFFFFFFF),
+                    child: imageUrl.isEmpty
+                        ? _buildImagePlaceholder()
+                        : Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                              if (wasSynchronouslyLoaded) {
+                                _imageLoaded = true;
+                                return child;
+                              }
+                              if (frame != null) {
+                                if (!_imageLoaded) {
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (mounted) {
+                                      setState(() => _imageLoaded = true);
+                                    }
+                                  });
+                                }
+                                return child;
+                              }
+                              return _buildImagePlaceholder();
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildImagePlaceholder();
+                            },
+                          ),
+                  ),
+                ),
 
                 // Favorite Button no topo
                 Positioned(
@@ -164,25 +136,55 @@ class _ProductCardState extends State<ProductCard> {
             // Content Section
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Low Stock Badge (movido para cá)
+                    if (hasLowStock)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF9500),
+                          borderRadius: BorderRadius.zero,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.local_fire_department_rounded,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              stock == 1 ? 'Último!' : 'Apenas $stock',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     // Title
                     Text(
                       widget.product['title'] ?? 'Produto',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
-                        height: 1.4,
+                        height: 1.3,
                         letterSpacing: 0.1,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // Rating (se existir na API)
                     if (rating > 0) ...[
@@ -190,14 +192,14 @@ class _ProductCardState extends State<ProductCard> {
                         children: [
                           Icon(
                             Icons.star_rounded,
-                            size: 16,
+                            size: 14,
                             color: Colors.amber[700],
                           ),
                           const SizedBox(width: 4),
                           Text(
                             rating.toStringAsFixed(1),
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
                               letterSpacing: 0.2,
@@ -205,9 +207,9 @@ class _ProductCardState extends State<ProductCard> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                     ] else
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
 
                     const Spacer(),
 
@@ -218,7 +220,7 @@ class _ProductCardState extends State<ProductCard> {
                         Text(
                           'AOA${formatPrice(productPrice)}',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
                             letterSpacing: -0.5,
@@ -229,7 +231,7 @@ class _ProductCardState extends State<ProductCard> {
                           Text(
                             '$discountPercent% off',
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFFFF3B30),
                             ),
@@ -248,9 +250,9 @@ class _ProductCardState extends State<ProductCard> {
 
   Widget _buildImagePlaceholder() {
     return Container(
-      height: 160 + widget.imageHeightVariation.toDouble(),
+      height: 140 + widget.imageHeightVariation.toDouble(),
       width: double.infinity,
-      color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE5E5EA),
+      color: const Color(0xFFFFFFFF),
       child: _SkeletonLoader(isDark: widget.isDark),
     );
   }
@@ -303,8 +305,8 @@ class _FavoriteButtonState extends State<_FavoriteButton> {
         child: _showGif
             ? Image.asset(
                 'assets/like_animation.gif',
-                width: 16,
-                height: 16,
+                width: 24,
+                height: 24,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(
                     Icons.favorite,
@@ -367,12 +369,9 @@ class _SkeletonLoaderState extends State<_SkeletonLoader>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE5E5EA))
-                    .withOpacity(_animation.value),
-                (widget.isDark ? const Color(0xFF4A4C4E) : const Color(0xFFD1D1D6))
-                    .withOpacity(_animation.value),
-                (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE5E5EA))
-                    .withOpacity(_animation.value),
+                const Color(0xFFE5E5EA).withOpacity(_animation.value),
+                const Color(0xFFD1D1D6).withOpacity(_animation.value),
+                const Color(0xFFE5E5EA).withOpacity(_animation.value),
               ],
             ),
           ),
