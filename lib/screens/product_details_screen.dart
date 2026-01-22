@@ -160,7 +160,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final localeProvider = Provider.of<LocaleProvider>(context);
     final isDark = themeProvider.isDark;
     final currentLocale = localeProvider.locale;
-    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFFFFFFF);
+    final bgColor = isDark ? const Color(0xFF18191A) : const Color(0xFFF5F5F5);
+    final cardColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21);
     final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
 
@@ -226,7 +227,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 children: [
                   Container(
                     height: 350,
-                    color: Colors.white,
+                    color: cardColor,
                     child: images.isEmpty
                         ? Center(
                             child: Icon(
@@ -297,7 +298,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             ],
                           ),
                   ),
-                  Padding(
+                  Container(
+                    color: cardColor,
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -485,7 +487,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: isSelected ? bgColor : textColor,
+                                      color: isSelected ? cardColor : textColor,
                                     ),
                                   ),
                                 ),
@@ -509,7 +511,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         selectedSize: _selectedSize,
         isDark: isDark,
         textColor: textColor,
-        bgColor: bgColor,
+        bgColor: cardColor,
         currentLocale: currentLocale,
       ),
     );
