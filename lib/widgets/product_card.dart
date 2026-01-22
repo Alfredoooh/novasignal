@@ -5,6 +5,19 @@ import 'dart:math';
 
 const Color primaryColor = Color(0xFF2C3E50);
 
+String formatPrice(double price) {
+  String str = price.toStringAsFixed(2);
+  final parts = str.split('.');
+  String integerPart = parts[0];
+  String formatted = '';
+  while (integerPart.length > 3) {
+    formatted = ',' + integerPart.substring(integerPart.length - 3) + formatted;
+    integerPart = integerPart.substring(0, integerPart.length - 3);
+  }
+  formatted = integerPart + formatted;
+  return formatted + '.' + parts[1];
+}
+
 class ProductCard extends StatefulWidget {
   final Map<String, dynamic> product;
   final bool isDark;
@@ -42,34 +55,18 @@ class _ProductCardState extends State<ProductCard> {
     final stock = widget.product['stock'] ?? 0;
     final hasLowStock = stock > 0 && stock <= 5;
     final rating = widget.product['rating'] ?? 0.0;
-    
-    // Calcular preço original se houver desconto
-    final originalPrice = hasDiscount 
-        ? (productPrice / (1 - discountPercent / 100)) 
-        : productPrice;
+
+    String imageUrl = widget.product['thumbnail'] ?? widget.product['image'] ?? '';
+    if (imageUrl.isEmpty && widget.product['images'] is List && (widget.product['images'] as List).isNotEmpty) {
+      imageUrl = (widget.product['images'] as List)[0];
+    }
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.97 : 1.0),
+      onTap: widget.onTap,
+      child: Container(
         decoration: BoxDecoration(
           color: widget.isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: widget.isDark 
-                  ? Colors.black.withOpacity(0.3)
-                  : Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.zero,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,11 +75,11 @@ class _ProductCardState extends State<ProductCard> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: BorderRadius.zero,
                   child: _hasImageError || _isImageLoading
                       ? _buildImagePlaceholder()
                       : Image.network(
-                          widget.product['thumbnail'] ?? widget.product['image'] ?? '',
+                          imageUrl,
                           height: 160 + widget.imageHeightVariation.toDouble(),
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -107,30 +104,7 @@ class _ProductCardState extends State<ProductCard> {
                           },
                         ),
                 ),
-                
-                // Discount Badge
-                if (hasDiscount)
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF3B30),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '-$discountPercent%',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ),
-                  ),
-                
+
                 // Low Stock Badge
                 if (hasLowStock)
                   Positioned(
@@ -164,7 +138,7 @@ class _ProductCardState extends State<ProductCard> {
                       ),
                     ),
                   ),
-                
+
                 // Favorite Button no topo
                 Positioned(
                   top: 6,
@@ -173,7 +147,7 @@ class _ProductCardState extends State<ProductCard> {
                 ),
               ],
             ),
-            
+
             // Content Section
             Expanded(
               child: Padding(
@@ -194,9 +168,9 @@ class _ProductCardState extends State<ProductCard> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // Rating (se existir na API)
                     if (rating > 0) ...[
                       Row(
@@ -221,38 +195,32 @@ class _ProductCardState extends State<ProductCard> {
                       const SizedBox(height: 10),
                     ] else
                       const SizedBox(height: 4),
-                    
+
                     const Spacer(),
-                    
+
                     // Price Section
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (hasDiscount)
-                          Text(
-                            '\$${originalPrice.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: widget.isDark 
-                                  ? const Color(0xFF65676B) 
-                                  : const Color(0xFF8E8E93),
-                              decoration: TextDecoration.lineThrough,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
                         Text(
-                          '\$${productPrice.toStringAsFixed(2)}',
+                          'AOA${formatPrice(productPrice)}',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: hasDiscount ? const Color(0xFFFF3B30) : (
-                              widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21)
-                            ),
+                            color: widget.isDark ? const Color(0xFFE4E6EB) : const Color(0xFF1C1E21),
                             letterSpacing: -0.5,
                             height: 1.2,
                           ),
                         ),
+                        if (hasDiscount)
+                          Text(
+                            '$discountPercent% off',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFFF3B30),
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -373,7 +341,7 @@ class _SkeletonLoaderState extends State<_SkeletonLoader>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
-    
+
     _animation = Tween<double>(begin: 0.3, end: 0.6).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
