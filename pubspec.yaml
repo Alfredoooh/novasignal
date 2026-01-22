@@ -51,7 +51,6 @@ flutter:
     - assets/fire_icon.png
     - assets/like_animation.gif
     - assets/empty_store.png
-    - assets/empty_products.png
     - assets/error_state.png
 
 # Configuração do Splash Screen
