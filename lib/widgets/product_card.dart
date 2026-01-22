@@ -269,7 +269,7 @@ class _ProductCardState extends State<ProductCard> {
     return Container(
       height: 160 + widget.imageHeightVariation.toDouble(),
       width: double.infinity,
-      color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF2F2F7),
+      color: widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE5E5EA),
       child: _isImageLoading && !_hasImageError
           ? _SkeletonLoader(isDark: widget.isDark)
           : Center(
@@ -278,7 +278,7 @@ class _ProductCardState extends State<ProductCard> {
                 size: 48,
                 color: widget.isDark 
                     ? const Color(0xFF65676B) 
-                    : const Color(0xFFB0B3B8),
+                    : const Color(0xFFA0A0A5),
               ),
             ),
     );
@@ -396,11 +396,11 @@ class _SkeletonLoaderState extends State<_SkeletonLoader>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF2F2F7))
+                (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE5E5EA))
                     .withOpacity(_animation.value),
-                (widget.isDark ? const Color(0xFF4A4C4E) : const Color(0xFFE5E5EA))
+                (widget.isDark ? const Color(0xFF4A4C4E) : const Color(0xFFD1D1D6))
                     .withOpacity(_animation.value),
-                (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFF2F2F7))
+                (widget.isDark ? const Color(0xFF3E4042) : const Color(0xFFE5E5EA))
                     .withOpacity(_animation.value),
               ],
             ),
