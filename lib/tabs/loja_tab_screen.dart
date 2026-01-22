@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../providers/cart_provider.dart';
 import '../widgets/product_card.dart';
+import '../screens/product_details_screen.dart';
 
 class LojaTabScreen extends StatefulWidget {
   final Color bgColor;
@@ -333,7 +334,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                               padding: const EdgeInsets.all(8),
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                childAspectRatio: 0.68,
+                                childAspectRatio: 0.65,
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
                               ),
@@ -349,9 +350,10 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                                   isInCart: isInCart,
                                   imageHeightVariation: 0,
                                   onTap: () {
-                                    Navigator.of(context).pushNamed(
-                                      '/product_details',
-                                      arguments: {'product': product},
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => ProductDetailsScreen(product: product),
+                                      ),
                                     );
                                   },
                                   onCartAction: () {
@@ -427,7 +429,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.68,
+        childAspectRatio: 0.65,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
