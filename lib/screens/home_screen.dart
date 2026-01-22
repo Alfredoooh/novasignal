@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen>
   int _selectedIndex = 0;
   late AnimationController _drawerController;
   late Animation<double> _drawerAnimation;
+  late Animation<double> _fadeAnimation;
   bool _isDrawerOpen = false;
   late Future<List<dynamic>> _productsFuture;
   String _selectedCategory = 'Todos';
@@ -40,19 +41,24 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _drawerController = AnimationController(
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     _drawerAnimation = CurvedAnimation(
       parent: _drawerController,
-      curve: Curves.easeOut,
-      reverseCurve: Curves.easeIn,
+      curve: Curves.easeInOutCubic,
+      reverseCurve: Curves.easeInOutCubic,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _drawerController,
+        curve: Curves.easeOut,
+      ),
     );
     _productsFuture = fetchProducts();
   }
 
   Future<List<dynamic>> fetchProducts() async {
-    // Tenta dummyjson, se falhar, tenta fakestoreapi
     try {
       final response = await http.get(Uri.parse('https://dummyjson.com/products?limit=50'));
       if (response.statusCode == 200) {
@@ -62,7 +68,6 @@ class _HomeScreenState extends State<HomeScreen>
         }
       }
     } catch (e) {
-      // ignore and fallback
       debugPrint('Error fetching from dummyjson: $e');
     }
 
@@ -125,161 +130,171 @@ class _HomeScreenState extends State<HomeScreen>
             animation: _drawerAnimation,
             builder: (context, child) {
               final slideValue = _drawerAnimation.value * 280;
+              final scale = 1.0 - (_drawerAnimation.value * 0.02);
+              final borderRadius = _drawerAnimation.value * 16;
+              
               return Transform.translate(
                 offset: Offset(slideValue, 0),
-                child: Container(
-                  color: bgColor,
-                  child: SafeArea(
-                    child: Column(
-                      children: [
-                        Container(
-                          color: appBarColor,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Row(
-                            children: [
-                              GestureDetector(
-                                onTap: _toggleDrawer,
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.menu, color: Color(0xFFFFFFFF), size: 22),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  appBarTitle,
-                                  style: TextStyle(
-                                    color: const Color(0xFFFFFFFF),
-                                    fontSize: 20,
-                                    fontWeight: titleWeight,
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  // TODO: Implementar pesquisa
-                                },
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: SvgPicture.string(
-                                      AppIcons.searchIcon,
-                                      color: const Color(0xFFFFFFFF),
+                child: Transform.scale(
+                  scale: scale,
+                  alignment: Alignment.centerLeft,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    child: Container(
+                      color: bgColor,
+                      child: SafeArea(
+                        child: Column(
+                          children: [
+                            Container(
+                              color: appBarColor,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: _toggleDrawer,
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.15),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.menu_rounded, color: Color(0xFFFFFFFF), size: 20),
                                     ),
                                   ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () {
-                                  // TODO: Menu de opções
-                                },
-                                child: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.15),
-                                    shape: BoxShape.circle,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      appBarTitle,
+                                      style: TextStyle(
+                                        color: const Color(0xFFFFFFFF),
+                                        fontSize: 20,
+                                        fontWeight: titleWeight,
+                                      ),
+                                    ),
                                   ),
-                                  child: const Icon(Icons.more_vert, color: Color(0xFFFFFFFF), size: 22),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (_selectedIndex == 0)
-                          Container(
-                            height: 50,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _categories.length,
-                              itemBuilder: (context, index) {
-                                final category = _categories[index];
-                                final isSelected = _selectedCategory == category;
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: GestureDetector(
+                                  GestureDetector(
                                     onTap: () {
-                                      setState(() {
-                                        _selectedCategory = category;
-                                      });
+                                      // TODO: Implementar pesquisa
                                     },
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      width: 36,
+                                      height: 36,
                                       decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
-                                            : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
-                                        borderRadius: BorderRadius.circular(8),
+                                        color: Colors.white.withOpacity(0.15),
+                                        shape: BoxShape.circle,
                                       ),
-                                      child: Center(
-                                        child: Text(
-                                          category,
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
-                                                : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
-                                            fontSize: 14,
-                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                          ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(9),
+                                        child: SvgPicture.string(
+                                          AppIcons.searchIcon,
+                                          color: const Color(0xFFFFFFFF),
                                         ),
                                       ),
                                     ),
                                   ),
-                                );
-                              },
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      // TODO: Menu de opções
+                                    },
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.15),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.more_vert_rounded, color: Color(0xFFFFFFFF), size: 20),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        Expanded(
-                          child: IndexedStack(
-                            index: _selectedIndex,
-                            children: [
-                              InicioTabScreen(
-                                bgColor: bgColor,
-                                isDark: isDark,
-                                productsFuture: _productsFuture,
-                                selectedCategory: _selectedCategory,
-                                categories: _categories,
+                            if (_selectedIndex == 0)
+                              Container(
+                                height: 50,
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _categories.length,
+                                  itemBuilder: (context, index) {
+                                    final category = _categories[index];
+                                    final isSelected = _selectedCategory == category;
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedCategory = category;
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
+                                                : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              category,
+                                              style: TextStyle(
+                                                color: isSelected
+                                                    ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
+                                                    : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+                                                fontSize: 14,
+                                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                              LojaTabScreen(
-                                bgColor: bgColor,
-                                isDark: isDark,
-                                currentLocale: currentLocale,
+                            Expanded(
+                              child: IndexedStack(
+                                index: _selectedIndex,
+                                children: [
+                                  InicioTabScreen(
+                                    bgColor: bgColor,
+                                    isDark: isDark,
+                                    productsFuture: _productsFuture,
+                                    selectedCategory: _selectedCategory,
+                                    categories: _categories,
+                                  ),
+                                  LojaTabScreen(
+                                    bgColor: bgColor,
+                                    isDark: isDark,
+                                    currentLocale: currentLocale,
+                                  ),
+                                  BasketTabScreen(
+                                    bgColor: bgColor,
+                                    isDark: isDark,
+                                    currentLocale: currentLocale,
+                                  ),
+                                ],
                               ),
-                              BasketTabScreen(
-                                bgColor: bgColor,
-                                isDark: isDark,
-                                currentLocale: currentLocale,
-                              ),
-                            ],
-                          ),
+                            ),
+                            BottomBar(
+                              selectedIndex: _selectedIndex,
+                              onItemSelected: (index) {
+                                setState(() {
+                                  _selectedIndex = index;
+                                });
+                              },
+                              isDark: isDark,
+                              homeLabel: AppStrings.get('home', currentLocale),
+                              storeLabel: AppStrings.get('channels', currentLocale),
+                              basketLabel: AppStrings.get('basket', currentLocale),
+                            ),
+                          ],
                         ),
-                        BottomBar(
-                          selectedIndex: _selectedIndex,
-                          onItemSelected: (index) {
-                            setState(() {
-                              _selectedIndex = index;
-                            });
-                          },
-                          isDark: isDark,
-                          homeLabel: AppStrings.get('home', currentLocale),
-                          storeLabel: AppStrings.get('channels', currentLocale),
-                          basketLabel: AppStrings.get('basket', currentLocale),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -289,20 +304,34 @@ class _HomeScreenState extends State<HomeScreen>
           if (_isDrawerOpen)
             GestureDetector(
               onTap: _toggleDrawer,
-              child: Container(color: const Color(0x80000000)),
+              child: AnimatedBuilder(
+                animation: _fadeAnimation,
+                builder: (context, child) {
+                  return Container(
+                    color: Color.lerp(
+                      Colors.transparent,
+                      const Color(0x80000000),
+                      _fadeAnimation.value,
+                    ),
+                  );
+                },
+              ),
             ),
           AnimatedBuilder(
             animation: _drawerAnimation,
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(-280 + (_drawerAnimation.value * 280), 0),
-                child: DrawerMenu(
-                  appName: AppStrings.get('app_name', currentLocale),
-                  settingsLabel: AppStrings.get('settings', currentLocale),
-                  onSettingsTap: () {
-                    _toggleDrawer();
-                    Navigator.of(context).pushNamed('/settings');
-                  },
+                child: Opacity(
+                  opacity: _drawerAnimation.value,
+                  child: DrawerMenu(
+                    appName: AppStrings.get('app_name', currentLocale),
+                    settingsLabel: AppStrings.get('settings', currentLocale),
+                    onSettingsTap: () {
+                      _toggleDrawer();
+                      Navigator.of(context).pushNamed('/settings');
+                    },
+                  ),
                 ),
               );
             },
