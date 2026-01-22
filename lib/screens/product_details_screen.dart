@@ -11,7 +11,8 @@ import '../providers/locale_provider.dart';
 import '../utils/app_strings.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
-  const ProductDetailsScreen({Key? key}) : super(key: key);
+  final Map<String, dynamic> product;
+  const ProductDetailsScreen({Key? key, required this.product}) : super(key: key);
 
   @override
   State<ProductDetailsScreen> createState() => _ProductDetailsScreenState();
@@ -30,34 +31,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   double? _priceInAOA;
   bool _isLoadingPrice = false;
 
-  Map<String, dynamic>? _product;
-
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    
-    if (_product == null) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args != null && args.containsKey('product')) {
-        _product = args['product'] as Map<String, dynamic>;
-        
-        if (_product!['colors'] != null && (_product!['colors'] as List).isNotEmpty) {
-          _selectedColor = _product!['colors'][0]['name'];
-        }
-        if (_product!['sizes'] != null && (_product!['sizes'] as List).isNotEmpty) {
-          _selectedSize = _product!['sizes'][0];
-        }
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _translateContent();
-          _convertPrice();
-        });
-      }
+  void initState() {
+    super.initState();
+    if (widget.product['colors'] != null && (widget.product['colors'] as List).isNotEmpty) {
+      _selectedColor = widget.product['colors'][0]['name'];
     }
+    if (widget.product['sizes'] != null && (widget.product['sizes'] as List).isNotEmpty) {
+      _selectedSize = widget.product['sizes'][0];
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _translateContent();
+      _convertPrice();
+    });
   }
 
   Future<void> _convertPrice() async {
-    if (!mounted || _product == null) return;
+    if (!mounted) return;
     setState(() => _isLoadingPrice = true);
     try {
       final response = await http.get(
@@ -66,7 +56,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final aoaRate = data['rates']['AOA'] ?? 900.0;
-        final priceUSD = (_product!['price'] ?? 0).toDouble();
+        final priceUSD = (widget.product['price'] ?? 0).toDouble();
         if (mounted) {
           setState(() {
             _priceInAOA = priceUSD * aoaRate;
@@ -77,7 +67,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _priceInAOA = (_product!['price'] ?? 0).toDouble() * 900;
+          _priceInAOA = (widget.product['price'] ?? 0).toDouble() * 900;
           _isLoadingPrice = false;
         });
       }
@@ -85,15 +75,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   Future<void> _translateContent() async {
-    if (!mounted || _product == null) return;
+    if (!mounted) return;
     final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     final currentLocale = localeProvider.locale;
 
     if (currentLocale != 'pt') {
       if (mounted) {
         setState(() {
-          _translatedTitle = _product!['title'];
-          _translatedDescription = _product!['description'];
+          _translatedTitle = widget.product['title'];
+          _translatedDescription = widget.product['description'];
         });
       }
       return;
@@ -104,9 +94,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     }
 
     try {
-      if (_product!['title'] != null) {
+      if (widget.product['title'] != null) {
         final titleTranslation = await translator.translate(
-          _product!['title'],
+          widget.product['title'],
           from: 'en',
           to: 'pt',
         );
@@ -115,9 +105,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         }
       }
 
-      if (_product!['description'] != null) {
+      if (widget.product['description'] != null) {
         final descTranslation = await translator.translate(
-          _product!['description'],
+          widget.product['description'],
           from: 'en',
           to: 'pt',
         );
@@ -132,8 +122,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _translatedTitle = _product!['title'];
-          _translatedDescription = _product!['description'];
+          _translatedTitle = widget.product['title'];
+          _translatedDescription = widget.product['description'];
           _isTranslating = false;
         });
       }
@@ -147,38 +137,25 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   List<String> _getImages() {
-    if (_product == null) return [];
-    
     final images = <String>[];
-    if (_product!['thumbnail'] != null) {
-      images.add(_product!['thumbnail']);
+    if (widget.product['thumbnail'] != null) {
+      images.add(widget.product['thumbnail']);
     }
-    if (_product!['images'] != null && _product!['images'] is List) {
-      for (var img in _product!['images']) {
+    if (widget.product['images'] != null && widget.product['images'] is List) {
+      for (var img in widget.product['images']) {
         if (img is String && img.isNotEmpty) {
           images.add(img);
         }
       }
     }
-    if (images.isEmpty && _product!['image'] != null) {
-      images.add(_product!['image']);
+    if (images.isEmpty && widget.product['image'] != null) {
+      images.add(widget.product['image']);
     }
     return images;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_product == null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF18191A),
-        body: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF007AFF)),
-          ),
-        ),
-      );
-    }
-
     final themeProvider = Provider.of<ThemeProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
     final isDark = themeProvider.isDark;
@@ -188,15 +165,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
 
     final images = _getImages();
-    final colors = _product!['colors'] as List?;
-    final sizes = _product!['sizes'] as List?;
+    final colors = widget.product['colors'] as List?;
+    final sizes = widget.product['sizes'] as List?;
 
-    final title = _translatedTitle ?? _product!['title'] ?? AppStrings.get('product_details', currentLocale);
-    final description = _translatedDescription ?? _product!['description'] ?? '';
-    final rating = _product!['rating'] ?? 4.5;
-    final brand = _product!['brand'];
-    final category = _product!['category'];
-    final stock = _product!['stock'] ?? 0;
+    final title = _translatedTitle ?? widget.product['title'] ?? AppStrings.get('product_details', currentLocale);
+    final description = _translatedDescription ?? widget.product['description'] ?? '';
+    final rating = widget.product['rating'] ?? 4.5;
+    final brand = widget.product['brand'];
+    final category = widget.product['category'];
+    final stock = widget.product['stock'] ?? 0;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -363,7 +340,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              '${_product!['reviews']?.length ?? 0} avaliações',
+                              '${widget.product['reviews']?.length ?? 0} avaliações',
                               style: TextStyle(fontSize: 13, color: subtitleColor),
                             ),
                           ],
@@ -536,7 +513,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ],
       ),
       bottomNavigationBar: _AddToCartBar(
-        product: _product!,
+        product: widget.product,
         selectedColor: _selectedColor,
         selectedSize: _selectedSize,
         isDark: isDark,
@@ -784,14 +761,10 @@ class _AddToCartBarState extends State<_AddToCartBar> {
 
 const _backIconSvg = '''<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.68473 7.33186C8.07526 6.94134 8.07526 6.30817 7.68473 5.91765C7.29421 5.52712 6.66105 5.52712 6.27052 5.91765L1.60492 10.5832C0.823873 11.3643 0.823872 12.6306 1.60492 13.4117L6.27336 18.0801C6.66388 18.4706 7.29705 18.4706 7.68757 18.0801C8.0781 17.6896 8.0781 17.0564 7.68757 16.6659L4.02154 12.9998L22 12.9998C22.5523 12.9998 23 12.5521 23 11.9998C23 11.4476 22.5523 10.9998 22 10.9998L4.01675 10.9998L7.68473 7.33186Z" fill="#0F0F0F"/></svg>''';
 
-const _leftArrowSvg = '''<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24">
+const _leftArrowSvg = '''<svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24">
   <path d="m24,13v8c0,.552-.447,1-1,1s-1-.448-1-1v-8c0-1.654-1.346-3-3-3H2.367c.032.039.059.08.095.116l5.137,5.18c.389.392.387,1.025-.006,1.414-.195.193-.449.29-.704.29-.258,0-.515-.099-.71-.296L1.045,11.527c-.673-.673-1.045-1.572-1.045-2.527s.372-1.854,1.048-2.529L6.179,1.296c.39-.393,1.022-.394,1.414-.006.393.389.395,1.022.006,1.414L2.465,7.881c-.037.037-.065.079-.098.119h16.633c2.757,0,5,2.243,5,5Z"/>
-</svg>
-''';
+</svg>''';
 
-const _rightArrowSvg = '''<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24">
+const _rightArrowSvg = '''<svg xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24">
   <path d="m24,9c0,.956-.372,1.854-1.048,2.53l-5.131,5.174c-.195.197-.453.296-.71.296-.254,0-.509-.097-.704-.29-.392-.389-.395-1.021-.006-1.414l5.134-5.177c.037-.037.065-.079.098-.119H5c-1.654,0-3,1.346-3,3v8c0,.553-.448,1-1,1s-1-.447-1-1v-8c0-2.757,2.243-5,5-5h16.633c-.032-.039-.059-.08-.095-.116l-5.137-5.18c-.389-.392-.386-1.025.006-1.414.393-.388,1.026-.386,1.414.006l5.134,5.177c.673.673,1.045,1.571,1.045,2.527Z"/>
-</svg>
-''';
+</svg>''';
