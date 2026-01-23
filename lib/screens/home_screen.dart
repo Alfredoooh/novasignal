@@ -73,8 +73,8 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _translateTexts() async {
-    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
-    final currentLocale = localeProvider.locale;
+    final localeProvider = LocaleProvider.of(context);
+    final currentLocale = localeProvider?.locale ?? 'pt';
     
     if (currentLocale == 'pt') {
       setState(() {
@@ -188,158 +188,156 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Container(
                   color: bgColor,
                   child: SafeArea(
-                        child: Column(
-                          children: [
-                            Container(
-                              color: appBarColor,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: _toggleDrawer,
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.15),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(Icons.menu_rounded, color: Color(0xFFFFFFFF), size: 20),
-                                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          color: appBarColor,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: _toggleDrawer,
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      appBarTitle,
-                                      style: TextStyle(
-                                        color: const Color(0xFFFFFFFF),
-                                        fontSize: 20,
-                                        fontWeight: titleWeight,
-                                      ),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      // TODO: Implementar pesquisa
-                                    },
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.15),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(9),
-                                        child: SvgPicture.string(
-                                          AppIcons.searchIcon,
-                                          color: const Color(0xFFFFFFFF),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      // TODO: Menu de opções
-                                    },
-                                    child: Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.15),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(Icons.more_vert_rounded, color: Color(0xFFFFFFFF), size: 20),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (_selectedIndex == 0)
-                              Container(
-                                height: 50,
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: _categories.length,
-                                  itemBuilder: (context, index) {
-                                    final category = _categories[index];
-                                    final isSelected = _selectedCategory == category;
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedCategory = category;
-                                          });
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
-                                                : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              category,
-                                              style: TextStyle(
-                                                color: isSelected
-                                                    ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
-                                                    : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
-                                                fontSize: 14,
-                                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                  child: const Icon(Icons.menu_rounded, color: Color(0xFFFFFFFF), size: 20),
                                 ),
                               ),
-                            Expanded(
-                              child: IndexedStack(
-                                index: _selectedIndex,
-                                children: [
-                                  InicioTabScreen(
-                                    bgColor: bgColor,
-                                    isDark: isDark,
-                                    productsFuture: _productsFuture,
-                                    selectedCategory: _selectedCategory,
-                                    categories: _categories,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  appBarTitle,
+                                  style: TextStyle(
+                                    color: const Color(0xFFFFFFFF),
+                                    fontSize: 20,
+                                    fontWeight: titleWeight,
                                   ),
-                                  LojaTabScreen(
-                                    bgColor: bgColor,
-                                    isDark: isDark,
-                                    currentLocale: currentLocale,
-                                  ),
-                                  BasketTabScreen(
-                                    bgColor: bgColor,
-                                    isDark: isDark,
-                                    currentLocale: currentLocale,
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                            BottomBar(
-                              selectedIndex: _selectedIndex,
-                              onItemSelected: (index) {
-                                setState(() {
-                                  _selectedIndex = index;
-                                });
-                              },
-                              isDark: isDark,
-                              homeLabel: AppStrings.get('home', currentLocale),
-                              storeLabel: AppStrings.get('channels', currentLocale),
-                              basketLabel: AppStrings.get('basket', currentLocale),
-                            ),
-                          ],
+                              GestureDetector(
+                                onTap: () {
+                                  // TODO: Implementar pesquisa
+                                },
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(9),
+                                    child: SvgPicture.string(
+                                      AppIcons.searchIcon,
+                                      color: const Color(0xFFFFFFFF),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  _showOptionsMenu(context, isDark, currentLocale, theme);
+                                },
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.more_vert_rounded, color: Color(0xFFFFFFFF), size: 20),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        if (_selectedIndex == 0)
+                          Container(
+                            height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _categories.length,
+                              itemBuilder: (context, index) {
+                                final category = _categories[index];
+                                final isSelected = _selectedCategory == category;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategory = category;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? (isDark ? const Color(0xFFFFFFFF) : primaryColor)
+                                            : (isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0)),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          _categoryTranslations[category] ?? category,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? (isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF))
+                                                : (isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50)),
+                                            fontSize: 14,
+                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        Expanded(
+                          child: IndexedStack(
+                            index: _selectedIndex,
+                            children: [
+                              InicioTabScreen(
+                                bgColor: bgColor,
+                                isDark: isDark,
+                                productsFuture: _productsFuture,
+                                selectedCategory: _selectedCategory,
+                                categories: _categories,
+                              ),
+                              LojaTabScreen(
+                                bgColor: bgColor,
+                                isDark: isDark,
+                                currentLocale: currentLocale,
+                              ),
+                              BasketTabScreen(
+                                bgColor: bgColor,
+                                isDark: isDark,
+                                currentLocale: currentLocale,
+                              ),
+                            ],
+                          ),
+                        ),
+                        BottomBar(
+                          selectedIndex: _selectedIndex,
+                          onItemSelected: (index) {
+                            setState(() {
+                              _selectedIndex = index;
+                            });
+                          },
+                          isDark: isDark,
+                          homeLabel: AppStrings.get('home', currentLocale),
+                          storeLabel: AppStrings.get('channels', currentLocale),
+                          basketLabel: AppStrings.get('basket', currentLocale),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -389,7 +387,6 @@ class _HomeScreenState extends State<HomeScreen>
   void _showOptionsMenu(BuildContext context, bool isDark, String currentLocale, ThemeProvider? theme) {
     final cardColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
-    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D);
     final dividerColor = isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0);
 
     showGeneralDialog(
