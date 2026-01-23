@@ -334,7 +334,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
                               padding: const EdgeInsets.all(8),
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                childAspectRatio: 0.65,
+                                childAspectRatio: 0.70,
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
                               ),
@@ -429,7 +429,7 @@ class _LojaTabScreenState extends State<LojaTabScreen> {
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.65,
+        childAspectRatio: 0.70,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
