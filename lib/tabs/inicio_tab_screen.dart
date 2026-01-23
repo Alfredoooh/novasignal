@@ -271,36 +271,27 @@ class InicioTabScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: isDark 
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _ShimmerBox(
             width: double.infinity,
-            height: 160,
-            borderRadius: 16,
+            height: 120,
+            borderRadius: 12,
             isDark: isDark,
           ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ShimmerBox(width: double.infinity, height: 14, borderRadius: 4, isDark: isDark),
+                _ShimmerBox(width: double.infinity, height: 13, borderRadius: 4, isDark: isDark),
+                const SizedBox(height: 4),
+                _ShimmerBox(width: 60, height: 11, borderRadius: 4, isDark: isDark),
                 const SizedBox(height: 8),
-                _ShimmerBox(width: 120, height: 14, borderRadius: 4, isDark: isDark),
-                const SizedBox(height: 12),
-                _ShimmerBox(width: 80, height: 20, borderRadius: 4, isDark: isDark),
+                _ShimmerBox(width: 100, height: 16, borderRadius: 4, isDark: isDark),
               ],
             ),
           ),
