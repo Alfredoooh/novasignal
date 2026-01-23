@@ -389,136 +389,112 @@ class _HomeScreenState extends State<HomeScreen>
     final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
     final dividerColor = isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0);
 
-    showGeneralDialog(
+    showMenu(
       context: context,
-      barrierDismissible: true,
-      barrierLabel: '',
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 200),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOut),
-            ),
-            child: child,
-          ),
-        );
-      },
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return Align(
-          alignment: Alignment.topRight,
-          child: Container(
-            margin: const EdgeInsets.only(top: 60, right: 16),
-            width: 280,
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+      position: const RelativeRect.fromLTRB(1000, 60, 16, 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: cardColor,
+      elevation: 8,
+      items: [
+        PopupMenuItem(
+          enabled: false,
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushNamed('/account');
+                },
+                child: Container(
+                  width: 280,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_rounded, color: textColor, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          AppStrings.get('account', currentLocale),
+                          style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pushNamed('/account');
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.person_rounded, color: textColor, size: 22),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              AppStrings.get('account', currentLocale),
-                              style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Container(height: 1, color: dividerColor),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      // TODO: Abrir notificações
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.notifications_rounded, color: textColor, size: 22),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _translatedNotifications,
-                              style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Container(height: 1, color: dividerColor),
-                  GestureDetector(
-                    onTap: () {
-                      theme?.toggleTheme(!isDark);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.dark_mode_rounded, color: textColor, size: 22),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _translatedDarkMode,
-                              style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                          Container(
-                            width: 44,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: isDark ? primaryColor : const Color(0xFFCED0D4),
-                            ),
-                            child: AnimatedAlign(
-                              duration: const Duration(milliseconds: 200),
-                              alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
-                              child: Container(
-                                width: 20,
-                                height: 20,
-                                margin: const EdgeInsets.symmetric(horizontal: 2),
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Color(0xFFFFFFFF),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ),
-            ),
+              Container(height: 1, color: dividerColor),
+              InkWell(
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  width: 280,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.notifications_rounded, color: textColor, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _translatedNotifications,
+                          style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Container(height: 1, color: dividerColor),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    theme?.toggleTheme(!isDark);
+                  });
+                },
+                child: Container(
+                  width: 280,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.dark_mode_rounded, color: textColor, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _translatedDarkMode,
+                          style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      Container(
+                        width: 44,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: isDark ? primaryColor : const Color(0xFFCED0D4),
+                        ),
+                        child: AnimatedAlign(
+                          duration: const Duration(milliseconds: 200),
+                          alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFFFFFFF),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }
