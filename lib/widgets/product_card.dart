@@ -89,7 +89,7 @@ class _ProductCardState extends State<ProductCard> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    height: 140 + widget.imageHeightVariation.toDouble(),
+                    height: 120 + widget.imageHeightVariation.toDouble(),
                     width: double.infinity,
                     color: const Color(0xFFFFFFFF),
                     child: imageUrl.isEmpty
@@ -247,7 +247,7 @@ class _ProductCardState extends State<ProductCard> {
 
   Widget _buildImagePlaceholder() {
     return Container(
-      height: 140 + widget.imageHeightVariation.toDouble(),
+      height: 120 + widget.imageHeightVariation.toDouble(),
       width: double.infinity,
       color: const Color(0xFFFFFFFF),
       child: _SkeletonLoader(isDark: widget.isDark),
