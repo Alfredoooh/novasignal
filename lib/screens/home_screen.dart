@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
 import 'package:http/http.dart' as http;
+import 'package:translator/translator.dart';
 import 'dart:convert';
 
 import '../providers/theme_provider.dart';
@@ -36,6 +37,16 @@ class _HomeScreenState extends State<HomeScreen>
   String _selectedCategory = 'Todos';
 
   final List<String> _categories = ['Todos', 'Mais Vendidos', 'Em Promoção', 'Segunda Mão'];
+  final translator = GoogleTranslator();
+  String _translatedDarkMode = 'Modo Escuro';
+  String _translatedNotifications = 'Notificações';
+  
+  final Map<String, String> _categoryTranslations = {
+    'Todos': 'Todos',
+    'Mais Vendidos': 'Mais Vendidos',
+    'Em Promoção': 'Em Promoção',
+    'Segunda Mão': 'Segunda Mão',
+  };
 
   @override
   void initState() {
@@ -56,6 +67,47 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
     _productsFuture = fetchProducts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _translateTexts();
+    });
+  }
+
+  Future<void> _translateTexts() async {
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+    final currentLocale = localeProvider.locale;
+    
+    if (currentLocale == 'pt') {
+      setState(() {
+        _translatedDarkMode = 'Modo Escuro';
+        _translatedNotifications = 'Notificações';
+        _categoryTranslations['Todos'] = 'Todos';
+        _categoryTranslations['Mais Vendidos'] = 'Mais Vendidos';
+        _categoryTranslations['Em Promoção'] = 'Em Promoção';
+        _categoryTranslations['Segunda Mão'] = 'Segunda Mão';
+      });
+      return;
+    }
+
+    try {
+      final darkModeTranslation = await translator.translate('Modo Escuro', from: 'pt', to: 'en');
+      final notificationsTranslation = await translator.translate('Notificações', from: 'pt', to: 'en');
+      
+      final Map<String, String> newTranslations = {};
+      for (var category in _categories) {
+        final translation = await translator.translate(category, from: 'pt', to: 'en');
+        newTranslations[category] = translation.text;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _translatedDarkMode = darkModeTranslation.text;
+          _translatedNotifications = notificationsTranslation.text;
+          _categoryTranslations.addAll(newTranslations);
+        });
+      }
+    } catch (e) {
+      debugPrint('Translation error: $e');
+    }
   }
 
   Future<List<dynamic>> fetchProducts() async {
@@ -331,6 +383,145 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
+    );
+  }
+
+  void _showOptionsMenu(BuildContext context, bool isDark, String currentLocale, ThemeProvider? theme) {
+    final cardColor = isDark ? const Color(0xFF242526) : const Color(0xFFFFFFFF);
+    final textColor = isDark ? const Color(0xFFE4E6EB) : const Color(0xFF2C3E50);
+    final subtitleColor = isDark ? const Color(0xFFB0B3B8) : const Color(0xFF7F8C8D);
+    final dividerColor = isDark ? const Color(0xFF3E4042) : const Color(0xFFE0E0E0);
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 200),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            ),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.topRight,
+          child: Container(
+            margin: const EdgeInsets.only(top: 60, right: 16),
+            width: 280,
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pushNamed('/account');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Icon(Icons.person_rounded, color: textColor, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              AppStrings.get('account', currentLocale),
+                              style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(height: 1, color: dividerColor),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      // TODO: Abrir notificações
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Icon(Icons.notifications_rounded, color: textColor, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _translatedNotifications,
+                              style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(height: 1, color: dividerColor),
+                  GestureDetector(
+                    onTap: () {
+                      theme?.toggleTheme(!isDark);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Icon(Icons.dark_mode_rounded, color: textColor, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _translatedDarkMode,
+                              style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                          Container(
+                            width: 44,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: isDark ? primaryColor : const Color(0xFFCED0D4),
+                            ),
+                            child: AnimatedAlign(
+                              duration: const Duration(milliseconds: 200),
+                              alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                margin: const EdgeInsets.symmetric(horizontal: 2),
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFFFFFFFF),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
