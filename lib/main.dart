@@ -90,7 +90,7 @@ class _TradingScreenState extends State<TradingScreen> {
   InAppWebViewController? _webViewController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isLoading = true;
-  String _balance = '0.00 USD';
+  String _balance = '--- USD';
 
   String get htmlContent => '''
 <!DOCTYPE html>
@@ -99,6 +99,7 @@ class _TradingScreenState extends State<TradingScreen> {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="${widget.themeMode == ThemeMode.light ? '#ffffff' : '#1F2937'}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Deriv Trading</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
@@ -109,25 +110,148 @@ class _TradingScreenState extends State<TradingScreen> {
             -webkit-user-select: none;
             user-select: none;
         }
+        
         body {
             overscroll-behavior: none;
             -webkit-overflow-scrolling: touch;
             margin: 0;
             padding: 0;
         }
-        #main-scroll { height: 100vh; overflow-y: auto; }
+
+        .btn-active:active {
+            transform: scale(0.97);
+            opacity: 0.8;
+        }
+
+        .modal-enter {
+            animation: modalSlide 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        @keyframes modalSlide {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        input:focus {
+            outline: none;
+        }
+
+        #main-scroll {
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #chart-wrapper {
+            height: 520px;
+            margin: 12px;
+        }
     </style>
 </head>
-<body class="${widget.themeMode == ThemeMode.light ? 'bg-white' : 'bg-gray-900'} ${widget.themeMode == ThemeMode.light ? 'text-black' : 'text-white'}">
-    <div id="main-scroll">
-        <div id="chart-container" style="width: 100%; height: 400px;"></div>
-        <div class="p-4 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <button id="btn-rise" class="py-4 bg-green-500 text-white font-bold text-lg rounded-lg shadow-lg active:scale-95">Rise</button>
-                <button id="btn-fall" class="py-4 bg-red-500 text-white font-bold text-lg rounded-lg shadow-lg active:scale-95">Fall</button>
+<body class="${widget.themeMode == ThemeMode.light ? 'bg-white text-gray-900' : 'bg-gray-900 text-white'}">
+    <div class="h-screen flex flex-col">
+        <!-- Scrollable Content -->
+        <div id="main-scroll">
+            <!-- Chart Type Toggle -->
+            <div class="px-4 pt-3">
+                <div class="${widget.themeMode == ThemeMode.light ? 'bg-gray-100' : 'bg-gray-800'} rounded-lg p-0.5 flex">
+                    <button id="btn-candles" class="flex-1 py-2 rounded-md text-sm font-semibold transition-colors ${widget.themeMode == ThemeMode.light ? 'bg-white text-gray-900' : 'bg-gray-700 text-white'} shadow-sm">
+                        Candles
+                    </button>
+                    <button id="btn-line" class="flex-1 py-2 rounded-md text-sm font-semibold transition-colors ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">
+                        Line
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timeframes -->
+            <div class="px-4 py-3 overflow-x-auto">
+                <div class="flex gap-2">
+                    <button data-tf="0" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ${widget.themeMode == ThemeMode.light ? 'bg-gray-200 text-gray-900' : 'bg-gray-700 text-white'}">1t</button>
+                    <button data-tf="60" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">1m</button>
+                    <button data-tf="300" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">5m</button>
+                    <button data-tf="900" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">15m</button>
+                    <button data-tf="1800" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">30m</button>
+                    <button data-tf="3600" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">1h</button>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div id="chart-wrapper" class="rounded-xl overflow-hidden ${widget.themeMode == ThemeMode.light ? 'bg-white border border-gray-200' : 'bg-gray-800 border border-gray-700'}">
+                <div id="chart-container" class="w-full h-full"></div>
+            </div>
+
+            <!-- Price Display -->
+            <div class="px-4 py-4 pb-32">
+                <p id="current-price" class="text-3xl font-bold ${widget.themeMode == ThemeMode.light ? 'text-gray-900' : 'text-white'}">---</p>
+                <p id="price-change" class="text-sm mt-1 ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">---</p>
+            </div>
+        </div>
+
+        <!-- Trade Buttons - Fixed Bottom -->
+        <div class="fixed bottom-0 left-0 right-0 ${widget.themeMode == ThemeMode.light ? 'bg-white border-gray-200' : 'bg-gray-900 border-gray-800'} border-t px-4 py-3 flex gap-3 z-10">
+            <button id="btn-rise" class="flex-1 bg-green-500 py-4 rounded-xl font-bold text-white btn-active">
+                Rise
+            </button>
+            <button id="btn-fall" class="flex-1 bg-red-500 py-4 rounded-xl font-bold text-white btn-active">
+                Fall
+            </button>
+        </div>
+
+        <!-- Trade Modal -->
+        <div id="trade-modal" class="fixed inset-0 z-50 hidden">
+            <div class="absolute inset-0 bg-black/30" id="modal-overlay"></div>
+            <div class="modal-enter absolute bottom-0 left-0 right-0 ${widget.themeMode == ThemeMode.light ? 'bg-white' : 'bg-gray-800'} rounded-t-2xl max-h-[70vh] shadow-2xl">
+                <div class="p-5 ${widget.themeMode == ThemeMode.light ? 'border-gray-200' : 'border-gray-700'} border-b flex items-center justify-between">
+                    <h3 id="modal-title" class="text-xl font-semibold ${widget.themeMode == ThemeMode.light ? 'text-gray-900' : 'text-white'}">Rise</h3>
+                    <button id="modal-close" class="btn-active p-1 ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="p-4 overflow-y-auto" style="max-height: calc(70vh - 120px);">
+                    <div class="mb-4">
+                        <label class="text-sm font-semibold ${widget.themeMode == ThemeMode.light ? 'text-gray-600' : 'text-gray-300'} mb-2 block">Valor</label>
+                        <input type="number" id="stake-input" value="1.00" step="0.01" min="0.35"
+                            class="w-full ${widget.themeMode == ThemeMode.light ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-gray-700 border-gray-600 text-white'} px-4 py-3 rounded-xl border">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="text-sm font-semibold ${widget.themeMode == ThemeMode.light ? 'text-gray-600' : 'text-gray-300'} mb-2 block">Duração</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="duration-input" value="5" min="1"
+                                class="flex-1 ${widget.themeMode == ThemeMode.light ? 'bg-gray-100 border-gray-200 text-gray-900' : 'bg-gray-700 border-gray-600 text-white'} px-4 py-3 rounded-xl border">
+                            <div class="${widget.themeMode == ThemeMode.light ? 'bg-gray-100 border-gray-200' : 'bg-gray-700 border-gray-600'} rounded-xl flex p-1 border">
+                                <button data-unit="t" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit bg-green-500 text-white">
+                                    Ticks
+                                </button>
+                                <button data-unit="s" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">
+                                    Seg
+                                </button>
+                                <button data-unit="m" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ${widget.themeMode == ThemeMode.light ? 'text-gray-500' : 'text-gray-400'}">
+                                    Min
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pb-3">
+                        <div id="loading-proposal" class="${widget.themeMode == ThemeMode.light ? 'bg-gray-100 border-gray-200' : 'bg-gray-700 border-gray-600'} border py-4 rounded-xl flex items-center justify-center gap-2">
+                            <div class="w-5 h-5 border-2 ${widget.themeMode == ThemeMode.light ? 'border-gray-300 border-t-gray-600' : 'border-gray-600 border-t-gray-300'} rounded-full animate-spin"></div>
+                            <span class="${widget.themeMode == ThemeMode.light ? 'text-gray-600' : 'text-gray-300'} font-semibold">Carregando...</span>
+                        </div>
+                        <button id="execute-trade" class="hidden w-full py-4 rounded-xl font-bold text-white btn-active">
+                            Executar Trade
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
     <script>
         const APP_ID = 71954;
         const API_TOKEN = 'nUYzSZmUXrXmBmD';
@@ -136,6 +260,7 @@ class _TradingScreenState extends State<TradingScreen> {
 
         const state = {
             ws: null,
+            chartWs: null,
             chart: null,
             candleSeries: null,
             areaSeries: null,
@@ -144,13 +269,33 @@ class _TradingScreenState extends State<TradingScreen> {
             contractType: 'CALL',
             proposalId: null,
             durationUnit: 't',
-            isDark: ${widget.themeMode == ThemeMode.dark}
+            chartMode: 'candles',
+            selectedTimeframe: 0,
+            candles: [],
+            ticks: [],
+            proposalTimeout: null
         };
 
-        const elements = {
+        const el = {
+            mainScroll: document.getElementById('main-scroll'),
+            btnCandles: document.getElementById('btn-candles'),
+            btnLine: document.getElementById('btn-line'),
+            timeframes: document.querySelectorAll('[data-tf]'),
+            chartWrapper: document.getElementById('chart-wrapper'),
             chartContainer: document.getElementById('chart-container'),
+            currentPrice: document.getElementById('current-price'),
+            priceChange: document.getElementById('price-change'),
             btnRise: document.getElementById('btn-rise'),
-            btnFall: document.getElementById('btn-fall')
+            btnFall: document.getElementById('btn-fall'),
+            tradeModal: document.getElementById('trade-modal'),
+            modalOverlay: document.getElementById('modal-overlay'),
+            modalClose: document.getElementById('modal-close'),
+            modalTitle: document.getElementById('modal-title'),
+            stakeInput: document.getElementById('stake-input'),
+            durationInput: document.getElementById('duration-input'),
+            durationUnits: document.querySelectorAll('.duration-unit'),
+            loadingProposal: document.getElementById('loading-proposal'),
+            executeTradeBtn: document.getElementById('execute-trade')
         };
 
         function init() {
@@ -161,34 +306,34 @@ class _TradingScreenState extends State<TradingScreen> {
         }
 
         function initChart() {
-            state.chart = LightweightCharts.createChart(elements.chartContainer, {
-                width: elements.chartContainer.clientWidth,
-                height: elements.chartContainer.clientHeight,
+            const isDark = ${widget.themeMode == ThemeMode.dark};
+            state.chart = LightweightCharts.createChart(el.chartContainer, {
+                width: el.chartContainer.clientWidth,
+                height: el.chartContainer.clientHeight,
                 layout: {
-                    background: { color: state.isDark ? '#1F2937' : '#ffffff' },
-                    textColor: state.isDark ? '#f3f4f6' : '#374151'
+                    background: { color: isDark ? '#1F2937' : '#ffffff' },
+                    textColor: isDark ? '#9ca3af' : '#374151'
                 },
                 grid: {
-                    vertLines: { color: state.isDark ? '#374151' : '#f3f4f6' },
-                    horzLines: { color: state.isDark ? '#374151' : '#f3f4f6' }
+                    vertLines: { color: isDark ? '#374151' : '#f3f4f6' },
+                    horzLines: { color: isDark ? '#374151' : '#f3f4f6' }
                 },
-                timeScale: { timeVisible: true, secondsVisible: true },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+                rightPriceScale: { visible: true, borderVisible: false },
+                timeScale: { rightOffset: 12, barSpacing: 12, visible: true }
             });
 
             state.candleSeries = state.chart.addCandlestickSeries({
                 upColor: '#10b981',
                 downColor: '#ef4444',
-                borderUpColor: '#10b981',
-                borderDownColor: '#ef4444',
                 wickUpColor: '#10b981',
-                wickDownColor: '#ef4444'
+                wickDownColor: '#ef4444',
+                borderVisible: false
             });
 
             state.areaSeries = state.chart.addAreaSeries({
-                topColor: 'rgba(59, 130, 246, 0.4)',
-                bottomColor: 'rgba(59, 130, 246, 0.0)',
-                lineColor: '#3b82f6',
+                topColor: 'rgba(16, 185, 129, 0.4)',
+                bottomColor: 'rgba(16, 185, 129, 0)',
+                lineColor: '#10b981',
                 lineWidth: 2
             });
 
@@ -199,138 +344,287 @@ class _TradingScreenState extends State<TradingScreen> {
             state.ws = new WebSocket(WS_URL);
             
             state.ws.onopen = () => {
-                console.log('Connected');
-                authorize();
+                console.log('Connected to API');
+                state.ws.send(JSON.stringify({ authorize: API_TOKEN }));
             };
             
             state.ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                handleMessage(data);
+                if (data.error) {
+                    console.error('API Error:', data.error);
+                    return;
+                }
+                
+                if (data.msg_type === 'authorize') {
+                    state.balance = parseFloat(data.authorize.balance);
+                    state.currency = data.authorize.currency;
+                    window.flutter_inappwebview?.callHandler('updateBalance', {
+                        balance: state.balance.toFixed(2),
+                        currency: state.currency
+                    });
+                    state.ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+                    connectChartWebSocket();
+                } else if (data.msg_type === 'balance') {
+                    state.balance = parseFloat(data.balance.balance);
+                    state.currency = data.balance.currency;
+                    window.flutter_inappwebview?.callHandler('updateBalance', {
+                        balance: state.balance.toFixed(2),
+                        currency: state.currency
+                    });
+                } else if (data.msg_type === 'proposal') {
+                    if (data.proposal.id) {
+                        state.proposalId = data.proposal.id;
+                        el.loadingProposal.classList.add('hidden');
+                        el.executeTradeBtn.classList.remove('hidden');
+                    }
+                } else if (data.msg_type === 'buy') {
+                    if (data.buy.contract_id) {
+                        closeTradeModal();
+                        showNotification('Trade executado com sucesso!');
+                        window.flutter_inappwebview?.callHandler('onTradeBought', {
+                            contract_id: data.buy.contract_id
+                        });
+                    }
+                }
             };
             
             state.ws.onerror = (error) => console.error('WS Error:', error);
             state.ws.onclose = () => setTimeout(connectWebSocket, 3000);
         }
 
-        function authorize() {
-            send({ authorize: API_TOKEN });
-        }
-
-        function handleMessage(data) {
-            if (data.error) {
-                console.error('API Error:', data.error);
-                return;
+        function connectChartWebSocket() {
+            if (state.chartWs) {
+                state.chartWs.close();
             }
             
-            switch (data.msg_type) {
-                case 'authorize':
-                    handleAuthorize(data.authorize);
-                    break;
-                case 'balance':
-                    handleBalance(data.balance);
-                    break;
-                case 'proposal':
-                    handleProposal(data.proposal);
-                    break;
-                case 'buy':
-                    handleBuy(data.buy);
-                    break;
-            }
-        }
-
-        function handleAuthorize(data) {
-            state.balance = parseFloat(data.balance);
-            state.currency = data.currency;
+            state.candles = [];
+            state.ticks = [];
             
-            window.flutter_inappwebview?.callHandler('updateBalance', {
-                balance: state.balance.toFixed(2),
-                currency: state.currency
-            });
+            state.chartWs = new WebSocket(WS_URL);
             
-            subscribeBalance();
-        }
-
-        function handleBalance(data) {
-            state.balance = parseFloat(data.balance);
-            state.currency = data.currency;
+            state.chartWs.onopen = () => {
+                if (state.selectedTimeframe === 0) {
+                    state.chartWs.send(JSON.stringify({
+                        ticks: MARKET_SYMBOL,
+                        subscribe: 1
+                    }));
+                } else {
+                    state.chartWs.send(JSON.stringify({
+                        ticks_history: MARKET_SYMBOL,
+                        adjust_start_time: 1,
+                        count: 100,
+                        end: 'latest',
+                        granularity: state.selectedTimeframe,
+                        style: 'candles',
+                        subscribe: 1
+                    }));
+                }
+            };
             
-            window.flutter_inappwebview?.callHandler('updateBalance', {
-                balance: state.balance.toFixed(2),
-                currency: state.currency
-            });
-        }
-
-        function handleProposal(proposal) {
-            if (proposal.id) {
-                state.proposalId = proposal.id;
-                const payout = parseFloat(proposal.payout);
-                const stake = parseFloat(proposal.ask_price);
+            state.chartWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.error) return;
                 
-                window.flutter_inappwebview?.callHandler('onProposal', {
-                    id: state.proposalId,
-                    payout: payout.toFixed(2),
-                    profit: (payout - stake).toFixed(2),
-                    currency: state.currency
-                });
-            }
+                if (data.msg_type === 'history') {
+                    const prices = data.history.prices;
+                    const times = data.history.times;
+                    
+                    if (state.selectedTimeframe === 0) {
+                        state.ticks = times.map((time, i) => ({
+                            time: time,
+                            value: parseFloat(prices[i])
+                        }));
+                    }
+                    
+                    updateChart();
+                } else if (data.msg_type === 'tick') {
+                    const price = parseFloat(data.tick.quote);
+                    el.currentPrice.textContent = price.toFixed(2);
+                    
+                    state.ticks.push({
+                        time: data.tick.epoch,
+                        value: price
+                    });
+                    
+                    if (state.chartMode === 'line') {
+                        state.areaSeries.update({
+                            time: data.tick.epoch,
+                            value: price
+                        });
+                    }
+                } else if (data.msg_type === 'ohlc') {
+                    const candle = {
+                        time: data.ohlc.epoch,
+                        open: parseFloat(data.ohlc.open),
+                        high: parseFloat(data.ohlc.high),
+                        low: parseFloat(data.ohlc.low),
+                        close: parseFloat(data.ohlc.close)
+                    };
+                    
+                    const lastIndex = state.candles.length - 1;
+                    if (lastIndex >= 0 && state.candles[lastIndex].time === candle.time) {
+                        state.candles[lastIndex] = candle;
+                    } else {
+                        state.candles.push(candle);
+                    }
+                    
+                    if (state.chartMode === 'candles') {
+                        state.candleSeries.update(candle);
+                    }
+                    
+                    el.currentPrice.textContent = candle.close.toFixed(2);
+                }
+            };
         }
 
-        function handleBuy(data) {
-            if (data.contract_id) {
-                window.flutter_inappwebview?.callHandler('onTradeBought', {
-                    contract_id: data.contract_id
-                });
+        function updateChart() {
+            if (state.chartMode === 'candles') {
+                state.areaSeries.setData([]);
+                if (state.candles.length > 0) {
+                    state.candleSeries.setData(state.candles);
+                }
+            } else {
+                state.candleSeries.setData([]);
+                if (state.candles.length > 0) {
+                    const lineData = state.candles.map(c => ({ time: c.time, value: c.close }));
+                    state.areaSeries.setData(lineData);
+                } else if (state.ticks.length > 0) {
+                    state.areaSeries.setData(state.ticks);
+                }
+            }
+            
+            if (state.chart) {
+                state.chart.timeScale().fitContent();
             }
         }
 
         function setupEventListeners() {
-            elements.btnRise.addEventListener('click', () => {
-                window.flutter_inappwebview?.callHandler('openTradeDialog', { type: 'CALL' });
+            const isDark = ${widget.themeMode == ThemeMode.dark};
+            
+            el.btnCandles.addEventListener('click', () => {
+                state.chartMode = 'candles';
+                el.btnCandles.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors ' + (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900') + ' shadow-sm';
+                el.btnLine.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors ' + (isDark ? 'text-gray-400' : 'text-gray-500');
+                updateChart();
             });
             
-            elements.btnFall.addEventListener('click', () => {
-                window.flutter_inappwebview?.callHandler('openTradeDialog', { type: 'PUT' });
+            el.btnLine.addEventListener('click', () => {
+                state.chartMode = 'line';
+                el.btnLine.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors ' + (isDark ? 'bg-gray-700 text-white' : 'bg-white text-gray-900') + ' shadow-sm';
+                el.btnCandles.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors ' + (isDark ? 'text-gray-400' : 'text-gray-500');
+                updateChart();
+            });
+            
+            el.timeframes.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    el.timeframes.forEach(b => {
+                        b.className = 'px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ' + (isDark ? 'text-gray-400' : 'text-gray-500');
+                    });
+                    btn.className = 'px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active ' + (isDark ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-900');
+                    state.selectedTimeframe = parseInt(btn.dataset.tf);
+                    connectChartWebSocket();
+                });
+            });
+            
+            el.btnRise.addEventListener('click', () => openTradeModal('CALL'));
+            el.btnFall.addEventListener('click', () => openTradeModal('PUT'));
+            el.modalClose.addEventListener('click', closeTradeModal);
+            el.modalOverlay.addEventListener('click', closeTradeModal);
+            
+            el.durationUnits.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.durationUnit = btn.dataset.unit;
+                    const color = state.contractType === 'CALL' ? 'bg-green-500' : 'bg-red-500';
+                    el.durationUnits.forEach(b => {
+                        b.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ' + (isDark ? 'text-gray-400' : 'text-gray-500');
+                    });
+                    btn.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ' + color + ' text-white';
+                    requestProposal();
+                });
+            });
+            
+            el.stakeInput.addEventListener('input', () => {
+                clearTimeout(state.proposalTimeout);
+                state.proposalTimeout = setTimeout(requestProposal, 500);
+            });
+            
+            el.durationInput.addEventListener('input', () => {
+                clearTimeout(state.proposalTimeout);
+                state.proposalTimeout = setTimeout(requestProposal, 500);
+            });
+            
+            el.executeTradeBtn.addEventListener('click', executeTrade);
+            
+            window.addEventListener('resize', () => {
+                if (state.chart) {
+                    state.chart.applyOptions({
+                        width: el.chartContainer.clientWidth,
+                        height: el.chartContainer.clientHeight
+                    });
+                }
             });
         }
 
-        function requestProposal(stake, duration, durationUnit, contractType) {
-            state.contractType = contractType;
-            state.durationUnit = durationUnit;
+        function openTradeModal(type) {
+            state.contractType = type;
+            el.modalTitle.textContent = type === 'CALL' ? 'Rise' : 'Fall';
+            el.tradeModal.classList.remove('hidden');
             
-            window.flutter_inappwebview?.callHandler('proposalLoading');
+            const color = type === 'CALL' ? 'bg-green-500' : 'bg-red-500';
+            el.executeTradeBtn.className = 'w-full py-4 rounded-xl font-bold text-white btn-active ' + color;
             
-            send({
+            const isDark = ${widget.themeMode == ThemeMode.dark};
+            el.durationUnits.forEach(btn => {
+                if (btn.dataset.unit === state.durationUnit) {
+                    btn.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ' + color + ' text-white';
+                } else {
+                    btn.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ' + (isDark ? 'text-gray-400' : 'text-gray-500');
+                }
+            });
+            
+            requestProposal();
+        }
+
+        function closeTradeModal() {
+            el.tradeModal.classList.add('hidden');
+            state.proposalId = null;
+        }
+
+        function requestProposal() {
+            el.loadingProposal.classList.remove('hidden');
+            el.executeTradeBtn.classList.add('hidden');
+            state.proposalId = null;
+            
+            state.ws.send(JSON.stringify({
                 proposal: 1,
-                amount: parseFloat(stake),
+                amount: parseFloat(el.stakeInput.value) || 1.0,
                 basis: 'stake',
-                contract_type: contractType,
+                contract_type: state.contractType,
                 currency: state.currency,
-                duration: parseInt(duration),
-                duration_unit: durationUnit,
+                duration: parseInt(el.durationInput.value) || 5,
+                duration_unit: state.durationUnit,
                 symbol: MARKET_SYMBOL
-            });
+            }));
         }
 
-        function executeTrade(stake) {
-            if (!state.proposalId) {
-                console.error('No proposal ID');
-                return;
-            }
-            
-            send({
+        function executeTrade() {
+            if (!state.proposalId) return;
+            state.ws.send(JSON.stringify({
                 buy: state.proposalId,
-                price: parseFloat(stake)
-            });
+                price: parseFloat(el.stakeInput.value) || 1.0
+            }));
         }
 
-        function send(data) {
-            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                state.ws.send(JSON.stringify(data));
-            }
-        }
-
-        function subscribeBalance() {
-            send({ balance: 1, subscribe: 1 });
+        function showNotification(message) {
+            const n = document.createElement('div');
+            n.className = 'fixed top-4 left-4 right-4 p-4 rounded-xl font-semibold z-50 bg-green-500 text-white shadow-lg';
+            n.textContent = message;
+            document.body.appendChild(n);
+            setTimeout(() => {
+                n.style.opacity = '0';
+                n.style.transition = 'opacity 0.3s';
+                setTimeout(() => n.remove(), 300);
+            }, 3000);
         }
 
         init();
@@ -342,191 +636,6 @@ class _TradingScreenState extends State<TradingScreen> {
   void _reloadWebView() {
     setState(() => _isLoading = true);
     _webViewController?.loadData(data: htmlContent);
-  }
-
-  void _showTradeDialog(String type) async {
-    final isDark = widget.themeMode == ThemeMode.dark;
-    final stakeController = TextEditingController(text: '1.00');
-    final durationController = TextEditingController(text: '5');
-    String durationUnit = 't';
-    bool isLoadingProposal = true;
-    bool canExecute = false;
-    String proposalInfo = '';
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          // Função para solicitar proposta
-          void _requestProposal() {
-            setDialogState(() {
-              isLoadingProposal = true;
-              canExecute = false;
-              proposalInfo = '';
-            });
-
-            final stake = stakeController.text.trim();
-            final duration = durationController.text.trim();
-
-            if (stake.isNotEmpty && duration.isNotEmpty) {
-              _webViewController?.evaluateJavascript(
-                source: "requestProposal('$stake', '$duration', '$durationUnit', '$type');"
-              );
-            }
-          }
-
-          // Solicita proposta inicial
-          if (isLoadingProposal && proposalInfo.isEmpty) {
-            Future.delayed(Duration.zero, _requestProposal);
-          }
-
-          return Dialog(
-            backgroundColor: isDark ? const Color(0xFF1F2937) : Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        type == 'CALL' ? 'Rise' : 'Fall',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          BootstrapIcons.x_lg,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: stakeController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                    decoration: InputDecoration(
-                      labelText: 'Valor (Stake)',
-                      labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey),
-                      border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-                    ),
-                    onChanged: (_) {
-                      Future.delayed(const Duration(milliseconds: 500), _requestProposal);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: durationController,
-                    keyboardType: TextInputType.number,
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                    decoration: InputDecoration(
-                      labelText: 'Duração',
-                      labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey),
-                      border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-                    ),
-                    onChanged: (_) {
-                      Future.delayed(const Duration(milliseconds: 500), _requestProposal);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: durationUnit,
-                    dropdownColor: isDark ? const Color(0xFF374151) : Colors.white,
-                    style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                    decoration: InputDecoration(
-                      labelText: 'Unidade',
-                      labelStyle: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey),
-                      border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-                    ),
-                    items: [
-                      DropdownMenuItem(value: 't', child: Text('Ticks', style: TextStyle(color: isDark ? Colors.white : Colors.black))),
-                      DropdownMenuItem(value: 's', child: Text('Segundos', style: TextStyle(color: isDark ? Colors.white : Colors.black))),
-                      DropdownMenuItem(value: 'm', child: Text('Minutos', style: TextStyle(color: isDark ? Colors.white : Colors.black))),
-                      DropdownMenuItem(value: 'h', child: Text('Horas', style: TextStyle(color: isDark ? Colors.white : Colors.black))),
-                      DropdownMenuItem(value: 'd', child: Text('Dias', style: TextStyle(color: isDark ? Colors.white : Colors.black))),
-                    ],
-                    onChanged: (value) {
-                      setDialogState(() {
-                        durationUnit = value!;
-                      });
-                      _requestProposal();
-                    },
-                  ),
-                  if (proposalInfo.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF374151) : const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.zero,
-                      ),
-                      child: Text(
-                        proposalInfo,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isLoadingProposal || !canExecute
-                          ? null
-                          : () {
-                              final stake = stakeController.text.trim();
-                              _webViewController?.evaluateJavascript(
-                                source: "executeTrade('$stake');"
-                              );
-                              Navigator.pop(context);
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: type == 'CALL' ? Colors.green : Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                        elevation: 0,
-                        disabledBackgroundColor: Colors.grey,
-                      ),
-                      child: isLoadingProposal
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              'Executar Negociação',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
   }
 
   @override
@@ -714,24 +823,11 @@ class _TradingScreenState extends State<TradingScreen> {
               );
               
               controller.addJavaScriptHandler(
-                handlerName: 'openTradeDialog',
-                callback: (args) => _showTradeDialog(args[0]['type']),
-              );
-              
-              controller.addJavaScriptHandler(
-                handlerName: 'onProposal',
-                callback: (args) {
-                  // Atualiza o diálogo com info da proposta
-                  // (Isso seria melhor com um gerenciador de estado, mas por simplicidade...)
-                },
-              );
-              
-              controller.addJavaScriptHandler(
                 handlerName: 'onTradeBought',
-                callback: (_) {
+                callback: (args) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Negociação executada com sucesso!'),
+                    SnackBar(
+                      content: Text('Trade executado! ID: ${args[0]['contract_id']}'),
                       backgroundColor: Colors.green,
                       behavior: SnackBarBehavior.floating,
                     ),
