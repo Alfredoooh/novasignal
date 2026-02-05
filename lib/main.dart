@@ -1,53 +1,29 @@
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:bootstrap_icons/bootstrap_icons.dart';
 
 void main() {
-  runApp(const DerivTradingApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.white,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
+  runApp(const DerivApp());
 }
 
-// Apple Dark Mode Colors
-class AppColors {
-  static const background = Color(0xFF000000);
-  static const secondaryBackground = Color(0xFF1C1C1E);
-  static const tertiaryBackground = Color(0xFF2C2C2E);
-  static const groupedBackground = Color(0xFF1C1C1E);
-  static const separator = Color(0xFF38383A);
-  static const label = Color(0xFFFFFFFF);
-  static const secondaryLabel = Color(0xFF98989D);
-  static const tertiaryLabel = Color(0xFF48484A);
-  static const green = Color(0xFF30D158);
-  static const red = Color(0xFFFF453A);
-  static const blue = Color(0xFF0A84FF);
-  static const gray = Color(0xFF8E8E93);
-  static const systemGray6 = Color(0xFF1C1C1E);
-}
-
-class DerivTradingApp extends StatelessWidget {
-  const DerivTradingApp({super.key});
+class DerivApp extends StatelessWidget {
+  const DerivApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
+    return MaterialApp(
       title: 'Deriv Trading',
       debugShowCheckedModeBanner: false,
-      theme: const CupertinoThemeData(
-        brightness: Brightness.dark,
-        primaryColor: AppColors.green,
-        scaffoldBackgroundColor: AppColors.background,
-        barBackgroundColor: AppColors.secondaryBackground,
-        textTheme: CupertinoTextThemeData(
-          primaryColor: AppColors.label,
-          textStyle: TextStyle(
-            color: AppColors.label,
-            fontFamily: '.SF Pro Text',
-          ),
-        ),
+      theme: ThemeData(
+        brightness: Brightness.light,
       ),
       home: const TradingScreen(),
     );
@@ -62,1530 +38,614 @@ class TradingScreen extends StatefulWidget {
 }
 
 class _TradingScreenState extends State<TradingScreen> {
-  // Constants
-  static const String appId = '71954';
-  static const String apiToken = 'nUYzSZmUXrXmBmD';
-  static const String marketSymbol = '1HZ25V';
-  static const String marketName = 'Volatility 25';
-  static const String marketAbbrev = 'V25';
-
-  // WebSocket
-  WebSocketChannel? _wsChannel;
-  WebSocketChannel? _chartWsChannel;
-
-  // WebView
   InAppWebViewController? _webViewController;
 
-  // State
-  double _balance = 232.14;
-  String _currency = 'USD';
-  int _selectedTimeframe = 0;
-  String _contractType = 'CALL';
-  String _durationUnit = 't';
-  String? _proposalId;
-  double _currentPrice = 730017.68;
-  double _previousPrice = 730017.68;
-  Map<String, dynamic>? _currentProposal;
-
-  // Controllers
-  final TextEditingController _stakeController = TextEditingController(text: '1.00');
-  final TextEditingController _durationController = TextEditingController(text: '5');
-  final ScrollController _scrollController = ScrollController();
-
-  // UI State
-  bool _loadingProposal = false;
-  bool _chartReady = false;
-  bool _showMenuPopup = false;
-
-  // Timeframe buttons
-  final List<Map<String, dynamic>> _timeframes = [
-    {'label': '1t', 'value': 0},
-    {'label': '1m', 'value': 60},
-    {'label': '5m', 'value': 300},
-    {'label': '15m', 'value': 900},
-    {'label': '30m', 'value': 1800},
-    {'label': '1h', 'value': 3600},
-  ];
-
-  Timer? _proposalTimer;
-  Timer? _reconnectTimer;
-  bool _isConnected = false;
-  bool _isAuthorized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _connectWebSocket();
-    _stakeController.addListener(_onStakeChanged);
-    _durationController.addListener(_onDurationChanged);
-  }
-
-  @override
-  void dispose() {
-    _wsChannel?.sink.close();
-    _chartWsChannel?.sink.close();
-    _stakeController.dispose();
-    _durationController.dispose();
-    _scrollController.dispose();
-    _proposalTimer?.cancel();
-    _reconnectTimer?.cancel();
-    super.dispose();
-  }
-
-  void _connectWebSocket() {
-    try {
-      final uri = Uri.parse('wss://ws.derivws.com/websockets/v3?app_id=$appId');
-      _wsChannel = WebSocketChannel.connect(uri);
-
-      _wsChannel!.stream.listen(
-        (message) {
-          final data = jsonDecode(message);
-          _handleMessage(data);
-        },
-        onError: (error) {
-          debugPrint('WebSocket error: $error');
-          setState(() => _isConnected = false);
-          _scheduleReconnect();
-        },
-        onDone: () {
-          debugPrint('WebSocket closed');
-          setState(() => _isConnected = false);
-          _scheduleReconnect();
-        },
-      );
-
-      setState(() => _isConnected = true);
-      _authorize();
-
-    } catch (e) {
-      debugPrint('Connection error: $e');
-      _scheduleReconnect();
-    }
-  }
-
-  void _scheduleReconnect() {
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 3), () {
-      debugPrint('Reconnecting...');
-      _connectWebSocket();
-    });
-  }
-
-  void _authorize() {
-    if (_wsChannel == null) return;
-
-    _wsChannel!.sink.add(jsonEncode({
-      'authorize': apiToken,
-    }));
-  }
-
-  void _connectChartWebSocket() {
-    _chartWsChannel?.sink.close();
-
-    try {
-      final uri = Uri.parse('wss://ws.derivws.com/websockets/v3?app_id=$appId');
-      _chartWsChannel = WebSocketChannel.connect(uri);
-
-      _chartWsChannel!.stream.listen(
-        (message) {
-          final data = jsonDecode(message);
-          _handleChartMessage(data);
-        },
-        onError: (error) {
-          debugPrint('Chart WebSocket error: $error');
-        },
-      );
-
-      // Subscribe based on timeframe
-      _subscribeToChartData();
-
-    } catch (e) {
-      debugPrint('Chart connection error: $e');
-    }
-  }
-
-  void _subscribeToChartData() {
-    if (_chartWsChannel == null) return;
-
-    if (_selectedTimeframe == 0) {
-      // Subscribe to ticks for tick chart
-      _chartWsChannel!.sink.add(jsonEncode({
-        'ticks': marketSymbol,
-        'subscribe': 1,
-      }));
-    } else {
-      // Get historical candles first
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final start = now - (_selectedTimeframe * 1000); // Get last 1000 candles
-
-      _chartWsChannel!.sink.add(jsonEncode({
-        'ticks_history': marketSymbol,
-        'adjust_start_time': 1,
-        'count': 1000,
-        'end': 'latest',
-        'start': start,
-        'style': 'candles',
-        'granularity': _selectedTimeframe,
-      }));
-
-      // Subscribe to live candles
-      _chartWsChannel!.sink.add(jsonEncode({
-        'ticks_history': marketSymbol,
-        'adjust_start_time': 1,
-        'count': 1,
-        'end': 'latest',
-        'start': 1,
-        'style': 'candles',
-        'granularity': _selectedTimeframe,
-        'subscribe': 1,
-      }));
-    }
-  }
-
-  void _handleMessage(Map<String, dynamic> data) {
-    if (data.containsKey('error')) {
-      debugPrint('API Error: ${data['error']}');
-      _showErrorMessage(data['error']['message'] ?? 'Erro desconhecido');
-      return;
-    }
-
-    final msgType = data['msg_type'];
-
-    switch (msgType) {
-      case 'authorize':
-        _handleAuthorize(data['authorize']);
-        break;
-      case 'balance':
-        _handleBalance(data['balance']);
-        break;
-      case 'proposal':
-        _handleProposal(data['proposal']);
-        break;
-      case 'buy':
-        _handleBuy(data['buy']);
-        break;
-      case 'proposal_open_contract':
-        _handleOpenContract(data['proposal_open_contract']);
-        break;
-    }
-  }
-
-  void _handleChartMessage(Map<String, dynamic> data) {
-    if (!_chartReady || _webViewController == null) return;
-
-    final msgType = data['msg_type'];
-
-    // Send data to WebView chart
-    _webViewController!.evaluateJavascript(source: '''
-      if (window.handleChartData) {
-        window.handleChartData(${jsonEncode(data)});
-      }
-    ''');
-
-    // Update current price
-    if (msgType == 'tick') {
-      final tick = data['tick'];
-      if (tick != null) {
-        final price = double.tryParse(tick['quote'].toString());
-        if (price != null) {
-          setState(() {
-            _previousPrice = _currentPrice;
-            _currentPrice = price;
-          });
-        }
-      }
-    } else if (msgType == 'history' || msgType == 'candles') {
-      final candles = data['candles'] as List?;
-      if (candles != null && candles.isNotEmpty) {
-        final lastCandle = candles.last;
-        final close = double.tryParse(lastCandle['close'].toString());
-        if (close != null) {
-          setState(() {
-            _previousPrice = _currentPrice;
-            _currentPrice = close;
-          });
-        }
-      }
-    } else if (msgType == 'ohlc') {
-      final ohlc = data['ohlc'];
-      if (ohlc != null) {
-        final close = double.tryParse(ohlc['close'].toString());
-        if (close != null) {
-          setState(() {
-            _previousPrice = _currentPrice;
-            _currentPrice = close;
-          });
-        }
-      }
-    }
-  }
-
-  void _handleAuthorize(Map<String, dynamic> authorize) {
-    setState(() {
-      _isAuthorized = true;
-      _balance = double.tryParse(authorize['balance'].toString()) ?? _balance;
-      _currency = authorize['currency'] ?? _currency;
-    });
-
-    // Subscribe to balance updates
-    _wsChannel!.sink.add(jsonEncode({
-      'balance': 1,
-      'subscribe': 1,
-    }));
-
-    _getProposal();
-  }
-
-  void _handleBalance(Map<String, dynamic> balance) {
-    setState(() {
-      _balance = double.tryParse(balance['balance'].toString()) ?? _balance;
-      _currency = balance['currency'] ?? _currency;
-    });
-  }
-
-  void _handleProposal(Map<String, dynamic> proposal) {
-    setState(() {
-      _loadingProposal = false;
-      _proposalId = proposal['id'];
-      _currentProposal = proposal;
-    });
-  }
-
-  void _handleBuy(Map<String, dynamic> buy) {
-    final contractId = buy['contract_id'];
-
-    // Subscribe to contract updates
-    _wsChannel!.sink.add(jsonEncode({
-      'proposal_open_contract': 1,
-      'contract_id': contractId,
-      'subscribe': 1,
-    }));
-
-    // Navigate to active trade screen
-    Navigator.of(context).push(
-      CupertinoPageRoute(
-        builder: (context) => ActiveTradeScreen(
-          contractId: contractId,
-          wsChannel: _wsChannel!,
-          initialContract: buy,
-        ),
-      ),
-    );
-  }
-
-  void _handleOpenContract(Map<String, dynamic> contract) {
-    // This will be handled by ActiveTradeScreen
-  }
-
-  void _onStakeChanged() {
-    _debouncedGetProposal();
-  }
-
-  void _onDurationChanged() {
-    _debouncedGetProposal();
-  }
-
-  void _debouncedGetProposal() {
-    _proposalTimer?.cancel();
-    _proposalTimer = Timer(const Duration(milliseconds: 500), () {
-      _getProposal();
-    });
-  }
-
-  void _getProposal() {
-    if (!_isAuthorized || _wsChannel == null) return;
-
-    final stake = double.tryParse(_stakeController.text);
-    final duration = int.tryParse(_durationController.text);
-
-    if (stake == null || duration == null || stake <= 0 || duration <= 0) {
-      setState(() {
-        _proposalId = null;
-        _currentProposal = null;
-      });
-      return;
-    }
-
-    setState(() => _loadingProposal = true);
-
-    _wsChannel!.sink.add(jsonEncode({
-      'proposal': 1,
-      'amount': stake,
-      'basis': 'stake',
-      'contract_type': _contractType,
-      'currency': _currency,
-      'duration': duration,
-      'duration_unit': _durationUnit,
-      'symbol': marketSymbol,
-    }));
-  }
-
-  void _executeTrade() {
-    if (_proposalId == null || !_isAuthorized) return;
-
-    // Navigate to trade confirmation screen
-    Navigator.of(context).push(
-      CupertinoPageRoute(
-        fullscreenDialog: true,
-        builder: (context) => TradeConfirmationScreen(
-          proposal: _currentProposal!,
-          contractType: _contractType,
-          onConfirm: () {
-            _wsChannel!.sink.add(jsonEncode({
-              'buy': _proposalId,
-              'price': _currentProposal!['ask_price'],
-            }));
-            Navigator.of(context).pop();
-          },
-        ),
-      ),
-    );
-  }
-
-  void _changeTimeframe(int index) {
-    setState(() => _selectedTimeframe = _timeframes[index]['value']);
-    _connectChartWebSocket();
-  }
-
-  void _toggleContractType() {
-    setState(() {
-      _contractType = _contractType == 'CALL' ? 'PUT' : 'CALL';
-    });
-    _getProposal();
-  }
-
-  void _changeDurationUnit(String unit) {
-    setState(() => _durationUnit = unit);
-    _getProposal();
-  }
-
-  void _showErrorMessage(String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Erro'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatPrice(double price) {
-    return price.toStringAsFixed(2);
-  }
-
-  String _formatBalance() {
-    return '${_balance.toStringAsFixed(2)} $_currency';
-  }
-
-  Color get _priceColor {
-    if (_currentPrice > _previousPrice) return AppColors.green;
-    if (_currentPrice < _previousPrice) return AppColors.red;
-    return AppColors.label;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: AppColors.background,
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Custom App Bar
-            _buildAppBar(),
-
-            // Chart
-            Expanded(
-              child: _buildChart(),
-            ),
-
-            // Trade Panel
-            _buildTradePanel(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: AppColors.secondaryBackground,
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.separator,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Symbol
-          Expanded(
-            child: Row(
-              children: [
-                Text(
-                  marketAbbrev,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.label,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _formatPrice(_currentPrice),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _priceColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Balance
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.tertiaryBackground,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              _formatBalance(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.label,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Menu button
-          GestureDetector(
-            onTap: () {
-              setState(() => _showMenuPopup = !_showMenuPopup);
-            },
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.tertiaryBackground,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Icon(BootstrapIcons.list, color: AppColors.label, size: 24),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChart() {
-    return Container(
-      color: AppColors.background,
-      child: Column(
-        children: [
-          // Timeframe selector
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              border: Border(
-                bottom: BorderSide(
-                  color: AppColors.separator,
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: List.generate(_timeframes.length, (index) {
-                  final tf = _timeframes[index];
-                  final isSelected = _selectedTimeframe == tf['value'];
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => _changeTimeframe(index),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.tertiaryBackground
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          tf['label'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected
-                                ? AppColors.label
-                                : AppColors.secondaryLabel,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-          ),
-
-          // Chart WebView
-          Expanded(
-            child: InAppWebView(
-              initialData: InAppWebViewInitialData(
-                data: _getChartHtml(),
-              ),
-              initialSettings: InAppWebViewSettings(
-                transparentBackground: true,
-                supportZoom: false,
-                disableHorizontalScroll: false,
-                disableVerticalScroll: false,
-              ),
-              onWebViewCreated: (controller) {
-                _webViewController = controller;
-              },
-              onLoadStop: (controller, url) {
-                setState(() => _chartReady = true);
-                _connectChartWebSocket();
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTradePanel() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.secondaryBackground,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.separator,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Contract type selector
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _contractType = 'CALL');
-                      _getProposal();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: _contractType == 'CALL'
-                            ? AppColors.green
-                            : AppColors.tertiaryBackground,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'COMPRA',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: _contractType == 'CALL'
-                              ? AppColors.background
-                              : AppColors.secondaryLabel,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => _contractType = 'PUT');
-                      _getProposal();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: _contractType == 'PUT'
-                            ? AppColors.red
-                            : AppColors.tertiaryBackground,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'VENDA',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: _contractType == 'PUT'
-                              ? AppColors.background
-                              : AppColors.secondaryLabel,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Trade parameters
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Stake
-                const Text(
-                  'Valor',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.secondaryLabel,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                CupertinoTextField(
-                  controller: _stakeController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.tertiaryBackground,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: AppColors.label,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Duration
-                const Text(
-                  'Duração',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.secondaryLabel,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: CupertinoTextField(
-                        controller: _durationController,
-                        keyboardType: TextInputType.number,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.tertiaryBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: AppColors.label,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.tertiaryBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(4),
-                        child: Row(
-                          children: [
-                            _DurationUnitButton(
-                              label: 'Ticks',
-                              unit: 't',
-                              isSelected: _durationUnit == 't',
-                              onTap: () => _changeDurationUnit('t'),
-                            ),
-                            _DurationUnitButton(
-                              label: 'Seg',
-                              unit: 's',
-                              isSelected: _durationUnit == 's',
-                              onTap: () => _changeDurationUnit('s'),
-                            ),
-                            _DurationUnitButton(
-                              label: 'Min',
-                              unit: 'm',
-                              isSelected: _durationUnit == 'm',
-                              onTap: () => _changeDurationUnit('m'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Execute button
-                if (_loadingProposal)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.tertiaryBackground,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.label),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Carregando...',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.secondaryLabel,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else if (_proposalId != null && _currentProposal != null)
-                  GestureDetector(
-                    onTap: _executeTrade,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        color: _contractType == 'CALL'
-                            ? AppColors.green
-                            : AppColors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Column(
-                        children: [
-                          const Text(
-                            'Executar Trade',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.background,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Lucro potencial: ${_currentProposal!['payout']?.toStringAsFixed(2) ?? '0.00'} $_currency',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.background,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  String _getChartHtml() {
-    return '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
-      <style>
+  final String htmlContent = '''
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Deriv Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
         * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
+        
         body {
-          background: #000000;
-          overflow: hidden;
-        }
-        #chart {
-          width: 100vw;
-          height: 100vh;
-        }
-      </style>
-    </head>
-    <body>
-      <div id="chart"></div>
-      <script>
-        const chart = LightweightCharts.createChart(document.getElementById('chart'), {
-          layout: {
-            background: { color: '#000000' },
-            textColor: '#FFFFFF',
-          },
-          grid: {
-            vertLines: { color: '#1C1C1E' },
-            horzLines: { color: '#1C1C1E' },
-          },
-          crosshair: {
-            mode: LightweightCharts.CrosshairMode.Normal,
-            vertLine: {
-              color: '#48484A',
-              width: 1,
-              style: LightweightCharts.LineStyle.Dashed,
-            },
-            horzLine: {
-              color: '#48484A',
-              width: 1,
-              style: LightweightCharts.LineStyle.Dashed,
-            },
-          },
-          rightPriceScale: {
-            borderColor: '#38383A',
-          },
-          timeScale: {
-            borderColor: '#38383A',
-            timeVisible: true,
-            secondsVisible: false,
-          },
-        });
-
-        let candleSeries = null;
-        let lineSeries = null;
-        let currentMode = 'candles';
-        let candleData = [];
-        let currentCandle = null;
-
-        function initChart(mode) {
-          if (candleSeries) {
-            chart.removeSeries(candleSeries);
-            candleSeries = null;
-          }
-          if (lineSeries) {
-            chart.removeSeries(lineSeries);
-            lineSeries = null;
-          }
-
-          currentMode = mode;
-
-          if (mode === 'ticks') {
-            lineSeries = chart.addLineSeries({
-              color: '#0A84FF',
-              lineWidth: 2,
-            });
-          } else {
-            candleSeries = chart.addCandlestickSeries({
-              upColor: '#30D158',
-              downColor: '#FF453A',
-              borderUpColor: '#30D158',
-              borderDownColor: '#FF453A',
-              wickUpColor: '#30D158',
-              wickDownColor: '#FF453A',
-            });
-          }
-
-          candleData = [];
-          currentCandle = null;
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+            margin: 0;
+            padding: 0;
         }
 
-        window.handleChartData = function(data) {
-          const msgType = data.msg_type;
+        .btn-active:active {
+            transform: scale(0.97);
+            opacity: 0.8;
+        }
 
-          if (msgType === 'tick') {
-            if (currentMode !== 'ticks') {
-              initChart('ticks');
+        .modal-enter {
+            animation: modalSlide 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        @keyframes modalSlide {
+            from { 
+                transform: translateY(100%);
             }
-
-            const tick = data.tick;
-            const time = tick.epoch;
-            const value = parseFloat(tick.quote);
-
-            if (lineSeries) {
-              lineSeries.update({ time, value });
+            to { 
+                transform: translateY(0);
             }
-          } else if (msgType === 'history' || msgType === 'candles') {
-            if (currentMode !== 'candles') {
-              initChart('candles');
-            }
+        }
 
-            const candles = data.candles || [];
-            const formattedCandles = candles.map(c => ({
-              time: c.epoch,
-              open: parseFloat(c.open),
-              high: parseFloat(c.high),
-              low: parseFloat(c.low),
-              close: parseFloat(c.close),
-            }));
+        input:focus {
+            outline: none;
+        }
 
-            if (candleSeries && formattedCandles.length > 0) {
-              candleSeries.setData(formattedCandles);
-              candleData = formattedCandles;
-              
-              if (formattedCandles.length > 0) {
-                currentCandle = formattedCandles[formattedCandles.length - 1];
-              }
-            }
-          } else if (msgType === 'ohlc') {
-            if (currentMode !== 'candles') {
-              initChart('candles');
-            }
+        #main-scroll {
+            height: calc(100vh - 76px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
 
-            const ohlc = data.ohlc;
-            const candle = {
-              time: ohlc.epoch || ohlc.open_time,
-              open: parseFloat(ohlc.open),
-              high: parseFloat(ohlc.high),
-              low: parseFloat(ohlc.low),
-              close: parseFloat(ohlc.close),
-            };
+        #chart-wrapper {
+            height: 520px;
+            margin: 12px;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+    <div class="h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-sm font-bold truncate">Volatility 25 (1s) Index</h1>
+                    <p class="text-xs text-gray-500">1HZ25V</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-gray-500">Saldo</p>
+                <p id="balance" class="text-sm font-bold">232.14 USD</p>
+            </div>
+        </header>
 
-            if (candleSeries) {
-              // Check if this is an update to the current candle or a new one
-              if (currentCandle && candle.time === currentCandle.time) {
-                // Update existing candle
-                candleSeries.update(candle);
-                currentCandle = candle;
-                
-                // Update in candleData array
-                const index = candleData.findIndex(c => c.time === candle.time);
-                if (index !== -1) {
-                  candleData[index] = candle;
-                }
-              } else {
-                // New candle
-                candleSeries.update(candle);
-                candleData.push(candle);
-                currentCandle = candle;
-              }
-            }
-          }
+        <!-- Scrollable Content -->
+        <div id="main-scroll">
+            <!-- Chart Type Toggle -->
+            <div class="px-4 pt-3">
+                <div class="bg-gray-100 rounded-lg p-0.5 flex">
+                    <button id="btn-candles" class="flex-1 py-2 rounded-md text-sm font-semibold transition-colors bg-white text-gray-900 shadow-sm">
+                        Candles
+                    </button>
+                    <button id="btn-line" class="flex-1 py-2 rounded-md text-sm font-semibold transition-colors text-gray-500">
+                        Line
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timeframes -->
+            <div class="px-4 py-3 overflow-x-auto">
+                <div class="flex gap-2">
+                    <button data-tf="0" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active bg-gray-200 text-gray-900">1t</button>
+                    <button data-tf="60" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active text-gray-500">1m</button>
+                    <button data-tf="300" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active text-gray-500">5m</button>
+                    <button data-tf="900" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active text-gray-500">15m</button>
+                    <button data-tf="1800" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active text-gray-500">30m</button>
+                    <button data-tf="3600" class="px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active text-gray-500">1h</button>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div id="chart-wrapper" class="rounded-xl overflow-hidden bg-white border border-gray-200">
+                <div id="chart-container" class="w-full h-full"></div>
+            </div>
+
+            <!-- Price Display -->
+            <div class="px-4 py-4 pb-32">
+                <p id="current-price" class="text-3xl font-bold text-gray-900">730017.68</p>
+                <p id="price-change" class="text-sm mt-1 text-gray-500">+0.02%</p>
+            </div>
+        </div>
+
+        <!-- Trade Buttons - Fixed Bottom -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex gap-3 z-10">
+            <button id="btn-rise" class="flex-1 bg-green-500 py-4 rounded-xl font-bold text-white btn-active">
+                Rise
+            </button>
+            <button id="btn-fall" class="flex-1 bg-red-500 py-4 rounded-xl font-bold text-white btn-active">
+                Fall
+            </button>
+        </div>
+
+        <!-- Trade Modal -->
+        <div id="trade-modal" class="fixed inset-0 z-50 hidden">
+            <div class="absolute inset-0 bg-black/30" id="modal-overlay"></div>
+            <div class="modal-enter absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[70vh] shadow-2xl">
+                <div class="p-5 border-b border-gray-200 flex items-center justify-between">
+                    <h3 id="modal-title" class="text-xl font-semibold text-gray-900">Rise</h3>
+                    <button id="modal-close" class="btn-active p-1 text-gray-500">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="p-4 overflow-y-auto" style="max-height: calc(70vh - 120px);">
+                    <div class="mb-4">
+                        <label class="text-sm font-semibold text-gray-600 mb-2 block">Valor</label>
+                        <input type="number" id="stake-input" value="1.00" step="0.01" min="0.35"
+                            class="w-full bg-gray-100 px-4 py-3 rounded-xl text-gray-900 border border-gray-200">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="text-sm font-semibold text-gray-600 mb-2 block">Duração</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="duration-input" value="5" min="1"
+                                class="flex-1 bg-gray-100 px-4 py-3 rounded-xl text-gray-900 border border-gray-200">
+                            <div class="bg-gray-100 rounded-xl flex p-1 border border-gray-200">
+                                <button data-unit="t" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit bg-green-500 text-white">
+                                    Ticks
+                                </button>
+                                <button data-unit="s" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500">
+                                    Seg
+                                </button>
+                                <button data-unit="m" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500">
+                                    Min
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pb-3">
+                        <div id="loading-proposal" class="bg-gray-100 border border-gray-200 py-4 rounded-xl flex items-center justify-center gap-2">
+                            <div class="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                            <span class="text-gray-600 font-semibold">Carregando...</span>
+                        </div>
+                        <button id="execute-trade" class="hidden w-full py-4 rounded-xl font-bold text-white btn-active">
+                            Executar Trade
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const APP_ID = 71954;
+        const API_TOKEN = 'nUYzSZmUXrXmBmD';
+        const MARKET_SYMBOL = '1HZ25V';
+        const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${'\\$'}{APP_ID}`;
+
+        const state = {
+            ws: null,
+            chartWs: null,
+            chart: null,
+            candleSeries: null,
+            areaSeries: null,
+            balance: 232.14,
+            currency: 'USD',
+            chartMode: 'candles',
+            selectedTimeframe: 0,
+            contractType: 'CALL',
+            proposalId: null,
+            durationUnit: 't',
+            candles: [],
+            ticks: [],
+            proposalTimeout: null
         };
 
-        // Initialize with candles mode
-        initChart('candles');
+        const el = {
+            balance: document.getElementById('balance'),
+            btnCandles: document.getElementById('btn-candles'),
+            btnLine: document.getElementById('btn-line'),
+            timeframes: document.querySelectorAll('[data-tf]'),
+            chartContainer: document.getElementById('chart-container'),
+            currentPrice: document.getElementById('current-price'),
+            priceChange: document.getElementById('price-change'),
+            btnRise: document.getElementById('btn-rise'),
+            btnFall: document.getElementById('btn-fall'),
+            tradeModal: document.getElementById('trade-modal'),
+            modalOverlay: document.getElementById('modal-overlay'),
+            modalClose: document.getElementById('modal-close'),
+            modalTitle: document.getElementById('modal-title'),
+            stakeInput: document.getElementById('stake-input'),
+            durationInput: document.getElementById('duration-input'),
+            durationUnits: document.querySelectorAll('.duration-unit'),
+            loadingProposal: document.getElementById('loading-proposal'),
+            executeTradeBtn: document.getElementById('execute-trade')
+        };
 
-        // Auto-resize
-        window.addEventListener('resize', () => {
-          chart.applyOptions({
-            width: window.innerWidth,
-            height: window.innerHeight,
-          });
-        });
-      </script>
-    </body>
-    </html>
-    ''';
-  }
-}
-
-class _DurationUnitButton extends StatelessWidget {
-  final String label;
-  final String unit;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _DurationUnitButton({
-    required this.label,
-    required this.unit,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.blue : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? AppColors.background : AppColors.secondaryLabel,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Trade Confirmation Screen
-class TradeConfirmationScreen extends StatelessWidget {
-  final Map<String, dynamic> proposal;
-  final String contractType;
-  final VoidCallback onConfirm;
-
-  const TradeConfirmationScreen({
-    super.key,
-    required this.proposal,
-    required this.contractType,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final payout = proposal['payout']?.toStringAsFixed(2) ?? '0.00';
-    final askPrice = proposal['ask_price']?.toStringAsFixed(2) ?? '0.00';
-    final profit = (proposal['payout'] - proposal['ask_price']).toStringAsFixed(2);
-
-    return CupertinoPageScaffold(
-      backgroundColor: AppColors.background,
-      navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppColors.secondaryBackground,
-        border: const Border(
-          bottom: BorderSide(
-            color: AppColors.separator,
-            width: 0.5,
-          ),
-        ),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: const Text('Cancelar'),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        middle: const Text(
-          'Confirmar Trade',
-          style: TextStyle(color: AppColors.label),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Contract Type Icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: contractType == 'CALL'
-                      ? AppColors.green.withOpacity(0.2)
-                      : AppColors.red.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: contractType == 'CALL'
-                      ? Icon(BootstrapIcons.arrow_up_circle_fill, color: AppColors.green, size: 40)
-                      : Icon(BootstrapIcons.arrow_down_circle_fill, color: AppColors.red, size: 40),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              Text(
-                contractType == 'CALL' ? 'COMPRA' : 'VENDA',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: contractType == 'CALL' ? AppColors.green : AppColors.red,
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Trade Details
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryBackground,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    _DetailRow(
-                      label: 'Investimento',
-                      value: '$askPrice USD',
-                      valueColor: AppColors.label,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(color: AppColors.separator, height: 1),
-                    ),
-                    _DetailRow(
-                      label: 'Payout Potencial',
-                      value: '$payout USD',
-                      valueColor: AppColors.green,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(color: AppColors.separator, height: 1),
-                    ),
-                    _DetailRow(
-                      label: 'Lucro Potencial',
-                      value: '$profit USD',
-                      valueColor: AppColors.green,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Confirm Button
-              GestureDetector(
-                onTap: onConfirm,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    color: contractType == 'CALL' ? AppColors.green : AppColors.red,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Confirmar Trade',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.background,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color valueColor;
-
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            color: AppColors.secondaryLabel,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Active Trade Screen
-class ActiveTradeScreen extends StatefulWidget {
-  final String contractId;
-  final WebSocketChannel wsChannel;
-  final Map<String, dynamic> initialContract;
-
-  const ActiveTradeScreen({
-    super.key,
-    required this.contractId,
-    required this.wsChannel,
-    required this.initialContract,
-  });
-
-  @override
-  State<ActiveTradeScreen> createState() => _ActiveTradeScreenState();
-}
-
-class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
-  Map<String, dynamic>? _contract;
-  StreamSubscription? _subscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _contract = widget.initialContract;
-
-    _subscription = widget.wsChannel.stream.listen((message) {
-      final data = jsonDecode(message);
-      if (data['msg_type'] == 'proposal_open_contract') {
-        final contract = data['proposal_open_contract'];
-        if (contract['contract_id'].toString() == widget.contractId) {
-          setState(() => _contract = contract);
-
-          // Check if contract is finished
-          if (contract['status'] == 'sold' || contract['is_expired'] == 1) {
-            _showResultDialog(contract);
-          }
+        function init() {
+            connectWebSocket();
+            initChart();
+            connectChartWebSocket();
+            setupEventListeners();
         }
-      }
-    });
-  }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
+        function connectWebSocket() {
+            state.ws = new WebSocket(WS_URL);
+            
+            state.ws.onopen = () => {
+                console.log('Connected');
+                state.ws.send(JSON.stringify({ authorize: API_TOKEN }));
+            };
+            
+            state.ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+            
+            state.ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            state.ws.onclose = () => {
+                console.log('Disconnected');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
 
-  void _showResultDialog(Map<String, dynamic> contract) {
-    final profit = (contract['profit'] ?? 0).toStringAsFixed(2);
-    final isWin = (contract['profit'] ?? 0) > 0;
+        function handleMessage(data) {
+            if (data.error) {
+                console.error('API Error:', data.error);
+                return;
+            }
+            
+            const msgType = data.msg_type;
+            
+            if (msgType === 'authorize') {
+                state.balance = parseFloat(data.authorize.balance);
+                state.currency = data.authorize.currency;
+                el.balance.textContent = `${'\\$'}{state.balance.toFixed(2)} ${'\\$'}{state.currency}`;
+                
+                state.ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+            } else if (msgType === 'balance') {
+                state.balance = parseFloat(data.balance.balance);
+                state.currency = data.balance.currency;
+                el.balance.textContent = `${'\\$'}{state.balance.toFixed(2)} ${'\\$'}{state.currency}`;
+            } else if (msgType === 'proposal') {
+                state.proposalId = data.proposal.id;
+                el.loadingProposal.classList.add('hidden');
+                el.executeTradeBtn.classList.remove('hidden');
+            } else if (msgType === 'buy') {
+                showNotification('Trade executado com sucesso!');
+                closeTradeModal();
+            }
+        }
 
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(isWin ? 'Vitória!' : 'Derrota'),
-        content: Column(
-          children: [
-            const SizedBox(height: 8),
-            isWin
-                ? Icon(BootstrapIcons.check_circle_fill, color: AppColors.green, size: 60)
-                : Icon(BootstrapIcons.x_circle_fill, color: AppColors.red, size: 60),
-            const SizedBox(height: 16),
-            Text(
-              '${isWin ? '+' : ''}$profit USD',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: isWin ? AppColors.green : AppColors.red,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close active trade screen
-            },
-          ),
-        ],
-      ),
-    );
-  }
+        function initChart() {
+            state.chart = LightweightCharts.createChart(el.chartContainer, {
+                width: el.chartContainer.clientWidth,
+                height: el.chartContainer.clientHeight,
+                layout: {
+                    background: { color: '#ffffff' },
+                    textColor: '#6b7280'
+                },
+                grid: {
+                    vertLines: { color: '#f3f4f6' },
+                    horzLines: { color: '#f3f4f6' }
+                },
+                rightPriceScale: {
+                    borderVisible: false
+                },
+                timeScale: {
+                    borderVisible: false,
+                    timeVisible: true
+                }
+            });
+
+            state.candleSeries = state.chart.addCandlestickSeries({
+                upColor: '#10b981',
+                downColor: '#ef4444',
+                wickUpColor: '#10b981',
+                wickDownColor: '#ef4444',
+                borderVisible: false
+            });
+
+            state.areaSeries = state.chart.addAreaSeries({
+                topColor: 'rgba(16, 185, 129, 0.4)',
+                bottomColor: 'rgba(16, 185, 129, 0)',
+                lineColor: '#10b981',
+                lineWidth: 2
+            });
+
+            updateChart();
+        }
+
+        function connectChartWebSocket() {
+            if (state.chartWs) {
+                state.chartWs.close();
+            }
+
+            state.chartWs = new WebSocket(WS_URL);
+            
+            state.chartWs.onopen = () => {
+                subscribeToChartData();
+            };
+            
+            state.chartWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleChartData(data);
+            };
+        }
+
+        function subscribeToChartData() {
+            state.candles = [];
+            state.ticks = [];
+
+            if (state.selectedTimeframe === 0) {
+                state.chartWs.send(JSON.stringify({
+                    ticks: MARKET_SYMBOL,
+                    subscribe: 1
+                }));
+            } else {
+                const now = Math.floor(Date.now() / 1000);
+                const start = now - (state.selectedTimeframe * 1000);
+
+                state.chartWs.send(JSON.stringify({
+                    ticks_history: MARKET_SYMBOL,
+                    adjust_start_time: 1,
+                    count: 1000,
+                    end: 'latest',
+                    start: start,
+                    style: 'candles',
+                    granularity: state.selectedTimeframe
+                }));
+
+                state.chartWs.send(JSON.stringify({
+                    ticks_history: MARKET_SYMBOL,
+                    adjust_start_time: 1,
+                    count: 1,
+                    end: 'latest',
+                    start: 1,
+                    style: 'candles',
+                    granularity: state.selectedTimeframe,
+                    subscribe: 1
+                }));
+            }
+        }
+
+        function handleChartData(data) {
+            if (data.msg_type === 'history' && data.candles) {
+                state.candles = data.candles.map(c => ({
+                    time: c.epoch,
+                    open: parseFloat(c.open),
+                    high: parseFloat(c.high),
+                    low: parseFloat(c.low),
+                    close: parseFloat(c.close)
+                }));
+                updateChart();
+                if (state.candles.length > 0) {
+                    const last = state.candles[state.candles.length - 1];
+                    el.currentPrice.textContent = last.close.toFixed(2);
+                }
+            } else if (data.msg_type === 'tick') {
+                const price = parseFloat(data.tick.quote);
+                el.currentPrice.textContent = price.toFixed(2);
+                
+                state.ticks.push({
+                    time: data.tick.epoch,
+                    value: price
+                });
+                
+                if (state.chartMode === 'line' && state.selectedTimeframe === 0) {
+                    state.areaSeries.update({
+                        time: data.tick.epoch,
+                        value: price
+                    });
+                }
+            } else if (data.msg_type === 'ohlc') {
+                const candle = {
+                    time: data.ohlc.epoch,
+                    open: parseFloat(data.ohlc.open),
+                    high: parseFloat(data.ohlc.high),
+                    low: parseFloat(data.ohlc.low),
+                    close: parseFloat(data.ohlc.close)
+                };
+                
+                const lastIndex = state.candles.length - 1;
+                if (lastIndex >= 0 && state.candles[lastIndex].time === candle.time) {
+                    state.candles[lastIndex] = candle;
+                } else {
+                    state.candles.push(candle);
+                }
+                
+                if (state.chartMode === 'candles') {
+                    state.candleSeries.update(candle);
+                }
+                
+                el.currentPrice.textContent = candle.close.toFixed(2);
+            }
+        }
+
+        function updateChart() {
+            if (state.chartMode === 'candles') {
+                state.areaSeries.setData([]);
+                if (state.candles.length > 0) {
+                    state.candleSeries.setData(state.candles);
+                }
+            } else {
+                state.candleSeries.setData([]);
+                if (state.candles.length > 0) {
+                    const lineData = state.candles.map(c => ({ time: c.time, value: c.close }));
+                    state.areaSeries.setData(lineData);
+                } else if (state.ticks.length > 0) {
+                    state.areaSeries.setData(state.ticks);
+                }
+            }
+            
+            if (state.chart) {
+                state.chart.timeScale().fitContent();
+            }
+        }
+
+        function setupEventListeners() {
+            el.btnCandles.addEventListener('click', () => {
+                state.chartMode = 'candles';
+                el.btnCandles.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors bg-white text-gray-900 shadow-sm';
+                el.btnLine.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors text-gray-500';
+                updateChart();
+            });
+            
+            el.btnLine.addEventListener('click', () => {
+                state.chartMode = 'line';
+                el.btnLine.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors bg-white text-gray-900 shadow-sm';
+                el.btnCandles.className = 'flex-1 py-2 rounded-md text-sm font-semibold transition-colors text-gray-500';
+                updateChart();
+            });
+            
+            el.timeframes.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    el.timeframes.forEach(b => {
+                        b.className = 'px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active text-gray-500';
+                    });
+                    btn.className = 'px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap btn-active bg-gray-200 text-gray-900';
+                    state.selectedTimeframe = parseInt(btn.dataset.tf);
+                    connectChartWebSocket();
+                });
+            });
+            
+            el.btnRise.addEventListener('click', () => openTradeModal('CALL'));
+            el.btnFall.addEventListener('click', () => openTradeModal('PUT'));
+            el.modalClose.addEventListener('click', closeTradeModal);
+            el.modalOverlay.addEventListener('click', closeTradeModal);
+            
+            el.durationUnits.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.durationUnit = btn.dataset.unit;
+                    const color = state.contractType === 'CALL' ? 'bg-green-500' : 'bg-red-500';
+                    el.durationUnits.forEach(b => {
+                        b.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500';
+                    });
+                    btn.className = `px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ${'\\$'}{color} text-white`;
+                    requestProposal();
+                });
+            });
+            
+            el.stakeInput.addEventListener('input', () => {
+                clearTimeout(state.proposalTimeout);
+                state.proposalTimeout = setTimeout(requestProposal, 500);
+            });
+            
+            el.durationInput.addEventListener('input', () => {
+                clearTimeout(state.proposalTimeout);
+                state.proposalTimeout = setTimeout(requestProposal, 500);
+            });
+            
+            el.executeTradeBtn.addEventListener('click', executeTrade);
+            
+            window.addEventListener('resize', () => {
+                if (state.chart) {
+                    state.chart.applyOptions({
+                        width: el.chartContainer.clientWidth,
+                        height: el.chartContainer.clientHeight
+                    });
+                }
+            });
+        }
+
+        function openTradeModal(type) {
+            state.contractType = type;
+            el.modalTitle.textContent = type === 'CALL' ? 'Rise' : 'Fall';
+            el.tradeModal.classList.remove('hidden');
+            
+            const color = type === 'CALL' ? 'bg-green-500' : 'bg-red-500';
+            el.executeTradeBtn.className = `w-full py-4 rounded-xl font-bold text-white btn-active ${'\\$'}{color}`;
+            
+            el.durationUnits.forEach(btn => {
+                if (btn.dataset.unit === state.durationUnit) {
+                    btn.className = `px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ${'\\$'}{color} text-white`;
+                } else {
+                    btn.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500';
+                }
+            });
+            
+            requestProposal();
+        }
+
+        function closeTradeModal() {
+            el.tradeModal.classList.add('hidden');
+            state.proposalId = null;
+        }
+
+        function requestProposal() {
+            el.loadingProposal.classList.remove('hidden');
+            el.executeTradeBtn.classList.add('hidden');
+            state.proposalId = null;
+            
+            state.ws.send(JSON.stringify({
+                proposal: 1,
+                amount: parseFloat(el.stakeInput.value) || 1.0,
+                basis: 'stake',
+                contract_type: state.contractType,
+                currency: state.currency,
+                duration: parseInt(el.durationInput.value) || 5,
+                duration_unit: state.durationUnit,
+                symbol: MARKET_SYMBOL
+            }));
+        }
+
+        function executeTrade() {
+            if (!state.proposalId) return;
+            state.ws.send(JSON.stringify({
+                buy: state.proposalId,
+                price: parseFloat(el.stakeInput.value) || 1.0
+            }));
+        }
+
+        function showNotification(message) {
+            const n = document.createElement('div');
+            n.className = 'fixed top-4 left-4 right-4 p-4 rounded-xl font-semibold z-50 bg-green-500 text-white shadow-lg';
+            n.textContent = message;
+            document.body.appendChild(n);
+            setTimeout(() => {
+                n.style.opacity = '0';
+                n.style.transition = 'opacity 0.3s';
+                setTimeout(() => n.remove(), 300);
+            }, 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
+  ''';
 
   @override
   Widget build(BuildContext context) {
-    if (_contract == null) {
-      return CupertinoPageScaffold(
-        backgroundColor: AppColors.background,
-        child: Center(
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.label),
-            ),
+    return Scaffold(
+      body: SafeArea(
+        child: InAppWebView(
+          initialData: InAppWebViewInitialData(data: htmlContent),
+          initialSettings: InAppWebViewSettings(
+            transparentBackground: false,
+            supportZoom: false,
+            useHybridComposition: true,
+            javaScriptEnabled: true,
+            domStorageEnabled: true,
+            databaseEnabled: true,
+            allowsInlineMediaPlayback: true,
+            mediaPlaybackRequiresUserGesture: false,
           ),
-        ),
-      );
-    }
-
-    final currentSpot = _contract!['current_spot']?.toString() ?? '0.00';
-    final entrySpot = _contract!['entry_spot']?.toString() ?? '0.00';
-    final profit = (_contract!['profit'] ?? 0).toStringAsFixed(2);
-    final buyPrice = (_contract!['buy_price'] ?? 0).toStringAsFixed(2);
-    final payout = (_contract!['payout'] ?? 0).toStringAsFixed(2);
-    final contractType = _contract!['contract_type'];
-    final isProfit = (_contract!['profit'] ?? 0) >= 0;
-
-    return CupertinoPageScaffold(
-      backgroundColor: AppColors.background,
-      navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppColors.secondaryBackground,
-        border: const Border(
-          bottom: BorderSide(
-            color: AppColors.separator,
-            width: 0.5,
-          ),
-        ),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: Icon(BootstrapIcons.chevron_left, color: AppColors.label, size: 24),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        middle: const Text(
-          'Trade Ativo',
-          style: TextStyle(color: AppColors.label),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-
-              // Contract Type Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: contractType == 'CALL'
-                      ? AppColors.green.withOpacity(0.2)
-                      : AppColors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  contractType == 'CALL' ? 'COMPRA' : 'VENDA',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: contractType == 'CALL' ? AppColors.green : AppColors.red,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Profit/Loss
-              Text(
-                '${isProfit ? '+' : ''}$profit USD',
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: isProfit ? AppColors.green : AppColors.red,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                'Lucro/Perda Atual',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.secondaryLabel,
-                ),
-              ),
-
-              const SizedBox(height: 60),
-
-              // Details
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryBackground,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    _DetailRow(
-                      label: 'Preço de Entrada',
-                      value: entrySpot,
-                      valueColor: AppColors.label,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(color: AppColors.separator, height: 1),
-                    ),
-                    _DetailRow(
-                      label: 'Preço Atual',
-                      value: currentSpot,
-                      valueColor: AppColors.label,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(color: AppColors.separator, height: 1),
-                    ),
-                    _DetailRow(
-                      label: 'Investimento',
-                      value: '$buyPrice USD',
-                      valueColor: AppColors.label,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(color: AppColors.separator, height: 1),
-                    ),
-                    _DetailRow(
-                      label: 'Payout Potencial',
-                      value: '$payout USD',
-                      valueColor: AppColors.green,
-                    ),
-                  ],
-                ),
-              ),
-
-              const Spacer(),
-
-              // Status indicator
-              SizedBox(
-                width: 32,
-                height: 32,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.blue),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Aguardando expiração...',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.secondaryLabel,
-                ),
-              ),
-
-              const SizedBox(height: 40),
-            ],
-          ),
+          onWebViewCreated: (controller) {
+            _webViewController = controller;
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            debugPrint('Console: ${consoleMessage.message}');
+          },
         ),
       ),
     );
