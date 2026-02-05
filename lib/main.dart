@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:icons_plus/icons_plus.dart'; // Bootstrap Icons
+import 'package:bootstrap_icons/bootstrap_icons.dart';
 
 void main() {
   runApp(const DerivTradingApp());
@@ -587,7 +588,7 @@ class _TradingScreenState extends State<TradingScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: Icon(Bootstrap.list, color: AppColors.label, size: 24),
+                child: Icon(BootstrapIcons.list, color: AppColors.label, size: 24),
               ),
             ),
           ),
@@ -1213,8 +1214,8 @@ class TradeConfirmationScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: contractType == 'CALL'
-                      ? Icon(Bootstrap.arrow_up_circle_fill, color: AppColors.green, size: 40)
-                      : Icon(Bootstrap.arrow_down_circle_fill, color: AppColors.red, size: 40),
+                      ? Icon(BootstrapIcons.arrow_up_circle_fill, color: AppColors.green, size: 40)
+                      : Icon(BootstrapIcons.arrow_down_circle_fill, color: AppColors.red, size: 40),
                 ),
               ),
 
@@ -1395,8 +1396,8 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
           children: [
             const SizedBox(height: 8),
             isWin
-                ? Icon(Bootstrap.check_circle_fill, color: AppColors.green, size: 60)
-                : Icon(Bootstrap.x_circle_fill, color: AppColors.red, size: 60),
+                ? Icon(BootstrapIcons.check_circle_fill, color: AppColors.green, size: 60)
+                : Icon(BootstrapIcons.x_circle_fill, color: AppColors.red, size: 60),
             const SizedBox(height: 16),
             Text(
               '${isWin ? '+' : ''}$profit USD',
@@ -1459,7 +1460,7 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
         ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
-          child: Icon(Bootstrap.chevron_left, color: AppColors.label, size: 24),
+          child: Icon(BootstrapIcons.chevron_left, color: AppColors.label, size: 24),
           onPressed: () => Navigator.of(context).pop(),
         ),
         middle: const Text(
