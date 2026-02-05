@@ -19,7 +19,7 @@ dependencies:
   translator: any
   provider: any 
   web_socket_channel: ^2.4.0
-  
+  flutter_inappwebview: ^6.0.0
   # Charts
   candlesticks: ^2.1.0
   
