@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:icons_plus/icons_plus.dart'; // Bootstrap Icons
 
 void main() {
   runApp(const DerivTradingApp());
@@ -52,232 +53,6 @@ class DerivTradingApp extends StatelessWidget {
   }
 }
 
-// Custom Icons usando formas geométricas
-class CustomIcons {
-  static Widget menu({Color color = AppColors.label, double size = 20}) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: size * 0.7,
-            height: size * 0.12,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(size * 0.06),
-            ),
-          ),
-          SizedBox(height: size * 0.15),
-          Container(
-            width: size * 0.7,
-            height: size * 0.12,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(size * 0.06),
-            ),
-          ),
-          SizedBox(height: size * 0.15),
-          Container(
-            width: size * 0.7,
-            height: size * 0.12,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(size * 0.06),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget arrowUp({Color color = AppColors.green, double size = 40}) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _ArrowUpPainter(color: color),
-    );
-  }
-
-  static Widget arrowDown({Color color = AppColors.red, double size = 40}) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _ArrowDownPainter(color: color),
-    );
-  }
-
-  static Widget checkCircle({Color color = AppColors.green, double size = 60}) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _CheckCirclePainter(color: color),
-    );
-  }
-
-  static Widget crossCircle({Color color = AppColors.red, double size = 60}) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _CrossCirclePainter(color: color),
-    );
-  }
-
-  static Widget back({Color color = AppColors.label, double size = 20}) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _BackArrowPainter(color: color),
-    );
-  }
-}
-
-class _ArrowUpPainter extends CustomPainter {
-  final Color color;
-
-  _ArrowUpPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(size.width * 0.5, size.height * 0.2);
-    path.lineTo(size.width * 0.3, size.height * 0.4);
-    path.lineTo(size.width * 0.4, size.height * 0.4);
-    path.lineTo(size.width * 0.4, size.height * 0.8);
-    path.lineTo(size.width * 0.6, size.height * 0.8);
-    path.lineTo(size.width * 0.6, size.height * 0.4);
-    path.lineTo(size.width * 0.7, size.height * 0.4);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _ArrowDownPainter extends CustomPainter {
-  final Color color;
-
-  _ArrowDownPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(size.width * 0.5, size.height * 0.8);
-    path.lineTo(size.width * 0.3, size.height * 0.6);
-    path.lineTo(size.width * 0.4, size.height * 0.6);
-    path.lineTo(size.width * 0.4, size.height * 0.2);
-    path.lineTo(size.width * 0.6, size.height * 0.2);
-    path.lineTo(size.width * 0.6, size.height * 0.6);
-    path.lineTo(size.width * 0.7, size.height * 0.6);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _CheckCirclePainter extends CustomPainter {
-  final Color color;
-
-  _CheckCirclePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.08;
-
-    // Draw circle
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      size.width * 0.4,
-      paint,
-    );
-
-    // Draw check mark
-    final checkPath = Path();
-    checkPath.moveTo(size.width * 0.3, size.height * 0.5);
-    checkPath.lineTo(size.width * 0.45, size.height * 0.65);
-    checkPath.lineTo(size.width * 0.7, size.height * 0.35);
-
-    canvas.drawPath(checkPath, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _CrossCirclePainter extends CustomPainter {
-  final Color color;
-
-  _CrossCirclePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.08;
-
-    // Draw circle
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      size.width * 0.4,
-      paint,
-    );
-
-    // Draw X
-    canvas.drawLine(
-      Offset(size.width * 0.35, size.height * 0.35),
-      Offset(size.width * 0.65, size.height * 0.65),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.65, size.height * 0.35),
-      Offset(size.width * 0.35, size.height * 0.65),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _BackArrowPainter extends CustomPainter {
-  final Color color;
-
-  _BackArrowPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.1
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final path = Path();
-    path.moveTo(size.width * 0.6, size.height * 0.2);
-    path.lineTo(size.width * 0.3, size.height * 0.5);
-    path.lineTo(size.width * 0.6, size.height * 0.8);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
 class TradingScreen extends StatefulWidget {
   const TradingScreen({super.key});
 
@@ -292,14 +67,14 @@ class _TradingScreenState extends State<TradingScreen> {
   static const String marketSymbol = '1HZ25V';
   static const String marketName = 'Volatility 25';
   static const String marketAbbrev = 'V25';
-  
+
   // WebSocket
   WebSocketChannel? _wsChannel;
   WebSocketChannel? _chartWsChannel;
-  
+
   // WebView
   InAppWebViewController? _webViewController;
-  
+
   // State
   double _balance = 232.14;
   String _currency = 'USD';
@@ -310,17 +85,17 @@ class _TradingScreenState extends State<TradingScreen> {
   double _currentPrice = 730017.68;
   double _previousPrice = 730017.68;
   Map<String, dynamic>? _currentProposal;
-  
+
   // Controllers
   final TextEditingController _stakeController = TextEditingController(text: '1.00');
   final TextEditingController _durationController = TextEditingController(text: '5');
   final ScrollController _scrollController = ScrollController();
-  
+
   // UI State
   bool _loadingProposal = false;
   bool _chartReady = false;
   bool _showMenuPopup = false;
-  
+
   // Timeframe buttons
   final List<Map<String, dynamic>> _timeframes = [
     {'label': '1t', 'value': 0},
@@ -330,7 +105,7 @@ class _TradingScreenState extends State<TradingScreen> {
     {'label': '30m', 'value': 1800},
     {'label': '1h', 'value': 3600},
   ];
-  
+
   Timer? _proposalTimer;
   Timer? _reconnectTimer;
   bool _isConnected = false;
@@ -360,7 +135,7 @@ class _TradingScreenState extends State<TradingScreen> {
     try {
       final uri = Uri.parse('wss://ws.derivws.com/websockets/v3?app_id=$appId');
       _wsChannel = WebSocketChannel.connect(uri);
-      
+
       _wsChannel!.stream.listen(
         (message) {
           final data = jsonDecode(message);
@@ -377,10 +152,10 @@ class _TradingScreenState extends State<TradingScreen> {
           _scheduleReconnect();
         },
       );
-      
+
       setState(() => _isConnected = true);
       _authorize();
-      
+
     } catch (e) {
       debugPrint('Connection error: $e');
       _scheduleReconnect();
@@ -397,7 +172,7 @@ class _TradingScreenState extends State<TradingScreen> {
 
   void _authorize() {
     if (_wsChannel == null) return;
-    
+
     _wsChannel!.sink.add(jsonEncode({
       'authorize': apiToken,
     }));
@@ -405,11 +180,11 @@ class _TradingScreenState extends State<TradingScreen> {
 
   void _connectChartWebSocket() {
     _chartWsChannel?.sink.close();
-    
+
     try {
       final uri = Uri.parse('wss://ws.derivws.com/websockets/v3?app_id=$appId');
       _chartWsChannel = WebSocketChannel.connect(uri);
-      
+
       _chartWsChannel!.stream.listen(
         (message) {
           final data = jsonDecode(message);
@@ -419,10 +194,10 @@ class _TradingScreenState extends State<TradingScreen> {
           debugPrint('Chart WebSocket error: $error');
         },
       );
-      
+
       // Subscribe based on timeframe
       _subscribeToChartData();
-      
+
     } catch (e) {
       debugPrint('Chart connection error: $e');
     }
@@ -430,7 +205,7 @@ class _TradingScreenState extends State<TradingScreen> {
 
   void _subscribeToChartData() {
     if (_chartWsChannel == null) return;
-    
+
     if (_selectedTimeframe == 0) {
       // Subscribe to ticks for tick chart
       _chartWsChannel!.sink.add(jsonEncode({
@@ -441,7 +216,7 @@ class _TradingScreenState extends State<TradingScreen> {
       // Get historical candles first
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final start = now - (_selectedTimeframe * 1000); // Get last 1000 candles
-      
+
       _chartWsChannel!.sink.add(jsonEncode({
         'ticks_history': marketSymbol,
         'adjust_start_time': 1,
@@ -451,7 +226,7 @@ class _TradingScreenState extends State<TradingScreen> {
         'style': 'candles',
         'granularity': _selectedTimeframe,
       }));
-      
+
       // Subscribe to live candles
       _chartWsChannel!.sink.add(jsonEncode({
         'ticks_history': marketSymbol,
@@ -472,9 +247,9 @@ class _TradingScreenState extends State<TradingScreen> {
       _showErrorMessage(data['error']['message'] ?? 'Erro desconhecido');
       return;
     }
-    
+
     final msgType = data['msg_type'];
-    
+
     switch (msgType) {
       case 'authorize':
         _handleAuthorize(data['authorize']);
@@ -496,16 +271,16 @@ class _TradingScreenState extends State<TradingScreen> {
 
   void _handleChartMessage(Map<String, dynamic> data) {
     if (!_chartReady || _webViewController == null) return;
-    
+
     final msgType = data['msg_type'];
-    
+
     // Send data to WebView chart
     _webViewController!.evaluateJavascript(source: '''
       if (window.handleChartData) {
         window.handleChartData(${jsonEncode(data)});
       }
     ''');
-    
+
     // Update current price
     if (msgType == 'tick') {
       final tick = data['tick'];
@@ -550,13 +325,13 @@ class _TradingScreenState extends State<TradingScreen> {
       _balance = double.tryParse(authorize['balance'].toString()) ?? _balance;
       _currency = authorize['currency'] ?? _currency;
     });
-    
+
     // Subscribe to balance updates
     _wsChannel!.sink.add(jsonEncode({
       'balance': 1,
       'subscribe': 1,
     }));
-    
+
     _getProposal();
   }
 
@@ -577,14 +352,14 @@ class _TradingScreenState extends State<TradingScreen> {
 
   void _handleBuy(Map<String, dynamic> buy) {
     final contractId = buy['contract_id'];
-    
+
     // Subscribe to contract updates
     _wsChannel!.sink.add(jsonEncode({
       'proposal_open_contract': 1,
       'contract_id': contractId,
       'subscribe': 1,
     }));
-    
+
     // Navigate to active trade screen
     Navigator.of(context).push(
       CupertinoPageRoute(
@@ -618,10 +393,10 @@ class _TradingScreenState extends State<TradingScreen> {
 
   void _getProposal() {
     if (!_isAuthorized || _wsChannel == null) return;
-    
+
     final stake = double.tryParse(_stakeController.text);
     final duration = int.tryParse(_durationController.text);
-    
+
     if (stake == null || duration == null || stake <= 0 || duration <= 0) {
       setState(() {
         _proposalId = null;
@@ -629,9 +404,9 @@ class _TradingScreenState extends State<TradingScreen> {
       });
       return;
     }
-    
+
     setState(() => _loadingProposal = true);
-    
+
     _wsChannel!.sink.add(jsonEncode({
       'proposal': 1,
       'amount': stake,
@@ -646,7 +421,7 @@ class _TradingScreenState extends State<TradingScreen> {
 
   void _executeTrade() {
     if (_proposalId == null || !_isAuthorized) return;
-    
+
     // Navigate to trade confirmation screen
     Navigator.of(context).push(
       CupertinoPageRoute(
@@ -722,12 +497,12 @@ class _TradingScreenState extends State<TradingScreen> {
           children: [
             // Custom App Bar
             _buildAppBar(),
-            
+
             // Chart
             Expanded(
               child: _buildChart(),
             ),
-            
+
             // Trade Panel
             _buildTradePanel(),
           ],
@@ -779,7 +554,7 @@ class _TradingScreenState extends State<TradingScreen> {
               ],
             ),
           ),
-          
+
           // Balance
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -796,9 +571,9 @@ class _TradingScreenState extends State<TradingScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Menu button
           GestureDetector(
             onTap: () {
@@ -812,7 +587,7 @@ class _TradingScreenState extends State<TradingScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: CustomIcons.menu(color: AppColors.label, size: 20),
+                child: Icon(Bootstrap.list, color: AppColors.label, size: 24),
               ),
             ),
           ),
@@ -844,7 +619,7 @@ class _TradingScreenState extends State<TradingScreen> {
                 children: List.generate(_timeframes.length, (index) {
                   final tf = _timeframes[index];
                   final isSelected = _selectedTimeframe == tf['value'];
-                  
+
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
@@ -877,7 +652,7 @@ class _TradingScreenState extends State<TradingScreen> {
               ),
             ),
           ),
-          
+
           // Chart WebView
           Expanded(
             child: InAppWebView(
@@ -982,7 +757,7 @@ class _TradingScreenState extends State<TradingScreen> {
               ],
             ),
           ),
-          
+
           // Trade parameters
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1012,9 +787,9 @@ class _TradingScreenState extends State<TradingScreen> {
                     color: AppColors.label,
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Duration
                 const Text(
                   'Duração',
@@ -1078,9 +853,9 @@ class _TradingScreenState extends State<TradingScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Execute button
                 if (_loadingProposal)
                   Container(
@@ -1149,7 +924,7 @@ class _TradingScreenState extends State<TradingScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
         ],
       ),
@@ -1438,13 +1213,13 @@ class TradeConfirmationScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: contractType == 'CALL'
-                      ? CustomIcons.arrowUp(color: AppColors.green, size: 40)
-                      : CustomIcons.arrowDown(color: AppColors.red, size: 40),
+                      ? Icon(Bootstrap.arrow_up_circle_fill, color: AppColors.green, size: 40)
+                      : Icon(Bootstrap.arrow_down_circle_fill, color: AppColors.red, size: 40),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               Text(
                 contractType == 'CALL' ? 'COMPRA' : 'VENDA',
                 style: TextStyle(
@@ -1453,9 +1228,9 @@ class TradeConfirmationScreen extends StatelessWidget {
                   color: contractType == 'CALL' ? AppColors.green : AppColors.red,
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Trade Details
               Container(
                 padding: const EdgeInsets.all(20),
@@ -1491,9 +1266,9 @@ class TradeConfirmationScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Confirm Button
               GestureDetector(
                 onTap: onConfirm,
@@ -1584,14 +1359,14 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
   void initState() {
     super.initState();
     _contract = widget.initialContract;
-    
+
     _subscription = widget.wsChannel.stream.listen((message) {
       final data = jsonDecode(message);
       if (data['msg_type'] == 'proposal_open_contract') {
         final contract = data['proposal_open_contract'];
         if (contract['contract_id'].toString() == widget.contractId) {
           setState(() => _contract = contract);
-          
+
           // Check if contract is finished
           if (contract['status'] == 'sold' || contract['is_expired'] == 1) {
             _showResultDialog(contract);
@@ -1620,8 +1395,8 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
           children: [
             const SizedBox(height: 8),
             isWin
-                ? CustomIcons.checkCircle(color: AppColors.green, size: 60)
-                : CustomIcons.crossCircle(color: AppColors.red, size: 60),
+                ? Icon(Bootstrap.check_circle_fill, color: AppColors.green, size: 60)
+                : Icon(Bootstrap.x_circle_fill, color: AppColors.red, size: 60),
             const SizedBox(height: 16),
             Text(
               '${isWin ? '+' : ''}$profit USD',
@@ -1684,7 +1459,7 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
         ),
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
-          child: CustomIcons.back(color: AppColors.label, size: 20),
+          child: Icon(Bootstrap.chevron_left, color: AppColors.label, size: 24),
           onPressed: () => Navigator.of(context).pop(),
         ),
         middle: const Text(
@@ -1698,7 +1473,7 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
           child: Column(
             children: [
               const SizedBox(height: 40),
-              
+
               // Contract Type Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -1717,9 +1492,9 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Profit/Loss
               Text(
                 '${isProfit ? '+' : ''}$profit USD',
@@ -1729,9 +1504,9 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
                   color: isProfit ? AppColors.green : AppColors.red,
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               const Text(
                 'Lucro/Perda Atual',
                 style: TextStyle(
@@ -1739,9 +1514,9 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
                   color: AppColors.secondaryLabel,
                 ),
               ),
-              
+
               const SizedBox(height: 60),
-              
+
               // Details
               Container(
                 padding: const EdgeInsets.all(20),
@@ -1786,9 +1561,9 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
                   ],
                 ),
               ),
-              
+
               const Spacer(),
-              
+
               // Status indicator
               SizedBox(
                 width: 32,
@@ -1806,7 +1581,7 @@ class _ActiveTradeScreenState extends State<ActiveTradeScreen> {
                   color: AppColors.secondaryLabel,
                 ),
               ),
-              
+
               const SizedBox(height: 40),
             ],
           ),
