@@ -18,7 +18,11 @@ dependencies:
   animations: any
   translator: any
   provider: any 
-
+  web_socket_channel: ^2.4.0
+  
+  # Charts
+  candlesticks: ^2.1.0
+  
   # HTTP - versão específica mais leve
   http: any
   xml: any
@@ -33,6 +37,8 @@ dependencies:
   # Ícones - versão específica
   material_symbols_icons: ^4.2785.1
   flutter_staggered_grid_view: any
+  intl: ^0.18.1
+
 
 dev_dependencies:
   flutter_test:
