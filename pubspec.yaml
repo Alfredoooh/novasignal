@@ -16,7 +16,6 @@ dependencies:
   feather_icons: any
   flutter_inappwebview: any
   # WebView para gráficos LightweightCharts
-  flutter_inappwebview: ^6.0.0
 
 dev_dependencies:
   flutter_test:
