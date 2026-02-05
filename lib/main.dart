@@ -192,95 +192,146 @@ class _TradingScreenState extends State<TradingScreen> {
 
                     <div class="mb-4">
                         <label class="text-sm font-semibold text-gray-600 mb-2 block">Duração</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="duration-input" value="5" min="1"
-                                class="flex-1 bg-gray-100 px-4 py-3 rounded-xl text-gray-900 border border-gray-200">
-                            <div class="bg-gray-100 rounded-xl flex p-1 border border-gray-200">
-                                <button data-unit="t" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit bg-green-500 text-white">
-                                    Ticks
-                                </button>
-                                <button data-unit="s" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500">
-                                    Seg
-                                </button>
-                                <button data-unit="m" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500">
-                                    Min
-                                </button>
-                            </div>
+                        <input type="number" id="duration-input" value="5" step="1" min="1"
+                            class="w-full bg-gray-100 px-4 py-3 rounded-xl text-gray-900 border border-gray-200">
+                    </div>
+
+                    <div class="mb-6 flex gap-2">
+                        <button data-unit="t" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit bg-green-500 text-white">
+                            Ticks
+                        </button>
+                        <button data-unit="s" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500">
+                            Segundos
+                        </button>
+                        <button data-unit="m" class="px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500">
+                            Minutos
+                        </button>
+                    </div>
+
+                    <div id="loading-proposal" class="p-4 bg-gray-100 rounded-xl mb-4">
+                        <p class="text-center text-gray-500">Carregando cotação...</p>
+                    </div>
+
+                    <div id="proposal-info" class="hidden mb-4 p-4 bg-gray-100 rounded-xl">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-600">Lucro Potencial:</span>
+                            <span id="payout" class="font-bold text-gray-900">0.00 USD</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Retorno:</span>
+                            <span id="return" class="font-bold text-green-600">0%</span>
                         </div>
                     </div>
 
-                    <div class="pb-3">
-                        <div id="loading-proposal" class="bg-gray-100 border border-gray-200 py-4 rounded-xl flex items-center justify-center gap-2">
-                            <div class="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                            <span class="text-gray-600 font-semibold">Carregando...</span>
-                        </div>
-                        <button id="execute-trade" class="hidden w-full py-4 rounded-xl font-bold text-white btn-active">
-                            Executar Trade
-                        </button>
-                    </div>
+                    <button id="execute-trade" class="hidden w-full py-4 rounded-xl font-bold text-white btn-active bg-green-500">
+                        Executar Negociação
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const APP_ID = 71954;
-        const API_TOKEN = 'nUYzSZmUXrXmBmD';
+        const API_TOKEN = 'YOUR_API_TOKEN_HERE';
         const MARKET_SYMBOL = '1HZ25V';
-        const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${'\\$'}{APP_ID}`;
-
+        const WS_URL = 'wss://ws.derivws.com/websockets/v3?app_id=1089';
+        
         const state = {
             ws: null,
             chartWs: null,
             chart: null,
             candleSeries: null,
             areaSeries: null,
-            balance: 232.14,
-            currency: 'USD',
-            chartMode: 'candles',
             selectedTimeframe: 0,
-            contractType: 'CALL',
-            proposalId: null,
-            durationUnit: 't',
+            chartMode: 'candles',
             candles: [],
             ticks: [],
+            balance: 0,
+            currency: 'USD',
+            contractType: 'CALL',
+            durationUnit: 't',
+            proposalId: null,
             proposalTimeout: null
         };
-
+        
         const el = {
             balance: document.getElementById('balance'),
+            currentPrice: document.getElementById('current-price'),
+            priceChange: document.getElementById('price-change'),
+            chartContainer: document.getElementById('chart-container'),
             btnCandles: document.getElementById('btn-candles'),
             btnLine: document.getElementById('btn-line'),
             timeframes: document.querySelectorAll('[data-tf]'),
-            chartContainer: document.getElementById('chart-container'),
-            currentPrice: document.getElementById('current-price'),
-            priceChange: document.getElementById('price-change'),
             btnRise: document.getElementById('btn-rise'),
             btnFall: document.getElementById('btn-fall'),
             tradeModal: document.getElementById('trade-modal'),
-            modalOverlay: document.getElementById('modal-overlay'),
-            modalClose: document.getElementById('modal-close'),
             modalTitle: document.getElementById('modal-title'),
+            modalClose: document.getElementById('modal-close'),
+            modalOverlay: document.getElementById('modal-overlay'),
             stakeInput: document.getElementById('stake-input'),
             durationInput: document.getElementById('duration-input'),
             durationUnits: document.querySelectorAll('.duration-unit'),
             loadingProposal: document.getElementById('loading-proposal'),
+            proposalInfo: document.getElementById('proposal-info'),
+            payout: document.getElementById('payout'),
+            returnEl: document.getElementById('return'),
             executeTradeBtn: document.getElementById('execute-trade')
         };
 
         function init() {
-            connectWebSocket();
             initChart();
-            connectChartWebSocket();
+            connectWebSocket();
             setupEventListeners();
+        }
+
+        function initChart() {
+            state.chart = LightweightCharts.createChart(el.chartContainer, {
+                width: el.chartContainer.clientWidth,
+                height: el.chartContainer.clientHeight,
+                layout: {
+                    background: { color: '#ffffff' },
+                    textColor: '#374151'
+                },
+                grid: {
+                    vertLines: { color: '#f3f4f6' },
+                    horzLines: { color: '#f3f4f6' }
+                },
+                timeScale: {
+                    timeVisible: true,
+                    secondsVisible: true
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal
+                }
+            });
+            
+            state.candleSeries = state.chart.addCandlestickSeries({
+                upColor: '#10b981',
+                downColor: '#ef4444',
+                borderUpColor: '#10b981',
+                borderDownColor: '#ef4444',
+                wickUpColor: '#10b981',
+                wickDownColor: '#ef4444'
+            });
+            
+            state.areaSeries = state.chart.addAreaSeries({
+                topColor: 'rgba(59, 130, 246, 0.4)',
+                bottomColor: 'rgba(59, 130, 246, 0.0)',
+                lineColor: '#3b82f6',
+                lineWidth: 2
+            });
+            
+            state.areaSeries.setData([]);
         }
 
         function connectWebSocket() {
             state.ws = new WebSocket(WS_URL);
             
             state.ws.onopen = () => {
-                console.log('Connected');
-                state.ws.send(JSON.stringify({ authorize: API_TOKEN }));
+                console.log('Trading WebSocket Connected');
+                state.ws.send(JSON.stringify({
+                    authorize: API_TOKEN
+                }));
             };
             
             state.ws.onmessage = (event) => {
@@ -289,12 +340,7 @@ class _TradingScreenState extends State<TradingScreen> {
             };
             
             state.ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-            
-            state.ws.onclose = () => {
-                console.log('Disconnected');
-                setTimeout(connectWebSocket, 3000);
+                console.error('Trading WebSocket Error:', error);
             };
         }
 
@@ -309,147 +355,128 @@ class _TradingScreenState extends State<TradingScreen> {
             if (msgType === 'authorize') {
                 state.balance = parseFloat(data.authorize.balance);
                 state.currency = data.authorize.currency;
-                el.balance.textContent = `${'\\$'}{state.balance.toFixed(2)} ${'\\$'}{state.currency}`;
+                el.balance.textContent = `\$\${state.balance.toFixed(2)} \${state.currency}`;
                 
                 state.ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
             } else if (msgType === 'balance') {
                 state.balance = parseFloat(data.balance.balance);
                 state.currency = data.balance.currency;
-                el.balance.textContent = `${'\\$'}{state.balance.toFixed(2)} ${'\\$'}{state.currency}`;
+                el.balance.textContent = `\$\${state.balance.toFixed(2)} \${state.currency}`;
             } else if (msgType === 'proposal') {
                 state.proposalId = data.proposal.id;
+                const payout = parseFloat(data.proposal.payout);
+                const stake = parseFloat(el.stakeInput.value);
+                const profit = payout - stake;
+                const returnPct = ((profit / stake) * 100).toFixed(2);
+                
+                el.payout.textContent = `\${profit.toFixed(2)} \${state.currency}`;
+                el.returnEl.textContent = `\${returnPct}%`;
+                
                 el.loadingProposal.classList.add('hidden');
+                el.proposalInfo.classList.remove('hidden');
                 el.executeTradeBtn.classList.remove('hidden');
             } else if (msgType === 'buy') {
-                showNotification('Trade executado com sucesso!');
                 closeTradeModal();
+                showNotification('Negociação executada com sucesso!');
             }
-        }
-
-        function initChart() {
-            state.chart = LightweightCharts.createChart(el.chartContainer, {
-                width: el.chartContainer.clientWidth,
-                height: el.chartContainer.clientHeight,
-                layout: {
-                    background: { color: '#ffffff' },
-                    textColor: '#6b7280'
-                },
-                grid: {
-                    vertLines: { color: '#f3f4f6' },
-                    horzLines: { color: '#f3f4f6' }
-                },
-                rightPriceScale: {
-                    borderVisible: false
-                },
-                timeScale: {
-                    borderVisible: false,
-                    timeVisible: true
-                }
-            });
-
-            state.candleSeries = state.chart.addCandlestickSeries({
-                upColor: '#10b981',
-                downColor: '#ef4444',
-                wickUpColor: '#10b981',
-                wickDownColor: '#ef4444',
-                borderVisible: false
-            });
-
-            state.areaSeries = state.chart.addAreaSeries({
-                topColor: 'rgba(16, 185, 129, 0.4)',
-                bottomColor: 'rgba(16, 185, 129, 0)',
-                lineColor: '#10b981',
-                lineWidth: 2
-            });
-
-            updateChart();
         }
 
         function connectChartWebSocket() {
             if (state.chartWs) {
                 state.chartWs.close();
             }
-
+            
+            state.candles = [];
+            state.ticks = [];
+            updateChart();
+            
             state.chartWs = new WebSocket(WS_URL);
             
             state.chartWs.onopen = () => {
-                subscribeToChartData();
+                console.log('Chart WebSocket Connected');
+                
+                if (state.selectedTimeframe === 0) {
+                    state.chartWs.send(JSON.stringify({
+                        ticks: MARKET_SYMBOL,
+                        subscribe: 1
+                    }));
+                } else {
+                    state.chartWs.send(JSON.stringify({
+                        ticks_history: MARKET_SYMBOL,
+                        adjust_start_time: 1,
+                        count: 100,
+                        end: 'latest',
+                        start: 1,
+                        style: 'candles',
+                        granularity: state.selectedTimeframe
+                    }));
+                }
             };
             
             state.chartWs.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                handleChartData(data);
+                handleChartMessage(data);
+            };
+            
+            state.chartWs.onerror = (error) => {
+                console.error('Chart WebSocket Error:', error);
             };
         }
 
-        function subscribeToChartData() {
-            state.candles = [];
-            state.ticks = [];
-
-            if (state.selectedTimeframe === 0) {
-                state.chartWs.send(JSON.stringify({
-                    ticks: MARKET_SYMBOL,
-                    subscribe: 1
-                }));
-            } else {
-                const now = Math.floor(Date.now() / 1000);
-                const start = now - (state.selectedTimeframe * 1000);
-
-                state.chartWs.send(JSON.stringify({
-                    ticks_history: MARKET_SYMBOL,
-                    adjust_start_time: 1,
-                    count: 1000,
-                    end: 'latest',
-                    start: start,
-                    style: 'candles',
-                    granularity: state.selectedTimeframe
-                }));
-
-                state.chartWs.send(JSON.stringify({
-                    ticks_history: MARKET_SYMBOL,
-                    adjust_start_time: 1,
-                    count: 1,
-                    end: 'latest',
-                    start: 1,
-                    style: 'candles',
-                    granularity: state.selectedTimeframe,
-                    subscribe: 1
-                }));
+        function handleChartMessage(data) {
+            if (data.error) {
+                console.error('Chart API Error:', data.error);
+                return;
             }
-        }
-
-        function handleChartData(data) {
-            if (data.msg_type === 'history' && data.candles) {
-                state.candles = data.candles.map(c => ({
+            
+            const msgType = data.msg_type;
+            
+            if (msgType === 'tick') {
+                const tick = {
+                    time: Math.floor(data.tick.epoch),
+                    value: parseFloat(data.tick.quote)
+                };
+                
+                state.ticks.push(tick);
+                if (state.ticks.length > 100) state.ticks.shift();
+                
+                if (state.chartMode === 'line' && state.selectedTimeframe === 0) {
+                    state.areaSeries.update(tick);
+                }
+                
+                el.currentPrice.textContent = tick.value.toFixed(2);
+            } else if (msgType === 'candles' || msgType === 'history') {
+                const candles = data.candles || [];
+                state.candles = candles.map(c => ({
                     time: c.epoch,
                     open: parseFloat(c.open),
                     high: parseFloat(c.high),
                     low: parseFloat(c.low),
                     close: parseFloat(c.close)
                 }));
+                
                 updateChart();
+                
                 if (state.candles.length > 0) {
-                    const last = state.candles[state.candles.length - 1];
-                    el.currentPrice.textContent = last.close.toFixed(2);
+                    const lastCandle = state.candles[state.candles.length - 1];
+                    el.currentPrice.textContent = lastCandle.close.toFixed(2);
                 }
-            } else if (data.msg_type === 'tick') {
-                const price = parseFloat(data.tick.quote);
-                el.currentPrice.textContent = price.toFixed(2);
                 
-                state.ticks.push({
-                    time: data.tick.epoch,
-                    value: price
-                });
-                
-                if (state.chartMode === 'line' && state.selectedTimeframe === 0) {
-                    state.areaSeries.update({
-                        time: data.tick.epoch,
-                        value: price
-                    });
+                if (msgType === 'candles') {
+                    state.chartWs.send(JSON.stringify({
+                        ticks_history: MARKET_SYMBOL,
+                        adjust_start_time: 1,
+                        count: 100,
+                        end: 'latest',
+                        start: 1,
+                        style: 'candles',
+                        granularity: state.selectedTimeframe,
+                        subscribe: 1
+                    }));
                 }
-            } else if (data.msg_type === 'ohlc') {
+            } else if (msgType === 'ohlc') {
                 const candle = {
-                    time: data.ohlc.epoch,
+                    time: data.ohlc.open_time,
                     open: parseFloat(data.ohlc.open),
                     high: parseFloat(data.ohlc.high),
                     low: parseFloat(data.ohlc.low),
@@ -530,7 +557,7 @@ class _TradingScreenState extends State<TradingScreen> {
                     el.durationUnits.forEach(b => {
                         b.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500';
                     });
-                    btn.className = `px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ${'\\$'}{color} text-white`;
+                    btn.className = `px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit \${color} text-white`;
                     requestProposal();
                 });
             });
@@ -563,11 +590,11 @@ class _TradingScreenState extends State<TradingScreen> {
             el.tradeModal.classList.remove('hidden');
             
             const color = type === 'CALL' ? 'bg-green-500' : 'bg-red-500';
-            el.executeTradeBtn.className = `w-full py-4 rounded-xl font-bold text-white btn-active ${'\\$'}{color}`;
+            el.executeTradeBtn.className = `w-full py-4 rounded-xl font-bold text-white btn-active \${color}`;
             
             el.durationUnits.forEach(btn => {
                 if (btn.dataset.unit === state.durationUnit) {
-                    btn.className = `px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit ${'\\$'}{color} text-white`;
+                    btn.className = `px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit \${color} text-white`;
                 } else {
                     btn.className = 'px-3 py-2 rounded-lg text-sm font-semibold btn-active duration-unit text-gray-500';
                 }
