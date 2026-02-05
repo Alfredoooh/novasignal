@@ -107,7 +107,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:candlesticks/candlesticks.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 void main() {
   runApp(const DerivTradingApp());
@@ -151,6 +151,9 @@ class _TradingScreenState extends State<TradingScreen> {
   WebSocketChannel? _wsChannel;
   WebSocketChannel? _chartWsChannel;
   
+  // WebView
+  InAppWebViewController? _webViewController;
+  
   // State
   double _balance = 232.14;
   String _currency = 'USD';
@@ -162,10 +165,6 @@ class _TradingScreenState extends State<TradingScreen> {
   double _currentPrice = 730017.68;
   String _priceChange = '+0.02%';
   
-  // Chart data
-  List<Candle> _candles = [];
-  List<Map<String, dynamic>> _ticks = [];
-  
   // Controllers
   final TextEditingController _stakeController = TextEditingController(text: '1.00');
   final TextEditingController _durationController = TextEditingController(text: '5');
@@ -174,6 +173,7 @@ class _TradingScreenState extends State<TradingScreen> {
   // UI State
   bool _showTradeModal = false;
   bool _loadingProposal = false;
+  bool _chartReady = false;
   
   // Timeframe buttons
   final List<Map<String, dynamic>> _timeframes = [
@@ -288,60 +288,41 @@ class _TradingScreenState extends State<TradingScreen> {
   }
 
   void _handleChartMessage(Map<String, dynamic> data) {
-    if (data.containsKey('error')) return;
+    if (!_chartReady || _webViewController == null) return;
     
-    final msgType = data['msg_type'];
+    // Send data to WebView chart
+    _webViewController!.evaluateJavascript(source: '''
+      if (window.handleChartData) {
+        window.handleChartData(${jsonEncode(data)});
+      }
+    ''');
     
-    if (msgType == 'candles') {
-      final candles = data['candles'] as List;
-      setState(() {
-        _candles = candles.map((c) {
-          return Candle(
-            date: DateTime.fromMillisecondsSinceEpoch(c['epoch'] * 1000),
-            open: double.parse(c['open'].toString()),
-            high: double.parse(c['high'].toString()),
-            low: double.parse(c['low'].toString()),
-            close: double.parse(c['close'].toString()),
-            volume: 0,
-          );
-        }).toList();
-        
-        if (_candles.isNotEmpty) {
-          _currentPrice = _candles.last.close;
-        }
-      });
-    } else if (msgType == 'tick') {
-      final tick = data['tick'];
-      final price = double.parse(tick['quote'].toString());
-      final epoch = tick['epoch'];
-      
-      setState(() {
-        _currentPrice = price;
-        _ticks.add({
-          'time': epoch,
-          'value': price,
+    // Update current price
+    if (data['msg_type'] == 'tick') {
+      final price = double.tryParse(data['tick']['quote'].toString());
+      if (price != null) {
+        setState(() {
+          _currentPrice = price;
         });
-      });
-    } else if (msgType == 'ohlc') {
-      final ohlc = data['ohlc'];
-      final candle = Candle(
-        date: DateTime.fromMillisecondsSinceEpoch(ohlc['epoch'] * 1000),
-        open: double.parse(ohlc['open'].toString()),
-        high: double.parse(ohlc['high'].toString()),
-        low: double.parse(ohlc['low'].toString()),
-        close: double.parse(ohlc['close'].toString()),
-        volume: 0,
-      );
-      
-      setState(() {
-        if (_candles.isNotEmpty && 
-            _candles.last.date.millisecondsSinceEpoch == candle.date.millisecondsSinceEpoch) {
-          _candles[_candles.length - 1] = candle;
-        } else {
-          _candles.add(candle);
+      }
+    } else if (data['msg_type'] == 'ohlc') {
+      final close = double.tryParse(data['ohlc']['close'].toString());
+      if (close != null) {
+        setState(() {
+          _currentPrice = close;
+        });
+      }
+    } else if (data['msg_type'] == 'candles') {
+      final candles = data['candles'] as List?;
+      if (candles != null && candles.isNotEmpty) {
+        final lastCandle = candles.last;
+        final close = double.tryParse(lastCandle['close'].toString());
+        if (close != null) {
+          setState(() {
+            _currentPrice = close;
+          });
         }
-        _currentPrice = candle.close;
-      });
+      }
     }
   }
 
@@ -453,6 +434,179 @@ class _TradingScreenState extends State<TradingScreen> {
     _requestProposal();
   }
 
+  void _updateChartMode(String mode) {
+    setState(() {
+      _chartMode = mode;
+    });
+    
+    _webViewController?.evaluateJavascript(source: '''
+      if (window.updateChartMode) {
+        window.updateChartMode('$mode');
+      }
+    ''');
+  }
+
+  void _updateTimeframe(int timeframe) {
+    setState(() {
+      _selectedTimeframe = timeframe;
+    });
+    _connectChartWebSocket();
+  }
+
+  String _getChartHtml() {
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            background: white;
+        }
+        #chart-container {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="chart-container"></div>
+    <script>
+        const chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            layout: {
+                background: { color: '#ffffff' },
+                textColor: '#6B7280'
+            },
+            grid: {
+                vertLines: { visible: false },
+                horzLines: { color: '#E5E7EB' }
+            },
+            rightPriceScale: {
+                visible: true,
+                borderVisible: false
+            },
+            timeScale: {
+                rightOffset: 12,
+                barSpacing: 12,
+                visible: true,
+                borderVisible: false
+            }
+        });
+        
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#10b981',
+            downColor: '#ef4444',
+            wickUpColor: '#10b981',
+            wickDownColor: '#ef4444',
+            borderVisible: false
+        });
+        
+        const areaSeries = chart.addAreaSeries({
+            topColor: 'rgba(16, 185, 129, 0.4)',
+            bottomColor: 'rgba(16, 185, 129, 0)',
+            lineColor: '#10b981',
+            lineWidth: 2
+        });
+        
+        let chartMode = 'candles';
+        let candles = [];
+        let ticks = [];
+        
+        areaSeries.setData([]);
+        
+        window.handleChartData = function(data) {
+            const msgType = data.msg_type;
+            
+            if (msgType === 'candles') {
+                candles = data.candles.map(c => ({
+                    time: c.epoch,
+                    open: parseFloat(c.open),
+                    high: parseFloat(c.high),
+                    low: parseFloat(c.low),
+                    close: parseFloat(c.close)
+                }));
+                
+                if (chartMode === 'candles') {
+                    candleSeries.setData(candles);
+                } else {
+                    const lineData = candles.map(c => ({ time: c.time, value: c.close }));
+                    areaSeries.setData(lineData);
+                }
+                
+                chart.timeScale().fitContent();
+            } else if (msgType === 'tick') {
+                const price = parseFloat(data.tick.quote);
+                const epoch = data.tick.epoch;
+                
+                ticks.push({ time: epoch, value: price });
+                
+                if (chartMode === 'line') {
+                    areaSeries.update({ time: epoch, value: price });
+                }
+            } else if (msgType === 'ohlc') {
+                const candle = {
+                    time: data.ohlc.epoch,
+                    open: parseFloat(data.ohlc.open),
+                    high: parseFloat(data.ohlc.high),
+                    low: parseFloat(data.ohlc.low),
+                    close: parseFloat(data.ohlc.close)
+                };
+                
+                const lastIndex = candles.length - 1;
+                if (lastIndex >= 0 && candles[lastIndex].time === candle.time) {
+                    candles[lastIndex] = candle;
+                } else {
+                    candles.push(candle);
+                }
+                
+                if (chartMode === 'candles') {
+                    candleSeries.update(candle);
+                }
+            }
+        };
+        
+        window.updateChartMode = function(mode) {
+            chartMode = mode;
+            
+            if (mode === 'candles') {
+                areaSeries.setData([]);
+                if (candles.length > 0) {
+                    candleSeries.setData(candles);
+                }
+            } else {
+                candleSeries.setData([]);
+                if (candles.length > 0) {
+                    const lineData = candles.map(c => ({ time: c.time, value: c.close }));
+                    areaSeries.setData(lineData);
+                } else if (ticks.length > 0) {
+                    areaSeries.setData(ticks);
+                }
+            }
+            
+            chart.timeScale().fitContent();
+        };
+        
+        window.addEventListener('resize', () => {
+            chart.applyOptions({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+        });
+    </script>
+</body>
+</html>
+    ''';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -551,22 +705,14 @@ class _TradingScreenState extends State<TradingScreen> {
                                 child: _ChartModeButton(
                                   label: 'Candles',
                                   isSelected: _chartMode == 'candles',
-                                  onTap: () {
-                                    setState(() {
-                                      _chartMode = 'candles';
-                                    });
-                                  },
+                                  onTap: () => _updateChartMode('candles'),
                                 ),
                               ),
                               Expanded(
                                 child: _ChartModeButton(
                                   label: 'Line',
                                   isSelected: _chartMode == 'line',
-                                  onTap: () {
-                                    setState(() {
-                                      _chartMode = 'line';
-                                    });
-                                  },
+                                  onTap: () => _updateChartMode('line'),
                                 ),
                               ),
                             ],
@@ -588,14 +734,7 @@ class _TradingScreenState extends State<TradingScreen> {
                             return _TimeframeButton(
                               label: tf['label'],
                               isSelected: isSelected,
-                              onTap: () {
-                                setState(() {
-                                  _selectedTimeframe = tf['value'];
-                                  _candles.clear();
-                                  _ticks.clear();
-                                });
-                                _connectChartWebSocket();
-                              },
+                              onTap: () => _updateTimeframe(tf['value']),
                             );
                           },
                         ),
@@ -603,7 +742,7 @@ class _TradingScreenState extends State<TradingScreen> {
                       
                       const SizedBox(height: 12),
                       
-                      // Chart Container
+                      // Chart Container with WebView
                       Container(
                         height: 520,
                         margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -612,13 +751,28 @@ class _TradingScreenState extends State<TradingScreen> {
                           border: Border.all(color: const Color(0xFFE5E7EB)),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: _candles.isEmpty
-                            ? const Center(
-                                child: CircularProgressIndicator(),
-                              )
-                            : Candlesticks(
-                                candles: _candles,
-                              ),
+                        clipBehavior: Clip.hardEdge,
+                        child: InAppWebView(
+                          initialData: InAppWebViewInitialData(
+                            data: _getChartHtml(),
+                          ),
+                          initialSettings: InAppWebViewSettings(
+                            transparentBackground: true,
+                            disableHorizontalScroll: true,
+                            disableVerticalScroll: true,
+                            supportZoom: false,
+                            javaScriptEnabled: true,
+                          ),
+                          onWebViewCreated: (controller) {
+                            _webViewController = controller;
+                          },
+                          onLoadStop: (controller, url) {
+                            setState(() {
+                              _chartReady = true;
+                            });
+                            _authorize();
+                          },
+                        ),
                       ),
                       
                       // Price Display
