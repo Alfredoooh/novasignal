@@ -39,78 +39,55 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ElephantBet Zone'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              webViewController?.reload();
-            },
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: InAppWebView(
+          key: webViewKey,
+          initialUrlRequest: URLRequest(url: WebUri(url)),
+          initialSettings: InAppWebViewSettings(
+            javaScriptEnabled: true,
+            javaScriptCanOpenWindowsAutomatically: true,
+            useOnDownloadStart: true,
+            useShouldOverrideUrlLoading: true,
+            mediaPlaybackRequiresUserGesture: false,
+            allowFileAccessFromFileURLs: true,
+            allowUniversalAccessFromFileURLs: true,
+            cacheEnabled: true,
+            domStorageEnabled: true,
+            databaseEnabled: true,
+            useHybridComposition: true,
+            allowContentAccess: true,
+            allowFileAccess: true,
+            supportMultipleWindows: true,
+            allowsInlineMediaPlayback: true,
+            allowsBackForwardNavigationGestures: true,
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          progress < 1.0
-              ? LinearProgressIndicator(value: progress)
-              : const SizedBox.shrink(),
-          Expanded(
-            child: InAppWebView(
-              key: webViewKey,
-              initialUrlRequest: URLRequest(url: WebUri(url)),
-              initialSettings: InAppWebViewSettings(
-                javaScriptEnabled: true,
-                javaScriptCanOpenWindowsAutomatically: true,
-                useOnDownloadStart: true,
-                useShouldOverrideUrlLoading: true,
-                mediaPlaybackRequiresUserGesture: false,
-                allowFileAccessFromFileURLs: true,
-                allowUniversalAccessFromFileURLs: true,
-                cacheEnabled: true,
-                domStorageEnabled: true,
-                databaseEnabled: true,
-                useHybridComposition: true,
-                allowContentAccess: true,
-                allowFileAccess: true,
-                supportMultipleWindows: true,
-                allowsInlineMediaPlayback: true,
-                allowsBackForwardNavigationGestures: true,
-              ),
-              onWebViewCreated: (controller) {
-                webViewController = controller;
-              },
-              onLoadStart: (controller, url) {
-                setState(() {
-                  this.url = url.toString();
-                });
-              },
-              onLoadStop: (controller, url) async {
-                setState(() {
-                  this.url = url.toString();
-                });
-              },
-              onProgressChanged: (controller, progress) {
-                setState(() {
-                  this.progress = progress / 100;
-                });
-              },
-              onUpdateVisitedHistory: (controller, url, androidIsReload) {
-                setState(() {
-                  this.url = url.toString();
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.arrow_back),
-        onPressed: () async {
-          if (await webViewController?.canGoBack() ?? false) {
-            webViewController?.goBack();
-          }
-        },
+          onWebViewCreated: (controller) {
+            webViewController = controller;
+          },
+          onLoadStart: (controller, url) {
+            setState(() {
+              this.url = url.toString();
+            });
+          },
+          onLoadStop: (controller, url) async {
+            setState(() {
+              this.url = url.toString();
+            });
+          },
+          onProgressChanged: (controller, progress) {
+            setState(() {
+              this.progress = progress / 100;
+            });
+          },
+          onUpdateVisitedHistory: (controller, url, androidIsReload) {
+            setState(() {
+              this.url = url.toString();
+            });
+          },
+        ),
       ),
     );
   }
