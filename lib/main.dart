@@ -58,30 +58,24 @@ class _WebViewPageState extends State<WebViewPage> {
           Expanded(
             child: InAppWebView(
               key: webViewKey,
-              initialUrlRequest: URLRequest(url: Uri.parse(url)),
-              initialOptions: InAppWebViewGroupOptions(
-                crossPlatform: InAppWebViewOptions(
-                  javaScriptEnabled: true,
-                  javaScriptCanOpenWindowsAutomatically: true,
-                  useOnDownloadStart: true,
-                  useShouldOverrideUrlLoading: true,
-                  mediaPlaybackRequiresUserGesture: false,
-                  allowFileAccessFromFileURLs: true,
-                  allowUniversalAccessFromFileURLs: true,
-                  cacheEnabled: true,
-                ),
-                android: AndroidInAppWebViewOptions(
-                  useHybridComposition: true,
-                  allowContentAccess: true,
-                  allowFileAccess: true,
-                  supportMultipleWindows: true,
-                  domStorageEnabled: true,
-                  databaseEnabled: true,
-                ),
-                ios: IOSInAppWebViewOptions(
-                  allowsInlineMediaPlayback: true,
-                  allowsBackForwardNavigationGestures: true,
-                ),
+              initialUrlRequest: URLRequest(url: WebUri(url)),
+              initialSettings: InAppWebViewSettings(
+                javaScriptEnabled: true,
+                javaScriptCanOpenWindowsAutomatically: true,
+                useOnDownloadStart: true,
+                useShouldOverrideUrlLoading: true,
+                mediaPlaybackRequiresUserGesture: false,
+                allowFileAccessFromFileURLs: true,
+                allowUniversalAccessFromFileURLs: true,
+                cacheEnabled: true,
+                domStorageEnabled: true,
+                databaseEnabled: true,
+                useHybridComposition: true,
+                allowContentAccess: true,
+                allowFileAccess: true,
+                supportMultipleWindows: true,
+                allowsInlineMediaPlayback: true,
+                allowsBackForwardNavigationGestures: true,
               ),
               onWebViewCreated: (controller) {
                 webViewController = controller;
