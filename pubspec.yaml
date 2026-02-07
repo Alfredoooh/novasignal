@@ -16,6 +16,7 @@ dependencies:
   feather_icons: any
   bootstrap_icons: any
   flutter_inappwebview: any
+  flutter_svg: any
   # WebView para gráficos LightweightCharts
 
 dev_dependencies:
