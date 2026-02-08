@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ),
+  );
+  
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  
   runApp(const MyApp());
 }
 
@@ -38,55 +50,67 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: InAppWebView(
-          key: webViewKey,
-          initialUrlRequest: URLRequest(url: WebUri(url)),
-          initialSettings: InAppWebViewSettings(
-            javaScriptEnabled: true,
-            javaScriptCanOpenWindowsAutomatically: true,
-            useOnDownloadStart: true,
-            useShouldOverrideUrlLoading: true,
-            mediaPlaybackRequiresUserGesture: false,
-            allowFileAccessFromFileURLs: true,
-            allowUniversalAccessFromFileURLs: true,
-            cacheEnabled: true,
-            domStorageEnabled: true,
-            databaseEnabled: true,
-            useHybridComposition: true,
-            allowContentAccess: true,
-            allowFileAccess: true,
-            supportMultipleWindows: true,
-            allowsInlineMediaPlayback: true,
-            allowsBackForwardNavigationGestures: true,
+    return WillPopScope(
+      onWillPop: () async {
+        if (await webViewController?.canGoBack() ?? false) {
+          webViewController?.goBack();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+            child: InAppWebView(
+              key: webViewKey,
+              initialUrlRequest: URLRequest(url: WebUri(url)),
+              initialSettings: InAppWebViewSettings(
+                javaScriptEnabled: true,
+                javaScriptCanOpenWindowsAutomatically: true,
+                useOnDownloadStart: true,
+                useShouldOverrideUrlLoading: true,
+                mediaPlaybackRequiresUserGesture: false,
+                allowFileAccessFromFileURLs: true,
+                allowUniversalAccessFromFileURLs: true,
+                cacheEnabled: true,
+                domStorageEnabled: true,
+                databaseEnabled: true,
+                useHybridComposition: true,
+                allowContentAccess: true,
+                allowFileAccess: true,
+                supportMultipleWindows: true,
+                allowsInlineMediaPlayback: true,
+                allowsBackForwardNavigationGestures: true,
+              ),
+              onWebViewCreated: (controller) {
+                webViewController = controller;
+              },
+              onLoadStart: (controller, url) {
+                setState(() {
+                  this.url = url.toString();
+                });
+              },
+              onLoadStop: (controller, url) async {
+                setState(() {
+                  this.url = url.toString();
+                });
+              },
+              onProgressChanged: (controller, progress) {
+                setState(() {
+                  this.progress = progress / 100;
+                });
+              },
+              onUpdateVisitedHistory: (controller, url, androidIsReload) {
+                setState(() {
+                  this.url = url.toString();
+                });
+              },
+            ),
           ),
-          onWebViewCreated: (controller) {
-            webViewController = controller;
-          },
-          onLoadStart: (controller, url) {
-            setState(() {
-              this.url = url.toString();
-            });
-          },
-          onLoadStop: (controller, url) async {
-            setState(() {
-              this.url = url.toString();
-            });
-          },
-          onProgressChanged: (controller, progress) {
-            setState(() {
-              this.progress = progress / 100;
-            });
-          },
-          onUpdateVisitedHistory: (controller, url, androidIsReload) {
-            setState(() {
-              this.url = url.toString();
-            });
-          },
         ),
       ),
     );
