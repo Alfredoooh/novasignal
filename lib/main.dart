@@ -91,57 +91,66 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         return true;
       },
       child: Scaffold(
-        body: SafeArea(
-          top: false,
-          bottom: false,
-          child: InAppWebView(
-            key: webViewKey,
-            initialUrlRequest: URLRequest(url: WebUri(url)),
-            initialSettings: InAppWebViewSettings(
-              javaScriptEnabled: true,
-              javaScriptCanOpenWindowsAutomatically: true,
-              useOnDownloadStart: true,
-              useShouldOverrideUrlLoading: true,
-              mediaPlaybackRequiresUserGesture: false,
-              allowFileAccessFromFileURLs: true,
-              allowUniversalAccessFromFileURLs: true,
-              cacheEnabled: true,
-              domStorageEnabled: true,
-              databaseEnabled: true,
-              useHybridComposition: true,
-              allowContentAccess: true,
-              allowFileAccess: true,
-              supportMultipleWindows: true,
-              allowsInlineMediaPlayback: true,
-              allowsBackForwardNavigationGestures: true,
-              supportZoom: false,
-              builtInZoomControls: false,
-              displayZoomControls: false,
+        body: Column(
+          children: [
+            Container(
+              height: MediaQuery.of(context).padding.top,
+              color: Colors.transparent,
             ),
-            onWebViewCreated: (controller) {
-              webViewController = controller;
-            },
-            onLoadStart: (controller, url) {
-              setState(() {
-                this.url = url.toString();
-              });
-            },
-            onLoadStop: (controller, url) async {
-              setState(() {
-                this.url = url.toString();
-              });
-            },
-            onProgressChanged: (controller, progress) {
-              setState(() {
-                this.progress = progress / 100;
-              });
-            },
-            onUpdateVisitedHistory: (controller, url, androidIsReload) {
-              setState(() {
-                this.url = url.toString();
-              });
-            },
-          ),
+            Expanded(
+              child: SafeArea(
+                top: false,
+                child: InAppWebView(
+                  key: webViewKey,
+                  initialUrlRequest: URLRequest(url: WebUri(url)),
+                  initialSettings: InAppWebViewSettings(
+                    javaScriptEnabled: true,
+                    javaScriptCanOpenWindowsAutomatically: true,
+                    useOnDownloadStart: true,
+                    useShouldOverrideUrlLoading: true,
+                    mediaPlaybackRequiresUserGesture: false,
+                    allowFileAccessFromFileURLs: true,
+                    allowUniversalAccessFromFileURLs: true,
+                    cacheEnabled: true,
+                    domStorageEnabled: true,
+                    databaseEnabled: true,
+                    useHybridComposition: true,
+                    allowContentAccess: true,
+                    allowFileAccess: true,
+                    supportMultipleWindows: true,
+                    allowsInlineMediaPlayback: true,
+                    allowsBackForwardNavigationGestures: true,
+                    supportZoom: false,
+                    builtInZoomControls: false,
+                    displayZoomControls: false,
+                  ),
+                  onWebViewCreated: (controller) {
+                    webViewController = controller;
+                  },
+                  onLoadStart: (controller, url) {
+                    setState(() {
+                      this.url = url.toString();
+                    });
+                  },
+                  onLoadStop: (controller, url) async {
+                    setState(() {
+                      this.url = url.toString();
+                    });
+                  },
+                  onProgressChanged: (controller, progress) {
+                    setState(() {
+                      this.progress = progress / 100;
+                    });
+                  },
+                  onUpdateVisitedHistory: (controller, url, androidIsReload) {
+                    setState(() {
+                      this.url = url.toString();
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
