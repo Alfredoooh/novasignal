@@ -7,11 +7,8 @@ void main() {
   
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.black,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.black,
-      systemNavigationBarIconBrightness: Brightness.light,
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
     ),
   );
   
@@ -44,11 +41,44 @@ class WebViewPage extends StatefulWidget {
   State<WebViewPage> createState() => _WebViewPageState();
 }
 
-class _WebViewPageState extends State<WebViewPage> {
+class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   final GlobalKey webViewKey = GlobalKey();
   InAppWebViewController? webViewController;
   double progress = 0;
   String url = "https://testing-ddy8.onrender.com/";
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _updateSystemUI();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    _updateSystemUI();
+  }
+
+  void _updateSystemUI() {
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final isDark = brightness == Brightness.dark;
+    
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +91,9 @@ class _WebViewPageState extends State<WebViewPage> {
         return true;
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
         body: SafeArea(
+          top: false,
+          bottom: false,
           child: InAppWebView(
             key: webViewKey,
             initialUrlRequest: URLRequest(url: WebUri(url)),
