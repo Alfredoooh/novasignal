@@ -15,10 +15,7 @@ void main() {
     ),
   );
   
-  SystemChrome.setEnabledSystemUIMode(
-    SystemUiMode.edgeToEdge,
-    overlays: [],
-  );
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   
   runApp(const MyApp());
 }
@@ -31,7 +28,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Testing App',
       theme: ThemeData(
-        scaffoldBackgroundColor: Colors.black,
+        primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
@@ -54,20 +51,6 @@ class _WebViewPageState extends State<WebViewPage> {
   String url = "https://testing-ddy8.onrender.com/";
 
   @override
-  void initState() {
-    super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.black,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.black,
-        systemNavigationBarIconBrightness: Brightness.light,
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
@@ -79,8 +62,7 @@ class _WebViewPageState extends State<WebViewPage> {
       },
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: ScrollConfiguration(
-          behavior: const ScrollBehavior().copyWith(overscroll: false),
+        body: SafeArea(
           child: InAppWebView(
             key: webViewKey,
             initialUrlRequest: URLRequest(url: WebUri(url)),
@@ -104,8 +86,6 @@ class _WebViewPageState extends State<WebViewPage> {
               supportZoom: false,
               builtInZoomControls: false,
               displayZoomControls: false,
-              disableVerticalScroll: false,
-              disableHorizontalScroll: false,
             ),
             onWebViewCreated: (controller) {
               webViewController = controller;
