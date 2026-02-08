@@ -7,13 +7,18 @@ void main() {
   
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Color(0xFF121212),
+      statusBarColor: Colors.black,
       statusBarIconBrightness: Brightness.light,
       statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.black,
+      systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
   
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+    overlays: [],
+  );
   
   runApp(const MyApp());
 }
@@ -26,7 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Testing App',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.black,
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
@@ -53,9 +58,11 @@ class _WebViewPageState extends State<WebViewPage> {
     super.initState();
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF121212),
+        statusBarColor: Colors.black,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.black,
+        systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
   }
@@ -71,53 +78,59 @@ class _WebViewPageState extends State<WebViewPage> {
         return true;
       },
       child: Scaffold(
-        body: InAppWebView(
-          key: webViewKey,
-          initialUrlRequest: URLRequest(url: WebUri(url)),
-          initialSettings: InAppWebViewSettings(
-            javaScriptEnabled: true,
-            javaScriptCanOpenWindowsAutomatically: true,
-            useOnDownloadStart: true,
-            useShouldOverrideUrlLoading: true,
-            mediaPlaybackRequiresUserGesture: false,
-            allowFileAccessFromFileURLs: true,
-            allowUniversalAccessFromFileURLs: true,
-            cacheEnabled: true,
-            domStorageEnabled: true,
-            databaseEnabled: true,
-            useHybridComposition: true,
-            allowContentAccess: true,
-            allowFileAccess: true,
-            supportMultipleWindows: true,
-            allowsInlineMediaPlayback: true,
-            allowsBackForwardNavigationGestures: true,
-            supportZoom: false,
-            builtInZoomControls: false,
-            displayZoomControls: false,
+        backgroundColor: Colors.black,
+        body: ScrollConfiguration(
+          behavior: const ScrollBehavior().copyWith(overscroll: false),
+          child: InAppWebView(
+            key: webViewKey,
+            initialUrlRequest: URLRequest(url: WebUri(url)),
+            initialSettings: InAppWebViewSettings(
+              javaScriptEnabled: true,
+              javaScriptCanOpenWindowsAutomatically: true,
+              useOnDownloadStart: true,
+              useShouldOverrideUrlLoading: true,
+              mediaPlaybackRequiresUserGesture: false,
+              allowFileAccessFromFileURLs: true,
+              allowUniversalAccessFromFileURLs: true,
+              cacheEnabled: true,
+              domStorageEnabled: true,
+              databaseEnabled: true,
+              useHybridComposition: true,
+              allowContentAccess: true,
+              allowFileAccess: true,
+              supportMultipleWindows: true,
+              allowsInlineMediaPlayback: true,
+              allowsBackForwardNavigationGestures: true,
+              supportZoom: false,
+              builtInZoomControls: false,
+              displayZoomControls: false,
+              disableVerticalScroll: false,
+              disableHorizontalScroll: false,
+            ),
+            onWebViewCreated: (controller) {
+              webViewController = controller;
+            },
+            onLoadStart: (controller, url) {
+              setState(() {
+                this.url = url.toString();
+              });
+            },
+            onLoadStop: (controller, url) async {
+              setState(() {
+                this.url = url.toString();
+              });
+            },
+            onProgressChanged: (controller, progress) {
+              setState(() {
+                this.progress = progress / 100;
+              });
+            },
+            onUpdateVisitedHistory: (controller, url, androidIsReload) {
+              setState(() {
+                this.url = url.toString();
+              });
+            },
           ),
-          onWebViewCreated: (controller) {
-            webViewController = controller;
-          },
-          onLoadStart: (controller, url) {
-            setState(() {
-              this.url = url.toString();
-            });
-          },
-          onLoadStop: (controller, url) async {
-            setState(() {
-              this.url = url.toString();
-            });
-          },
-          onProgressChanged: (controller, progress) {
-            setState(() {
-              this.progress = progress / 100;
-            });
-          },
-          onUpdateVisitedHistory: (controller, url, androidIsReload) {
-            setState(() {
-              this.url = url.toString();
-            });
-          },
         ),
       ),
     );
