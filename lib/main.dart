@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Color(0xFF18191A),
+    statusBarIconBrightness: Brightness.light,
+  ));
   runApp(const MyApp());
 }
 
@@ -15,226 +18,294 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'ElephantBet',
-      theme: ThemeData(useMaterial3: true),
-      home: const ElephantBetScreen(),
+      title: 'Chamadas',
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF3A3B3C),
+          surface: Color(0xFF242526),
+          background: Color(0xFF18191A),
+          onPrimary: Colors.white,
+          onSurface: Color(0xFFE4E6EB),
+          onBackground: Color(0xFFE4E6EB),
+        ),
+        scaffoldBackgroundColor: const Color(0xFF18191A),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF242526),
+          elevation: 0,
+          centerTitle: false,
+          titleTextStyle: TextStyle(
+            color: Color(0xFFE4E6EB),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        cardTheme: CardTheme(
+          color: const Color(0xFF242526),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        listTileTheme: const ListTileThemeData(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+      ),
+      home: const HomeScreen(),
     );
   }
 }
 
-const String _url = 'https://elephantbetzone.com';
-const String _chromeUA = 'Mozilla/5.0 (Linux; Android 13; itel A665L) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
-const double _normalHeight = 56;
-const double _smallHeight = 44;
-const Color _defaultBg = Colors.white;
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-bool _urlRequiresSmallHeader(String url) {
-  final u = url.split('?').first.toLowerCase();
-  return u.contains('/app/now') || u.contains('/app/typesport/');
-}
-
-bool _isColorLight(Color color) {
-  final lum = 0.2126 * color.red + 0.7152 * color.green + 0.0722 * color.blue;
-  return lum > 180;
-}
-
-Color? _parseHexColor(String? hex) {
-  if (hex == null || hex.isEmpty) return null;
-  try {
-    final h = hex.replaceAll('#', '').trim();
-    if (h.length == 6) return Color(int.parse('FF$h', radix: 16));
-  } catch (_) {}
-  return null;
-}
-
-class ElephantBetScreen extends StatefulWidget {
-  const ElephantBetScreen({super.key});
   @override
-  State<ElephantBetScreen> createState() => _ElephantBetScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _ElephantBetScreenState extends State<ElephantBetScreen> with SingleTickerProviderStateMixin {
-  InAppWebViewController? _webviewController;
-  bool _canGoBack = false;
-  bool _initialLoading = true;
-  Color _appbarColor = _defaultBg;
-  double _headerHeight = _normalHeight;
-  late AnimationController _animController;
-  late Animation<double> _heightAnim;
-
-  final String _injectedBefore = """
-(function(){try{var desired='width=device-width,initial-scale=1,viewport-fit=cover';var m=document.querySelector('meta[name="viewport"]');if(m){var c=m.getAttribute('content')||'';if(c.indexOf('viewport-fit')===-1){m.setAttribute('content',c+(c?',':'')+'viewport-fit=cover');}else{m.setAttribute('content',desired);}}else{var meta=document.createElement('meta');meta.name='viewport';meta.content=desired;document.head.appendChild(meta);}document.documentElement.style.paddingTop='0px';document.body.style.paddingTop='0px';}catch(e){}})();true;
-""";
-
-  final String _injectedAfter = r"""
-(function(){
-  function toHex(n){var h=Number(n).toString(16);return h.length===1?'0'+h:h;}
-  function rgbToHex(rgb){if(!rgb)return null;try{rgb=rgb.replace(/\s+/g,'');if(rgb.indexOf('#')===0)return rgb;if(rgb.indexOf('rgb')===-1)return null;var nums=rgb.match(/\d+/g);if(!nums||nums.length<3)return null;return '#'+toHex(nums[0])+toHex(nums[1])+toHex(nums[2]);}catch(e){return null;}}
-  try{
-    function gatherMeta(){
-      var theme=null;
-      try{var m=document.querySelector('meta[name="theme-color"]');if(m)theme=m.getAttribute('content');}catch(e){}
-      var selectors=['header','nav','#header','.site-header','.main-header','.topbar','.navbar'];
-      var headerBg=null;
-      for(var i=0;i<selectors.length;i++){try{var el=document.querySelector(selectors[i]);if(el){var st=window.getComputedStyle(el);var bg=st.backgroundColor||st.background;if(bg&&bg!=='transparent'&&bg!=='rgba(0,0,0,0)'&&bg.indexOf('rgb')!==-1){headerBg=bg;break;}}}catch(e){}}
-      if(theme&&theme.indexOf('rgb')!==-1)theme=rgbToHex(theme);
-      if(headerBg&&headerBg.indexOf('rgb')!==-1)headerBg=rgbToHex(headerBg);
-      var primary=theme||headerBg||null;
-      var headerHeight=0;
-      try{var el2=document.querySelector('header,nav,.site-header,.main-header,.topbar');if(el2)headerHeight=Math.round(el2.getBoundingClientRect().height||0);}catch(e){}
-      window.flutter_inappwebview.callHandler('onSiteMeta',JSON.stringify({type:'siteMeta',primaryColor:primary,headerHeight:headerHeight,url:location.href}));
-    }
-    gatherMeta();
-    var runs=0;var iv=setInterval(function(){gatherMeta();runs++;if(runs>12)clearInterval(iv);},200);
-  }catch(e){}
-})();true;
-""";
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
-    _heightAnim = Tween<double>(begin: _normalHeight, end: _normalHeight)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOut));
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() => _currentIndex = _tabController.index);
+    });
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _tabController.dispose();
     super.dispose();
-  }
-
-  void _animateHeader(bool toSmall) {
-    final target = toSmall ? _smallHeight : _normalHeight;
-    if (_headerHeight == target) return;
-    setState(() => _headerHeight = target);
-    _heightAnim = Tween<double>(begin: _heightAnim.value, end: target)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeInOut));
-    _animController.forward(from: 0);
-  }
-
-  void _handleSiteMeta(String json) {
-    try {
-      final colorMatch = RegExp(r'"primaryColor"\s*:\s*"([^"]+)"').firstMatch(json);
-      final heightMatch = RegExp(r'"headerHeight"\s*:\s*(\d+)').firstMatch(json);
-      final urlMatch = RegExp(r'"url"\s*:\s*"([^"]+)"').firstMatch(json);
-      if (colorMatch != null) {
-        final color = _parseHexColor(colorMatch.group(1));
-        if (color != null && mounted) {
-          setState(() => _appbarColor = color);
-          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-            statusBarColor: color,
-            statusBarIconBrightness: _isColorLight(color) ? Brightness.dark : Brightness.light,
-          ));
-        }
-      }
-      if (urlMatch != null) {
-        _animateHeader(_urlRequiresSmallHeader(urlMatch.group(1) ?? ''));
-      } else if (heightMatch != null) {
-        final h = int.tryParse(heightMatch.group(1) ?? '0') ?? 0;
-        if (h > 60) _animateHeader(true);
-      }
-    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = _isColorLight(_appbarColor) ? Colors.black : Colors.white;
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: _appbarColor,
-        statusBarIconBrightness: _isColorLight(_appbarColor) ? Brightness.dark : Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: _appbarColor,
-        body: SafeArea(
-          child: Column(
-            children: [
-              AnimatedBuilder(
-                animation: _heightAnim,
-                builder: (context, _) => Container(
-                  height: _heightAnim.value,
-                  color: _appbarColor,
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 56,
-                        child: IconButton(
-                          icon: Icon(Icons.chevron_left, color: iconColor),
-                          onPressed: () async {
-                            if (_canGoBack) await _webviewController?.goBack();
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'elephantbetzone.com',
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: iconColor, fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 56,
-                        child: IconButton(
-                          icon: Icon(Icons.refresh, color: iconColor),
-                          onPressed: () => _webviewController?.reload(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Chamadas'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF3A3B3C),
+                borderRadius: BorderRadius.circular(24),
               ),
-              Expanded(
-                child: Stack(
-                  children: [
-                    InAppWebView(
-                      initialUrlRequest: URLRequest(url: WebUri(_url)),
-                      initialSettings: InAppWebViewSettings(
-                        userAgent: _chromeUA,
-                        javaScriptEnabled: true,
-                        domStorageEnabled: true,
-                        mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
-                        useShouldOverrideUrlLoading: true,
-                        mediaPlaybackRequiresUserGesture: false,
-                        allowsInlineMediaPlayback: true,
-                        transparentBackground: false,
-                      ),
-                      onWebViewCreated: (controller) {
-                        _webviewController = controller;
-                        controller.addJavaScriptHandler(
-                          handlerName: 'onSiteMeta',
-                          callback: (args) { if (args.isNotEmpty) _handleSiteMeta(args.first.toString()); },
-                        );
-                      },
-                      onLoadStart: (controller, url) {
-                        controller.evaluateJavascript(source: _injectedBefore);
-                        if (url != null) _animateHeader(_urlRequiresSmallHeader(url.toString()));
-                      },
-                      onLoadStop: (controller, url) async {
-                        if (mounted) setState(() => _initialLoading = false);
-                        await controller.evaluateJavascript(source: _injectedAfter);
-                        final canGoBack = await controller.canGoBack();
-                        if (mounted) setState(() => _canGoBack = canGoBack);
-                      },
-                      onReceivedError: (controller, request, error) {
-                        if (mounted) setState(() => _initialLoading = false);
-                      },
-                      onUpdateVisitedHistory: (controller, url, isReload) async {
-                        final canGoBack = await controller.canGoBack();
-                        if (mounted) setState(() => _canGoBack = canGoBack);
-                        if (url != null) _animateHeader(_urlRequiresSmallHeader(url.toString()));
-                      },
-                    ),
-                    if (_initialLoading) const Center(child: CircularProgressIndicator()),
-                  ],
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  color: const Color(0xFF4E4F50),
+                  borderRadius: BorderRadius.circular(24),
                 ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: const Color(0xFFE4E6EB),
+                unselectedLabelColor: const Color(0xFFB0B3B8),
+                labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                tabs: const [
+                  Tab(text: 'Recentes'),
+                  Tab(text: 'Contactos'),
+                  Tab(text: 'Grupos'),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          RecentCallsTab(),
+          ContactsTab(),
+          GroupsTab(),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: const Color(0xFF00A884),
+        child: const Icon(Icons.add_call, color: Colors.white),
+      ),
+    );
+  }
+}
+
+class RecentCallsTab extends StatelessWidget {
+  const RecentCallsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final calls = [
+      {'name': 'João Silva', 'time': 'Hoje, 14:32', 'type': 'incoming', 'answered': true},
+      {'name': 'Maria Costa', 'time': 'Hoje, 12:15', 'type': 'outgoing', 'answered': true},
+      {'name': 'Pedro Santos', 'time': 'Ontem, 22:48', 'type': 'incoming', 'answered': false},
+      {'name': 'Ana Ferreira', 'time': 'Ontem, 18:20', 'type': 'outgoing', 'answered': true},
+      {'name': 'Carlos Oliveira', 'time': '15 Fev, 16:55', 'type': 'incoming', 'answered': true},
+      {'name': 'Sofia Rodrigues', 'time': '14 Fev, 21:10', 'type': 'outgoing', 'answered': false},
+    ];
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: calls.length,
+      itemBuilder: (context, index) {
+        final call = calls[index];
+        final isIncoming = call['type'] == 'incoming';
+        final answered = call['answered'] as bool;
+        
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFF3A3B3C),
+              child: Text(
+                call['name'].toString()[0],
+                style: const TextStyle(color: Color(0xFFE4E6EB), fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            title: Text(
+              call['name'].toString(),
+              style: const TextStyle(color: Color(0xFFE4E6EB), fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Row(
+              children: [
+                Icon(
+                  isIncoming ? Icons.call_received : Icons.call_made,
+                  size: 16,
+                  color: answered ? const Color(0xFF00A884) : const Color(0xFFFA383E),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  call['time'].toString(),
+                  style: const TextStyle(color: Color(0xFFB0B3B8), fontSize: 14),
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.call, color: Color(0xFF00A884)),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: const Icon(Icons.videocam, color: Color(0xFF00A884)),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class ContactsTab extends StatelessWidget {
+  const ContactsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final contacts = [
+      'Ana Ferreira',
+      'Carlos Oliveira',
+      'João Silva',
+      'Maria Costa',
+      'Pedro Santos',
+      'Sofia Rodrigues',
+      'Tiago Almeida',
+      'Beatriz Lima',
+      'Ricardo Sousa',
+      'Catarina Dias',
+    ];
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: contacts.length,
+      itemBuilder: (context, index) {
+        final contact = contacts[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFF3A3B3C),
+              child: Text(
+                contact[0],
+                style: const TextStyle(color: Color(0xFFE4E6EB), fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            title: Text(
+              contact,
+              style: const TextStyle(color: Color(0xFFE4E6EB), fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              'Disponível',
+              style: TextStyle(color: Color(0xFFB0B3B8), fontSize: 14),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.call, color: Color(0xFF00A884)),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: const Icon(Icons.videocam, color: Color(0xFF00A884)),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class GroupsTab extends StatelessWidget {
+  const GroupsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = [
+      {'name': 'Família', 'members': '8 membros'},
+      {'name': 'Trabalho', 'members': '12 membros'},
+      {'name': 'Amigos', 'members': '15 membros'},
+      {'name': 'Futebol', 'members': '22 membros'},
+    ];
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: groups.length,
+      itemBuilder: (context, index) {
+        final group = groups[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: const Color(0xFF3A3B3C),
+              child: const Icon(Icons.group, color: Color(0xFFE4E6EB)),
+            ),
+            title: Text(
+              group['name'].toString(),
+              style: const TextStyle(color: Color(0xFFE4E6EB), fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              group['members'].toString(),
+              style: const TextStyle(color: Color(0xFFB0B3B8), fontSize: 14),
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.videocam, color: Color(0xFF00A884)),
+              onPressed: () {},
+            ),
+          ),
+        );
+      },
     );
   }
 }
