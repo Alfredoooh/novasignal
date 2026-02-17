@@ -18,6 +18,7 @@ dependencies:
   flutter_inappwebview: any
   #flutter_svg: any
   # WebView para gráficos LightweightCharts
+  flutter_svg: any
 
 dev_dependencies:
   flutter_test:
