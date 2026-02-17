@@ -13,6 +13,7 @@ dependencies:
   
   #web_socket_channel: ^2.4.0
   #feather_icons: any
+  animations: any
   #bootstrap_icons: any
   flutter_inappwebview: any
   #flutter_svg: any
