@@ -3,16 +3,35 @@ import 'package:flutter/services.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-const String _homeFilledSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/>
-<path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/>
+// ─────────────────────────────────────────────
+// SVGs INLINE
+// ─────────────────────────────────────────────
+
+// Mensagens — Filled
+const String _mensagensFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m13-.004H5C2.243-.004,0,2.239,0,4.996v12.854c0,.793.435,1.519,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.191-.36l3.963-2.643h5.697c2.757,0,5-2.243,5-5v-7C18,2.239,15.757-.004,13-.004Zm11,9v12.854c0,.793-.435,1.519-1.134,1.894-.318.171-.667.255-1.015.256-.416,0-.831-.121-1.19-.36l-3.964-2.644h-5.697c-1.45,0-2.747-.631-3.661-1.62l.569-.38h5.092c3.859,0,7-3.141,7-7v-7c0-.308-.027-.608-.065-.906,2.311.44,4.065,2.469,4.065,4.906Z"/>
 </svg>
 ''';
 
-const String _homeOutlineSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.001 512.001">
-<path d="M490.134,185.472L338.966,34.304c-45.855-45.737-120.076-45.737-165.931,0L21.867,185.472C7.819,199.445-0.055,218.457,0,238.272v221.397C0.047,488.568,23.475,511.976,52.374,512h407.253c28.899-0.023,52.326-23.432,52.373-52.331V238.272C512.056,218.457,504.182,199.445,490.134,185.472z M448,448H341.334v-67.883c0-44.984-36.467-81.451-81.451-81.451h-7.765c-44.984,0-81.451,36.467-81.451,81.451V448H64V238.272c0.007-2.829,1.125-5.541,3.115-7.552L218.283,79.552c20.825-20.831,54.594-20.835,75.425-0.01c0.003,0.003,0.007,0.007,0.01,0.01L444.886,230.72c1.989,2.011,3.108,4.723,3.115,7.552V448z"/>
+// Mensagens — Outline
+const String _mensagensOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m19,4h-1.101c-.465-2.279-2.485-4-4.899-4H5C2.243,0,0,2.243,0,5v12.854c0,.794.435,1.52,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.19-.36l2.95-1.967c.691,1.935,2.541,3.324,4.711,3.324h5.697l3.964,2.643c.36.24.774.361,1.19.361.348,0,.696-.085,1.015-.256.7-.374,1.134-1.1,1.134-1.894v-12.854c0-2.757-2.243-5-5-5ZM2.23,17.979c-.019.012-.075.048-.152.007-.079-.042-.079-.109-.079-.131V5c0-1.654,1.346-3,3-3h8c1.654,0,3,1.346,3,3v7c0,1.654-1.346,3-3,3h-6c-.327,0-.541.159-.565.175l-4.205,2.804Zm19.77,3.876c0,.021,0,.089-.079.131-.079.041-.133.005-.151-.007l-4.215-2.811c-.164-.109-.357-.168-.555-.168h-6c-1.304,0-2.415-.836-2.828-2h4.828c2.757,0,5-2.243,5-5v-6h1c1.654,0,3,1.346,3,3v12.854Z"/>
+</svg>
+''';
+
+// Feed — Filled
+const String _feedFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m19,24h-4c-2.757,0-5-2.243-5-5V5c0-2.757,2.243-5,5-5h4c2.757,0,5,2.243,5,5v14c0,2.757-2.243,5-5,5Zm-12-3V4c0-.552-.448-1-1-1s-1,.448-1,1v17c0,.552.448,1,1,1s1-.448,1-1Zm-5-3V7c0-.552-.448-1-1-1s-1,.448-1,1v11c0,.552.448,1,1,1s1-.448,1-1Z"/>
+</svg>
+''';
+
+// Feed — Outline
+const String _feedOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m18.5,0h-3c-3.033,0-5.5,2.467-5.5,5.5v13c0,3.033,2.467,5.5,5.5,5.5h3c3.033,0,5.5-2.467,5.5-5.5V5.5c0-3.033-2.467-5.5-5.5-5.5Zm2.5,18.5c0,1.378-1.122,2.5-2.5,2.5h-3c-1.378,0-2.5-1.122-2.5-2.5V5.5c0-1.378,1.122-2.5,2.5-2.5h3c1.378,0,2.5,1.122,2.5,2.5v13ZM8,4.5v15c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V4.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Zm-5,3v9c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V7.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Z"/>
 </svg>
 ''';
 
@@ -25,19 +44,6 @@ const String _agendaFilledSvg = '''
 const String _agendaOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M18,12.5c0,.829-.672,1.5-1.5,1.5H7.5c-.828,0-1.5-.671-1.5-1.5s.672-1.5,1.5-1.5h9c.828,0,1.5,.671,1.5,1.5Zm-6.5,3.5H7.5c-.828,0-1.5,.671-1.5,1.5s.672,1.5,1.5,1.5h4c.828,0,1.5-.671,1.5-1.5s-.672-1.5-1.5-1.5ZM24,7.5v11c0,3.033-2.468,5.5-5.5,5.5H5.5c-3.032,0-5.5-2.467-5.5-5.5V7.5C0,4.467,2.468,2,5.5,2h.5v-.5c0-.829,.672-1.5,1.5-1.5s1.5,.671,1.5,1.5v.5h6v-.5c0-.829,.672-1.5,1.5-1.5s1.5,.671,1.5,1.5v.5h.5c3.032,0,5.5,2.467,5.5,5.5Zm-3,11V9H3v9.5c0,1.378,1.121,2.5,2.5,2.5h13c1.379,0,2.5-1.122,2.5-2.5Z"/>
-</svg>
-''';
-
-const String _notificacoesFilledSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M23.954,5.542,15.536,13.96a5.007,5.007,0,0,1-7.072,0L.046,5.542C.032,5.7,0,5.843,0,6V18a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V6C24,5.843,23.968,5.7,23.954,5.542Z"/>
-<path d="M14.122,12.546l9.134-9.135A4.986,4.986,0,0,0,19,1H5A4.986,4.986,0,0,0,.744,3.411l9.134,9.135A3.007,3.007,0,0,0,14.122,12.546Z"/>
-</svg>
-''';
-
-const String _notificacoesOutlineSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M18.5,1H5.5A5.506,5.506,0,0,0,0,6.5v11A5.506,5.506,0,0,0,5.5,23h13A5.506,5.506,0,0,0,24,17.5V6.5A5.506,5.506,0,0,0,18.5,1Zm0,3a2.476,2.476,0,0,1,1.643.631l-6.5,6.5a2.373,2.373,0,0,1-3.278,0l-6.5-6.5A2.476,2.476,0,0,1,5.5,4Zm0,16H5.5A2.5,2.5,0,0,1,3,17.5V8.017l5.239,5.239a5.317,5.317,0,0,0,7.521,0L21,8.017V17.5A2.5,2.5,0,0,1,18.5,20Z"/>
 </svg>
 ''';
 
@@ -59,6 +65,10 @@ class AppColors {
   static const navBg = Color(0xFFFFFFFF);
   static const navUnselected = Color(0xFF8E8E8E);
   static const navSelected = Color(0xFF000000);
+  // Pill claro: cinza escuro suave
+  static const pillLight = Color(0xFF3A3A3A);
+  static const pillLightIcon = Color(0xFFFFFFFF);
+
   static const darkBackground = Color(0xFF0D0D0D);
   static const darkSurface = Color(0xFF272727);
   static const darkTextPrimary = Color(0xFFFFFFFF);
@@ -68,6 +78,9 @@ class AppColors {
   static const darkNavUnselected = Color(0xFF8E8E8E);
   static const darkNavSelected = Color(0xFFFFFFFF);
   static const darkDrawerBg = Color(0xFF262626);
+  // Pill escuro: branco suave
+  static const pillDark = Color(0xFFE0E0E0);
+  static const pillDarkIcon = Color(0xFF0D0D0D);
 }
 
 // ─────────────────────────────────────────────
@@ -113,35 +126,26 @@ class _MyAppState extends State<MyApp> {
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
     ));
 
-    // Pills: escuro = branco com ícone escuro | claro = preto com ícone claro
-    final pillColor = isDark ? AppColors.darkNavSelected : AppColors.navSelected;
-    final pillIconColor = isDark ? AppColors.darkBackground : AppColors.background;
-    final unselectedIconColor = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
-    final navBg = isDark ? AppColors.darkNavBg : AppColors.navBg;
+    final pillColor = isDark ? AppColors.pillDark : AppColors.pillLight;
+    final pillIconColor = isDark ? AppColors.pillDarkIcon : AppColors.pillLightIcon;
+    final unselectedColor = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
+    final labelSelectedColor = isDark ? AppColors.darkNavSelected : AppColors.navSelected;
 
     final navBarTheme = NavigationBarThemeData(
-      backgroundColor: navBg,
+      backgroundColor: isDark ? AppColors.darkNavBg : AppColors.navBg,
       indicatorColor: pillColor,
       indicatorShape: const StadiumBorder(),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
           return IconThemeData(color: pillIconColor, size: 24);
         }
-        return IconThemeData(color: unselectedIconColor, size: 24);
+        return IconThemeData(color: unselectedColor, size: 24);
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return TextStyle(
-            color: isDark ? AppColors.darkNavSelected : AppColors.navSelected,
-            fontWeight: FontWeight.w700,
-            fontSize: 11,
-          );
+          return TextStyle(color: labelSelectedColor, fontWeight: FontWeight.w700, fontSize: 11);
         }
-        return TextStyle(
-          color: unselectedIconColor,
-          fontWeight: FontWeight.w400,
-          fontSize: 11,
-        );
+        return TextStyle(color: unselectedColor, fontWeight: FontWeight.w400, fontSize: 11);
       }),
       elevation: 0,
       shadowColor: Colors.transparent,
@@ -149,7 +153,6 @@ class _MyAppState extends State<MyApp> {
     );
 
     return MaterialApp(
-      // ValueKey força rebuild completo da árvore ao mudar tema
       key: ValueKey(isDark),
       title: 'NovaSignal',
       debugShowCheckedModeBanner: false,
@@ -228,6 +231,27 @@ Widget _svg(String data, Color color, {double size = 24}) => SvgPicture.string(
     );
 
 // ─────────────────────────────────────────────
+// ÍCONE DRAWER — 2 linhas, a de baixo mais curta
+// ─────────────────────────────────────────────
+class _DrawerIcon extends StatelessWidget {
+  final Color color;
+  const _DrawerIcon({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(width: 22, height: 2, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(height: 5),
+        Container(width: 14, height: 2, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
 // SHELL PRINCIPAL
 // ─────────────────────────────────────────────
 class MainShell extends StatefulWidget {
@@ -240,22 +264,21 @@ class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
-  static const _titles = ['Início', 'Agenda', 'Notificações'];
+  static const _titles = ['Mensagens', 'Agenda', 'Feed'];
 
   @override
   Widget build(BuildContext context) {
     final isDark = themeNotifier.isDark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final navUnselected = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
-    final navSelected = isDark ? AppColors.darkNavSelected : AppColors.navSelected;
-    // ícone dentro do pill tem cor invertida
-    final pillIconColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final pillIconColor = isDark ? AppColors.pillDarkIcon : AppColors.pillLightIcon;
     final navBg = isDark ? AppColors.darkNavBg : AppColors.navBg;
+    final pillColor = isDark ? AppColors.pillDark : AppColors.pillLight;
 
     final pages = [
-      const InicioPAge(),
+      const MensagensPage(),
       const AgendaPage(),
-      const NotificacoesPage(),
+      const FeedPage(),
     ];
 
     return Scaffold(
@@ -269,7 +292,7 @@ class _MainShellState extends State<MainShell> {
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.menu_rounded, color: textPrimary),
+          icon: _DrawerIcon(color: textPrimary),
           onPressed: _openDrawer,
         ),
         title: Text(
@@ -290,17 +313,18 @@ class _MainShellState extends State<MainShell> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        animationDuration: const Duration(milliseconds: 250),
+        // 1.5x mais lento que o padrão (300ms → 450ms)
+        animationDuration: const Duration(milliseconds: 450),
         backgroundColor: navBg,
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: navSelected,
+        indicatorColor: pillColor,
         destinations: [
           NavigationDestination(
-            icon: _svg(_homeOutlineSvg, navUnselected),
-            selectedIcon: _svg(_homeFilledSvg, pillIconColor),
-            label: 'Início',
+            icon: _svg(_mensagensOutlineSvg, navUnselected),
+            selectedIcon: _svg(_mensagensFilledSvg, pillIconColor),
+            label: 'Mensagens',
           ),
           NavigationDestination(
             icon: _svg(_agendaOutlineSvg, navUnselected),
@@ -308,9 +332,9 @@ class _MainShellState extends State<MainShell> {
             label: 'Agenda',
           ),
           NavigationDestination(
-            icon: _svg(_notificacoesOutlineSvg, navUnselected),
-            selectedIcon: _svg(_notificacoesFilledSvg, pillIconColor),
-            label: 'Notificações',
+            icon: _svg(_feedOutlineSvg, navUnselected),
+            selectedIcon: _svg(_feedFilledSvg, pillIconColor),
+            label: 'Feed',
           ),
         ],
       ),
@@ -459,10 +483,10 @@ class _AppDrawerState extends State<_AppDrawer> {
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: INÍCIO
+// PÁGINA: MENSAGENS
 // ─────────────────────────────────────────────
-class InicioPAge extends StatelessWidget {
-  const InicioPAge({super.key});
+class MensagensPage extends StatelessWidget {
+  const MensagensPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
@@ -590,10 +614,10 @@ class _AgendaPageState extends State<AgendaPage> {
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: NOTIFICAÇÕES
+// PÁGINA: FEED
 // ─────────────────────────────────────────────
-class NotificacoesPage extends StatelessWidget {
-  const NotificacoesPage({super.key});
+class FeedPage extends StatelessWidget {
+  const FeedPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
