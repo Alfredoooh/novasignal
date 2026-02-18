@@ -1,49 +1,51 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:animations/animations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-const String _homeFilledSvg = """
-&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"&gt;
-&lt;path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/&gt;
-&lt;path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/&gt;
-&lt;/svg&gt;
-""";
+const String _homeFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044C312.01,275.383,362.22,323.696,362.667,383.841z"/>
+<path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/>
+</svg>
+''';
 
-const String _homeOutlineSvg = """
-&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.001 512.001"&gt;
-&lt;path d="M490.134,185.472L338.966,34.304c-45.855-45.737-120.076-45.737-165.931,0L21.867,185.472C7.819,199.445-0.055,218.457,0,238.272v221.397C0.047,488.568,23.475,511.976,52.374,512h407.253c28.899-0.023,52.326-23.432,52.373-52.331V238.272C512.056,218.457,504.182,199.445,490.134,185.472z M448,448H341.334v-67.883c0-44.984-36.467-81.451-81.451-81.451h-7.765c-44.984,0-81.451,36.467-81.451,81.451V448H64V238.272c0.007-2.829,1.125-5.541,3.115-7.552L218.283,79.552c20.825-20.831,54.594-20.835,75.425-0.01c0.003,0.003,0.007,0.007,0.01,0.01L444.886,230.72c1.989,2.011,3.108,4.723,3.115,7.552V448z"/&gt;
-&lt;/svg&gt;
-""";
+const String _homeOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.001 512.001">
+<path d="M490.134,185.472L338.966,34.304c-45.855-45.737-120.076-45.737-165.931,0L21.867,185.472C7.819,199.445-0.055,218.457,0,238.272v221.397C0.047,488.568,23.475,511.976,52.374,512h407.253c28.899-0.023,52.326-23.432,52.373-52.331V238.272C512.056,218.457,504.182,199.445,490.134,185.472z M448,448H341.334v-67.883c0-44.984-36.467-81.451-81.451-81.451h-7.765c-44.984,0-81.451,36.467-81.451,81.451V448H64V238.272c0.007-2.829,1.125-5.541,3.115-7.552L218.283,79.552c20.825-20.831,54.594-20.835,75.425-0.01c0.003,0.003,0.007,0.007,0.01,0.01L444.886,230.72c1.989,2.011,3.108,4.723,3.115,7.552V448z"/>
+</svg>
+''';
 
-const String _agendaFilledSvg = """
-&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"&gt;
-&lt;path d="M0,8v-1C0,4.243,2.243,2,5,2h1V1c0-.552,.447-1,1-1s1,.448,1,1v1h8V1c0-.552,.447-1,1-1s1,.448,1,1v1h1c2.757,0,5,2.243,5,5v1H0Zm24,2v9c0,2.757-2.243,5-5,5H5c-2.757,0-5-2.243-5-5V10H24Zm-12,9c0-.552-.447-1-1-1H6c-.553,0-1,.448-1,1s.447,1,1,1h5c.553,0,1-.448,1-1Zm7-4c0-.552-.447-1-1-1H6c-.553,0-1,.448-1,1s.447,1,1,1h12c.553,0,1-.448,1-1Z"/&gt;
-&lt;/svg&gt;
-""";
+const String _agendaFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M0,8v-1C0,4.243,2.243,2,5,2h1V1c0-.552,.447-1,1-1s1,.448,1,1v1h8V1c0-.552,.447-1,1-1s1,.448,1,1v1h1c2.757,0,5,2.243,5,5v1H0Zm24,2v9c0,2.757-2.243,5-5,5H5c-2.757,0-5-2.243-5-5V10H24Zm-12,9c0-.552-.447-1-1-1H6c-.553,0-1,.448-1,1s.447,1,1,1h5c.553,0,1-.448,1-1Zm7-4c0-.552-.447-1-1-1H6c-.553,0-1,.448-1,1s.447,1,1,1h12c.553,0,1-.448,1-1Z"/>
+</svg>
+''';
 
-const String _agendaOutlineSvg = """
-&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"&gt;
-&lt;path d="M18,12.5c0,.829-.672,1.5-1.5,1.5H7.5c-.828,0-1.5-.671-1.5-1.5s.672-1.5,1.5-1.5h9c.828,0,1.5,.671,1.5,1.5Zm-6.5,3.5H7.5c-.828,0-1.5,.671-1.5,1.5s.672,1.5,1.5,1.5h4c.828,0,1.5-.671,1.5-1.5s-.672-1.5-1.5-1.5ZM24,7.5v11c0,3.033-2.468,5.5-5.5,5.5H5.5c-3.032,0-5.5-2.467-5.5-5.5V7.5C0,4.467,2.468,2,5.5,2h.5v-.5c0-.829,.672-1.5,1.5-1.5s1.5,.671,1.5,1.5v.5h6v-.5c0-.829,.672-1.5,1.5-1.5s1.5,.671,1.5,1.5v.5h.5c3.032,0,5.5,2.467,5.5,5.5Zm-3,11V9H3v9.5c0,1.378,1.121,2.5,2.5,2.5h13c1.379,0,2.5-1.122,2.5-2.5Z"/&gt;
-&lt;/svg&gt;
-""";
+const String _agendaOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M18,12.5c0,.829-.672,1.5-1.5,1.5H7.5c-.828,0-1.5-.671-1.5-1.5s.672-1.5,1.5-1.5h9c.828,0,1.5,.671,1.5,1.5Zm-6.5,3.5H7.5c-.828,0-1.5,.671-1.5,1.5s.672,1.5,1.5,1.5h4c.828,0,1.5-.671,1.5-1.5s-.672-1.5-1.5-1.5ZM24,7.5v11c0,3.033-2.468,5.5-5.5,5.5H5.5c-3.032,0-5.5-2.467-5.5-5.5V7.5C0,4.467,2.468,2,5.5,2h.5v-.5c0-.829,.672-1.5,1.5-1.5s1.5,.671,1.5,1.5v.5h6v-.5c0-.829,.672-1.5,1.5-1.5s1.5,.671,1.5,1.5v.5h.5c3.032,0,5.5,2.467,5.5,5.5Zm-3,11V9H3v9.5c0,1.378,1.121,2.5,2.5,2.5h13c1.379,0,2.5-1.122,2.5-2.5Z"/>
+</svg>
+''';
 
-const String _notificacoesFilledSvg = """
-&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"&gt;
-&lt;path d="M23.954,5.542,15.536,13.96a5.007,5.007,0,0,1-7.072,0L.046,5.542C.032,5.7,0,5.843,0,6V18a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V6C24,5.843,23.968,5.7,23.954,5.542Z"/&gt;
-&lt;path d="M14.122,12.546l9.134-9.135A4.986,4.986,0,0,0,19,1H5A4.986,4.986,0,0,0,.744,3.411l9.134,9.135A3.007,3.007,0,0,0,14.122,12.546Z"/&gt;
-&lt;/svg&gt;
-""";
+const String _notificacoesFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M23.954,5.542,15.536,13.96a5.007,5.007,0,0,1-7.072,0L.046,5.542C.032,5.7,0,5.843,0,6V18a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V6C24,5.843,23.968,5.7,23.954,5.542Z"/>
+<path d="M14.122,12.546l9.134-9.135A4.986,4.986,0,0,0,19,1H5A4.986,4.986,0,0,0,.744,3.411l9.134,9.135A3.007,3.007,0,0,0,14.122,12.546Z"/>
+</svg>
+''';
 
-const String _notificacoesOutlineSvg = """
-&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"&gt;
-&lt;path d="M18.5,1H5.5A5.506,5.506,0,0,0,0,6.5v11A5.506,5.506,0,0,0,5.5,23h13A5.506,5.506,0,0,0,24,17.5V6.5A5.506,5.506,0,0,0,18.5,1Zm0,3a2.476,2.476,0,0,1,1.643.631l-6.5,6.5a2.373,2.373,0,0,1-3.278,0l-6.5-6.5A2.476,2.476,0,0,1,5.5,4Zm0,16H5.5A2.5,2.5,0,0,1,3,17.5V8.017l5.239,5.239a5.317,5.317,0,0,0,7.521,0L21,8.017V17.5A2.5,2.5,0,0,1,18.5,20Z"/&gt;
-&lt;/svg&gt;
-""";
+const String _notificacoesOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M18.5,1H5.5A5.506,5.506,0,0,0,0,6.5v11A5.506,5.506,0,0,0,5.5,23h13A5.506,5.506,0,0,0,24,17.5V6.5A5.506,5.506,0,0,0,18.5,1Zm0,3a2.476,2.476,0,0,1,1.643.631l-6.5,6.5a2.373,2.373,0,0,1-3.278,0l-6.5-6.5A2.476,2.476,0,0,1,5.5,4Zm0,16H5.5A2.5,2.5,0,0,1,3,17.5V8.017l5.239,5.239a5.317,5.317,0,0,0,7.521,0L21,8.017V17.5A2.5,2.5,0,0,1,18.5,20Z"/>
+</svg>
+''';
 
-const String _agendaVaziaSvg = """
-&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"&gt;
-&lt;path d="m15.561,13.561l-1.439,1.439,1.439,1.439c.586.586.586,1.535,0,2.121-.293.293-.677.439-1.061.439s-.768-.146-1.061-.439l-1.439-1.439-1.439,1.439c-.293.293-.677.439-1.061.439s-.768-.146-1.061-.439c-.586-.586-.586-1.535,0-2.121l1.439-1.439-1.439-1.439c-.586-.586-.586-1.535,0-2.121s1.535-.586,2.121,0l1.439,1.439,1.439-1.439c.586-.586,1.535-.586,2.121,0s.586,1.535,0,2.121Zm8.439-6.061v11c0,3.032-2.467,5.5-5.5,5.5H5.5c-3.033,0-5.5-2.468-5.5-5.5V7.5C0,4.468,2.467,2,5.5,2h.5v-.5c0-.828.671-1.5,1.5-1.5s1.5.672,1.5,1.5v.5h6v-.5c0-.828.671-1.5,1.5-1.5s1.5.672,1.5,1.5v.5h.5c3.033,0,5.5,2.468,5.5,5.5Zm-3,11v-9.5H3v9.5c0,1.379,1.122,2.5,2.5,2.5h13c1.378,0,2.5-1.121,2.5-2.5Z"/&gt;
-&lt;/svg&gt;
-""";
+const String _agendaVaziaSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m15.561,13.561l-1.439,1.439,1.439,1.439c.586.586.586,1.535,0,2.121-.293.293-.677.439-1.061.439s-.768-.146-1.061-.439l-1.439-1.439-1.439,1.439c-.293.293-.677.439-1.061.439s-.768-.146-1.061-.439c-.586-.586-.586-1.535,0-2.121l1.439-1.439-1.439-1.439c-.586-.586-.586-1.535,0-2.121s1.535-.586,2.121,0l1.439,1.439,1.439-1.439c.586-.586,1.535-.586,2.121,0s.586,1.535,0,2.121Zm8.439-6.061v11c0,3.032-2.467,5.5-5.5,5.5H5.5c-3.033,0-5.5-2.468-5.5-5.5V7.5C0,4.468,2.467,2,5.5,2h.5v-.5c0-.828.671-1.5,1.5-1.5s1.5.672,1.5,1.5v.5h6v-.5c0-.828.671-1.5,1.5-1.5s1.5.672,1.5,1.5v.5h.5c3.033,0,5.5,2.468,5.5,5.5Zm-3,11v-9.5H3v9.5c0,1.379,1.122,2.5,2.5,2.5h13c1.378,0,2.5-1.121,2.5-2.5Z"/>
+</svg>
+''';
 
 class AppColors {
   static const background = Color(0xFFFFFFFF);
@@ -83,14 +85,14 @@ void main() {
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
   @override
-  State&lt;MyApp&gt; createState() =&gt; _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State&lt;MyApp&gt; {
+class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    themeNotifier.addListener(() =&gt; setState(() {}));
+    themeNotifier.addListener(() => setState(() {}));
   }
 
   @override
@@ -191,7 +193,7 @@ class _MyAppState extends State&lt;MyApp&gt; {
   }
 }
 
-Widget _svg(String data, Color color, {double size = 24}) =&gt; SvgPicture.string(
+Widget _svg(String data, Color color, {double size = 24}) => SvgPicture.string(
       data,
       width: size,
       height: size,
@@ -201,13 +203,13 @@ Widget _svg(String data, Color color, {double size = 24}) =&gt; SvgPicture.strin
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
   @override
-  State&lt;MainShell&gt; createState() =&gt; _MainShellState();
+  State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State&lt;MainShell&gt; {
+class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
-  final GlobalKey&lt;ScaffoldState&gt; _scaffoldKey = GlobalKey&lt;ScaffoldState&gt;();
-  void _openDrawer() =&gt; _scaffoldKey.currentState?.openDrawer();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
   static const _titles = ['Início', 'Agenda', 'Notificações'];
 
   @override
@@ -237,12 +239,12 @@ class _MainShellState extends State&lt;MainShell&gt; {
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        transitionBuilder: (child, animation) =&gt; FadeTransition(opacity: animation, child: child),
+        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
         child: KeyedSubtree(key: ValueKey(_selectedIndex), child: pages[_selectedIndex]),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) =&gt; setState(() =&gt; _selectedIndex = i),
+        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         animationDuration: const Duration(milliseconds: 200),
         backgroundColor: navBg,
@@ -275,10 +277,10 @@ class _AppDrawer extends StatefulWidget {
   final bool isDark;
   const _AppDrawer({required this.isDark});
   @override
-  State&lt;_AppDrawer&gt; createState() =&gt; _AppDrawerState();
+  State<_AppDrawer> createState() => _AppDrawerState();
 }
 
-class _AppDrawerState extends State&lt;_AppDrawer&gt; {
+class _AppDrawerState extends State<_AppDrawer> {
   @override
   void initState() {
     super.initState();
@@ -291,7 +293,7 @@ class _AppDrawerState extends State&lt;_AppDrawer&gt; {
     super.dispose();
   }
 
-  void _rebuild() =&gt; setState(() {});
+  void _rebuild() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +347,7 @@ class _AppDrawerState extends State&lt;_AppDrawer&gt; {
                 closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 closedElevation: 0,
                 openElevation: 0,
-                closedBuilder: (context, _) =&gt; InkWell(
+                closedBuilder: (context, _) => InkWell(
                   onTap: themeNotifier.toggle,
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
@@ -402,23 +404,23 @@ class _AppDrawerState extends State&lt;_AppDrawer&gt; {
 class InicioPAge extends StatelessWidget {
   const InicioPAge({super.key});
   @override
-  Widget build(BuildContext context) =&gt; const SizedBox.expand();
+  Widget build(BuildContext context) => const SizedBox.expand();
 }
 
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
   @override
-  State&lt;AgendaPage&gt; createState() =&gt; _AgendaPageState();
+  State<AgendaPage> createState() => _AgendaPageState();
 }
 
-class _AgendaPageState extends State&lt;AgendaPage&gt; {
+class _AgendaPageState extends State<AgendaPage> {
   int _selectedDay = DateTime.now().weekday - 1;
-  final List&lt;String&gt; _days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  final List<String> _days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
-  List&lt;DateTime&gt; get _weekDates {
+  List<DateTime> get _weekDates {
     final now = DateTime.now();
     final monday = now.subtract(Duration(days: now.weekday - 1));
-    return List.generate(7, (i) =&gt; monday.add(Duration(days: i)));
+    return List.generate(7, (i) => monday.add(Duration(days: i)));
   }
 
   @override
@@ -443,7 +445,7 @@ class _AgendaPageState extends State&lt;AgendaPage&gt; {
                     final isSelected = i == _selectedDay;
                     final date = dates[i];
                     return GestureDetector(
-                      onTap: () =&gt; setState(() =&gt; _selectedDay = i),
+                      onTap: () => setState(() => _selectedDay = i),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -516,5 +518,5 @@ class _AgendaPageState extends State&lt;AgendaPage&gt; {
 class NotificacoesPage extends StatelessWidget {
   const NotificacoesPage({super.key});
   @override
-  Widget build(BuildContext context) =&gt; const SizedBox.expand();
+  Widget build(BuildContext context) => const SizedBox.expand();
 }
