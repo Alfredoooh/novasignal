@@ -169,29 +169,32 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4F6EF7),
           brightness: Brightness.dark,
+        ).copyWith(
+          surface: const Color(0xFF111318),
+          onSurface: Colors.white,
         ),
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF1A1F36),
+          backgroundColor: const Color(0xFF1C1C1E),
           indicatorColor: const Color(0xFF4F6EF7).withOpacity(0.25),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const IconThemeData(color: Color(0xFF4F6EF7));
             }
-            return const IconThemeData(color: Color(0xFF6B7280));
+            return const IconThemeData(color: Color(0xFF8E8E93));
           }),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const TextStyle(color: Color(0xFF4F6EF7), fontWeight: FontWeight.w600, fontSize: 12);
             }
-            return const TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w500, fontSize: 12);
+            return const TextStyle(color: Color(0xFF8E8E93), fontWeight: FontWeight.w500, fontSize: 12);
           }),
           elevation: 0,
           shadowColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
         ),
-        scaffoldBackgroundColor: const Color(0xFF0F1324),
+        scaffoldBackgroundColor: const Color(0xFF111318),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1A1F36),
+          backgroundColor: Color(0xFF1C1C1E),
           foregroundColor: Colors.white,
           elevation: 0,
           scrolledUnderElevation: 0,
@@ -203,7 +206,7 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         cardTheme: CardThemeData(
-          color: const Color(0xFF1A1F36),
+          color: const Color(0xFF1C1C1E),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
@@ -250,7 +253,7 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     final isDark = themeNotifier.isDark;
     final colorScheme = Theme.of(context).colorScheme;
-    final navBg = isDark ? const Color(0xFF1A1F36) : Colors.white;
+    final navBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
 
     // Páginas sem Scaffold/AppBar próprios — recebem _openDrawer via construtor
     final pages = [
@@ -266,11 +269,7 @@ class _MainShellState extends State<MainShell> {
       // ★ AppBar único no MainShell
       appBar: AppBar(
         leading: IconButton(
-          icon: _svgIcon(
-            _selectedIndex == 0 ? _homeFilledSvg : _homeOutlineSvg,
-            colorScheme.primary,
-            size: 22,
-          ),
+          icon: Icon(Icons.menu_rounded, color: colorScheme.primary),
           onPressed: _openDrawer,
           tooltip: 'Menu',
         ),
@@ -393,8 +392,8 @@ class _AppDrawerState extends State<_AppDrawer> {
   Widget build(BuildContext context) {
     final isDark = themeNotifier.isDark;
     final colorScheme = Theme.of(context).colorScheme;
-    final drawerBg = isDark ? const Color(0xFF1A1F36) : Colors.white;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1F36);
+    final drawerBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
     final textSecondary = isDark ? const Color(0xFF9AA0B2) : const Color(0xFF6B7280);
     final dividerColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06);
 
@@ -532,7 +531,7 @@ class _DrawerItem extends StatelessWidget {
           size: 22),
       title: Text(label,
           style: TextStyle(
-            color: isDark ? Colors.white : const Color(0xFF1A1F36),
+            color: isDark ? Colors.white : const Color(0xFF1C1C1E),
             fontSize: 14,
             fontWeight: FontWeight.w500,
           )),
@@ -551,162 +550,10 @@ class InicioPAge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = themeNotifier.isDark;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1F36);
-    final cardColor = isDark ? const Color(0xFF1A1F36) : Colors.white;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.75)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Bem-vindo! 👋',
-                    style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 4),
-                const Text('O que vamos fazer\nhoje?',
-                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700, height: 1.2)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: colorScheme.primary,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  ),
-                  child: const Text('Explorar', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-          Text('Acesso Rápido',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: textPrimary)),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _QuickCard(icon: Icons.bar_chart_rounded, label: 'Relatórios', color: const Color(0xFFFF6B6B), cardColor: cardColor, textPrimary: textPrimary),
-              const SizedBox(width: 12),
-              _QuickCard(icon: Icons.task_alt_rounded, label: 'Tarefas', color: const Color(0xFF4F6EF7), cardColor: cardColor, textPrimary: textPrimary),
-              const SizedBox(width: 12),
-              _QuickCard(icon: Icons.notifications_outlined, label: 'Alertas', color: const Color(0xFFFFB547), cardColor: cardColor, textPrimary: textPrimary),
-            ],
-          ),
-          const SizedBox(height: 28),
-          Text('Atividade Recente',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: textPrimary)),
-          const SizedBox(height: 14),
-          ...List.generate(4, (i) => _ActivityTile(index: i, cardColor: cardColor, textPrimary: textPrimary)),
-        ],
-      ),
-    );
+    return const SizedBox.expand();
   }
 }
 
-class _QuickCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Color cardColor;
-  final Color textPrimary;
-
-  const _QuickCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.cardColor,
-    required this.textPrimary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.10), blurRadius: 12, offset: const Offset(0, 4))],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(height: 8),
-            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textPrimary)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActivityTile extends StatelessWidget {
-  final int index;
-  final Color cardColor;
-  final Color textPrimary;
-
-  const _ActivityTile({required this.index, required this.cardColor, required this.textPrimary});
-
-  static const _titles = ['Reunião com a equipa', 'Atualização de projeto', 'Novo utilizador registado', 'Relatório semanal enviado'];
-  static const _subtitles = ['Hoje, 14:30', 'Hoje, 11:00', 'Ontem, 09:15', 'Segunda, 08:00'];
-  static const _icons = [Icons.groups_rounded, Icons.update_rounded, Icons.person_add_alt_1_rounded, Icons.description_rounded];
-  static const _colors = [Color(0xFF4F6EF7), Color(0xFFFF6B6B), Color(0xFF34D399), Color(0xFFFFB547)];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: _colors[index].withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-            child: Icon(_icons[index], color: _colors[index], size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_titles[index], style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
-                const SizedBox(height: 2),
-                Text(_subtitles[index], style: const TextStyle(fontSize: 12, color: Color(0xFF9AA0B2))),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: Color(0xFF9AA0B2), size: 20),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// PÁGINA: AGENDA (sem Scaffold nem AppBar)
-// ─────────────────────────────────────────────
 class AgendaPage extends StatefulWidget {
   final VoidCallback onOpenDrawer;
   const AgendaPage({super.key, required this.onOpenDrawer});
@@ -726,7 +573,7 @@ class _AgendaPageState extends State<AgendaPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = themeNotifier.isDark;
-    final headerBg = isDark ? const Color(0xFF1A1F36) : Colors.white;
+    final headerBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
     final hasEvents = _daysWithEvents.contains(_selectedDay);
 
     return Column(
@@ -759,7 +606,7 @@ class _AgendaPageState extends State<AgendaPage> {
                       Text(_dates[i], style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: isSelected ? Colors.white : (isDark ? Colors.white : const Color(0xFF1A1F36)),
+                        color: isSelected ? Colors.white : (isDark ? Colors.white : const Color(0xFF1C1C1E)),
                       )),
                     ],
                   ),
@@ -799,7 +646,7 @@ class _EmptyAgendaState extends StatelessWidget {
   Widget build(BuildContext context) {
     const red = Color(0xFFFF6B6B);
     final isDark = themeNotifier.isDark;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1F36);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
 
     return Center(
       child: Column(
@@ -852,8 +699,8 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = isDark ? const Color(0xFF1A1F36) : Colors.white;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1F36);
+    final cardColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1C1C1E);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -909,83 +756,7 @@ class LancamentosPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Row(children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(30)),
-            child: const Text('✦ Novidades', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-          ),
-        ]),
-        const SizedBox(height: 16),
-        const _LaunchCard(tag: 'Em breve', tagColor: Color(0xFF4F6EF7), title: 'Dashboard 2.0', description: 'Nova interface redesenhada com gráficos interativos e modo escuro completo.', date: 'Previsto: Mar 2025', icon: Icons.dashboard_customize_rounded),
-        const _LaunchCard(tag: 'Novo', tagColor: Color(0xFF34D399), title: 'Relatórios automáticos', description: 'Gere relatórios PDF semanais automaticamente com base nos seus dados.', date: 'Lançado: Jan 2025', icon: Icons.auto_awesome_rounded),
-        const _LaunchCard(tag: 'Atualização', tagColor: Color(0xFFFFB547), title: 'Notificações inteligentes', description: 'Sistema de alertas com IA que aprende as suas preferências ao longo do tempo.', date: 'Lançado: Dez 2024', icon: Icons.notifications_active_rounded),
-        const _LaunchCard(tag: 'Beta', tagColor: Color(0xFFFF6B6B), title: 'Integração com calendário', description: 'Sincronize eventos com Google Calendar e Outlook de forma nativa.', date: 'Beta: Nov 2024', icon: Icons.sync_rounded),
-        const _LaunchCard(tag: 'Lançado', tagColor: Color(0xFF9AA0B2), title: 'App móvel v1.0', description: 'Versão inicial da aplicação móvel com suporte a iOS e Android.', date: 'Lançado: Out 2024', icon: Icons.phone_android_rounded),
-      ],
-    );
-  }
-}
-
-class _LaunchCard extends StatelessWidget {
-  final String tag;
-  final Color tagColor;
-  final String title;
-  final String description;
-  final String date;
-  final IconData icon;
-
-  const _LaunchCard({required this.tag, required this.tagColor, required this.title, required this.description, required this.date, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = themeNotifier.isDark;
-    final cardColor = isDark ? const Color(0xFF1A1F36) : Colors.white;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1F36);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(18)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: tagColor.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
-            child: Icon(icon, color: tagColor, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: tagColor.withOpacity(0.12), borderRadius: BorderRadius.circular(30)),
-                  child: Text(tag, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: tagColor, letterSpacing: 0.3)),
-                ),
-                const SizedBox(height: 8),
-                Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textPrimary)),
-                const SizedBox(height: 4),
-                Text(description, style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.4)),
-                const SizedBox(height: 10),
-                Row(children: [
-                  const Icon(Icons.calendar_month_outlined, size: 12, color: Color(0xFF9AA0B2)),
-                  const SizedBox(width: 4),
-                  Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF9AA0B2), fontWeight: FontWeight.w500)),
-                ]),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.expand();
   }
 }
 
@@ -998,145 +769,6 @@ class ExibicaoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = themeNotifier.isDark;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1F36);
-    final cardColor = isDark ? const Color(0xFF1A1F36) : Colors.white;
-
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Container(
-          width: double.infinity,
-          height: 180,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4F6EF7), Color(0xFF9B59F5)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: 20, top: 20,
-                child: Container(
-                  width: 80, height: 80,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), shape: BoxShape.circle),
-                  child: Center(
-                    child: SvgPicture.string(
-                      _exibicaoFilledSvg,
-                      width: 44, height: 44,
-                      colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                    ),
-                  ),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Exibição', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                    SizedBox(height: 4),
-                    Text('Os teus conteúdos\nem destaque',
-                        style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700, height: 1.2)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 28),
-        Text('Em Destaque', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: textPrimary)),
-        const SizedBox(height: 14),
-        _VideoCard(cardColor: cardColor, textPrimary: textPrimary, title: 'Introdução ao Flutter', subtitle: '12 min · Desenvolvimento', tag: 'Popular', tagColor: const Color(0xFF4F6EF7)),
-        _VideoCard(cardColor: cardColor, textPrimary: textPrimary, title: 'Animações avançadas', subtitle: '28 min · Design', tag: 'Novo', tagColor: const Color(0xFF34D399)),
-        _VideoCard(cardColor: cardColor, textPrimary: textPrimary, title: 'State Management', subtitle: '45 min · Arquitetura', tag: 'Recomendado', tagColor: const Color(0xFFFFB547)),
-        const SizedBox(height: 8),
-        Text('Categorias', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: textPrimary)),
-        const SizedBox(height: 14),
-        Row(children: [
-          _CategoryChip(label: 'Todos', selected: true, colorScheme: colorScheme),
-          const SizedBox(width: 8),
-          _CategoryChip(label: 'Cursos', selected: false, colorScheme: colorScheme),
-          const SizedBox(width: 8),
-          _CategoryChip(label: 'Tutoriais', selected: false, colorScheme: colorScheme),
-          const SizedBox(width: 8),
-          _CategoryChip(label: 'Lives', selected: false, colorScheme: colorScheme),
-        ]),
-      ],
-    );
-  }
-}
-
-class _VideoCard extends StatelessWidget {
-  final Color cardColor;
-  final Color textPrimary;
-  final String title;
-  final String subtitle;
-  final String tag;
-  final Color tagColor;
-
-  const _VideoCard({required this.cardColor, required this.textPrimary, required this.title, required this.subtitle, required this.tag, required this.tagColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        children: [
-          Container(
-            width: 56, height: 56,
-            decoration: BoxDecoration(color: tagColor.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
-            child: Center(child: Icon(Icons.play_circle_filled_rounded, color: tagColor, size: 32)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textPrimary)),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF9AA0B2))),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: tagColor.withOpacity(0.12), borderRadius: BorderRadius.circular(30)),
-            child: Text(tag, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: tagColor)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final ColorScheme colorScheme;
-
-  const _CategoryChip({required this.label, required this.selected, required this.colorScheme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? colorScheme.primary : colorScheme.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Text(label, style: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: selected ? Colors.white : colorScheme.primary,
-      )),
-    );
+    return const SizedBox.expand();
   }
 }
