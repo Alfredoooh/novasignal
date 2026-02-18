@@ -47,6 +47,9 @@ const String _agendaVaziaSvg = '''
 </svg>
 ''';
 
+// ─────────────────────────────────────────────
+// CORES
+// ─────────────────────────────────────────────
 class AppColors {
   static const background = Color(0xFFFFFFFF);
   static const surface = Color(0xFFFFFFFF);
@@ -67,6 +70,9 @@ class AppColors {
   static const darkDrawerBg = Color(0xFF262626);
 }
 
+// ─────────────────────────────────────────────
+// NOTIFIER DE TEMA
+// ─────────────────────────────────────────────
 class ThemeNotifier extends ChangeNotifier {
   bool _isDark = false;
   bool get isDark => _isDark;
@@ -78,6 +84,9 @@ class ThemeNotifier extends ChangeNotifier {
 
 final themeNotifier = ThemeNotifier();
 
+// ─────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────
 void main() {
   runApp(const MyApp());
 }
@@ -98,11 +107,50 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     final isDark = themeNotifier.isDark;
+
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
     ));
+
+    // Pills: escuro = branco com ícone escuro | claro = preto com ícone claro
+    final pillColor = isDark ? AppColors.darkNavSelected : AppColors.navSelected;
+    final pillIconColor = isDark ? AppColors.darkBackground : AppColors.background;
+    final unselectedIconColor = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
+    final navBg = isDark ? AppColors.darkNavBg : AppColors.navBg;
+
+    final navBarTheme = NavigationBarThemeData(
+      backgroundColor: navBg,
+      indicatorColor: pillColor,
+      indicatorShape: const StadiumBorder(),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return IconThemeData(color: pillIconColor, size: 24);
+        }
+        return IconThemeData(color: unselectedIconColor, size: 24);
+      }),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return TextStyle(
+            color: isDark ? AppColors.darkNavSelected : AppColors.navSelected,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+          );
+        }
+        return TextStyle(
+          color: unselectedIconColor,
+          fontWeight: FontWeight.w400,
+          fontSize: 11,
+        );
+      }),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+    );
+
     return MaterialApp(
+      // ValueKey força rebuild completo da árvore ao mudar tema
+      key: ValueKey(isDark),
       title: 'NovaSignal',
       debugShowCheckedModeBanner: false,
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
@@ -124,27 +172,15 @@ class _MyAppState extends State<MyApp> {
           surfaceTintColor: Colors.transparent,
           titleTextStyle: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
         ),
-        navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: AppColors.navBg,
-          indicatorColor: Colors.transparent,
-          indicatorShape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return const IconThemeData(color: AppColors.navSelected, size: 24);
-            return const IconThemeData(color: AppColors.navUnselected, size: 24);
-          }),
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return const TextStyle(color: AppColors.navSelected, fontWeight: FontWeight.w700, fontSize: 11);
-            return const TextStyle(color: AppColors.navUnselected, fontWeight: FontWeight.w400, fontSize: 11);
-          }),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
+        navigationBarTheme: navBarTheme,
         dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),
         cardTheme: CardThemeData(
           color: AppColors.surface,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.divider)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.divider),
+          ),
         ),
       ),
       darkTheme: ThemeData(
@@ -165,27 +201,15 @@ class _MyAppState extends State<MyApp> {
           surfaceTintColor: Colors.transparent,
           titleTextStyle: TextStyle(color: AppColors.darkTextPrimary, fontSize: 20, fontWeight: FontWeight.w700),
         ),
-        navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: AppColors.darkNavBg,
-          indicatorColor: Colors.transparent,
-          indicatorShape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          iconTheme: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return const IconThemeData(color: AppColors.darkNavSelected, size: 24);
-            return const IconThemeData(color: AppColors.darkNavUnselected, size: 24);
-          }),
-          labelTextStyle: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return const TextStyle(color: AppColors.darkNavSelected, fontWeight: FontWeight.w700, fontSize: 11);
-            return const TextStyle(color: AppColors.darkNavUnselected, fontWeight: FontWeight.w400, fontSize: 11);
-          }),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-        ),
+        navigationBarTheme: navBarTheme,
         dividerTheme: const DividerThemeData(color: AppColors.darkDivider, thickness: 1),
         cardTheme: CardThemeData(
           color: AppColors.darkSurface,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppColors.darkDivider)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.darkDivider),
+          ),
         ),
       ),
       home: const MainShell(),
@@ -193,6 +217,9 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+// ─────────────────────────────────────────────
+// HELPER SVG
+// ─────────────────────────────────────────────
 Widget _svg(String data, Color color, {double size = 24}) => SvgPicture.string(
       data,
       width: size,
@@ -200,6 +227,9 @@ Widget _svg(String data, Color color, {double size = 24}) => SvgPicture.string(
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
 
+// ─────────────────────────────────────────────
+// SHELL PRINCIPAL
+// ─────────────────────────────────────────────
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
   @override
@@ -218,8 +248,15 @@ class _MainShellState extends State<MainShell> {
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final navUnselected = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
     final navSelected = isDark ? AppColors.darkNavSelected : AppColors.navSelected;
+    // ícone dentro do pill tem cor invertida
+    final pillIconColor = isDark ? AppColors.darkBackground : AppColors.background;
     final navBg = isDark ? AppColors.darkNavBg : AppColors.navBg;
-    final pages = [const InicioPAge(), const AgendaPage(), const NotificacoesPage()];
+
+    final pages = [
+      const InicioPAge(),
+      const AgendaPage(),
+      const NotificacoesPage(),
+    ];
 
     return Scaffold(
       key: _scaffoldKey,
@@ -235,36 +272,44 @@ class _MainShellState extends State<MainShell> {
           icon: Icon(Icons.menu_rounded, color: textPrimary),
           onPressed: _openDrawer,
         ),
-        title: Text(_titles[_selectedIndex], style: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700)),
+        title: Text(
+          _titles[_selectedIndex],
+          style: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
+        ),
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-        child: KeyedSubtree(key: ValueKey(_selectedIndex), child: pages[_selectedIndex]),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: KeyedSubtree(
+          key: ValueKey(_selectedIndex),
+          child: pages[_selectedIndex],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        animationDuration: const Duration(milliseconds: 200),
+        animationDuration: const Duration(milliseconds: 250),
         backgroundColor: navBg,
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+        indicatorColor: navSelected,
         destinations: [
           NavigationDestination(
             icon: _svg(_homeOutlineSvg, navUnselected),
-            selectedIcon: _svg(_homeFilledSvg, navSelected),
+            selectedIcon: _svg(_homeFilledSvg, pillIconColor),
             label: 'Início',
           ),
           NavigationDestination(
             icon: _svg(_agendaOutlineSvg, navUnselected),
-            selectedIcon: _svg(_agendaFilledSvg, navSelected),
+            selectedIcon: _svg(_agendaFilledSvg, pillIconColor),
             label: 'Agenda',
           ),
           NavigationDestination(
             icon: _svg(_notificacoesOutlineSvg, navUnselected),
-            selectedIcon: _svg(_notificacoesFilledSvg, navSelected),
+            selectedIcon: _svg(_notificacoesFilledSvg, pillIconColor),
             label: 'Notificações',
           ),
         ],
@@ -273,6 +318,9 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
+// ─────────────────────────────────────────────
+// DRAWER
+// ─────────────────────────────────────────────
 class _AppDrawer extends StatefulWidget {
   final bool isDark;
   const _AppDrawer({required this.isDark});
@@ -326,8 +374,10 @@ class _AppDrawerState extends State<_AppDrawer> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Utilizador', style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-                        Text('utilizador@email.com', style: TextStyle(color: textSecondary, fontSize: 13)),
+                        Text('Utilizador',
+                            style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                        Text('utilizador@email.com',
+                            style: TextStyle(color: textSecondary, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -354,9 +404,16 @@ class _AppDrawerState extends State<_AppDrawer> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     child: Row(
                       children: [
-                        Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined, color: textPrimary, size: 22),
+                        Icon(
+                          isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                          color: textPrimary,
+                          size: 22,
+                        ),
                         const SizedBox(width: 14),
-                        Text(isDark ? 'Tema claro' : 'Tema escuro', style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500)),
+                        Text(
+                          isDark ? 'Tema claro' : 'Tema escuro',
+                          style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
+                        ),
                         const Spacer(),
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
@@ -401,12 +458,18 @@ class _AppDrawerState extends State<_AppDrawer> {
   }
 }
 
+// ─────────────────────────────────────────────
+// PÁGINA: INÍCIO
+// ─────────────────────────────────────────────
 class InicioPAge extends StatelessWidget {
   const InicioPAge({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
 
+// ─────────────────────────────────────────────
+// PÁGINA: AGENDA
+// ─────────────────────────────────────────────
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
   @override
@@ -500,12 +563,23 @@ class _AgendaPageState extends State<AgendaPage> {
                     color: const Color(0xFFFF3B30).withOpacity(0.10),
                     shape: BoxShape.circle,
                   ),
-                  child: Center(child: _svg(_agendaVaziaSvg, const Color(0xFFFF3B30), size: 38)),
+                  child: Center(
+                    child: _svg(_agendaVaziaSvg, const Color(0xFFFF3B30), size: 38),
+                  ),
                 ),
                 const SizedBox(height: 18),
-                Text('Sem nada agendado', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary)),
+                Text(
+                  'Sem nada agendado',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary),
+                ),
                 const SizedBox(height: 6),
-                Text('Não há eventos para este dia.', style: TextStyle(fontSize: 14, color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary)),
+                Text(
+                  'Não há eventos para este dia.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -515,6 +589,9 @@ class _AgendaPageState extends State<AgendaPage> {
   }
 }
 
+// ─────────────────────────────────────────────
+// PÁGINA: NOTIFICAÇÕES
+// ─────────────────────────────────────────────
 class NotificacoesPage extends StatelessWidget {
   const NotificacoesPage({super.key});
   @override
