@@ -7,15 +7,27 @@ import 'package:flutter_svg/flutter_svg.dart';
 // SVGs INLINE
 // ─────────────────────────────────────────────
 
-const String _mensagensFilledSvg = '''
+const String _inicioFilledSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m13-.004H5C2.243-.004,0,2.239,0,4.996v12.854c0,.793.435,1.519,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.191-.36l3.963-2.643h5.697c2.757,0,5-2.243,5-5v-7C18,2.239,15.757-.004,13-.004Zm11,9v12.854c0,.793-.435,1.519-1.134,1.894-.318.171-.667.255-1.015.256-.416,0-.831-.121-1.19-.36l-3.964-2.644h-5.697c-1.45,0-2.747-.631-3.661-1.62l.569-.38h5.092c3.859,0,7-3.141,7-7v-7c0-.308-.027-.608-.065-.906,2.311.44,4.065,2.469,4.065,4.906Z"/>
+<path d="m18,22c0,.553-.448,1-1,1H5c-2.761,0-5-2.239-5-5v-7.764c0-1.136.486-2.223,1.333-2.981.293-.263.715-.329,1.075-.168.36.161.592.519.592.913v6.5c0,3.59,2.91,6.5,6.5,6.5h7.5c.552,0,1,.447,1,1Zm6-16.5v9c0,2.481-2.019,4.5-4.5,4.5h-10c-2.481,0-4.5-2.019-4.5-4.5V5.5c0-2.481,2.019-4.5,4.5-4.5h10c2.481,0,4.5,2.019,4.5,4.5Zm-2,7.5v-2h-2v2h2Zm-2-4h2v-2h-2v2Zm0-5.95v1.95h1.95c-.199-.978-.972-1.75-1.95-1.95Zm-13,3.95v2h2v-2h-2Zm0,6h2v-2h-2v2Zm.05-8h1.95v-1.95c-.978.199-1.75.971-1.95,1.95Zm1.95,11.95v-1.95h-1.95c.199.978.972,1.75,1.95,1.95Zm12.95-1.95h-1.95v1.95c.978-.199,1.75-.971,1.95-1.95Z"/>
 </svg>
 ''';
 
-const String _mensagensOutlineSvg = '''
+const String _inicioOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m19,4h-1.101c-.465-2.279-2.485-4-4.899-4H5C2.243,0,0,2.243,0,5v12.854c0,.794.435,1.52,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.19-.36l2.95-1.967c.691,1.935,2.541,3.324,4.711,3.324h5.697l3.964,2.643c.36.24.774.361,1.19.361.348,0,.696-.085,1.015-.256.7-.374,1.134-1.1,1.134-1.894v-12.854c0-2.757-2.243-5-5-5ZM2.23,17.979c-.019.012-.075.048-.152.007-.079-.042-.079-.109-.079-.131V5c0-1.654,1.346-3,3-3h8c1.654,0,3,1.346,3,3v7c0,1.654-1.346,3-3,3h-6c-.327,0-.541.159-.565.175l-4.205,2.804Zm19.77,3.876c0,.021,0,.089-.079.131-.079.041-.133.005-.151-.007l-4.215-2.811c-.164-.109-.357-.168-.555-.168h-6c-1.304,0-2.415-.836-2.828-2h4.828c2.757,0,5-2.243,5-5v-6h1c1.654,0,3,1.346,3,3v12.854Z"/>
+<path d="m18,22c0,.553-.448,1-1,1H5c-2.757,0-5-2.243-5-5v-7.764c0-1.136.486-2.223,1.333-2.981.41-.368,1.044-.334,1.412.078.369.411.334,1.043-.078,1.412-.424.38-.667.923-.667,1.491v7.764c0,1.654,1.346,3,3,3h12c.552,0,1,.447,1,1Zm6-16.5v9c0,2.481-2.019,4.5-4.5,4.5h-10c-2.481,0-4.5-2.019-4.5-4.5V5.5c0-2.481,2.019-4.5,4.5-4.5h10c2.481,0,4.5,2.019,4.5,4.5Zm-2,7.5v-2h-2v2h2Zm-2-4h2v-2h-2v2Zm0-5.95v1.95h1.95c-.199-.978-.972-1.75-1.95-1.95Zm-13,3.95v2h2v-2h-2Zm0,6h2v-2h-2v2Zm.05-8h1.95v-1.95c-.978.199-1.75.971-1.95,1.95Zm1.95,11.95v-1.95h-1.95c.199.978.972,1.75,1.95,1.95Zm9,.05V3h-7v14h7Zm3.95-2h-1.95v1.95c.978-.199,1.75-.971,1.95-1.95Z"/>
+</svg>
+''';
+
+const String _utilizadorFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m12,12c-3.309,0-6-2.691-6-6S8.691,0,12,0s6,2.691,6,6-2.691,6-6,6Zm0,2c-5.103,0-9.375,3.822-9.936,8.89-.031.283.06.565.249.777.19.212.461.333.745.333h2.941c0-3.309,2.691-6,6-6s6,2.691,6,6h2.941c.284,0,.555-.121.745-.333.189-.212.28-.494.249-.777-.561-5.068-4.833-8.89-9.936-8.89Zm0,6c-2.206,0-4,1.794-4,4h8c0-2.206-1.794-4-4-4Z"/>
+</svg>
+''';
+
+const String _utilizadorOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m12,12c3.309,0,6-2.691,6-6S15.309,0,12,0s-6,2.691-6,6,2.691,6,6,6Zm0-9c1.654,0,3,1.346,3,3s-1.346,3-3,3-3-1.346-3-3,1.346-3,3-3Zm4.934,19.286c.119.82-.357,1.714-1.486,1.714-.733,0-1.375-.539-1.482-1.286-.142-.978-.986-1.714-1.965-1.714s-1.824.737-1.965,1.714c-.118.82-.878,1.389-1.699,1.27-.82-.118-1.389-.879-1.27-1.699.353-2.443,2.474-4.286,4.934-4.286s4.582,1.842,4.934,4.286Zm5.038.127c.048.827-.583,1.537-1.41,1.585-.03.001-.06.002-.089.002-.789,0-1.45-.615-1.496-1.413-.215-3.694-3.28-6.587-6.977-6.587s-6.762,2.894-6.977,6.587c-.048.827-.76,1.453-1.585,1.41-.827-.048-1.458-.758-1.41-1.585.308-5.278,4.688-9.413,9.972-9.413s9.664,4.134,9.972,9.413Z"/>
 </svg>
 ''';
 
@@ -168,7 +180,6 @@ class _MyAppState extends State<MyApp> {
     );
 
     return MaterialApp(
-      key: ValueKey(isDark),
       title: 'NovaSignal',
       debugShowCheckedModeBanner: false,
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
@@ -289,7 +300,7 @@ class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
-  static const _titles = ['Mensagens', 'Agenda', 'Templates'];
+  static const _titles = ['Início', 'Agenda', 'Feed', 'Utilizador'];
 
   @override
   Widget build(BuildContext context) {
@@ -301,9 +312,10 @@ class _MainShellState extends State<MainShell> {
     final pillColor = isDark ? AppColors.pillDark : AppColors.pillLight;
 
     final pages = [
-      const MensagensPage(),
+      const InicioPage(),
       const AgendaPage(),
-      const TemplatesPage(),
+      const FeedPage(),
+      const UtilizadorPage(),
     ];
 
     return Scaffold(
@@ -349,9 +361,9 @@ class _MainShellState extends State<MainShell> {
         indicatorColor: pillColor,
         destinations: [
           NavigationDestination(
-            icon: _svg(_mensagensOutlineSvg, navUnselected),
-            selectedIcon: _svg(_mensagensFilledSvg, pillIconColor),
-            label: 'Mensagens',
+            icon: _svg(_inicioOutlineSvg, navUnselected),
+            selectedIcon: _svg(_inicioFilledSvg, pillIconColor),
+            label: 'Início',
           ),
           NavigationDestination(
             icon: _svg(_agendaOutlineSvg, navUnselected),
@@ -361,7 +373,12 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(
             icon: _svg(_feedOutlineSvg, navUnselected),
             selectedIcon: _svg(_feedFilledSvg, pillIconColor),
-            label: 'Templates',
+            label: 'Feed',
+          ),
+          NavigationDestination(
+            icon: _svg(_utilizadorOutlineSvg, navUnselected),
+            selectedIcon: _svg(_utilizadorFilledSvg, pillIconColor),
+            label: 'Utilizador',
           ),
         ],
       ),
@@ -388,7 +405,8 @@ class _AgendaAppBarActions extends StatelessWidget {
       Offset.zero & overlay.size,
     );
 
-    final surfaceBg = isDark ? AppColors.darkSurface : AppColors.background;
+    // 5% mais escuro que darkSurface/background
+    final surfaceBg = isDark ? const Color(0xFF222222) : const Color(0xFFF2F2F2);
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
@@ -399,8 +417,10 @@ class _AgendaAppBarActions extends StatelessWidget {
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       popUpAnimationStyle: AnimationStyle(
-        curve: Curves.easeOutCubic,
-        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutQuart,
+        duration: const Duration(milliseconds: 300),
+        reverseCurve: Curves.easeInQuart,
+        reverseDuration: const Duration(milliseconds: 200),
       ),
       items: <PopupMenuEntry<String>>[
         PopupMenuItem<String>(
@@ -495,7 +515,6 @@ class _AppDrawerState extends State<_AppDrawer> {
     final bg = isDark ? AppColors.darkDrawerBg : AppColors.background;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final divider = isDark ? AppColors.darkDivider : AppColors.divider;
     final surfaceBg = isDark ? const Color(0xFF323232) : const Color(0xFFF5F5F5);
     final toggleBg = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
 
@@ -516,84 +535,62 @@ class _AppDrawerState extends State<_AppDrawer> {
                     child: Icon(Icons.person_outline_rounded, size: 28, color: textSecondary),
                   ),
                   const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Utilizador',
-                            style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-                        Text('utilizador@email.com',
-                            style: TextStyle(color: textSecondary, fontSize: 13)),
-                      ],
-                    ),
-                  ),
+                  Text('Utilizador',
+                      style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
-            Divider(height: 1, color: divider),
             const Spacer(),
-            Divider(height: 1, color: divider),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: OpenContainer(
-                transitionType: ContainerTransitionType.fadeThrough,
-                transitionDuration: const Duration(milliseconds: 400),
-                openColor: bg,
-                closedColor: toggleBg,
-                closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                closedElevation: 0,
-                openElevation: 0,
-                closedBuilder: (context, _) => InkWell(
-                  onTap: themeNotifier.toggle,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                          color: textPrimary,
-                          size: 22,
+              child: GestureDetector(
+                onTap: themeNotifier.toggle,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: toggleBg,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                        color: textPrimary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 14),
+                      Text(
+                        isDark ? 'Tema claro' : 'Tema escuro',
+                        style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
+                      ),
+                      const Spacer(),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 46,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(13),
+                          color: isDark ? textPrimary : const Color(0xFFD0D0D0),
                         ),
-                        const SizedBox(width: 14),
-                        Text(
-                          isDark ? 'Tema claro' : 'Tema escuro',
-                          style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
-                        ),
-                        const Spacer(),
-                        AnimatedContainer(
+                        child: AnimatedAlign(
                           duration: const Duration(milliseconds: 250),
-                          width: 46,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(13),
-                            color: isDark ? textPrimary : const Color(0xFFD0D0D0),
-                          ),
-                          child: AnimatedAlign(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeInOut,
-                            alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.all(3),
-                              width: 20,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isDark ? AppColors.darkDrawerBg : AppColors.background,
-                              ),
+                          curve: Curves.easeInOut,
+                          alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.all(3),
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDark ? AppColors.darkDrawerBg : AppColors.background,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-                openBuilder: (context, _) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (Navigator.canPop(context)) Navigator.pop(context);
-                  });
-                  return Container(color: bg);
-                },
               ),
             ),
             const SizedBox(height: 8),
@@ -605,19 +602,28 @@ class _AppDrawerState extends State<_AppDrawer> {
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: MENSAGENS
+// PÁGINA: INÍCIO
 // ─────────────────────────────────────────────
-class MensagensPage extends StatelessWidget {
-  const MensagensPage({super.key});
+class InicioPage extends StatelessWidget {
+  const InicioPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: TEMPLATES
+// PÁGINA: FEED
 // ─────────────────────────────────────────────
-class TemplatesPage extends StatelessWidget {
-  const TemplatesPage({super.key});
+class FeedPage extends StatelessWidget {
+  const FeedPage({super.key});
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
+}
+
+// ─────────────────────────────────────────────
+// PÁGINA: UTILIZADOR
+// ─────────────────────────────────────────────
+class UtilizadorPage extends StatelessWidget {
+  const UtilizadorPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
