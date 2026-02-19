@@ -7,28 +7,24 @@ import 'package:flutter_svg/flutter_svg.dart';
 // SVGs INLINE
 // ─────────────────────────────────────────────
 
-// Mensagens — Filled
 const String _mensagensFilledSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m13-.004H5C2.243-.004,0,2.239,0,4.996v12.854c0,.793.435,1.519,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.191-.36l3.963-2.643h5.697c2.757,0,5-2.243,5-5v-7C18,2.239,15.757-.004,13-.004Zm11,9v12.854c0,.793-.435,1.519-1.134,1.894-.318.171-.667.255-1.015.256-.416,0-.831-.121-1.19-.36l-3.964-2.644h-5.697c-1.45,0-2.747-.631-3.661-1.62l.569-.38h5.092c3.859,0,7-3.141,7-7v-7c0-.308-.027-.608-.065-.906,2.311.44,4.065,2.469,4.065,4.906Z"/>
 </svg>
 ''';
 
-// Mensagens — Outline
 const String _mensagensOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m19,4h-1.101c-.465-2.279-2.485-4-4.899-4H5C2.243,0,0,2.243,0,5v12.854c0,.794.435,1.52,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.19-.36l2.95-1.967c.691,1.935,2.541,3.324,4.711,3.324h5.697l3.964,2.643c.36.24.774.361,1.19.361.348,0,.696-.085,1.015-.256.7-.374,1.134-1.1,1.134-1.894v-12.854c0-2.757-2.243-5-5-5ZM2.23,17.979c-.019.012-.075.048-.152.007-.079-.042-.079-.109-.079-.131V5c0-1.654,1.346-3,3-3h8c1.654,0,3,1.346,3,3v7c0,1.654-1.346,3-3,3h-6c-.327,0-.541.159-.565.175l-4.205,2.804Zm19.77,3.876c0,.021,0,.089-.079.131-.079.041-.133.005-.151-.007l-4.215-2.811c-.164-.109-.357-.168-.555-.168h-6c-1.304,0-2.415-.836-2.828-2h4.828c2.757,0,5-2.243,5-5v-6h1c1.654,0,3,1.346,3,3v12.854Z"/>
 </svg>
 ''';
 
-// Feed — Filled
 const String _feedFilledSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m19,24h-4c-2.757,0-5-2.243-5-5V5c0-2.757,2.243-5,5-5h4c2.757,0,5,2.243,5,5v14c0,2.757-2.243,5-5,5Zm-12-3V4c0-.552-.448-1-1-1s-1,.448-1,1v17c0,.552.448,1,1,1s1-.448,1-1Zm-5-3V7c0-.552-.448-1-1-1s-1,.448-1,1v11c0,.552.448,1,1,1s1-.448,1-1Z"/>
 </svg>
 ''';
 
-// Feed — Outline
 const String _feedOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m18.5,0h-3c-3.033,0-5.5,2.467-5.5,5.5v13c0,3.033,2.467,5.5,5.5,5.5h3c3.033,0,5.5-2.467,5.5-5.5V5.5c0-3.033-2.467-5.5-5.5-5.5Zm2.5,18.5c0,1.378-1.122,2.5-2.5,2.5h-3c-1.378,0-2.5-1.122-2.5-2.5V5.5c0-1.378,1.122-2.5,2.5-2.5h3c1.378,0,2.5,1.122,2.5,2.5v13ZM8,4.5v15c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V4.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Zm-5,3v9c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V7.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Z"/>
@@ -65,7 +61,6 @@ class AppColors {
   static const navBg = Color(0xFFFFFFFF);
   static const navUnselected = Color(0xFF8E8E8E);
   static const navSelected = Color(0xFF000000);
-  // Pill claro: cinza escuro suave
   static const pillLight = Color(0xFF3A3A3A);
   static const pillLightIcon = Color(0xFFFFFFFF);
 
@@ -78,7 +73,6 @@ class AppColors {
   static const darkNavUnselected = Color(0xFF8E8E8E);
   static const darkNavSelected = Color(0xFFFFFFFF);
   static const darkDrawerBg = Color(0xFF262626);
-  // Pill escuro: branco suave
   static const pillDark = Color(0xFFE0E0E0);
   static const pillDarkIcon = Color(0xFF0D0D0D);
 }
@@ -264,7 +258,7 @@ class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
-  static const _titles = ['Mensagens', 'Agenda', 'Feed'];
+  static const _titles = ['Mensagens', 'Agenda', 'Templates'];
 
   @override
   Widget build(BuildContext context) {
@@ -278,7 +272,7 @@ class _MainShellState extends State<MainShell> {
     final pages = [
       const MensagensPage(),
       const AgendaPage(),
-      const FeedPage(),
+      const TemplatesPage(),
     ];
 
     return Scaffold(
@@ -313,7 +307,6 @@ class _MainShellState extends State<MainShell> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        // 1.5x mais lento que o padrão (300ms → 450ms)
         animationDuration: const Duration(milliseconds: 450),
         backgroundColor: navBg,
         elevation: 0,
@@ -334,7 +327,7 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(
             icon: _svg(_feedOutlineSvg, navUnselected),
             selectedIcon: _svg(_feedFilledSvg, pillIconColor),
-            label: 'Feed',
+            label: 'Templates',
           ),
         ],
       ),
@@ -492,7 +485,16 @@ class MensagensPage extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: AGENDA
+// PÁGINA: TEMPLATES
+// ─────────────────────────────────────────────
+class TemplatesPage extends StatelessWidget {
+  const TemplatesPage({super.key});
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
+}
+
+// ─────────────────────────────────────────────
+// PÁGINA: AGENDA — com calendário expansível
 // ─────────────────────────────────────────────
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
@@ -500,14 +502,117 @@ class AgendaPage extends StatefulWidget {
   State<AgendaPage> createState() => _AgendaPageState();
 }
 
-class _AgendaPageState extends State<AgendaPage> {
-  int _selectedDay = DateTime.now().weekday - 1;
-  final List<String> _days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
+  // Dia selecionado (índice 0=Seg dentro da semana visível)
+  int _selectedDayIndex = DateTime.now().weekday - 1;
+  // Data selecionada completa
+  DateTime _selectedDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
-  List<DateTime> get _weekDates {
-    final now = DateTime.now();
+  // Calendário expandido
+  bool _expanded = false;
+  // Mês visível no calendário expandido
+  late DateTime _visibleMonth;
+
+  // Animação do indicador elástico (spring)
+  late AnimationController _indicatorCtrl;
+  late Animation<double> _indicatorScaleX;
+
+  // Animação de expansão do calendário
+  late AnimationController _expandCtrl;
+  late Animation<double> _expandAnim;
+
+  // Para o DraggableScrollableSheet
+  final DraggableScrollableController _dragCtrl = DraggableScrollableController();
+
+  static const List<String> _weekLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+  static const List<String> _monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
+    // Indicador spring: estica horizontalmente e volta
+    _indicatorCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _indicatorScaleX = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 1.0, end: 1.35).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 35,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.35, end: 0.88).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 30,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 0.88, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 35,
+      ),
+    ]).animate(_indicatorCtrl);
+
+    // Expansão
+    _expandCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _expandAnim = CurvedAnimation(parent: _expandCtrl, curve: Curves.easeInOutCubic);
+  }
+
+  @override
+  void dispose() {
+    _indicatorCtrl.dispose();
+    _expandCtrl.dispose();
+    _dragCtrl.dispose();
+    super.dispose();
+  }
+
+  void _selectDay(DateTime date) {
+    if (date == _selectedDate) return;
+    setState(() {
+      _selectedDate = date;
+      _selectedDayIndex = date.weekday - 1;
+    });
+    _indicatorCtrl.forward(from: 0);
+  }
+
+  void _toggleExpand() {
+    setState(() => _expanded = !_expanded);
+    if (_expanded) {
+      _expandCtrl.forward();
+    } else {
+      _expandCtrl.reverse();
+    }
+  }
+
+  // Semana actual para o strip
+  List<DateTime> get _currentWeekDates {
+    final now = _selectedDate;
     final monday = now.subtract(Duration(days: now.weekday - 1));
     return List.generate(7, (i) => monday.add(Duration(days: i)));
+  }
+
+  // Dias do mês visível para o calendário expandido
+  List<DateTime?> get _monthDays {
+    final firstDay = DateTime(_visibleMonth.year, _visibleMonth.month, 1);
+    // Offset: quantos dias em branco antes do dia 1 (semana começa na segunda)
+    final offset = (firstDay.weekday - 1) % 7;
+    final daysInMonth = DateUtils.getDaysInMonth(_visibleMonth.year, _visibleMonth.month);
+    final total = offset + daysInMonth;
+    final cells = (total / 7).ceil() * 7;
+    return List.generate(cells, (i) {
+      final dayNum = i - offset + 1;
+      if (dayNum < 1 || dayNum > daysInMonth) return null;
+      return DateTime(_visibleMonth.year, _visibleMonth.month, dayNum);
+    });
   }
 
   @override
@@ -515,66 +620,178 @@ class _AgendaPageState extends State<AgendaPage> {
     final isDark = themeNotifier.isDark;
     final bg = isDark ? AppColors.darkBackground : AppColors.background;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final divider = isDark ? AppColors.darkDivider : AppColors.divider;
-    final dates = _weekDates;
+    final weekDates = _currentWeekDates;
 
     return Column(
       children: [
-        Container(
-          color: bg,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List.generate(7, (i) {
-                    final isSelected = i == _selectedDay;
-                    final date = dates[i];
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedDay = i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? textPrimary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
+        // ── Cabeçalho com strip semanal + handle de expansão
+        GestureDetector(
+          onVerticalDragEnd: (details) {
+            if (details.primaryVelocity != null) {
+              if (details.primaryVelocity! > 100 && !_expanded) _toggleExpand();
+              if (details.primaryVelocity! < -100 && _expanded) _toggleExpand();
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeInOutCubic,
+            color: bg,
+            child: Column(
+              children: [
+                // Strip semanal
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(7, (i) {
+                      final date = weekDates[i];
+                      final isSelected = date.year == _selectedDate.year &&
+                          date.month == _selectedDate.month &&
+                          date.day == _selectedDate.day;
+                      return GestureDetector(
+                        onTap: () => _selectDay(date),
+                        child: SizedBox(
+                          width: 36,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _weekLabels[i],
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: isSelected
+                                      ? (isDark ? AppColors.darkBackground : AppColors.background)
+                                      : textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              // Indicador circular com animação spring
+                              AnimatedBuilder(
+                                animation: _indicatorScaleX,
+                                builder: (context, child) {
+                                  return Transform.scale(
+                                    scaleX: isSelected ? _indicatorScaleX.value : 1.0,
+                                    child: child,
+                                  );
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOutCubic,
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? textPrimary : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${date.day}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: isSelected
+                                            ? (isDark ? AppColors.darkBackground : AppColors.background)
+                                            : textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                      );
+                    }),
+                  ),
+                ),
+
+                // Calendário expandido com animação
+                SizeTransition(
+                  sizeFactor: _expandAnim,
+                  axisAlignment: -1,
+                  child: Column(
+                    children: [
+                      Divider(height: 1, color: divider),
+                      // Header do mês com navegação
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        child: Row(
                           children: [
                             Text(
-                              _days[i],
+                              '${_monthNames[_visibleMonth.month - 1]} ${_visibleMonth.year}',
                               style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: isSelected
-                                    ? (isDark ? AppColors.darkBackground : AppColors.background)
-                                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${date.day}',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: isSelected
-                                    ? (isDark ? AppColors.darkBackground : AppColors.background)
-                                    : textPrimary,
-                              ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month - 1);
+                              }),
+                              child: Icon(Icons.chevron_left_rounded, color: textPrimary, size: 26),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
+                              }),
+                              child: Icon(Icons.chevron_right_rounded, color: textPrimary, size: 26),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  }),
+                      // Labels dias da semana
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d) => SizedBox(
+                            width: 36,
+                            child: Center(
+                              child: Text(d,
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textSecondary),
+                              ),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Grid de dias do mês
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: _buildMonthGrid(textPrimary, textSecondary, isDark),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ),
                 ),
-              ),
-              Divider(height: 1, color: divider),
-            ],
+
+                Divider(height: 1, color: divider),
+
+                // Handle de arrasto
+                GestureDetector(
+                  onTap: _toggleExpand,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      child: Icon(Icons.keyboard_arrow_down_rounded, color: textSecondary, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+
+        // Conteúdo (vazio por ora)
         Expanded(
           child: Center(
             child: Column(
@@ -601,7 +818,7 @@ class _AgendaPageState extends State<AgendaPage> {
                   'Não há eventos para este dia.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    color: textSecondary,
                   ),
                 ),
               ],
@@ -611,13 +828,72 @@ class _AgendaPageState extends State<AgendaPage> {
       ],
     );
   }
-}
 
-// ─────────────────────────────────────────────
-// PÁGINA: FEED
-// ─────────────────────────────────────────────
-class FeedPage extends StatelessWidget {
-  const FeedPage({super.key});
-  @override
-  Widget build(BuildContext context) => const SizedBox.expand();
+  Widget _buildMonthGrid(Color textPrimary, Color textSecondary, bool isDark) {
+    final days = _monthDays;
+    final rows = days.length ~/ 7;
+    return Column(
+      children: List.generate(rows, (row) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(7, (col) {
+              final date = days[row * 7 + col];
+              if (date == null) return const SizedBox(width: 36, height: 34);
+              final isSelected = date.year == _selectedDate.year &&
+                  date.month == _selectedDate.month &&
+                  date.day == _selectedDate.day;
+              final isToday = date.year == DateTime.now().year &&
+                  date.month == DateTime.now().month &&
+                  date.day == DateTime.now().day;
+              return GestureDetector(
+                onTap: () {
+                  _selectDay(date);
+                  // Fechar o calendário ao selecionar
+                  if (_expanded) _toggleExpand();
+                },
+                child: AnimatedBuilder(
+                  animation: _indicatorScaleX,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scaleX: isSelected ? _indicatorScaleX.value : 1.0,
+                      child: child,
+                    );
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: isSelected ? textPrimary : Colors.transparent,
+                      borderRadius: BorderRadius.circular(50),
+                      border: isToday && !isSelected
+                          ? Border.all(color: textPrimary.withOpacity(0.35), width: 1.5)
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${date.day}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                          color: isSelected
+                              ? (isDark ? AppColors.darkBackground : AppColors.background)
+                              : isToday
+                                  ? textPrimary
+                                  : textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        );
+      }),
+    );
+  }
 }
