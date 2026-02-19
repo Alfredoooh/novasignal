@@ -192,6 +192,11 @@ class _MyAppState extends State<MyApp> {
         ),
         navigationBarTheme: navBarTheme,
         dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),
+        popupMenuTheme: PopupMenuThemeData(
+          color: AppColors.background,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 8,
+        ),
         cardTheme: CardThemeData(
           color: AppColors.surface,
           elevation: 0,
@@ -221,6 +226,11 @@ class _MyAppState extends State<MyApp> {
         ),
         navigationBarTheme: navBarTheme,
         dividerTheme: const DividerThemeData(color: AppColors.darkDivider, thickness: 1),
+        popupMenuTheme: PopupMenuThemeData(
+          color: AppColors.darkSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 8,
+        ),
         cardTheme: CardThemeData(
           color: AppColors.darkSurface,
           elevation: 0,
@@ -382,28 +392,35 @@ class _AgendaAppBarActions extends StatelessWidget {
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
-    await showMenu(
+    await showMenu<String>(
       context: context,
       position: position,
       color: surfaceBg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,
-      items: [
-        PopupMenuItem(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      popUpAnimationStyle: AnimationStyle(
+        curve: Curves.easeOutCubic,
+        duration: const Duration(milliseconds: 200),
+      ),
+      items: <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          value: 'novo',
           child: Row(children: [
             Icon(Icons.add_rounded, color: textColor, size: 20),
             const SizedBox(width: 12),
             Text('Novo evento', style: TextStyle(color: textColor, fontSize: 15)),
           ]),
         ),
-        PopupMenuItem(
+        PopupMenuItem<String>(
+          value: 'filtrar',
           child: Row(children: [
             Icon(Icons.filter_list_rounded, color: textColor, size: 20),
             const SizedBox(width: 12),
             Text('Filtrar', style: TextStyle(color: textColor, fontSize: 15)),
           ]),
         ),
-        PopupMenuItem(
+        PopupMenuItem<String>(
+          value: 'semana',
           child: Row(children: [
             Icon(Icons.view_week_outlined, color: textColor, size: 20),
             const SizedBox(width: 12),
@@ -411,7 +428,8 @@ class _AgendaAppBarActions extends StatelessWidget {
           ]),
         ),
         const PopupMenuDivider(),
-        PopupMenuItem(
+        PopupMenuItem<String>(
+          value: 'definicoes',
           child: Row(children: [
             Icon(Icons.settings_outlined, color: textSecondary, size: 20),
             const SizedBox(width: 12),
