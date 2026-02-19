@@ -43,6 +43,27 @@ const String _agendaOutlineSvg = '''
 </svg>
 ''';
 
+// Três pontos circular (popup menu)
+const String _maisOpcoesSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-4-10c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm11,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm-5.5,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Z"/>
+</svg>
+''';
+
+// Ir para hoje — Filled
+const String _hojeFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M0,8v-1C0,4.243,2.243,2,5,2h1V1c0-.552,.447-1,1-1s1,.448,1,1v1h8V1c0-.552,.447-1,1-1s1,.448,1,1v1h1c2.757,0,5,2.243,5,5v1H0Zm24,2v9c0,2.757-2.243,5-5,5H5c-2.757,0-5-2.243-5-5V10H24Zm-6.168,3.152c-.384-.397-1.016-.409-1.414-.026l-4.754,4.582c-.376,.376-1.007,.404-1.439-.026l-2.278-2.117c-.403-.375-1.035-.354-1.413,.052-.376,.404-.353,1.037,.052,1.413l2.252,2.092c.566,.567,1.32,.879,2.121,.879s1.556-.312,2.108-.866l4.74-4.568c.397-.383,.409-1.017,.025-1.414Z"/>
+</svg>
+''';
+
+// Ir para hoje — Outline
+const String _hojeOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M18.5,2h-.5v-.5c0-.829-.672-1.5-1.5-1.5s-1.5,.671-1.5,1.5v.5h-6v-.5c0-.829-.672-1.5-1.5-1.5s-1.5,.671-1.5,1.5v.5h-.5C2.468,2,0,4.467,0,7.5v11c0,3.033,2.468,5.5,5.5,5.5h13c3.032,0,5.5-2.467,5.5-5.5V7.5c0-3.033-2.468-5.5-5.5-5.5Zm0,19H5.5c-1.379,0-2.5-1.122-2.5-2.5V9H21v9.5c0,1.378-1.121,2.5-2.5,2.5Zm-.655-9.026c.566,.604,.535,1.554-.069,2.12l-4.176,3.914c-.626,.627-1.505,.992-2.439,.992s-1.814-.364-2.476-1.026l-2.478-2.396c-.596-.576-.611-1.525-.035-2.121,.576-.594,1.526-.61,2.121-.035l2.496,2.414c.146,.145,.294,.164,.371,.164s.226-.019,.354-.146l4.211-3.948c.604-.567,1.552-.536,2.12,.068Z"/>
+</svg>
+''';
+
 const String _agendaVaziaSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m15.561,13.561l-1.439,1.439,1.439,1.439c.586.586.586,1.535,0,2.121-.293.293-.677.439-1.061.439s-.768-.146-1.061-.439l-1.439-1.439-1.439,1.439c-.293.293-.677.439-1.061.439s-.768-.146-1.061-.439c-.586-.586-.586-1.535,0-2.121l1.439-1.439-1.439-1.439c-.586-.586-.586-1.535,0-2.121s1.535-.586,2.121,0l1.439,1.439,1.439-1.439c.586-.586,1.535-.586,2.121,0s.586,1.535,0,2.121Zm8.439-6.061v11c0,3.032-2.467,5.5-5.5,5.5H5.5c-3.033,0-5.5-2.468-5.5-5.5V7.5C0,4.468,2.467,2,5.5,2h.5v-.5c0-.828.671-1.5,1.5-1.5s1.5.672,1.5,1.5v.5h6v-.5c0-.828.671-1.5,1.5-1.5s1.5.672,1.5,1.5v.5h.5c3.033,0,5.5,2.468,5.5,5.5Zm-3,11v-9.5H3v9.5c0,1.379,1.122,2.5,2.5,2.5h13c1.378,0,2.5-1.121,2.5-2.5Z"/>
@@ -293,6 +314,9 @@ class _MainShellState extends State<MainShell> {
           _titles[_selectedIndex],
           style: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
         ),
+        actions: _selectedIndex == 1
+            ? [_AgendaAppBarActions(isDark: isDark, textPrimary: textPrimary)]
+            : null,
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
@@ -331,6 +355,93 @@ class _MainShellState extends State<MainShell> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// BOTÕES DA APPBAR DA AGENDA
+// ─────────────────────────────────────────────
+class _AgendaAppBarActions extends StatelessWidget {
+  final bool isDark;
+  final Color textPrimary;
+  const _AgendaAppBarActions({required this.isDark, required this.textPrimary});
+
+  void _showPopup(BuildContext context) async {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final surfaceBg = isDark ? AppColors.darkSurface : AppColors.background;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
+    await showMenu(
+      context: context,
+      position: position,
+      color: surfaceBg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 8,
+      items: [
+        PopupMenuItem(
+          child: Row(children: [
+            Icon(Icons.add_rounded, color: textColor, size: 20),
+            const SizedBox(width: 12),
+            Text('Novo evento', style: TextStyle(color: textColor, fontSize: 15)),
+          ]),
+        ),
+        PopupMenuItem(
+          child: Row(children: [
+            Icon(Icons.filter_list_rounded, color: textColor, size: 20),
+            const SizedBox(width: 12),
+            Text('Filtrar', style: TextStyle(color: textColor, fontSize: 15)),
+          ]),
+        ),
+        PopupMenuItem(
+          child: Row(children: [
+            Icon(Icons.view_week_outlined, color: textColor, size: 20),
+            const SizedBox(width: 12),
+            Text('Ver semana', style: TextStyle(color: textColor, fontSize: 15)),
+          ]),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          child: Row(children: [
+            Icon(Icons.settings_outlined, color: textSecondary, size: 20),
+            const SizedBox(width: 12),
+            Text('Definições', style: TextStyle(color: textSecondary, fontSize: 15)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Botão ir para hoje
+        IconButton(
+          icon: _svg(_hojeOutlineSvg, textPrimary, size: 22),
+          onPressed: () {
+            // navegar para hoje — a AgendaPage trata via GlobalKey se necessário
+          },
+        ),
+        // Botão popup menu
+        Builder(
+          builder: (ctx) => IconButton(
+            icon: _svg(_maisOpcoesSvg, textPrimary, size: 22),
+            onPressed: () => _showPopup(ctx),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -502,54 +613,79 @@ class AgendaPage extends StatefulWidget {
   State<AgendaPage> createState() => _AgendaPageState();
 }
 
-class _AgendaPageState extends State<AgendaPage> with SingleTickerProviderStateMixin {
+class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
   int _selectedDay = DateTime.now().weekday - 1;
+  DateTime _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-  // Animação spring do indicador
   late AnimationController _springCtrl;
   late Animation<double> _springScaleX;
+
+  late AnimationController _expandCtrl;
+  late Animation<double> _expandAnim;
 
   final List<String> _days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
   List<DateTime> get _weekDates {
-    final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final monday = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
     return List.generate(7, (i) => monday.add(Duration(days: i)));
+  }
+
+  // Todas as semanas do mês actual (começa sempre na segunda)
+  List<List<DateTime?>> get _monthWeeks {
+    final firstDay = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    final offset = (firstDay.weekday - 1) % 7;
+    final daysInMonth = DateUtils.getDaysInMonth(_selectedDate.year, _selectedDate.month);
+    final cells = ((offset + daysInMonth) / 7).ceil() * 7;
+    final allDays = List.generate(cells, (i) {
+      final d = i - offset + 1;
+      if (d < 1 || d > daysInMonth) return null;
+      return DateTime(_selectedDate.year, _selectedDate.month, d);
+    });
+    // Divide em semanas e remove a semana que já está visível no strip
+    final weeks = <List<DateTime?>>[];
+    for (var r = 0; r < allDays.length ~/ 7; r++) {
+      final week = allDays.sublist(r * 7, r * 7 + 7);
+      // Esconder a semana que contém _selectedDate (já visível no strip)
+      final containsSelected = week.any((d) =>
+          d != null && d.year == _selectedDate.year &&
+          d.month == _selectedDate.month && d.day == _selectedDate.day);
+      if (!containsSelected) weeks.add(week);
+    }
+    return weeks;
   }
 
   @override
   void initState() {
     super.initState();
-    _springCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 420),
-    );
+
+    _springCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
     _springScaleX = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.35).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 35,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.35, end: 0.88).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 30,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 0.88, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 35,
-      ),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.35).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
+      TweenSequenceItem(tween: Tween(begin: 1.35, end: 0.88).chain(CurveTween(curve: Curves.easeInOut)), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.88, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)), weight: 35),
     ]).animate(_springCtrl);
+
+    _expandCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 380));
+    _expandAnim = CurvedAnimation(parent: _expandCtrl, curve: Curves.easeInOutCubic);
   }
 
   @override
   void dispose() {
     _springCtrl.dispose();
+    _expandCtrl.dispose();
     super.dispose();
   }
 
-  void _selectDay(int index) {
-    if (index == _selectedDay) return;
-    setState(() => _selectedDay = index);
+  void _selectWeekDay(int index, DateTime date) {
+    if (date == _selectedDate) return;
+    setState(() { _selectedDay = index; _selectedDate = date; });
     _springCtrl.forward(from: 0);
+  }
+
+  void _selectMonthDay(DateTime date) {
+    setState(() { _selectedDate = date; _selectedDay = date.weekday - 1; });
+    _springCtrl.forward(from: 0);
+    _expandCtrl.reverse();
   }
 
   @override
@@ -557,74 +693,148 @@ class _AgendaPageState extends State<AgendaPage> with SingleTickerProviderStateM
     final isDark = themeNotifier.isDark;
     final bg = isDark ? AppColors.darkBackground : AppColors.background;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final divider = isDark ? AppColors.darkDivider : AppColors.divider;
-    final dates = _weekDates;
+    final weekDates = _weekDates;
 
     return Column(
       children: [
-        Container(
-          color: bg,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List.generate(7, (i) {
-                    final isSelected = i == _selectedDay;
-                    final date = dates[i];
-                    return GestureDetector(
-                      onTap: () => _selectDay(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? textPrimary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _days[i],
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: isSelected
-                                    ? (isDark ? AppColors.darkBackground : AppColors.background)
-                                    : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            // Número do dia com animação spring
-                            AnimatedBuilder(
-                              animation: _springScaleX,
-                              builder: (context, child) => Transform.scale(
-                                scaleX: isSelected ? _springScaleX.value : 1.0,
-                                child: child,
-                              ),
-                              child: Text(
-                                '${date.day}',
+        GestureDetector(
+          onVerticalDragEnd: (d) {
+            final v = d.primaryVelocity ?? 0;
+            if (v > 80) _expandCtrl.forward();
+            if (v < -80) _expandCtrl.reverse();
+          },
+          child: Container(
+            color: bg,
+            child: Column(
+              children: [
+                // ── Strip semanal — IGUAL ao original
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(7, (i) {
+                      final isSelected = i == _selectedDay;
+                      final date = weekDates[i];
+                      return GestureDetector(
+                        onTap: () => _selectWeekDay(i, date),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? textPrimary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _days[i],
                                 style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
                                   color: isSelected
                                       ? (isDark ? AppColors.darkBackground : AppColors.background)
-                                      : textPrimary,
+                                      : textSecondary,
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              AnimatedBuilder(
+                                animation: _springScaleX,
+                                builder: (ctx, child) => Transform.scale(
+                                  scaleX: isSelected ? _springScaleX.value : 1.0,
+                                  child: child,
+                                ),
+                                child: Text(
+                                  '${date.day}',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    color: isSelected
+                                        ? (isDark ? AppColors.darkBackground : AppColors.background)
+                                        : textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
-              ),
-              Divider(height: 1, color: divider),
-            ],
+
+                // ── Semanas extra do mês — mesmo layout do strip, só expande para baixo
+                SizeTransition(
+                  sizeFactor: _expandAnim,
+                  axisAlignment: -1,
+                  child: Column(
+                    children: _monthWeeks.map((week) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: List.generate(7, (i) {
+                            final date = week[i];
+                            if (date == null) {
+                              // célula vazia — mesma dimensão dos itens reais
+                              return const SizedBox(
+                                width: 42,  // aprox. mesma largura do item (padding 8*2 + texto)
+                                height: 52,
+                              );
+                            }
+                            final isSelected = date == _selectedDate;
+                            return GestureDetector(
+                              onTap: () => _selectMonthDay(date),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? textPrimary : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Linha em branco para alinhar com o label do dia
+                                    Text('', style: const TextStyle(fontSize: 11)),
+                                    const SizedBox(height: 4),
+                                    AnimatedBuilder(
+                                      animation: _springScaleX,
+                                      builder: (ctx, child) => Transform.scale(
+                                        scaleX: isSelected ? _springScaleX.value : 1.0,
+                                        child: child,
+                                      ),
+                                      child: Text(
+                                        '${date.day}',
+                                        style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700,
+                                          color: isSelected
+                                              ? (isDark ? AppColors.darkBackground : AppColors.background)
+                                              : textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                Divider(height: 1, color: divider),
+              ],
+            ),
           ),
         ),
+
+        // ── Conteúdo vazio
         Expanded(
           child: Center(
             child: Column(
@@ -637,27 +847,14 @@ class _AgendaPageState extends State<AgendaPage> with SingleTickerProviderStateM
                     color: const Color(0xFFFF3B30).withOpacity(0.10),
                     shape: BoxShape.circle,
                   ),
-                  child: Center(
-                    child: _svg(_agendaVaziaSvg, const Color(0xFFFF3B30), size: 38),
-                  ),
+                  child: Center(child: _svg(_agendaVaziaSvg, const Color(0xFFFF3B30), size: 38)),
                 ),
                 const SizedBox(height: 18),
-                Text(
-                  'Sem nada agendado',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary,
-                  ),
-                ),
+                Text('Sem nada agendado',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary)),
                 const SizedBox(height: 6),
-                Text(
-                  'Não há eventos para este dia.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                ),
+                Text('Não há eventos para este dia.',
+                    style: TextStyle(fontSize: 14, color: textSecondary)),
               ],
             ),
           ),
