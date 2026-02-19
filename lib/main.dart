@@ -632,7 +632,6 @@ class AgendaPage extends StatefulWidget {
 }
 
 class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
-  int _selectedDay = DateTime.now().weekday - 1;
   DateTime _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
   late AnimationController _springCtrl;
@@ -640,16 +639,12 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
 
   late AnimationController _expandCtrl;
   late Animation<double> _expandAnim;
+  bool _expanded = false;
 
-  final List<String> _days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  static const List<String> _dayLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
-  List<DateTime> get _weekDates {
-    final monday = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
-    return List.generate(7, (i) => monday.add(Duration(days: i)));
-  }
-
-  // Todas as semanas do mês actual (começa sempre na segunda)
-  List<List<DateTime?>> get _monthWeeks {
+  // Todas as semanas do mês da data seleccionada
+  List<List<DateTime?>> get _allWeeks {
     final firstDay = DateTime(_selectedDate.year, _selectedDate.month, 1);
     final offset = (firstDay.weekday - 1) % 7;
     final daysInMonth = DateUtils.getDaysInMonth(_selectedDate.year, _selectedDate.month);
@@ -659,18 +654,20 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
       if (d < 1 || d > daysInMonth) return null;
       return DateTime(_selectedDate.year, _selectedDate.month, d);
     });
-    // Divide em semanas e remove a semana que já está visível no strip
-    final weeks = <List<DateTime?>>[];
-    for (var r = 0; r < allDays.length ~/ 7; r++) {
-      final week = allDays.sublist(r * 7, r * 7 + 7);
-      // Esconder a semana que contém _selectedDate (já visível no strip)
-      final containsSelected = week.any((d) =>
-          d != null && d.year == _selectedDate.year &&
-          d.month == _selectedDate.month && d.day == _selectedDate.day);
-      if (!containsSelected) weeks.add(week);
-    }
-    return weeks;
+    return List.generate(allDays.length ~/ 7, (r) => allDays.sublist(r * 7, r * 7 + 7));
   }
+
+  // Índice da semana que contém a data seleccionada
+  int get _selectedWeekIndex {
+    final weeks = _allWeeks;
+    for (int r = 0; r < weeks.length; r++) {
+      if (weeks[r].any((d) => d != null && _isSameDay(d!, _selectedDate))) return r;
+    }
+    return 0;
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
   void initState() {
@@ -694,16 +691,77 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void _selectWeekDay(int index, DateTime date) {
-    if (date == _selectedDate) return;
-    setState(() { _selectedDay = index; _selectedDate = date; });
+  void _selectDate(DateTime date) {
+    if (_isSameDay(date, _selectedDate)) return;
+    setState(() => _selectedDate = date);
     _springCtrl.forward(from: 0);
+    if (_expanded) {
+      _expandCtrl.reverse().then((_) => setState(() => _expanded = false));
+    }
   }
 
-  void _selectMonthDay(DateTime date) {
-    setState(() { _selectedDate = date; _selectedDay = date.weekday - 1; });
-    _springCtrl.forward(from: 0);
-    _expandCtrl.reverse();
+  void _toggleExpand() {
+    if (_expanded) {
+      _expandCtrl.reverse().then((_) => setState(() => _expanded = false));
+    } else {
+      setState(() => _expanded = true);
+      _expandCtrl.forward();
+    }
+  }
+
+  Widget _buildDayCell(DateTime? date, {bool showLabel = false, int labelIndex = 0,
+      required Color textPrimary, required Color textSecondary, required bool isDark}) {
+    final isSelected = date != null && _isSameDay(date, _selectedDate);
+    final isToday = date != null &&
+        date.year == DateTime.now().year &&
+        date.month == DateTime.now().month &&
+        date.day == DateTime.now().day;
+
+    return GestureDetector(
+      onTap: date != null ? () => _selectDate(date) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? textPrimary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Label do dia — visível sempre no calendário completo, escondido no strip via opacity
+            Text(
+              showLabel ? _dayLabels[labelIndex] : '',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isSelected
+                    ? (isDark ? AppColors.darkBackground : AppColors.background)
+                    : textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            AnimatedBuilder(
+              animation: _springScaleX,
+              builder: (ctx, child) => Transform.scale(
+                scaleX: isSelected ? _springScaleX.value : 1.0,
+                child: child,
+              ),
+              child: Text(
+                date != null ? '${date.day}' : '',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected
+                      ? (isDark ? AppColors.darkBackground : AppColors.background)
+                      : isToday ? textPrimary : textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -713,136 +771,68 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final divider = isDark ? AppColors.darkDivider : AppColors.divider;
-    final weekDates = _weekDates;
+
+    final allWeeks = _allWeeks;
+    final selectedWeekIdx = _selectedWeekIndex;
+    final selectedWeek = allWeeks[selectedWeekIdx];
 
     return Column(
       children: [
         GestureDetector(
           onVerticalDragEnd: (d) {
             final v = d.primaryVelocity ?? 0;
-            if (v > 80) _expandCtrl.forward();
-            if (v < -80) _expandCtrl.reverse();
+            if (v > 80 && !_expanded) _toggleExpand();
+            if (v < -80 && _expanded) _toggleExpand();
           },
           child: Container(
             color: bg,
             child: Column(
               children: [
-                // ── Strip semanal — IGUAL ao original
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: List.generate(7, (i) {
-                      final isSelected = i == _selectedDay;
-                      final date = weekDates[i];
-                      return GestureDetector(
-                        onTap: () => _selectWeekDay(i, date),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected ? textPrimary : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _days[i],
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: isSelected
-                                      ? (isDark ? AppColors.darkBackground : AppColors.background)
-                                      : textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              AnimatedBuilder(
-                                animation: _springScaleX,
-                                builder: (ctx, child) => Transform.scale(
-                                  scaleX: isSelected ? _springScaleX.value : 1.0,
-                                  child: child,
-                                ),
-                                child: Text(
-                                  '${date.day}',
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                    color: isSelected
-                                        ? (isDark ? AppColors.darkBackground : AppColors.background)
-                                        : textPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
+                // ── Quando NÃO expandido: strip semanal original com labels
+                if (!_expanded || _expandCtrl.value < 1.0)
+                  SizeTransition(
+                    sizeFactor: Tween(begin: 1.0, end: 0.0).animate(_expandAnim),
+                    axisAlignment: -1,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: List.generate(7, (i) => _buildDayCell(
+                          selectedWeek[i],
+                          showLabel: true,
+                          labelIndex: i,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          isDark: isDark,
+                        )),
+                      ),
+                    ),
                   ),
-                ),
 
-                // ── Semanas extra do mês — mesmo layout do strip, só expande para baixo
+                // ── Quando expandido: calendário completo com todas as semanas
                 SizeTransition(
                   sizeFactor: _expandAnim,
                   axisAlignment: -1,
-                  child: Column(
-                    children: _monthWeeks.map((week) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: List.generate(7, (i) {
-                            final date = week[i];
-                            if (date == null) {
-                              // célula vazia — mesma dimensão dos itens reais
-                              return const SizedBox(
-                                width: 42,  // aprox. mesma largura do item (padding 8*2 + texto)
-                                height: 52,
-                              );
-                            }
-                            final isSelected = date == _selectedDate;
-                            return GestureDetector(
-                              onTap: () => _selectMonthDay(date),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? textPrimary : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Linha em branco para alinhar com o label do dia
-                                    Text('', style: const TextStyle(fontSize: 11)),
-                                    const SizedBox(height: 4),
-                                    AnimatedBuilder(
-                                      animation: _springScaleX,
-                                      builder: (ctx, child) => Transform.scale(
-                                        scaleX: isSelected ? _springScaleX.value : 1.0,
-                                        child: child,
-                                      ),
-                                      child: Text(
-                                        '${date.day}',
-                                        style: TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w700,
-                                          color: isSelected
-                                              ? (isDark ? AppColors.darkBackground : AppColors.background)
-                                              : textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      );
-                    }).toList(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    child: Column(
+                      children: List.generate(allWeeks.length, (r) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: List.generate(7, (i) => _buildDayCell(
+                              allWeeks[r][i],
+                              showLabel: r == 0, // labels só na primeira linha
+                              labelIndex: i,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                              isDark: isDark,
+                            )),
+                          ),
+                        );
+                      }),
+                    ),
                   ),
                 ),
 
