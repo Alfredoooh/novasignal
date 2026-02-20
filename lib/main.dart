@@ -335,22 +335,12 @@ class _MainShellState extends State<MainShell> {
     final isDark = themeNotifier.isDark;
     final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
     final navUnselected = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
-    final pillIconColor = isDark ? AppColors.pillDarkIcon : AppColors.pillLightIcon;
-    final navBg = isDark ? AppColors.darkNavBg : AppColors.navBg;
-    final pillColor = isDark ? AppColors.pillDark : AppColors.pillLight;
-
-    final pages = [
-      const ConversasPage(),
-      const AgendaPage(),
-      const FeedPage(),
-      const UtilizadorPage(),
-    ];
+    final dividerColor = isDark ? AppColors.darkDivider : AppColors.divider;
 
     // Bottom bar: 3% mais escuro que o fundo
     final navBgColor = isDark
         ? Color.lerp(AppColors.darkBackground, Colors.black, 0.03)!
         : Color.lerp(AppColors.background, Colors.black, 0.03)!;
-    final dividerColor = isDark ? AppColors.darkDivider : AppColors.divider;
 
     final pages = [
       const InicioPage(),
