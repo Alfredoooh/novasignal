@@ -7,6 +7,18 @@ import 'package:flutter_svg/flutter_svg.dart';
 // SVGs INLINE
 // ─────────────────────────────────────────────
 
+const String _mensagensFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m13-.004H5C2.243-.004,0,2.239,0,4.996v12.854c0,.793.435,1.519,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.191-.36l3.963-2.643h5.697c2.757,0,5-2.243,5-5v-7C18,2.239,15.757-.004,13-.004Zm11,9v12.854c0,.793-.435,1.519-1.134,1.894-.318.171-.667.255-1.015.256-.416,0-.831-.121-1.19-.36l-3.964-2.644h-5.697c-1.45,0-2.747-.631-3.661-1.62l.569-.38h5.092c3.859,0,7-3.141,7-7v-7c0-.308-.027-.608-.065-.906,2.311.44,4.065,2.469,4.065,4.906Z"/>
+</svg>
+''';
+
+const String _mensagensOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m19,4h-1.101c-.465-2.279-2.485-4-4.899-4H5C2.243,0,0,2.243,0,5v12.854c0,.794.435,1.52,1.134,1.894.318.171.667.255,1.015.255.416,0,.831-.121,1.19-.36l2.95-1.967c.691,1.935,2.541,3.324,4.711,3.324h5.697l3.964,2.643c.36.24.774.361,1.19.361.348,0,.696-.085,1.015-.256.7-.374,1.134-1.1,1.134-1.894v-12.854c0-2.757-2.243-5-5-5ZM2.23,17.979c-.019.012-.075.048-.152.007-.079-.042-.079-.109-.079-.131V5c0-1.654,1.346-3,3-3h8c1.654,0,3,1.346,3,3v7c0,1.654-1.346,3-3,3h-6c-.327,0-.541.159-.565.175l-4.205,2.804Zm19.77,3.876c0,.021,0,.089-.079.131-.079.041-.133.005-.151-.007l-4.215-2.811c-.164-.109-.357-.168-.555-.168h-6c-1.304,0-2.415-.836-2.828-2h4.828c2.757,0,5-2.243,5-5v-6h1c1.654,0,3,1.346,3,3v12.854Z"/>
+</svg>
+''';
+
 const String _inicioFilledSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m18,22c0,.553-.448,1-1,1H5c-2.761,0-5-2.239-5-5v-7.764c0-1.136.486-2.223,1.333-2.981.293-.263.715-.329,1.075-.168.36.161.592.519.592.913v6.5c0,3.59,2.91,6.5,6.5,6.5h7.5c.552,0,1,.447,1,1Zm6-16.5v9c0,2.481-2.019,4.5-4.5,4.5h-10c-2.481,0-4.5-2.019-4.5-4.5V5.5c0-2.481,2.019-4.5,4.5-4.5h10c2.481,0,4.5,2.019,4.5,4.5Zm-2,7.5v-2h-2v2h2Zm-2-4h2v-2h-2v2Zm0-5.95v1.95h1.95c-.199-.978-.972-1.75-1.95-1.95Zm-13,3.95v2h2v-2h-2Zm0,6h2v-2h-2v2Zm.05-8h1.95v-1.95c-.978.199-1.75.971-1.95,1.95Zm1.95,11.95v-1.95h-1.95c.199.978.972,1.75,1.95,1.95Zm12.95-1.95h-1.95v1.95c.978-.199,1.75-.971,1.95-1.95Z"/>
@@ -300,7 +312,21 @@ class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
-  static const _titles = ['Início', 'Agenda', 'Feed', 'Utilizador'];
+  static const _titles = ['Conversas', 'Agenda', 'Feed', 'Utilizador'];
+
+  @override
+  void initState() {
+    super.initState();
+    themeNotifier.addListener(_onThemeChange);
+  }
+
+  @override
+  void dispose() {
+    themeNotifier.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -312,7 +338,7 @@ class _MainShellState extends State<MainShell> {
     final pillColor = isDark ? AppColors.pillDark : AppColors.pillLight;
 
     final pages = [
-      const InicioPage(),
+      const ConversasPage(),
       const AgendaPage(),
       const FeedPage(),
       const UtilizadorPage(),
@@ -361,9 +387,9 @@ class _MainShellState extends State<MainShell> {
         indicatorColor: pillColor,
         destinations: [
           NavigationDestination(
-            icon: _svg(_inicioOutlineSvg, navUnselected),
-            selectedIcon: _svg(_inicioFilledSvg, pillIconColor),
-            label: 'Início',
+            icon: _svg(_mensagensOutlineSvg, navUnselected),
+            selectedIcon: _svg(_mensagensFilledSvg, pillIconColor),
+            label: 'Conversas',
           ),
           NavigationDestination(
             icon: _svg(_agendaOutlineSvg, navUnselected),
@@ -602,10 +628,10 @@ class _AppDrawerState extends State<_AppDrawer> {
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: INÍCIO
+// PÁGINA: CONVERSAS
 // ─────────────────────────────────────────────
-class InicioPage extends StatelessWidget {
-  const InicioPage({super.key});
+class ConversasPage extends StatelessWidget {
+  const ConversasPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
@@ -877,3 +903,4 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
     );
   }
 }
+
