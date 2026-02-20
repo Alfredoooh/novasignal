@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:animations/animations.dart';
@@ -348,6 +349,7 @@ class _MainShellState extends State<MainShell> {
       key: _scaffoldKey,
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       drawer: _AppDrawer(isDark: isDark),
+      extendBody: true, // body passa por baixo da bottom bar
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
         elevation: 0,
@@ -366,47 +368,174 @@ class _MainShellState extends State<MainShell> {
             ? [_AgendaAppBarActions(isDark: isDark, textPrimary: textPrimary)]
             : null,
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: KeyedSubtree(
-          key: ValueKey(_selectedIndex),
-          child: pages[_selectedIndex],
-        ),
+      body: Stack(
+        children: [
+          // Conteúdo principal
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
+            child: KeyedSubtree(
+              key: ValueKey(_selectedIndex),
+              child: pages[_selectedIndex],
+            ),
+          ),
+
+          // Search bar flutuante — só no tab Conversas (index 0)
+          if (_selectedIndex == 0)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 90, // acima da bottom bar
+              child: _FrostedSearchBar(isDark: isDark),
+            ),
+        ],
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _FrostedNavBar(
+        isDark: isDark,
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        animationDuration: const Duration(milliseconds: 450),
-        backgroundColor: navBg,
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        indicatorColor: pillColor,
-        destinations: [
-          NavigationDestination(
-            icon: _svg(_mensagensOutlineSvg, navUnselected),
-            selectedIcon: _svg(_mensagensFilledSvg, pillIconColor),
-            label: 'Conversas',
+        pillColor: pillColor,
+        pillIconColor: pillIconColor,
+        navUnselected: navUnselected,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// FROSTED GLASS — BOTTOM NAV BAR
+// ─────────────────────────────────────────────
+class _FrostedNavBar extends StatelessWidget {
+  final bool isDark;
+  final int selectedIndex;
+  final ValueChanged<int> onDestinationSelected;
+  final Color pillColor;
+  final Color pillIconColor;
+  final Color navUnselected;
+
+  const _FrostedNavBar({
+    required this.isDark,
+    required this.selectedIndex,
+    required this.onDestinationSelected,
+    required this.pillColor,
+    required this.pillIconColor,
+    required this.navUnselected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final base = isDark ? AppColors.darkBackground : AppColors.background;
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                base.withOpacity(0.0),  // topo: totalmente transparente
+                base.withOpacity(0.55), // meio
+                base.withOpacity(0.88), // fundo: quase opaco
+              ],
+              stops: const [0.0, 0.35, 1.0],
+            ),
           ),
-          NavigationDestination(
-            icon: _svg(_agendaOutlineSvg, navUnselected),
-            selectedIcon: _svg(_agendaFilledSvg, pillIconColor),
-            label: 'Agenda',
+          child: NavigationBar(
+            selectedIndex: selectedIndex,
+            onDestinationSelected: onDestinationSelected,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            animationDuration: const Duration(milliseconds: 450),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            shadowColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            indicatorColor: pillColor,
+            destinations: [
+              NavigationDestination(
+                icon: _svg(_mensagensOutlineSvg, navUnselected),
+                selectedIcon: _svg(_mensagensFilledSvg, pillIconColor),
+                label: 'Conversas',
+              ),
+              NavigationDestination(
+                icon: _svg(_agendaOutlineSvg, navUnselected),
+                selectedIcon: _svg(_agendaFilledSvg, pillIconColor),
+                label: 'Agenda',
+              ),
+              NavigationDestination(
+                icon: _svg(_feedOutlineSvg, navUnselected),
+                selectedIcon: _svg(_feedFilledSvg, pillIconColor),
+                label: 'Feed',
+              ),
+              NavigationDestination(
+                icon: _svg(_utilizadorOutlineSvg, navUnselected),
+                selectedIcon: _svg(_utilizadorFilledSvg, pillIconColor),
+                label: 'Utilizador',
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: _svg(_feedOutlineSvg, navUnselected),
-            selectedIcon: _svg(_feedFilledSvg, pillIconColor),
-            label: 'Feed',
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// FROSTED GLASS — SEARCH BAR FLUTUANTE
+// ─────────────────────────────────────────────
+class _FrostedSearchBar extends StatelessWidget {
+  final bool isDark;
+  const _FrostedSearchBar({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = isDark ? AppColors.darkSurface : AppColors.background;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: base.withOpacity(isDark ? 0.55 : 0.70),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: _svg(_utilizadorOutlineSvg, navUnselected),
-            selectedIcon: _svg(_utilizadorFilledSvg, pillIconColor),
-            label: 'Utilizador',
+          child: Row(
+            children: [
+              const SizedBox(width: 18),
+              Icon(Icons.search_rounded, color: textSecondary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Pesquisar conversas...',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+              Icon(Icons.mic_none_rounded, color: textPrimary, size: 20),
+              const SizedBox(width: 18),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -903,4 +1032,3 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
     );
   }
 }
-
