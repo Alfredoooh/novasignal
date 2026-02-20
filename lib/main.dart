@@ -1,3 +1,4 @@
+// main.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +6,7 @@ import 'package:animations/animations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 // ─────────────────────────────────────────────
-// SVGs INLINE
+// SVGs INLINE (mantive todos os svgs que tinhas; inclui _inicioFilledSvg/_inicioOutlineSvg)
 // ─────────────────────────────────────────────
 
 const String _mensagensFilledSvg = '''
@@ -21,14 +22,26 @@ const String _mensagensOutlineSvg = '''
 ''';
 
 const String _inicioFilledSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m18,22c0,.553-.448,1-1,1H5c-2.761,0-5-2.239-5-5v-7.764c0-1.136.486-2.223,1.333-2.981.293-.263.715-.329,1.075-.168.36.161.592.519.592.913v6.5c0,3.59,2.91,6.5,6.5,6.5h7.5c.552,0,1,.447,1,1Zm6-16.5v9c0,2.481-2.019,4.5-4.5,4.5h-10c-2.481,0-4.5-2.019-4.5-4.5V5.5c0-2.481,2.019-4.5,4.5-4.5h10c2.481,0,4.5,2.019,4.5,4.5Zm-2,7.5v-2h-2v2h2Zm-2-4h2v-2h-2v2Zm0-5.95v1.95h1.95c-.199-.978-.972-1.75-1.95-1.95Zm-13,3.95v2h2v-2h-2Zm0,6h2v-2h-2v2Zm.05-8h1.95v-1.95c-.978.199-1.75.971-1.95,1.95Zm1.95,11.95v-1.95h-1.95c.199.978.972,1.75,1.95,1.95Zm12.95-1.95h-1.95v1.95c.978-.199,1.75-.971,1.95-1.95Z"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generator: Adobe Illustrator 25.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve" width="512" height="512">
+<g>
+	<path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/>
+	<g>
+		<path d="M362.667,383.841v128H448c35.346,0,64-28.654,64-64V253.26c0.005-11.083-4.302-21.733-12.011-29.696l-181.29-195.99    c-31.988-34.61-85.976-36.735-120.586-4.747c-1.644,1.52-3.228,3.103-4.747,4.747L12.395,223.5    C4.453,231.496-0.003,242.31,0,253.58v194.261c0,35.346,28.654,64,64,64h85.333v-128c0.399-58.172,47.366-105.676,104.073-107.044    C312.01,275.383,362.22,323.696,362.667,383.841z"/>
+		<path d="M256,319.841c-35.346,0-64,28.654-64,64v128h128v-128C320,348.495,291.346,319.841,256,319.841z"/>
+	</g>
+</g>
 </svg>
 ''';
 
 const String _inicioOutlineSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m18,22c0,.553-.448,1-1,1H5c-2.757,0-5-2.243-5-5v-7.764c0-1.136.486-2.223,1.333-2.981.41-.368,1.044-.334,1.412.078.369.411.334,1.043-.078,1.412-.424.38-.667.923-.667,1.491v7.764c0,1.654,1.346,3,3,3h12c.552,0,1,.447,1,1Zm6-16.5v9c0,2.481-2.019,4.5-4.5,4.5h-10c-2.481,0-4.5-2.019-4.5-4.5V5.5c0-2.481,2.019-4.5,4.5-4.5h10c2.481,0,4.5,2.019,4.5,4.5Zm-2,7.5v-2h-2v2h2Zm-2-4h2v-2h-2v2Zm0-5.95v1.95h1.95c-.199-.978-.972-1.75-1.95-1.95Zm-13,3.95v2h2v-2h-2Zm0,6h2v-2h-2v2Zm.05-8h1.95v-1.95c-.978.199-1.75.971-1.95,1.95Zm1.95,11.95v-1.95h-1.95c.199.978.972,1.75,1.95,1.95Zm9,.05V3h-7v14h7Zm3.95-2h-1.95v1.95c.978-.199,1.75-.971,1.95-1.95Z"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generator: Adobe Illustrator 25.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 512.001 512.001" style="enable-background:new 0 0 512.001 512.001;" xml:space="preserve" width="512" height="512">
+<g>
+	<path d="M490.134,185.472L338.966,34.304c-45.855-45.737-120.076-45.737-165.931,0L21.867,185.472   C7.819,199.445-0.055,218.457,0,238.272v221.397C0.047,488.568,23.475,511.976,52.374,512h407.253   c28.899-0.023,52.326-23.432,52.373-52.331V238.272C512.056,218.457,504.182,199.445,490.134,185.472z M448,448H341.334v-67.883   c0-44.984-36.467-81.451-81.451-81.451c0,0,0,0,0,0h-7.765c-44.984,0-81.451,36.467-81.451,81.451l0,0V448H64V238.272   c0.007-2.829,1.125-5.541,3.115-7.552L218.283,79.552c20.825-20.831,54.594-20.835,75.425-0.01c0.003,0.003,0.007,0.007,0.01,0.01   L444.886,230.72c1.989,2.011,3.108,4.723,3.115,7.552V448z"/>
+</g>
 </svg>
 ''';
 
@@ -68,21 +81,18 @@ const String _agendaOutlineSvg = '''
 </svg>
 ''';
 
-// Três pontos circular (popup menu)
 const String _maisOpcoesSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-4-10c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm11,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm-5.5,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Z"/>
 </svg>
 ''';
 
-// Ir para hoje — Filled
 const String _hojeFilledSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M0,8v-1C0,4.243,2.243,2,5,2h1V1c0-.552,.447-1,1-1s1,.448,1,1v1h8V1c0-.552,.447-1,1-1s1,.448,1,1v1h1c2.757,0,5,2.243,5,5v1H0Zm24,2v9c0,2.757-2.243,5-5,5H5c-2.757,0-5-2.243-5-5V10H24Zm-6.168,3.152c-.384-.397-1.016-.409-1.414-.026l-4.754,4.582c-.376,.376-1.007,.404-1.439-.026l-2.278-2.117c-.403-.375-1.035-.354-1.413,.052-.376,.404-.353,1.037,.052,1.413l2.252,2.092c.566,.567,1.32,.879,2.121,.879s1.556-.312,2.108-.866l4.74-4.568c.397-.383,.409-1.017,.025-1.414Z"/>
 </svg>
 ''';
 
-// Ir para hoje — Outline
 const String _hojeOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M18.5,2h-.5v-.5c0-.829-.672-1.5-1.5-1.5s-1.5,.671-1.5,1.5v.5h-6v-.5c0-.829-.672-1.5-1.5-1.5s-1.5,.671-1.5,1.5v.5h-.5C2.468,2,0,4.467,0,7.5v11c0,3.033,2.468,5.5,5.5,5.5h13c3.032,0,5.5-2.467,5.5-5.5V7.5c0-3.033-2.468-5.5-5.5-5.5Zm0,19H5.5c-1.379,0-2.5-1.122-2.5-2.5V9H21v9.5c0,1.378-1.121,2.5-2.5,2.5Zm-.655-9.026c.566,.604,.535,1.554-.069,2.12l-4.176,3.914c-.626,.627-1.505,.992-2.439,.992s-1.814-.364-2.476-1.026l-2.478-2.396c-.596-.576-.611-1.525-.035-2.121,.576-.594,1.526-.61,2.121-.035l2.496,2.414c.146,.145,.294,.164,.371,.164s.226-.019,.354-.146l4.211-3.948c.604-.567,1.552-.536,2.12,.068Z"/>
@@ -313,7 +323,9 @@ class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
-  static const _titles = ['Conversas', 'Agenda', 'Feed', 'Utilizador'];
+
+  // Atualizei os títulos — removi 'Conversas' e coloquei 'Início'
+  static const _titles = ['Início', 'Agenda', 'Notícias', 'Utilizador'];
 
   @override
   void initState() {
@@ -339,7 +351,7 @@ class _MainShellState extends State<MainShell> {
     final pillColor = isDark ? AppColors.pillDark : AppColors.pillLight;
 
     final pages = [
-      const ConversasPage(),
+      const InicioPage(),
       const AgendaPage(),
       const FeedPage(),
       const UtilizadorPage(),
@@ -368,30 +380,16 @@ class _MainShellState extends State<MainShell> {
             ? [_AgendaAppBarActions(isDark: isDark, textPrimary: textPrimary)]
             : null,
       ),
-      body: Stack(
-        children: [
-          // Conteúdo principal
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
-            child: KeyedSubtree(
-              key: ValueKey(_selectedIndex),
-              child: pages[_selectedIndex],
-            ),
-          ),
-
-          // Search bar flutuante — só no tab Conversas (index 0)
-          if (_selectedIndex == 0)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 90, // acima da bottom bar
-              child: _FrostedSearchBar(isDark: isDark),
-            ),
-        ],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
+        child: KeyedSubtree(
+          key: ValueKey(_selectedIndex),
+          child: pages[_selectedIndex],
+        ),
       ),
-      bottomNavigationBar: _FrostedNavBar(
+      bottomNavigationBar: _PlainNavBar(
         isDark: isDark,
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
@@ -404,9 +402,9 @@ class _MainShellState extends State<MainShell> {
 }
 
 // ─────────────────────────────────────────────
-// FROSTED GLASS — BOTTOM NAV BAR
+// NAV BAR (sem blur, 20% menor, linha fina no topo, 3% mais escuro)
 // ─────────────────────────────────────────────
-class _FrostedNavBar extends StatelessWidget {
+class _PlainNavBar extends StatelessWidget {
   final bool isDark;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -414,7 +412,7 @@ class _FrostedNavBar extends StatelessWidget {
   final Color pillIconColor;
   final Color navUnselected;
 
-  const _FrostedNavBar({
+  const _PlainNavBar({
     required this.isDark,
     required this.selectedIndex,
     required this.onDestinationSelected,
@@ -425,116 +423,55 @@ class _FrostedNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = isDark ? AppColors.darkBackground : AppColors.background;
+    final base = isDark ? AppColors.darkNavBg : AppColors.navBg;
+    // "3% mais escuro" do fundo
+    final bgDarkened = Color.lerp(base, Colors.black, 0.03)!;
+    final dividerColor = isDark ? AppColors.darkDivider : AppColors.divider;
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                base.withOpacity(0.0),  // topo: totalmente transparente
-                base.withOpacity(0.55), // meio
-                base.withOpacity(0.88), // fundo: quase opaco
-              ],
-              stops: const [0.0, 0.35, 1.0],
-            ),
-          ),
-          child: NavigationBar(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onDestinationSelected,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            animationDuration: const Duration(milliseconds: 450),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            shadowColor: Colors.transparent,
-            surfaceTintColor: Colors.transparent,
-            indicatorColor: pillColor,
-            destinations: [
-              NavigationDestination(
-                icon: _svg(_mensagensOutlineSvg, navUnselected),
-                selectedIcon: _svg(_mensagensFilledSvg, pillIconColor),
-                label: 'Conversas',
-              ),
-              NavigationDestination(
-                icon: _svg(_agendaOutlineSvg, navUnselected),
-                selectedIcon: _svg(_agendaFilledSvg, pillIconColor),
-                label: 'Agenda',
-              ),
-              NavigationDestination(
-                icon: _svg(_feedOutlineSvg, navUnselected),
-                selectedIcon: _svg(_feedFilledSvg, pillIconColor),
-                label: 'Feed',
-              ),
-              NavigationDestination(
-                icon: _svg(_utilizadorOutlineSvg, navUnselected),
-                selectedIcon: _svg(_utilizadorFilledSvg, pillIconColor),
-                label: 'Utilizador',
-              ),
-            ],
-          ),
+    return Container(
+      // altura reduzida ~20% (de 56 para 44)
+      height: 44,
+      decoration: BoxDecoration(
+        color: bgDarkened,
+        border: Border(
+          top: BorderSide(color: dividerColor, width: 0.5), // linha fina de separação
         ),
       ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// FROSTED GLASS — SEARCH BAR FLUTUANTE
-// ─────────────────────────────────────────────
-class _FrostedSearchBar extends StatelessWidget {
-  final bool isDark;
-  const _FrostedSearchBar({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final base = isDark ? AppColors.darkSurface : AppColors.background;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          height: 52,
-          decoration: BoxDecoration(
-            color: base.withOpacity(isDark ? 0.55 : 0.70),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: (isDark ? Colors.white : Colors.black).withOpacity(0.08),
-              width: 1,
+      child: SafeArea(
+        top: false,
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          animationDuration: const Duration(milliseconds: 300),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
+          // removi o indicator preenchido (pill)
+          indicatorColor: Colors.transparent,
+          destinations: [
+            NavigationDestination(
+              icon: _svg(_inicioOutlineSvg, navUnselected),
+              selectedIcon: _svg(_inicioFilledSvg, pillIconColor),
+              label: 'Início',
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.25 : 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 18),
-              Icon(Icons.search_rounded, color: textSecondary, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Pesquisar conversas...',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-              Icon(Icons.mic_none_rounded, color: textPrimary, size: 20),
-              const SizedBox(width: 18),
-            ],
-          ),
+            NavigationDestination(
+              icon: _svg(_agendaOutlineSvg, navUnselected),
+              selectedIcon: _svg(_agendaFilledSvg, pillIconColor),
+              label: 'Agenda',
+            ),
+            NavigationDestination(
+              icon: _svg(_feedOutlineSvg, navUnselected),
+              selectedIcon: _svg(_feedFilledSvg, pillIconColor),
+              label: 'Notícias',
+            ),
+            NavigationDestination(
+              icon: _svg(_utilizadorOutlineSvg, navUnselected),
+              selectedIcon: _svg(_utilizadorFilledSvg, pillIconColor),
+              label: 'Utilizador',
+            ),
+          ],
         ),
       ),
     );
@@ -757,16 +694,16 @@ class _AppDrawerState extends State<_AppDrawer> {
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: CONVERSAS
+// PÁGINA: INÍCIO
 // ─────────────────────────────────────────────
-class ConversasPage extends StatelessWidget {
-  const ConversasPage({super.key});
+class InicioPage extends StatelessWidget {
+  const InicioPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: FEED
+// PÁGINA: FEED (Notícias)
 // ─────────────────────────────────────────────
 class FeedPage extends StatelessWidget {
   const FeedPage({super.key});
