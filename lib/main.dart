@@ -33,27 +33,39 @@ const String _inicioOutlineSvg = '''
 </svg>
 ''';
 
-const String _utilizadorFilledSvg = '''
+const String _lojasFilledSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m12,12c-3.309,0-6-2.691-6-6S8.691,0,12,0s6,2.691,6,6-2.691,6-6,6Zm0,2c-5.103,0-9.375,3.822-9.936,8.89-.031.283.06.565.249.777.19.212.461.333.745.333h2.941c0-3.309,2.691-6,6-6s6,2.691,6,6h2.941c.284,0,.555-.121.745-.333.189-.212.28-.494.249-.777-.561-5.068-4.833-8.89-9.936-8.89Zm0,6c-2.206,0-4,1.794-4,4h8c0-2.206-1.794-4-4-4Z"/>
+<path d="M23.962,7.725l-1.172-4.099c-.61-2.135-2.588-3.626-4.808-3.626h-.982V4c-.006,1.308-1.995,1.307-2,0V0h-6V4c-.006,1.308-1.994,1.307-2,0V0h-.983C3.797,0,1.82,1.491,1.209,3.626L.039,7.725c-.161,1.066,.314,2.138,.961,2.893v9.382c0,2.206,1.794,4,4,4h6c2.206,0,4-1.794,4-4V11.444c.378-.221,.714-.498,1-.826,.734,.84,1.799,1.382,3,1.382h1c.347,0,.678-.058,1-.142v11.142c.006,1.308,1.995,1.307,2,0V10.618c.648-.754,1.122-1.826,.962-2.893Zm-10.962,9.275H3v-5.142c.322,.084,.653,.142,1,.142h1c1.2,0,2.266-.542,3-1.382,.734,.84,1.8,1.382,3,1.382h2v5Z"/>
 </svg>
 ''';
 
-const String _utilizadorOutlineSvg = '''
+const String _lojasOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m12,12c3.309,0,6-2.691,6-6S15.309,0,12,0s-6,2.691-6,6,2.691,6,6,6Zm0-9c1.654,0,3,1.346,3,3s-1.346,3-3,3-3-1.346-3-3,1.346-3,3-3Zm4.934,19.286c.119.82-.357,1.714-1.486,1.714-.733,0-1.375-.539-1.482-1.286-.142-.978-.986-1.714-1.965-1.714s-1.824.737-1.965,1.714c-.118.82-.878,1.389-1.699,1.27-.82-.118-1.389-.879-1.27-1.699.353-2.443,2.474-4.286,4.934-4.286s4.582,1.842,4.934,4.286Zm5.038.127c.048.827-.583,1.537-1.41,1.585-.03.001-.06.002-.089.002-.789,0-1.45-.615-1.496-1.413-.215-3.694-3.28-6.587-6.977-6.587s-6.762,2.894-6.977,6.587c-.048.827-.76,1.453-1.585,1.41-.827-.048-1.458-.758-1.41-1.585.308-5.278,4.688-9.413,9.972-9.413s9.664,4.134,9.972,9.413Z"/>
+<path d="M24,8.5c0-.132-.018-.264-.052-.392l-1.146-4.226c-.715-2.322-2.827-3.882-5.257-3.882H6.454C4.024,0,1.912,1.561,1.184,3.932L.052,8.108c-.201,1.159,.272,2.363,.948,3.215v8.177c0,2.481,2.019,4.5,4.5,4.5h5c2.481,0,4.5-2.019,4.5-4.5v-7.26c.176-.118,.343-.248,.5-.389,.797,.714,1.848,1.149,3,1.149h1c.169,0,.336-.01,.5-.028v9.528c.034,1.972,2.967,1.971,3,0V11.323c.624-.773,1-1.755,1-2.823Zm-12,11c0,.827-.673,1.5-1.5,1.5H5.5c-.827,0-1.5-.673-1.5-1.5v-.5H12v.5Zm0-3.5H4v-3.028c.164,.018,.331,.028,.5,.028h1c1.152,0,2.203-.435,3-1.149,.797,.714,1.848,1.149,3,1.149h.5v3Zm7.5-6h-1c-.827,0-1.5-.673-1.5-1.5s-.672-1.5-1.5-1.5-1.5,.671-1.5,1.5-.673,1.5-1.5,1.5h-1c-.827,0-1.5-.673-1.5-1.5s-.671-1.5-1.5-1.5-1.5,.671-1.5,1.5-.673,1.5-1.5,1.5h-1c-.771,0-1.408-.585-1.491-1.334l1.056-3.901c.325-1.056,1.285-1.765,2.389-1.765h.546v.5c.033,1.972,2.967,1.971,3,0v-.5h4v.5c.034,1.972,2.967,1.971,3,0v-.5h.546c1.104,0,2.064,.709,2.375,1.716l1.07,3.95c-.083,.749-.72,1.334-1.491,1.334Z"/>
 </svg>
 ''';
 
-const String _feedFilledSvg = '''
+const String _carrinhoFilledSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m19,24h-4c-2.757,0-5-2.243-5-5V5c0-2.757,2.243-5,5-5h4c2.757,0,5,2.243,5,5v14c0,2.757-2.243,5-5,5Zm-12-3V4c0-.552-.448-1-1-1s-1,.448-1,1v17c0,.552.448,1,1,1s1-.448,1-1Zm-5-3V7c0-.552-.448-1-1-1s-1,.448-1,1v11c0,.552.448,1,1,1s1-.448,1-1Z"/>
+<path d="M23.297,9.034c-.57-.657-1.396-1.034-2.267-1.034h-.086C20.445,3.506,16.625,0,12,0S3.555,3.506,3.056,8h-.056c-.87,0-1.695,.377-2.266,1.034S-.093,10.562,.03,11.425l1.061,7.424c.42,2.937,2.974,5.151,5.94,5.151h9.969c2.966,0,5.52-2.215,5.94-5.151l1.061-7.424c.123-.862-.134-1.733-.704-2.391ZM12,2c3.52,0,6.441,2.613,6.928,6H5.072c.487-3.387,3.408-6,6.928-6Zm-4,17c0,.553-.447,1-1,1s-1-.447-1-1v-6c0-.553,.447-1,1-1s1,.447,1,1v6Zm5,0c0,.553-.447,1-1,1s-1-.447-1-1v-6c0-.553,.447-1,1-1s1,.447,1,1v6Zm5,0c0,.553-.447,1-1,1s-1-.447-1-1v-6c0-.553,.447-1,1-1s1,.447,1,1v6Z"/>
 </svg>
 ''';
 
-const String _feedOutlineSvg = '''
+const String _carrinhoOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="m18.5,0h-3c-3.033,0-5.5,2.467-5.5,5.5v13c0,3.033,2.467,5.5,5.5,5.5h3c3.033,0,5.5-2.467,5.5-5.5V5.5c0-3.033-2.467-5.5-5.5-5.5Zm2.5,18.5c0,1.378-1.122,2.5-2.5,2.5h-3c-1.378,0-2.5-1.122-2.5-2.5V5.5c0-1.378,1.122-2.5,2.5-2.5h3c1.378,0,2.5,1.122,2.5,2.5v13ZM8,4.5v15c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V4.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Zm-5,3v9c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V7.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Z"/>
+<path d="M23.297,9.034c-.57-.657-1.396-1.034-2.267-1.034h-.086C20.445,3.506,16.625,0,12,0S3.555,3.506,3.056,8h-.056c-.87,0-1.695,.377-2.266,1.034S-.093,10.562,.03,11.425l1.061,7.424c.42,2.937,2.974,5.151,5.94,5.151h9.969c2.966,0,5.52-2.215,5.94-5.151l1.061-7.424c.123-.862-.134-1.733-.704-2.391ZM12,2c3.52,0,6.441,2.613,6.928,6H5.072c.487-3.387,3.408-6,6.928-6Zm10.021,9.142l-1.061,7.424c-.28,1.958-1.982,3.435-3.96,3.435H7.031c-1.979,0-3.681-1.477-3.96-3.435l-1.061-7.424c-.042-.291,.042-.574,.234-.797,.193-.223,.461-.345,.755-.345H21.03c.294,0,.562,.122,.756,.345,.192,.223,.276,.506,.234,.797Zm-9.021,1.858v6c0,.553-.447,1-1,1s-1-.447-1-1v-6c0-.553,.447-1,1-1s1,.447,1,1Zm5,0v6c0,.553-.447,1-1,1s-1-.447-1-1v-6c0-.553,.447-1,1-1s1,.447,1,1Zm-10,0v6c0,.553-.447,1-1,1s-1-.447-1-1v-6c0-.553,.447-1,1-1s1,.447,1,1Z"/>
+</svg>
+''';
+
+const String _pesquisaFilledSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M14,0C6.665-.189,1.6,8.253,5.139,14.618L.879,18.879a3,3,0,0,0,4.242,4.242l4.261-4.26C15.748,22.4,24.189,17.336,24,10A10.011,10.011,0,0,0,14,0Zm0,17C4.749,16.7,4.751,3.294,14,3a1,1,0,0,1,0,2c-6.607.21-6.607,9.791,0,10a5.006,5.006,0,0,0,5-5,1,1,0,0,1,2,0A7.009,7.009,0,0,1,14,17Z"/>
+</svg>
+''';
+
+const String _pesquisaOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M14,0C6.664-.19,1.6,8.253,5.139,14.619L.878,18.879a3,3,0,1,0,4.243,4.243l4.26-4.261C15.748,22.4,24.189,17.336,24,10A10.013,10.013,0,0,0,14,0ZM3.707,21.708a1,1,0,0,1-1.415-1.414l3.969-3.97a10.12,10.12,0,0,0,1.415,1.415ZM14,18a8.009,8.009,0,0,1-8-8C6.375-.589,21.626-.586,22,10A8.01,8.01,0,0,1,14,18Zm6-8c-.251,7.93-11.75,7.928-12,0a6.007,6.007,0,0,1,6-6,1,1,0,0,1,0,2,4,4,0,0,0-4,4c.138,5.275,7.863,5.274,8,0A1,1,0,0,1,20,10Z"/>
 </svg>
 ''';
 
@@ -314,7 +326,7 @@ class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
-  static const _titles = ['Início', 'Agenda', 'Notícias', 'Utilizador'];
+  static const _titles = ['Início', 'Carrinho', 'Pesquisa', 'Lojas'];
 
   @override
   void initState() {
@@ -337,17 +349,18 @@ class _MainShellState extends State<MainShell> {
     final navUnselected = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
     final dividerColor = isDark ? AppColors.darkDivider : AppColors.divider;
 
-    // Bottom bar: 3% mais escuro que o fundo
-    final navBgColor = isDark
-        ? Color.lerp(AppColors.darkBackground, Colors.black, 0.03)!
-        : Color.lerp(AppColors.background, Colors.black, 0.03)!;
+    // Bottom bar: branco 100% no claro, fundo escuro no dark
+    final navBgColor = isDark ? AppColors.darkBackground : Colors.white;
 
     final pages = [
       const InicioPage(),
-      const AgendaPage(),
-      const NoticiasFeedPage(),
-      const UtilizadorPage(),
+      const CarrinhoPage(),
+      const PesquisaPage(),
+      const LojasPage(),
     ];
+
+    // Tamanho dos ícones: 10% menor que 24 = ~21.6
+    const double iconSize = 21.6;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -367,9 +380,6 @@ class _MainShellState extends State<MainShell> {
           _titles[_selectedIndex],
           style: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
         ),
-        actions: _selectedIndex == 1
-            ? [_AgendaAppBarActions(isDark: isDark, textPrimary: textPrimary)]
-            : null,
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
@@ -383,7 +393,6 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Linha de separação fina
           Container(height: 0.5, color: dividerColor),
           NavigationBar(
             selectedIndex: _selectedIndex,
@@ -394,29 +403,28 @@ class _MainShellState extends State<MainShell> {
             elevation: 0,
             shadowColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
-            height: 64, // padrão ~80px, reduzido ~20%
-            // Sem pill — indicatorColor transparente
+            height: 64,
             indicatorColor: Colors.transparent,
             destinations: [
               NavigationDestination(
-                icon: _svg(_inicioOutlineSvg, navUnselected),
-                selectedIcon: _svg(_inicioFilledSvg, textPrimary),
+                icon: _svg(_inicioOutlineSvg, navUnselected, size: iconSize),
+                selectedIcon: _svg(_inicioFilledSvg, textPrimary, size: iconSize),
                 label: 'Início',
               ),
               NavigationDestination(
-                icon: _svg(_agendaOutlineSvg, navUnselected),
-                selectedIcon: _svg(_agendaFilledSvg, textPrimary),
-                label: 'Agenda',
+                icon: _svg(_carrinhoOutlineSvg, navUnselected, size: iconSize),
+                selectedIcon: _svg(_carrinhoFilledSvg, textPrimary, size: iconSize),
+                label: 'Carrinho',
               ),
               NavigationDestination(
-                icon: _svg(_feedOutlineSvg, navUnselected),
-                selectedIcon: _svg(_feedFilledSvg, textPrimary),
-                label: 'Notícias',
+                icon: _svg(_pesquisaOutlineSvg, navUnselected, size: iconSize),
+                selectedIcon: _svg(_pesquisaFilledSvg, textPrimary, size: iconSize),
+                label: 'Pesquisa',
               ),
               NavigationDestination(
-                icon: _svg(_utilizadorOutlineSvg, navUnselected),
-                selectedIcon: _svg(_utilizadorFilledSvg, textPrimary),
-                label: 'Utilizador',
+                icon: _svg(_lojasOutlineSvg, navUnselected, size: iconSize),
+                selectedIcon: _svg(_lojasFilledSvg, textPrimary, size: iconSize),
+                label: 'Lojas',
               ),
             ],
           ),
@@ -557,6 +565,7 @@ class _AppDrawerState extends State<_AppDrawer> {
     final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
     final surfaceBg = isDark ? const Color(0xFF323232) : const Color(0xFFF5F5F5);
     final toggleBg = isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
+    final divider = isDark ? AppColors.darkDivider : AppColors.divider;
 
     return Drawer(
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -565,6 +574,7 @@ class _AppDrawerState extends State<_AppDrawer> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Cabeçalho
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
               child: Row(
@@ -580,7 +590,25 @@ class _AppDrawerState extends State<_AppDrawer> {
                 ],
               ),
             ),
+            Divider(height: 1, color: divider),
+            // Agenda
+            ListTile(
+              leading: _svg(_agendaOutlineSvg, textSecondary, size: 22),
+              title: Text('Agenda', style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AgendaPage()));
+              },
+            ),
+            // Notícias
+            ListTile(
+              leading: _svg(_feedOutlineSvg, textSecondary, size: 22),
+              title: Text('Notícias', style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500)),
+              onTap: () => Navigator.pop(context),
+            ),
             const Spacer(),
+            Divider(height: 1, color: divider),
+            // Toggle tema
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: GestureDetector(
@@ -651,19 +679,37 @@ class InicioPage extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: NOTÍCIAS
+// PÁGINA: CARRINHO
 // ─────────────────────────────────────────────
-class NoticiasFeedPage extends StatelessWidget {
-  const NoticiasFeedPage({super.key});
+class CarrinhoPage extends StatelessWidget {
+  const CarrinhoPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
 
 // ─────────────────────────────────────────────
-// PÁGINA: UTILIZADOR
+// PÁGINA: PESQUISA
 // ─────────────────────────────────────────────
-class UtilizadorPage extends StatelessWidget {
-  const UtilizadorPage({super.key});
+class PesquisaPage extends StatelessWidget {
+  const PesquisaPage({super.key});
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
+}
+
+// ─────────────────────────────────────────────
+// PÁGINA: LOJAS
+// ─────────────────────────────────────────────
+class LojasPage extends StatelessWidget {
+  const LojasPage({super.key});
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
+}
+
+// ─────────────────────────────────────────────
+// PÁGINA: NOTÍCIAS (acessível via drawer)
+// ─────────────────────────────────────────────
+class NoticiasFeedPage extends StatelessWidget {
+  const NoticiasFeedPage({super.key});
   @override
   Widget build(BuildContext context) => const SizedBox.expand();
 }
