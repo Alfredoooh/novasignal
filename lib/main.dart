@@ -720,6 +720,12 @@ class NoticiasFeedPage extends StatelessWidget {
   Widget build(BuildContext context) => const SizedBox.expand();
 }
 
+const String _arrowLeftSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M24,12A12,12,0,1,0,12,24,12.013,12.013,0,0,0,24,12ZM2,12A10,10,0,1,1,12,22,10.011,10.011,0,0,1,2,12Zm8.879,5.707a1,1,0,0,0,0-1.414L7.587,13,18,12.993a1,1,0,0,0,0-2L7.586,11l3.293-3.293A1,1,0,1,0,9.49,6.269l-.025.024L5.879,9.878a3,3,0,0,0,0,4.243h0l3.586,3.586A1,1,0,0,0,10.879,17.707Z"/>
+</svg>
+''';
+
 // ─────────────────────────────────────────────
 // PÁGINA: AGENDA
 // ─────────────────────────────────────────────
@@ -741,7 +747,6 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
 
   static const List<String> _dayLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
-  // Todas as semanas do mês da data seleccionada
   List<List<DateTime?>> get _allWeeks {
     final firstDay = DateTime(_selectedDate.year, _selectedDate.month, 1);
     final offset = (firstDay.weekday - 1) % 7;
@@ -755,7 +760,6 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
     return List.generate(allDays.length ~/ 7, (r) => allDays.sublist(r * 7, r * 7 + 7));
   }
 
-  // Índice da semana que contém a data seleccionada
   int get _selectedWeekIndex {
     final weeks = _allWeeks;
     for (int r = 0; r < weeks.length; r++) {
@@ -770,7 +774,6 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
     _springCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
     _springScaleX = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.35).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
@@ -810,10 +813,6 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
   Widget _buildDayCell(DateTime? date, {bool showLabel = false, int labelIndex = 0,
       required Color textPrimary, required Color textSecondary, required bool isDark}) {
     final isSelected = date != null && _isSameDay(date, _selectedDate);
-    final isToday = date != null &&
-        date.year == DateTime.now().year &&
-        date.month == DateTime.now().month &&
-        date.day == DateTime.now().day;
 
     return GestureDetector(
       onTap: date != null ? () => _selectDate(date) : null,
@@ -827,7 +826,6 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Label do dia — visível sempre no calendário completo, escondido no strip via opacity
             Text(
               showLabel ? _dayLabels[labelIndex] : '',
               style: TextStyle(
@@ -852,7 +850,7 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
                   fontWeight: FontWeight.w700,
                   color: isSelected
                       ? (isDark ? AppColors.darkBackground : AppColors.background)
-                      : isToday ? textPrimary : textPrimary,
+                      : textPrimary,
                 ),
               ),
             ),
@@ -871,101 +869,118 @@ class _AgendaPageState extends State<AgendaPage> with TickerProviderStateMixin {
     final divider = isDark ? AppColors.darkDivider : AppColors.divider;
 
     final allWeeks = _allWeeks;
-    final selectedWeekIdx = _selectedWeekIndex;
-    final selectedWeek = allWeeks[selectedWeekIdx];
+    final selectedWeek = allWeeks[_selectedWeekIndex];
 
-    return Column(
-      children: [
-        GestureDetector(
-          onVerticalDragEnd: (d) {
-            final v = d.primaryVelocity ?? 0;
-            if (v > 80 && !_expanded) _toggleExpand();
-            if (v < -80 && _expanded) _toggleExpand();
-          },
-          child: Container(
-            color: bg,
-            child: Column(
-              children: [
-                // ── Quando NÃO expandido: strip semanal original com labels
-                if (!_expanded || _expandCtrl.value < 1.0)
+    return Scaffold(
+      backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: bg,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: _svg(_arrowLeftSvg, textPrimary, size: 26),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Agenda',
+          style: TextStyle(color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
+        ),
+        actions: [_AgendaAppBarActions(isDark: isDark, textPrimary: textPrimary)],
+      ),
+      body: Column(
+        children: [
+          GestureDetector(
+            onVerticalDragEnd: (d) {
+              final v = d.primaryVelocity ?? 0;
+              if (v > 80 && !_expanded) _toggleExpand();
+              if (v < -80 && _expanded) _toggleExpand();
+            },
+            child: Container(
+              color: bg,
+              child: Column(
+                children: [
+                  // Strip semanal
+                  if (!_expanded || _expandCtrl.value < 1.0)
+                    SizeTransition(
+                      sizeFactor: Tween(begin: 1.0, end: 0.0).animate(_expandAnim),
+                      axisAlignment: -1,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: List.generate(7, (i) => _buildDayCell(
+                            selectedWeek[i],
+                            showLabel: true,
+                            labelIndex: i,
+                            textPrimary: textPrimary,
+                            textSecondary: textSecondary,
+                            isDark: isDark,
+                          )),
+                        ),
+                      ),
+                    ),
+
+                  // Calendário completo expandido
                   SizeTransition(
-                    sizeFactor: Tween(begin: 1.0, end: 0.0).animate(_expandAnim),
+                    sizeFactor: _expandAnim,
                     axisAlignment: -1,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: List.generate(7, (i) => _buildDayCell(
-                          selectedWeek[i],
-                          showLabel: true,
-                          labelIndex: i,
-                          textPrimary: textPrimary,
-                          textSecondary: textSecondary,
-                          isDark: isDark,
-                        )),
-                      ),
-                    ),
-                  ),
-
-                // ── Quando expandido: calendário completo com todas as semanas
-                SizeTransition(
-                  sizeFactor: _expandAnim,
-                  axisAlignment: -1,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                    child: Column(
-                      children: List.generate(allWeeks.length, (r) {
-                        return Padding(
+                      child: Column(
+                        children: List.generate(allWeeks.length, (r) => Padding(
                           padding: const EdgeInsets.only(bottom: 2),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: List.generate(7, (i) => _buildDayCell(
                               allWeeks[r][i],
-                              showLabel: r == 0, // labels só na primeira linha
+                              showLabel: r == 0,
                               labelIndex: i,
                               textPrimary: textPrimary,
                               textSecondary: textSecondary,
                               isDark: isDark,
                             )),
                           ),
-                        );
-                      }),
+                        )),
+                      ),
                     ),
                   ),
-                ),
 
-                Divider(height: 1, color: divider),
-              ],
+                  Divider(height: 1, color: divider),
+                ],
+              ),
             ),
           ),
-        ),
 
-        // ── Conteúdo vazio
-        Expanded(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF3B30).withOpacity(0.10),
-                    shape: BoxShape.circle,
+          // Estado vazio
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF3B30).withOpacity(0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(child: _svg(_agendaVaziaSvg, const Color(0xFFFF3B30), size: 38)),
                   ),
-                  child: Center(child: _svg(_agendaVaziaSvg, const Color(0xFFFF3B30), size: 38)),
-                ),
-                const SizedBox(height: 18),
-                Text('Sem nada agendado',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary)),
-                const SizedBox(height: 6),
-                Text('Não há eventos para este dia.',
-                    style: TextStyle(fontSize: 14, color: textSecondary)),
-              ],
+                  const SizedBox(height: 18),
+                  Text('Sem nada agendado',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary)),
+                  const SizedBox(height: 6),
+                  Text('Não há eventos para este dia.',
+                      style: TextStyle(fontSize: 14, color: textSecondary)),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
