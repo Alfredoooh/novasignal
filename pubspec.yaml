@@ -19,6 +19,7 @@ dependencies:
   #flutter_svg: any
   # WebView para gráficos LightweightCharts
   flutter_svg: any
+  flutter_staggered_grid_view: any
 
 dev_dependencies:
   flutter_test:
