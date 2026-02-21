@@ -28,8 +28,8 @@ const String _inicioFilledSvg = '''
 ''';
 
 const String _inicioOutlineSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.001 512.001">
-<path d="M490.134,185.472L338.966,34.304c-45.855-45.737-120.076-45.737-165.931,0L21.867,185.472C7.819,199.445-0.055,218.457,0,238.272v221.397C0.047,488.568,23.475,511.976,52.374,512h407.253c28.899-0.023,52.326-23.432,52.373-52.331V238.272C512.056,218.457,504.182,199.445,490.134,185.472z M448,448H341.334v-67.883c0-44.984-36.467-81.451-81.451-81.451h-7.765c-44.984,0-81.451,36.467-81.451,81.451V448H64V238.272c0.007-2.829,1.125-5.541,3.115-7.552L218.283,79.552c20.825-20.831,54.594-20.835,75.425-0.01c0.003,0.003,0.007,0.007,0.01,0.01L444.886,230.72c1.989,2.011,3.108,4.723,3.115,7.552V448z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="M23.121,9.069,15.536,1.483a5.008,5.008,0,0,0-7.072,0L.879,9.069A2.978,2.978,0,0,0,0,11.19v9.817a3,3,0,0,0,3,3H21a3,3,0,0,0,3-3V11.19A2.978,2.978,0,0,0,23.121,9.069ZM15,22.007H9V18.073a3,3,0,0,1,6,0Zm7-1a1,1,0,0,1-1,1H17V18.073a5,5,0,0,0-10,0v3.934H3a1,1,0,0,1-1-1V11.19a1.008,1.008,0,0,1,.293-.707L9.878,2.9a3.008,3.008,0,0,1,4.244,0l7.585,7.586A1.008,1.008,0,0,1,22,11.19Z"/>
 </svg>
 ''';
 
@@ -41,7 +41,7 @@ const String _lojasFilledSvg = '''
 
 const String _lojasOutlineSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M24,8.5c0-.132-.018-.264-.052-.392l-1.146-4.226c-.715-2.322-2.827-3.882-5.257-3.882H6.454C4.024,0,1.912,1.561,1.184,3.932L.052,8.108c-.201,1.159,.272,2.363,.948,3.215v8.177c0,2.481,2.019,4.5,4.5,4.5h5c2.481,0,4.5-2.019,4.5-4.5v-7.26c.176-.118,.343-.248,.5-.389,.797,.714,1.848,1.149,3,1.149h1c.169,0,.336-.01,.5-.028v9.528c.034,1.972,2.967,1.971,3,0V11.323c.624-.773,1-1.755,1-2.823Zm-12,11c0,.827-.673,1.5-1.5,1.5H5.5c-.827,0-1.5-.673-1.5-1.5v-.5H12v.5Zm0-3.5H4v-3.028c.164,.018,.331,.028,.5,.028h1c1.152,0,2.203-.435,3-1.149,.797,.714,1.848,1.149,3,1.149h.5v3Zm7.5-6h-1c-.827,0-1.5-.673-1.5-1.5s-.672-1.5-1.5-1.5-1.5,.671-1.5,1.5-.673,1.5-1.5,1.5h-1c-.827,0-1.5-.673-1.5-1.5s-.671-1.5-1.5-1.5-1.5,.671-1.5,1.5-.673,1.5-1.5,1.5h-1c-.771,0-1.408-.585-1.491-1.334l1.056-3.901c.325-1.056,1.285-1.765,2.389-1.765h.546v.5c.033,1.972,2.967,1.971,3,0v-.5h4v.5c.034,1.972,2.967,1.971,3,0v-.5h.546c1.104,0,2.064,.709,2.375,1.716l1.07,3.95c-.083,.749-.72,1.334-1.491,1.334Z"/>
+<path d="M24,8c0-.093-.013-.186-.038-.275l-1.172-4.099c-.61-2.135-2.588-3.626-4.808-3.626H6.017C3.797,0,1.82,1.491,1.209,3.626L.039,7.725c-.025,.089-.039,.182-.039,.275,0,1.012,.378,1.937,1,2.643v9.357c0,2.206,1.794,4,4,4h6c2.206,0,4-1.794,4-4V11.463c.376-.218,.714-.496,1-.82,.733,.832,1.806,1.357,3,1.357h1c.345,0,.68-.044,1-.127v11.127c0,.552,.447,1,1,1s1-.448,1-1V10.643c.622-.705,1-1.631,1-2.643Zm-13,14H5c-1.103,0-2-.897-2-2v-2H13v2c0,1.103-.897,2-2,2Zm2-6H3v-4.127c.32,.083,.655,.127,1,.127h1c1.194,0,2.266-.526,3-1.357,.734,.832,1.806,1.357,3,1.357h2v4Zm6-6c-1.103,0-2-.897-2-2,0-.552-.447-1-1-1s-1,.448-1,1c0,1.103-.897,2-2,2h-2c-1.103,0-2-.897-2-2,0-.552-.448-1-1-1s-1,.448-1,1c0,1.103-.897,2-2,2h-1c-.49,0-.94-.178-1.288-.471-.029-.029-.059-.056-.091-.082-.354-.337-.585-.802-.617-1.32l1.128-3.951c.366-1.281,1.552-2.176,2.885-2.176h.983v2c0,.552,.448,1,1,1s1-.448,1-1V2h6v2c0,.552,.447,1,1,1s1-.448,1-1V2h.982c1.332,0,2.519,.895,2.885,2.176l1.129,3.951c-.065,1.044-.936,1.874-1.996,1.874h-1Z"/>
 </svg>
 ''';
 
@@ -580,23 +580,7 @@ class _AppDrawerState extends State<_AppDrawer> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cabeçalho
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: surfaceBg,
-                    child: Icon(Icons.person_outline_rounded, size: 28, color: textSecondary),
-                  ),
-                  const SizedBox(width: 14),
-                  Text('Utilizador',
-                      style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: divider),
+            const SizedBox(height: 16),
             // Agenda
             ListTile(
               leading: _svg(_agendaOutlineSvg, textSecondary, size: 22),
@@ -614,60 +598,85 @@ class _AppDrawerState extends State<_AppDrawer> {
             ),
             const Spacer(),
             Divider(height: 1, color: divider),
-            // Toggle tema
+            // Fundo: switch + utilizador lado a lado
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: GestureDetector(
-                onTap: themeNotifier.toggle,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: toggleBg,
-                    borderRadius: BorderRadius.circular(999),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Row(
+                children: [
+                  // Container do utilizador — circular
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: surfaceBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: _svg(_utilizadorSvg, textSecondary, size: 26),
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                        color: textPrimary,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 14),
-                      Text(
-                        isDark ? 'Tema claro' : 'Tema escuro',
-                        style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
-                      ),
-                      const Spacer(),
-                      AnimatedContainer(
+                  const SizedBox(width: 12),
+                  // Switch do tema — mais curto (Expanded)
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: themeNotifier.toggle,
+                      child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
-                        width: 46,
-                        height: 26,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(13),
-                          color: isDark ? textPrimary : const Color(0xFFD0D0D0),
+                          color: toggleBg,
+                          borderRadius: BorderRadius.circular(999),
                         ),
-                        child: AnimatedAlign(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
-                          alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.all(3),
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isDark ? AppColors.darkDrawerBg : AppColors.background,
+                        child: Row(
+                          children: [
+                            Icon(
+                              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                              color: textPrimary,
+                              size: 20,
                             ),
-                          ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                isDark ? 'Tema claro' : 'Tema escuro',
+                                style: TextStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.w500),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              width: 40,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: isDark ? textPrimary : const Color(0xFFD0D0D0),
+                              ),
+                              child: AnimatedAlign(
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                                alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
+                                child: Container(
+                                  margin: const EdgeInsets.all(3),
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isDark ? AppColors.darkDrawerBg : AppColors.background,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -721,10 +730,17 @@ class NoticiasFeedPage extends StatelessWidget {
 }
 
 const String _arrowLeftSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M24,12A12,12,0,1,0,12,24,12.013,12.013,0,0,0,24,12ZM2,12A10,10,0,1,1,12,22,10.011,10.011,0,0,1,2,12Zm8.879,5.707a1,1,0,0,0,0-1.414L7.587,13,18,12.993a1,1,0,0,0,0-2L7.586,11l3.293-3.293A1,1,0,1,0,9.49,6.269l-.025.024L5.879,9.878a3,3,0,0,0,0,4.243h0l3.586,3.586A1,1,0,0,0,10.879,17.707Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+<path d="M35 160 l-39 -40 41 -42 c47 -47 73 -45 28 2 l-29 30 102 0 c61 0 102 4 102 10 0 6 -41 10 -102 10 l-102 0 27 28 c15 15 27 31 27 35 0 16 -18 5 -55 -33z"/>
 </svg>
 ''';
+
+const String _utilizadorSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<path d="M2340 4984 c-488 -59 -876 -209 -1240 -480 -132 -98 -383 -348 -479 -477 -243 -326 -393 -676 -463 -1082 -30 -176 -33 -570 -5 -740 69 -420 219 -778 463 -1105 98 -131 348 -382 476 -478 280 -210 586 -352 923 -432 198 -46 290 -55 555 -54 229 1 270 3 400 27 395 71 736 219 1059 459 122 91 375 344 469 470 249 333 398 687 469 1113 25 156 25 554 0 710 -71 426 -220 780 -469 1113 -94 126 -347 379 -469 470 -324 241 -668 390 -1059 459 -121 21 -182 26 -370 28 -124 2 -241 1 -260 -1z m400 -325 c741 -67 1380 -505 1710 -1171 164 -331 240 -720 212 -1076 -43 -530 -260 -996 -633 -1359 -172 -167 -326 -276 -541 -383 -583 -289 -1267 -289 -1853 -1 -341 168 -619 412 -832 729 -141 210 -256 488 -308 745 -92 455 -30 931 175 1345 135 273 307 490 545 692 411 348 986 529 1525 479z M2473 3859 c-293 -29 -558 -230 -664 -503 -179 -463 75 -961 556 -1087 59 -15 111 -21 195 -21 570 0 957 563 755 1097 -127 339 -475 551 -842 514z M2029 2054 c-166 -30 -360 -118 -495 -225 -127 -101 -276 -284 -293 -361 -15 -69 5 -115 82 -190 244 -239 577 -409 924 -474 122 -22 390 -30 522 -14 379 44 754 221 1025 485 80 78 100 123 85 193 -18 82 -186 284 -318 381 -136 101 -314 177 -479 206 -117 21 -939 20 -1053 -1z"/>
+</svg>
+''';
+
 
 // ─────────────────────────────────────────────
 // PÁGINA: AGENDA
