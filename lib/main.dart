@@ -81,7 +81,13 @@ const String _agendaOutlineSvg = '''
 </svg>
 ''';
 
-// Três pontos circular (popup menu)
+const String _noticiasOutlineSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m18.5,0h-3c-3.033,0-5.5,2.467-5.5,5.5v13c0,3.033,2.467,5.5,5.5,5.5h3c3.033,0,5.5-2.467,5.5-5.5V5.5c0-3.033-2.467-5.5-5.5-5.5Zm2.5,18.5c0,1.378-1.122,2.5-2.5,2.5h-3c-1.378,0-2.5-1.122-2.5-2.5V5.5c0-1.378,1.122-2.5,2.5-2.5h3c1.378,0,2.5,1.122,2.5,2.5v13ZM8,4.5v15c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V4.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Zm-5,3v9c0,.829-.671,1.5-1.5,1.5s-1.5-.671-1.5-1.5V7.5c0-.829.671-1.5,1.5-1.5s1.5.671,1.5,1.5Z"/>
+</svg>
+''';
+
+
 const String _maisOpcoesSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-4-10c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm11,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm-5.5,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Z"/>
@@ -602,7 +608,7 @@ class _AppDrawerState extends State<_AppDrawer> {
             ),
             // Notícias
             ListTile(
-              leading: _svg(_feedOutlineSvg, textSecondary, size: 22),
+              leading: _svg(_noticiasOutlineSvg, textSecondary, size: 22),
               title: Text('Notícias', style: TextStyle(color: textPrimary, fontSize: 15, fontWeight: FontWeight.w500)),
               onTap: () => Navigator.pop(context),
             ),
