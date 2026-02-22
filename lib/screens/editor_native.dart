@@ -4,13 +4,13 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'editor_screen.dart';
 
 // Chamado por editor_screen.dart via importação condicional
-Widget buildEditorView(BuildContext context, _EditorScreenState state) {
-  return _NativeEditorView(state: state);
+Widget buildEditorView(BuildContext context, EditorController controller) {
+  return _NativeEditorView(controller: controller);
 }
 
 class _NativeEditorView extends StatefulWidget {
-  final _EditorScreenState state;
-  const _NativeEditorView({required this.state});
+  final EditorController controller;
+  const _NativeEditorView({required this.controller});
   @override
   State<_NativeEditorView> createState() => _NativeEditorViewState();
 }
@@ -34,7 +34,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   }
 
   void _inject() {
-    final doc = widget.state.widget.document;
+    final doc = widget.controller.document;
     if (doc == null) {
       _wvc.runJavaScript('''
         window._docId = null; window._docTitle = 'Sem título';
@@ -45,8 +45,10 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       ''');
     } else {
       final he = doc.htmlContent
-        .replaceAll(r'\', r'\\').replaceAll("'", r"\'")
-        .replaceAll('\n', r'\n').replaceAll('\r', '');
+          .replaceAll(r'\', r'\\')
+          .replaceAll("'", r"\'")
+          .replaceAll('\n', r'\n')
+          .replaceAll('\r', '');
       final te = doc.title.replaceAll("'", r"\'");
       _wvc.runJavaScript('''
         window._docId = '${doc.id}'; window._docTitle = '$te';
@@ -65,16 +67,21 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   void _onMsg(JavaScriptMessage msg) {
     try {
       final d = jsonDecode(msg.message) as Map<String, dynamic>;
-      if (d['action'] == 'save') widget.state.handleSaveMessage(d);
-      if (d['action'] == 'back') widget.state.handleBack();
-    } catch (e) { debugPrint('bridge: $e'); }
+      if (d['action'] == 'save') widget.controller.handleSaveMessage(d);
+      if (d['action'] == 'back') widget.controller.handleBack();
+    } catch (e) {
+      debugPrint('bridge: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(children: [
       WebViewWidget(controller: _wvc),
-      if (_loading) const Center(child: CircularProgressIndicator(color: Color(0xFFE0185E), strokeWidth: 2)),
+      if (_loading)
+        const Center(
+            child: CircularProgressIndicator(
+                color: Color(0xFFE0185E), strokeWidth: 2)),
     ]);
   }
 }
