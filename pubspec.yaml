@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   
-webview_flutter: ^4.7.0
+  webview_flutter: ^4.7.0
 
   # Persistência local
   shared_preferences: ^2.2.3
