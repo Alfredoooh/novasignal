@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'editor_screen.dart';
 
 class CriarScreen extends StatelessWidget {
@@ -16,7 +17,7 @@ class CriarScreen extends StatelessWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text('Criar',
-          style: TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w800, fontSize: 18)),
+          style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800, fontSize: 18)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: const Color(0xFFF0F0F0)),
@@ -30,7 +31,7 @@ class CriarScreen extends StatelessWidget {
             child: Text(
               'ESCOLHE UM TIPO',
               style: TextStyle(
-                fontFamily: 'Syne', fontWeight: FontWeight.w800,
+                fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800,
                 fontSize: 11, letterSpacing: 1.4,
                 color: Color(0xFFBBBBBB),
               ),
@@ -120,12 +121,12 @@ class _CreateItem extends StatelessWidget {
                   children: [
                     Text(title,
                       style: TextStyle(
-                        fontFamily: 'Syne', fontWeight: FontWeight.w700,
+                        fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w700,
                         fontSize: 15, color: disabled ? const Color(0xFFAAAAAA) : const Color(0xFF111111),
                       )),
                     const SizedBox(height: 3),
                     Text(subtitle,
-                      style: const TextStyle(fontFamily: 'Syne', fontSize: 12.5, color: Color(0xFFBBBBBB))),
+                      style: const TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontSize: 12.5, color: Color(0xFFBBBBBB))),
                   ],
                 ),
               ),
