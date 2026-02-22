@@ -36,6 +36,7 @@ flutter:
   uses-material-design: true
 
   assets:
+      - assets/editor/editor.html
     - assets/splash_logo.png
     - assets/splash_text.svg
     - assets/flash_icon.png
