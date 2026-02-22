@@ -1,4 +1,3 @@
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:convert';
 import 'dart:ui_web' as ui;
@@ -8,13 +7,13 @@ import 'editor_screen.dart';
 // Registo único do iframe element factory
 bool _registered = false;
 
-Widget buildEditorView(BuildContext context, _EditorScreenState state) {
-  return _WebEditorView(state: state);
+Widget buildEditorView(BuildContext context, EditorController controller) {
+  return _WebEditorView(controller: controller);
 }
 
 class _WebEditorView extends StatefulWidget {
-  final _EditorScreenState state;
-  const _WebEditorView({required this.state});
+  final EditorController controller;
+  const _WebEditorView({required this.controller});
   @override
   State<_WebEditorView> createState() => _WebEditorViewState();
 }
@@ -41,10 +40,11 @@ class _WebEditorViewState extends State<_WebEditorView> {
         _viewId,
         (_) => _iframe,
       );
-      _registered = false; // permite re-registo com novo id
+      _registered = true;
+    } else {
+      // Para cada instância com id único, regista sempre
+      ui.platformViewRegistry.registerViewFactory(_viewId, (_) => _iframe);
     }
-    // Para este id específico
-    ui.platformViewRegistry.registerViewFactory(_viewId, (_) => _iframe);
 
     // Escuta mensagens do iframe
     html.window.addEventListener('message', _onMessage);
@@ -54,10 +54,15 @@ class _WebEditorViewState extends State<_WebEditorView> {
   }
 
   void _inject() {
-    final doc = widget.state.widget.document;
+    final doc = widget.controller.document;
     final msg = doc == null
-      ? {'action': 'load', 'id': null, 'title': 'Sem título', 'html': ''}
-      : {'action': 'load', 'id': doc.id, 'title': doc.title, 'html': doc.htmlContent};
+        ? {'action': 'load', 'id': null, 'title': 'Sem título', 'html': ''}
+        : {
+            'action': 'load',
+            'id': doc.id,
+            'title': doc.title,
+            'html': doc.htmlContent
+          };
     _iframe.contentWindow?.postMessage(msg, '*');
   }
 
@@ -67,9 +72,10 @@ class _WebEditorViewState extends State<_WebEditorView> {
     if (data is! Map) return;
     final action = data['action'];
     if (action == 'save') {
-      widget.state.handleSaveMessage(Map<String, dynamic>.from(data));
+      widget.controller
+          .handleSaveMessage(Map<String, dynamic>.from(data));
     } else if (action == 'back') {
-      widget.state.handleBack();
+      widget.controller.handleBack();
     } else if (action == 'editorReady') {
       _inject();
     }
