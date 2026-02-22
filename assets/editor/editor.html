@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Editor</title>
+
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
+  <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Babylonica&family=Agbalumo&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Nunito:wght@400;700&family=Poppins:wght@400;700&family=Ubuntu:wght@400;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;700&family=Abril+Fatface&family=Pacifico&family=Dancing+Script:wght@400;700&family=Satisfy&family=Caveat:wght@400;700&family=Handlee&family=Lobster&family=Righteous&family=Quicksand:wght@400;700&family=Exo+2:wght@400;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&family=VT323&family=Press+Start+2P&family=Bangers&family=Fredoka:wght@400;700&family=Comfortaa:wght@400;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Italiana&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&family=Cardo:ital,wght@0,400;1,400&family=Inter:wght@400;700&family=DM+Sans:wght@400;700&family=Work+Sans:wght@400;700&family=Fira+Sans:wght@400;700&family=Nunito+Sans:wght@400;700&family=Source+Sans+3:wght@400;700&family=Jost:wght@400;700&family=Plus+Jakarta+Sans:wght@400;700&family=Outfit:wght@400;700&family=Figtree:wght@400;700&family=DM+Mono:wght@400;500&family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Inconsolata:wght@400;700&family=Anonymous+Pro:wght@400;700&family=Anton&family=Bebas+Neue&family=Black+Han+Sans&family=Permanent+Marker&family=Sacramento&family=Great+Vibes&family=Kaushan+Script&family=Parisienne&display=swap" rel="stylesheet"/>
+
+  <style>
+    body[data-theme="dark"] {
+      --acc:#ff6b9d; --acc-rgb:255,107,157; --acc-c:#000;
+      --bg:#1c1c1e; --card:#2c2c2e; --border:#3a3a3c;
+      --text:#e0e0e0; --sub:#8e8e93; --danger:#ff453a;
+      --paper:#242424; --paper-text:#ddd;
+      --toolbar-bg:#2c2c2e; --toolbar-pill:#3a3a3c;
+      --sheet:#1c1c1e; --sheet-txt:#e0e0e0;
+    }
+    :root, body[data-theme="light"] {
+      --acc:#e0185e; --acc-rgb:224,24,94; --acc-c:#fff;
+      --bg:#ffffff; --card:#ffffff; --border:#f0f0f0;
+      --text:#111; --sub:#8e8e93; --danger:#ff3b30;
+      --paper:#ffffff; --paper-text:#111;
+      --toolbar-bg:#ffffff; --toolbar-pill:#f2f2f7;
+      --sheet:#ffffff; --sheet-txt:#111111;
+    }
+    :root {
+      --ion-font-family:'Syne',sans-serif;
+      --ion-background-color:var(--bg);
+      --ion-text-color:var(--text);
+      --ion-color-primary:var(--acc);
+      --ion-color-primary-rgb:var(--acc-rgb);
+      --ion-color-primary-contrast:var(--acc-c);
+      --ion-toolbar-background:var(--card);
+    }
+
+    *, *::before, *::after { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body, ion-app { height:100%; margin:0; }
+    .acc { color:var(--acc); }
+
+    ion-toolbar { --background:var(--card); --border-color:transparent; }
+    ion-header  { border-bottom:1px solid var(--border); }
+    ion-header::after { display:none !important; }
+    ion-content { --background:#ffffff; }
+    .app-title  { font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem; }
+
+    .bar-btn {
+      width:36px; height:36px; border:none; background:transparent;
+      border-radius:50%; display:inline-flex; align-items:center;
+      justify-content:center; cursor:pointer; color:var(--sub);
+      transition:background .15s; padding:0;
+    }
+    .bar-btn:active { background:var(--toolbar-pill); }
+    .bar-btn svg { pointer-events:none; }
+
+    .fmt-bar {
+      background:var(--toolbar-bg); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; height:48px; padding:0 10px;
+      overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
+      scrollbar-width:none; gap:2px;
+    }
+    .fmt-bar::-webkit-scrollbar { display:none; }
+
+    .tb-group {
+      display:flex; align-items:center; background:var(--toolbar-pill);
+      border-radius:10px; padding:3px; gap:1px; flex-shrink:0;
+    }
+    .tb-sep { width:1px; height:22px; background:var(--border); flex-shrink:0; margin:0 5px; }
+
+    .fb {
+      width:32px; height:32px; border:none; background:transparent;
+      border-radius:7px; display:inline-flex; align-items:center;
+      justify-content:center; cursor:pointer; flex-shrink:0;
+      color:var(--sub); transition:background .1s, color .1s; padding:0; line-height:1;
+    }
+    .fb svg { pointer-events:none; fill:var(--sub); transition:fill .1s; }
+    .fb svg.stroke-icon { fill:none; stroke:currentColor; transition:stroke .1s; color:var(--sub); }
+    .fb:active, .fb.on { background:rgba(var(--acc-rgb),.15); color:var(--acc); }
+    .fb.on svg { fill:var(--acc); }
+    .fb.on svg.stroke-icon { stroke:var(--acc); fill:none; color:var(--acc); }
+
+    .tb-pill-btn {
+      height:34px; border:none; background:var(--toolbar-pill);
+      border-radius:10px; padding:0 22px 0 10px;
+      display:inline-flex; align-items:center;
+      cursor:pointer; flex-shrink:0; color:var(--text);
+      font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700;
+      white-space:nowrap; position:relative;
+    }
+    .tb-pill-btn::after {
+      content:''; position:absolute; right:7px; top:50%; transform:translateY(-50%);
+      border-left:4px solid transparent; border-right:4px solid transparent;
+      border-top:5px solid var(--sub); pointer-events:none;
+    }
+    .tb-pill-btn:active { opacity:.7; }
+
+    /* Botão cor da fonte */
+    .tb-color-btn {
+      width:32px; height:32px; border:none; background:transparent;
+      border-radius:7px; display:inline-flex; align-items:center;
+      justify-content:center; cursor:pointer; flex-shrink:0; padding:0;
+    }
+    .tb-color-btn:active { background:rgba(var(--acc-rgb),.15); }
+    .color-dot {
+      width:18px; height:18px; border-radius:50%;
+      border:2px solid rgba(0,0,0,.18); background:#111;
+      pointer-events:none;
+    }
+
+    /* Modais e sheets — sem bordas arredondadas */
+    ion-modal        { --border-radius: 0 !important; }
+    ion-action-sheet { --border-radius: 0 !important; }
+
+    /* Modal genérico — inner wrapper */
+    .m-inner {
+      padding: 0 0 48px;
+      background: var(--card);
+    }
+    .m-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .m-title {
+      font-family:'Syne',sans-serif; font-weight:700; font-size:1rem;
+      color:var(--text);
+    }
+    .m-cancel {
+      font-family:'Syne',sans-serif; font-size:.85rem;
+      color:var(--sub); background:none; border:none; padding:4px 0; cursor:pointer;
+    }
+    .m-list { list-style:none; margin:0; padding:0; }
+    .m-item {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 20px; border-bottom:1px solid var(--border);
+      cursor:pointer; gap:12px; min-height:56px;
+    }
+    .m-item:active { background:rgba(0,0,0,.04); }
+    .m-item-label { flex:1; }
+    .m-item-check {
+      width:20px; height:20px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .m-item-check svg { display:none; }
+    .m-item.selected .m-item-check svg { display:block; }
+
+    /* Modal de cor */
+    .cm-inner { padding: 16px 20px 36px; }
+    .color-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 16px; margin: 0 0 20px;
+    }
+    .color-swatch {
+      width:100%; aspect-ratio:1; border-radius:50%;
+      border:3px solid transparent; cursor:pointer;
+      transition:transform .12s, border-color .12s;
+    }
+    .color-swatch:active { transform:scale(.84); }
+    .color-swatch.selected { border-color:var(--acc); }
+
+    /* Color picker */
+    .cp-canvas-wrap {
+      position:relative; width:100%;
+      overflow:hidden; cursor:crosshair; margin-bottom:14px;
+      touch-action:none; user-select:none;
+    }
+    #cp-canvas, .cp-canvas-wrap canvas { width:100%; height:auto; display:block; touch-action:none; }
+    .cp-cursor {
+      position:absolute; width:18px; height:18px;
+      border-radius:50%; border:2px solid #fff;
+      box-shadow:0 0 0 1.5px rgba(0,0,0,.4);
+      transform:translate(-50%,-50%); pointer-events:none;
+    }
+    .cp-slider-wrap {
+      width:100%; height:20px;
+      position:relative; cursor:pointer; margin-bottom:14px;
+      touch-action:none;
+    }
+    #cp-hue-slider {
+      background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);
+    }
+    .cp-slider-thumb {
+      position:absolute; top:50%; width:22px; height:22px;
+      border-radius:50%; border:2px solid #fff;
+      box-shadow:0 0 0 1.5px rgba(0,0,0,.4);
+      transform:translate(-50%,-50%); pointer-events:none;
+      background:#fff;
+    }
+    .cp-hex-row {
+      display:flex; align-items:center; gap:10px; margin-bottom:20px;
+    }
+    .cp-preview {
+      width:44px; height:44px; flex-shrink:0;
+      border:1.5px solid var(--border);
+    }
+    .cp-hex-input {
+      flex:1; height:44px;
+      border:1.5px solid var(--border);
+      padding:0 14px; font-family:'Space Mono',monospace; font-size:.85rem;
+      background:var(--toolbar-pill); color:var(--text); outline:none;
+    }
+    .cp-hex-input:focus { border-color:var(--acc); }
+
+    /* Documento */
+    .doc-scroll {
+      width:100%; height:100%; overflow-y:auto; overflow-x:auto;
+      background:var(--bg); padding:20px 0 80px; -webkit-overflow-scrolling:touch;
+    }
+    .doc-pages { display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .page-wrap {
+      width:794px; height:1123px; background:var(--paper);
+      box-shadow:0 1px 6px rgba(0,0,0,.2), 0 4px 20px rgba(0,0,0,.12);
+      position:relative; flex-shrink:0; padding:94px; overflow:hidden;
+    }
+    .page-editor {
+      width:100%; height:100%; outline:none; border:none; background:transparent;
+      font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:24px;
+      color:var(--paper-text); overflow:hidden; resize:none;
+      white-space:pre-wrap; word-break:break-word;
+    }
+    .page-editor:focus { outline:none; }
+    .page-editor.empty::before { content:attr(data-ph); color:#bbb; font-style:italic; pointer-events:none; }
+    .page-editor h1 { font-size:2em; font-family:'Syne',sans-serif; font-weight:800; margin:.4em 0 .2em; line-height:1.2; }
+    .page-editor h2 { font-size:1.4em; font-family:'Syne',sans-serif; font-weight:700; margin:.4em 0 .2em; }
+    .page-editor h3 { font-size:1.1em; font-family:'Syne',sans-serif; font-weight:600; margin:.4em 0 .15em; }
+    .page-editor p  { margin:0 0 .4em; }
+    .page-editor ul,.page-editor ol { padding-left:1.5em; margin:.3em 0; }
+    .page-editor blockquote { border-left:3px solid var(--acc); margin:.5em 0; padding-left:.8em; color:#666; font-style:italic; }
+    .page-num {
+      position:absolute; bottom:36px; left:0; right:0; text-align:center;
+      font-family:'Space Mono',monospace; font-size:9px; color:#bbb;
+      letter-spacing:.05em; pointer-events:none;
+    }
+    .doc-meta {
+      font-family:'Space Mono',monospace; font-size:.5rem;
+      color:#aaa; text-align:center; padding:4px 0 0;
+    }
+
+    /* ── Editor standalone ── */
+    .view {
+      position:fixed; inset:0; display:none;
+      flex-direction:column; background:#fff; overflow:hidden;
+    }
+    .view.active { display:flex; }
+    #view-editor { z-index:10; }
+    #view-editor.slide-in  { animation:slideIn  .3s cubic-bezier(.4,0,.2,1) both; }
+    #view-editor.slide-out { animation:slideOut .25s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes slideIn  { from{transform:translateX(100%)} to{transform:translateX(0)} }
+    @keyframes slideOut { from{transform:translateX(0)} to{transform:translateX(100%)} }
+  </style>
+</head>
+<body data-theme="light">
+<ion-app>
+  </ion-app>
+
+<script type="module">
+  import { defineCustomElements } from 'https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js';
+  defineCustomElements(window);
+</script>
+
+<script>
+// ── Patch action sheet background ──
+const _origCreate = document.createElement.bind(document);
+document.createElement = function(tag) {
+  const el = _origCreate(tag);
+  if (tag === 'ion-action-sheet') {
+    el.style.setProperty('--background',                  'var(--sheet)');
+    el.style.setProperty('--button-background',           'var(--sheet)');
+    el.style.setProperty('--button-background-activated', 'rgba(0,0,0,.06)');
+    el.style.setProperty('--button-background-hover',     'rgba(0,0,0,.03)');
+    el.style.setProperty('--button-color',                'var(--sheet-txt)');
+    el.style.setProperty('--color',                       'var(--sheet-txt)');
+    el.style.setProperty('--border-radius',               '0');
+  }
+  return el;
+};
+
+// ── Navegação ──
+let _currentView = 'home';
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  _currentView = id;
+  // tabs
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById('tab-' + id);
+  if (tab) tab.classList.add('active');
+}
+
+function goHome() {
+  const editor = document.getElementById('view-editor');
+  if (editor.classList.contains('active')) {
+    // slide out do editor de volta para a última tab
+    editor.classList.add('slide-out');
+    editor.addEventListener('animationend', () => {
+      editor.classList.remove('active','slide-out');
+      showView(_currentView === 'editor' ? 'home' : _currentView);
+    }, { once:true });
+  } else {
+    showView('home');
+  }
+}
+
+function goCriar() { showView('criar'); }
+
+function openDocEditor() {
+  document.getElementById('doc-pages').innerHTML = '';
+  pages = []; activePg = 0;
+  // slide in do editor
+  const editor = document.getElementById('view-editor');
+  editor.classList.add('active','slide-in');
+  document.querySelectorAll('.view:not(#view-editor)').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  editor.addEventListener('animationend', () => {
+    editor.classList.remove('slide-in');
+  }, { once:true });
+  _currentView = 'criar'; // voltar para criar ao fechar
+  setTimeout(() => {
+    createPage(0); applyScale(); updateMeta();
+    pages[0]?.editor?.focus();
+  }, 320);
+}
+
+// ── Estado ──
+const PAGE_W    = 794;
+const PAGE_H    = 1123;
+const PAD       = 94;
+const CONTENT_H = PAGE_H - PAD * 2;
+
+let pages    = [];
+let activePg = 0;
+let curStyle = 'p';
+let curFont  = 'Georgia';
+let curSize  = 16;
+let curColor = '#111111';
+let _selColor = '#111111';
+
+const PRESET_COLORS = [
+  '#111111','#ffffff','#e0185e','#ff6b9d','#ff453a',
+  '#ff9f0a','#ffd60a','#30d158','#34c759','#00c7be',
+  '#0a84ff','#007aff','#5856d6','#bf5af2','#ff375f',
+  '#8e8e93','#636366','#3a3a3c','#2c2c2e','#1c1c1e',
+];
+
+// Cada entrada: [nomeExibição, famíliaCSS, fallback]
+// famíliaCSS = nome exacto do Google Fonts (para carregar e para font-family CSS)
+// fontes sistema (Arial, Georgia, etc.) usam o nome directamente sem carregar
+const FONT_DEFS = [
+  // ── Sans-serif ──
+  { label:'Roboto',           family:'Roboto',             cat:'sans-serif' },
+  { label:'Inter',            family:'Inter',              cat:'sans-serif' },
+  { label:'Open Sans',        family:'Open Sans',          cat:'sans-serif' },
+  { label:'Lato',             family:'Lato',               cat:'sans-serif' },
+  { label:'Montserrat',       family:'Montserrat',         cat:'sans-serif' },
+  { label:'Poppins',          family:'Poppins',            cat:'sans-serif' },
+  { label:'Oswald',           family:'Oswald',             cat:'sans-serif' },
+  { label:'Raleway',          family:'Raleway',            cat:'sans-serif' },
+  { label:'Nunito',           family:'Nunito',             cat:'sans-serif' },
+  { label:'Ubuntu',           family:'Ubuntu',             cat:'sans-serif' },
+  { label:'Work Sans',        family:'Work Sans',          cat:'sans-serif' },
+  { label:'DM Sans',          family:'DM Sans',            cat:'sans-serif' },
+  { label:'Fira Sans',        family:'Fira Sans',          cat:'sans-serif' },
+  { label:'Nunito Sans',      family:'Nunito Sans',        cat:'sans-serif' },
+  { label:'Source Sans 3',    family:'Source Sans 3',      cat:'sans-serif' },
+  { label:'Jost',             family:'Jost',               cat:'sans-serif' },
+  { label:'Plus Jakarta Sans',family:'Plus Jakarta Sans',  cat:'sans-serif' },
+  { label:'Outfit',           family:'Outfit',             cat:'sans-serif' },
+  { label:'Figtree',          family:'Figtree',            cat:'sans-serif' },
+  { label:'Josefin Sans',     family:'Josefin Sans',       cat:'sans-serif' },
+  { label:'Quicksand',        family:'Quicksand',          cat:'sans-serif' },
+  { label:'Exo 2',            family:'Exo 2',              cat:'sans-serif' },
+  { label:'Comfortaa',        family:'Comfortaa',          cat:'sans-serif' },
+  { label:'Fredoka',          family:'Fredoka',            cat:'sans-serif' },
+  { label:'Righteous',        family:'Righteous',          cat:'sans-serif' },
+  // ── Serif ──
+  { label:'Georgia',          family:'Georgia',            cat:'serif' },
+  { label:'Merriweather',     family:'Merriweather',       cat:'serif' },
+  { label:'Playfair Display', family:'Playfair Display',   cat:'serif' },
+  { label:'PT Serif',         family:'PT Serif',           cat:'serif' },
+  { label:'Libre Baskerville',family:'Libre Baskerville',  cat:'serif' },
+  { label:'EB Garamond',      family:'EB Garamond',        cat:'serif' },
+  { label:'Crimson Text',     family:'Crimson Text',       cat:'serif' },
+  { label:'Noto Serif',       family:'Noto Serif',         cat:'serif' },
+  { label:'Source Serif 4',   family:'Source Serif 4',     cat:'serif' },
+  { label:'Cormorant Garamond',family:'Cormorant Garamond',cat:'serif' },
+  { label:'Spectral',         family:'Spectral',           cat:'serif' },
+  { label:'Cinzel',           family:'Cinzel',             cat:'serif' },
+  { label:'Italiana',         family:'Italiana',           cat:'serif' },
+  { label:'Bodoni Moda',      family:'Bodoni Moda',        cat:'serif' },
+  { label:'DM Serif Display', family:'DM Serif Display',   cat:'serif' },
+  { label:'Cardo',            family:'Cardo',              cat:'serif' },
+  // ── Mono ──
+  { label:'Space Mono',       family:'Space Mono',         cat:'mono' },
+  { label:'Fira Code',        family:'Fira Code',          cat:'mono' },
+  { label:'JetBrains Mono',   family:'JetBrains Mono',     cat:'mono' },
+  { label:'IBM Plex Mono',    family:'IBM Plex Mono',      cat:'mono' },
+  { label:'Inconsolata',      family:'Inconsolata',        cat:'mono' },
+  { label:'DM Mono',          family:'DM Mono',            cat:'mono' },
+  { label:'Anonymous Pro',    family:'Anonymous Pro',      cat:'mono' },
+  { label:'Share Tech Mono',  family:'Share Tech Mono',    cat:'mono' },
+  { label:'VT323',            family:'VT323',              cat:'mono' },
+  { label:'Press Start 2P',   family:'Press Start 2P',     cat:'mono' },
+  // ── Display ──
+  { label:'Syne',             family:'Syne',               cat:'display' },
+  { label:'Abril Fatface',    family:'Abril Fatface',      cat:'display' },
+  { label:'Anton',            family:'Anton',              cat:'display' },
+  { label:'Bebas Neue',       family:'Bebas Neue',         cat:'display' },
+  { label:'Bangers',          family:'Bangers',            cat:'display' },
+  { label:'Orbitron',         family:'Orbitron',           cat:'display' },
+  { label:'Lobster',          family:'Lobster',            cat:'display' },
+  { label:'Pacifico',         family:'Pacifico',           cat:'display' },
+  { label:'Righteous',        family:'Righteous',          cat:'display' },
+  // ── Manuscrita ──
+  { label:'Dancing Script',   family:'Dancing Script',     cat:'script' },
+  { label:'Caveat',           family:'Caveat',             cat:'script' },
+  { label:'Satisfy',          family:'Satisfy',            cat:'script' },
+  { label:'Sacramento',       family:'Sacramento',         cat:'script' },
+  { label:'Great Vibes',      family:'Great Vibes',        cat:'script' },
+  { label:'Kaushan Script',   family:'Kaushan Script',     cat:'script' },
+  { label:'Parisienne',       family:'Parisienne',         cat:'script' },
+  { label:'Permanent Marker', family:'Permanent Marker',   cat:'script' },
+  { label:'Handlee',          family:'Handlee',            cat:'script' },
+  { label:'Babylonica',       family:'Babylonica',         cat:'script' },
+  { label:'Agbalumo',         family:'Agbalumo',           cat:'script' },
+];
+// Array simples de nomes para compatibilidade
+const FONTS = FONT_DEFS.map(f => f.family);
+
+const SIZES = [10,11,12,13,14,16,18,20,24,28,32,36,48,60,72];
+
+// ── Escala A4 ──
+function getScale() { return (window.innerWidth - 24) / PAGE_W; }
+function applyScale() {
+  const s = getScale();
+  document.querySelectorAll('.page-wrap').forEach(p => {
+    p.style.transformOrigin = 'top center';
+    p.style.transform       = `scale(${s})`;
+    p.style.marginBottom    = `${(PAGE_H * s) - PAGE_H}px`;
+  });
+  document.getElementById('doc-pages').style.gap = `${16 / s}px`;
+}
+window.addEventListener('resize', applyScale);
+
+// ── Páginas ──
+function createPage(idx) {
+  const wrap = document.createElement('div');
+  wrap.className = 'page-wrap';
+  const ed = document.createElement('div');
+  ed.className       = 'page-editor empty';
+  ed.contentEditable = 'true';
+  ed.setAttribute('data-ph', idx === 0 ? 'Comece a escrever…' : '');
+  ed.setAttribute('data-page', String(idx));
+  ed.addEventListener('input',   () => onInput(idx));
+  ed.addEventListener('keydown', onKey);
+  ed.addEventListener('mouseup', updateStates);
+  ed.addEventListener('keyup',   updateStates);
+  ed.addEventListener('focus',   () => { activePg = idx; });
+  ed.addEventListener('input',   () => ed.classList.toggle('empty', ed.innerText.trim() === ''));
+  const num = document.createElement('div');
+  num.className = 'page-num';
+  num.textContent = String(idx + 1);
+  wrap.appendChild(ed); wrap.appendChild(num);
+  document.getElementById('doc-pages').appendChild(wrap);
+  const s = getScale();
+  wrap.style.transformOrigin = 'top center';
+  wrap.style.transform       = `scale(${s})`;
+  wrap.style.marginBottom    = `${(PAGE_H * s) - PAGE_H}px`;
+  pages.push({ wrap, editor: ed });
+  return ed;
+}
+// ── Overflow ──
+let _raf = false;
+function onInput(idx) {
+  updateMeta(); updateStates();
+  if (_raf) return; _raf = true;
+  requestAnimationFrame(() => { _raf = false; reflow(idx); });
+}
+function reflow(startIdx) {
+  for (let i = startIdx; i < pages.length; i++) {
+    const ed = pages[i].editor;
+    if (ed.scrollHeight <= CONTENT_H) break;
+    if (i + 1 >= pages.length) { createPage(pages.length); applyScale(); }
+    const next = pages[i + 1].editor;
+    let n = 0;
+    while (ed.scrollHeight > CONTENT_H && ed.lastChild && n++ < 200)
+      next.insertBefore(ed.lastChild, next.firstChild);
+  }
+  for (let i = pages.length - 2; i >= startIdx; i--) {
+    const ed = pages[i].editor, next = pages[i + 1].editor;
+    while (next.firstChild) {
+      const node = next.firstChild; next.removeChild(node); ed.appendChild(node);
+      if (ed.scrollHeight > CONTENT_H) { ed.removeChild(node); next.insertBefore(node, next.firstChild); break; }
+    }
+  }
+  for (let i = pages.length - 1; i >= 1; i--) {
+    const ed = pages[i].editor;
+    if (!ed.childNodes.length && !ed.innerText.trim()) { pages[i].wrap.remove(); pages.splice(i, 1); }
+    else break;
+  }
+  renumber(); updateMeta();
+}
+function renumber() {
+  pages.forEach((p, i) => {
+    const n = p.wrap.querySelector('.page-num');
+    if (n) n.textContent = String(i + 1);
+    p.editor.setAttribute('data-page', String(i));
+  });
+}
+function updateMeta() {
+  const t = pages.map(p => p.editor.innerText).join(' ').trim();
+  const w = t ? t.split(/\s+/).filter(Boolean).length : 0;
+  document.getElementById('doc-meta').textContent =
+    `${w} palavra${w!==1?'s':''} · ${t.length} car. · ${pages.length} pág.`;
+}
+function getActiveEditor() { return pages[activePg]?.editor || pages[0].editor; }
+function fmt(cmd) { getActiveEditor().focus(); document.execCommand(cmd, false, null); updateStates(); }
+function fmtAlign(cmd) {
+  fmt(cmd);
+  ['btn-jl','btn-jc','btn-jr','btn-jf'].forEach(id => document.getElementById(id)?.classList.remove('on'));
+  const map = {justifyLeft:'btn-jl',justifyCenter:'btn-jc',justifyRight:'btn-jr',justifyFull:'btn-jf'};
+  if (map[cmd]) document.getElementById(map[cmd])?.classList.add('on');
+}
+function updateStates() {
+  ['b','i','u','s','ul','ol'].forEach(k => {
+    const cmd = {b:'bold',i:'italic',u:'underline',s:'strikeThrough',ul:'insertUnorderedList',ol:'insertOrderedList'}[k];
+    document.getElementById('btn-'+k)?.classList.toggle('on', document.queryCommandState(cmd));
+  });
+}
+function onKey(e) {
+  if (e.key==='Tab') { e.preventDefault(); document.execCommand('insertHTML',false,'\u00a0\u00a0\u00a0\u00a0'); }
+}
+
+// ── Progress / Toast ──
+function setProgress(on) {
+  const p = document.getElementById('prog');
+  p.style.opacity = on?'1':'0'; p.setAttribute('value', on?'0.5':'0');
+}
+async function showToast(msg) {
+  const t = document.createElement('ion-toast');
+  t.message=msg; t.duration=2000; t.position='bottom';
+  document.body.appendChild(t); await t.present();
+  t.addEventListener('didDismiss', ()=>t.remove());
+}
+
+// ── Range ──
+let _range = null;
+function saveRange() {
+  const s = window.getSelection();
+  _range = (s && s.rangeCount) ? s.getRangeAt(0).cloneRange() : null;
+}
+function restoreRange() {
+  if (!_range) return;
+  const s = window.getSelection(); s.removeAllRanges(); s.addRange(_range); _range = null;
+}
+
+// ── Action sheet helper ──
+async function showSheet(header, buttons) {
+  const sheet = document.createElement('ion-action-sheet');
+  sheet.header  = header;
+  sheet.buttons = [...buttons, { text:'Cancelar', role:'cancel' }];
+  document.body.appendChild(sheet);
+  await sheet.present();
+  sheet.addEventListener('didDismiss', () => sheet.remove());
+}
+
+// ── ESTILO ──
+window.openStyleModal = function() {
+  saveRange();
+  const defs = [
+    { tag:'h1', label:'Título',    style:'font-family:"Syne",sans-serif;font-weight:800;font-size:1.6rem;line-height:1.2;' },
+    { tag:'h2', label:'Subtítulo', style:'font-family:"Syne",sans-serif;font-weight:700;font-size:1.2rem;' },
+    { tag:'h3', label:'Secção',    style:'font-family:"Syne",sans-serif;font-weight:600;font-size:1rem;' },
+    { tag:'p',  label:'Corpo',     style:'font-family:Georgia,serif;font-size:.95rem;' },
+    { tag:'blockquote', label:'Citação', style:'font-family:Georgia,serif;font-size:.95rem;font-style:italic;color:#888;border-left:3px solid var(--acc);padding-left:10px;' },
+  ];
+  showListModal('Estilo do texto', defs.map(o => ({
+    selected: curStyle === o.tag,
+    render: el => {
+      el.style.cssText = o.style;
+      el.textContent = o.label;
+    },
+    handler: () => {
+      curStyle = o.tag;
+      document.getElementById('style-label').textContent = o.label;
+      getActiveEditor().focus(); restoreRange();
+      document.execCommand('formatBlock', false, o.tag);
+    },
+  })));
+};
+
+// ── FONTE ──
+window.openFontModal = function() {
+  saveRange();
+  showListModal('Tipo de letra', FONT_DEFS.map(f => ({
+    selected: curFont === f.family,
+    render: el => {
+      const fallback = f.cat === 'mono' ? 'monospace' : f.cat === 'serif' ? 'serif' : 'sans-serif';
+      el.style.fontFamily = `'${f.family}', ${fallback}`;
+      el.style.fontSize = '1rem';
+      el.style.lineHeight = '1.4';
+      el.textContent = f.label;
+    },
+    handler: () => {
+      curFont = f.family;
+      document.getElementById('font-label').textContent = f.label;
+      getActiveEditor().focus(); restoreRange();
+      document.execCommand('fontName', false, f.family);
+    },
+  })));
+};
+
+// ── TAMANHO ──
+window.openSizeModal = function() {
+  saveRange();
+  showListModal('Tamanho da letra', SIZES.map(s => ({
+    selected: curSize === s,
+    render: el => {
+      el.style.cssText = `font-size:${Math.max(12, Math.min(s, 22))}px;line-height:1.3;`;
+      el.textContent = s + ' pt';
+    },
+    handler: () => {
+      curSize = s;
+      document.getElementById('size-label').textContent = String(s);
+      getActiveEditor().focus(); restoreRange();
+      document.execCommand('fontSize', false, '7');
+      getActiveEditor().querySelectorAll('font[size="7"]').forEach(el => {
+        el.removeAttribute('size'); el.style.fontSize = s + 'px';
+      });
+    },
+  })));
+};
+
+// ── COR DA FONTE ──
+let _colorModal = null;
+let _pickerModal = null;
+
+function hslToHex(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l);const f=n=>{const k=(n+h/30)%12;const c=l-a*Math.max(-1,Math.min(k-3,9-k,1));return Math.round(255*c).toString(16).padStart(2,'0')};return'#'+f(0)+f(8)+f(4)}
+function hexToHsl(hex){let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;if(max===min){h=s=0}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=((g-b)/d+(g<b?6:0))/6;break;case g:h=((b-r)/d+2)/6;break;case b:h=((r-g)/d+4)/6;break}}return[Math.round(h*360),Math.round(s*100),Math.round(l*100)]}
+
+function makeIonModal() {
+  const modal = document.createElement('ion-modal');
+  modal.backdropDismiss = true;
+  modal.handle          = true;
+
+  // Bloqueia dismiss por gesto (swipe) quando o conteúdo está scrollado para baixo
+  // Usa uma flag síncrona actualizada pelo evento scroll — sem async
+  let _scrollTop = 0;
+  modal.addEventListener('ionModalDidPresent', () => {
+    const content = modal.querySelector('ion-content');
+    if (!content) return;
+    content.addEventListener('ionScroll', e => {
+      _scrollTop = e.detail?.scrollTop ?? 0;
+    });
+  });
+
+  modal.canDismiss = (data, role) => {
+    // Backdrop e cancel — sempre fechar
+    if (role === 'backdrop' || role === 'cancel') return true;
+    // Gesture (swipe do handle) — só fechar se estiver no topo
+    return _scrollTop <= 2;
+  };
+
+  modal.style.setProperty('--border-radius', '0');
+  modal.style.setProperty('--background', 'var(--card)');
+  return modal;
+}
+
+// ── Modal genérico de lista ──
+async function showListModal(titleText, items) {
+  const modal = makeIonModal();
+
+  // Header sticky — fora do ion-content, directamente no modal
+  const stickyHeader = document.createElement('div');
+  stickyHeader.className = 'm-header';
+  stickyHeader.style.cssText = 'position:sticky;top:0;z-index:10;background:var(--card);';
+  const titleEl = document.createElement('span');
+  titleEl.className = 'm-title'; titleEl.textContent = titleText;
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'm-cancel'; cancelBtn.textContent = 'Fechar';
+  cancelBtn.addEventListener('click', () => modal.dismiss(null, 'cancel'));
+  stickyHeader.appendChild(titleEl); stickyHeader.appendChild(cancelBtn);
+
+  const list = document.createElement('ul');
+  list.className = 'm-list';
+  items.forEach(item => {
+    const li = document.createElement('li');
+    li.className = 'm-item' + (item.selected ? ' selected' : '');
+
+    const label = document.createElement('div');
+    label.className = 'm-item-label';
+    if (item.render) { item.render(label); } else { label.textContent = item.text; }
+
+    const check = document.createElement('div');
+    check.className = 'm-item-check';
+    check.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+    li.appendChild(label);
+    if (!item.noCheck) li.appendChild(check);
+    if (item.danger) li.style.color = 'var(--danger)';
+
+    li.addEventListener('click', () => {
+      if (!item.noCheck) {
+        list.querySelectorAll('.m-item').forEach(x => x.classList.remove('selected'));
+        li.classList.add('selected');
+      }
+      modal.dismiss(null, 'cancel');
+      if (item.handler) setTimeout(item.handler, 80);
+    });
+    list.appendChild(li);
+  });
+
+  const listWrap = document.createElement('div');
+  listWrap.style.cssText = 'padding-bottom:48px;';
+  listWrap.appendChild(list);
+
+  const content = document.createElement('ion-content');
+  content.setAttribute('scroll-y', 'true');
+  content.style.setProperty('--background', 'var(--card)');
+  content.appendChild(listWrap);
+
+  // Header sticky dentro do ion-content via slot
+  modal.appendChild(content);
+  // Injectar header como primeiro filho do shadow via slot não funciona —
+  // em vez disso metemos o header dentro do content mas sticky
+  content.insertBefore(stickyHeader, content.firstChild);
+
+  document.body.appendChild(modal);
+
+  const estimated = 56 + items.length * 56 + 48;
+  const bp = Math.min(0.95, estimated / window.innerHeight);
+  modal.breakpoints       = [0, bp];
+  modal.initialBreakpoint = bp;
+
+  modal.addEventListener('didDismiss', () => modal.remove());
+  await modal.present();
+  return modal;
+}
+
+// ── Modal do picker HSL ──
+async function openPickerModal(onSelect) {
+  if (_pickerModal) { await _pickerModal.dismiss(null,'cancel'); _pickerModal = null; }
+
+  let [hue, sat, lit] = hexToHsl(_selColor.length===7 ? _selColor : '#111111');
+
+  // canvas
+  const canvasWrap = document.createElement('div');
+  canvasWrap.className = 'cp-canvas-wrap';
+  const canvas = document.createElement('canvas');
+  canvas.width=600; canvas.height=400;
+  const cursor = document.createElement('div');
+  cursor.className='cp-cursor';
+  canvasWrap.appendChild(canvas); canvasWrap.appendChild(cursor);
+
+  // hue slider
+  const hueWrap = document.createElement('div');
+  hueWrap.className='cp-slider-wrap'; hueWrap.id='cp-hue-slider';
+  const hueThumb = document.createElement('div');
+  hueThumb.className='cp-slider-thumb';
+  hueWrap.appendChild(hueThumb);
+
+  // hex row
+  const hexRow = document.createElement('div');
+  hexRow.className='cp-hex-row';
+  const previewBox = document.createElement('div');
+  previewBox.className='cp-preview';
+  previewBox.style.background=_selColor;
+  const hexInput = document.createElement('input');
+  hexInput.className='cp-hex-input'; hexInput.type='text';
+  hexInput.value=_selColor; hexInput.maxLength=7; hexInput.placeholder='#000000';
+  hexRow.appendChild(previewBox); hexRow.appendChild(hexInput);
+
+  // botões — pill 100%
+  const applyBtn = document.createElement('ion-button');
+  applyBtn.setAttribute('expand','block');
+  applyBtn.style.cssText='--background:var(--acc);--color:var(--acc-c);--border-radius:999px;--box-shadow:none;margin:0 0 10px;';
+  applyBtn.textContent='Usar esta cor';
+
+  const backBtn = document.createElement('ion-button');
+  backBtn.setAttribute('expand','block');
+  backBtn.setAttribute('fill','outline');
+  backBtn.style.cssText='--border-radius:999px;--color:var(--text);--border-color:var(--border);--box-shadow:none;margin:0;';
+  backBtn.textContent='Voltar';
+
+  // header sticky
+  const header = document.createElement('div');
+  header.className = 'm-header';
+  header.style.cssText='position:sticky;top:0;z-index:10;background:var(--card);';
+  const titleEl = document.createElement('span');
+  titleEl.className='m-title'; titleEl.textContent='Personalizar cor';
+  const closeBtn = document.createElement('button');
+  closeBtn.className='m-cancel'; closeBtn.textContent='Fechar';
+  closeBtn.addEventListener('click', () => modal.dismiss(null,'cancel'));
+  header.appendChild(titleEl); header.appendChild(closeBtn);
+
+  const inner = document.createElement('div');
+  inner.className='cm-inner';
+  inner.appendChild(canvasWrap);
+  inner.appendChild(hueWrap);
+  inner.appendChild(hexRow);
+  inner.appendChild(applyBtn);
+  inner.appendChild(backBtn);
+
+  const content = document.createElement('ion-content');
+  content.setAttribute('scroll-y','false');
+  content.style.setProperty('--background','var(--card)');
+  content.appendChild(inner);
+  content.insertBefore(header, content.firstChild);
+
+  const modal = makeIonModal();
+  modal.breakpoints       = [0, 0.88];
+  modal.initialBreakpoint = 0.88;
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  _pickerModal = modal;
+  modal.addEventListener('didDismiss', ()=>{ modal.remove(); _pickerModal=null; });
+
+  // ── draw ──
+  function draw() {
+    const ctx = canvas.getContext('2d');
+    const w=canvas.width, h=canvas.height;
+    const gH=ctx.createLinearGradient(0,0,w,0);
+    gH.addColorStop(0,'#fff'); gH.addColorStop(1,`hsl(${hue},100%,50%)`);
+    ctx.fillStyle=gH; ctx.fillRect(0,0,w,h);
+    const gV=ctx.createLinearGradient(0,0,0,h);
+    gV.addColorStop(0,'rgba(0,0,0,0)'); gV.addColorStop(1,'#000');
+    ctx.fillStyle=gV; ctx.fillRect(0,0,w,h);
+    // cursor — converte HSL→posição SV
+    const sv_s = sat/100;
+    const sv_v = (lit/100) + sv_s*(1 - Math.abs(2*lit/100-1))/2;
+    const sv_sn = sv_v > 0 ? sv_s*(1 - Math.abs(2*lit/100-1))/(2*sv_v) : 0;
+    cursor.style.left  = `${Math.max(0,Math.min(100, sv_sn*100))}%`;
+    cursor.style.top   = `${Math.max(0,Math.min(100, (1-sv_v)*100))}%`;
+    cursor.style.background = _selColor;
+    hueThumb.style.left=(hue/360*100)+'%';
+    previewBox.style.background=_selColor;
+    hexInput.value=_selColor;
+  }
+
+  function fromCanvas(e) {
+    const rect=canvas.getBoundingClientRect();
+    const px=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+    const py=Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
+    // SV → HSL
+    const sv_v = 1 - py;
+    const sv_s = px;
+    const l2 = sv_v*(1 - sv_s/2);
+    sat = l2===0||l2===1 ? 0 : Math.round((sv_v - l2)/Math.min(l2,1-l2)*100);
+    lit = Math.round(l2*100);
+    _selColor=hslToHex(hue,sat,lit); draw();
+  }
+  function fromHue(e) {
+    const rect=hueWrap.getBoundingClientRect();
+    hue=Math.round(Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))*360);
+    _selColor=hslToHex(hue,sat,lit); draw();
+  }
+
+  let dC=false, dH=false;
+  canvas.addEventListener('pointerdown',e=>{dC=true;canvas.setPointerCapture(e.pointerId);fromCanvas(e);});
+  canvas.addEventListener('pointermove',e=>{if(dC)fromCanvas(e);});
+  canvas.addEventListener('pointerup',  ()=>dC=false);
+  hueWrap.addEventListener('pointerdown',e=>{dH=true;hueWrap.setPointerCapture(e.pointerId);fromHue(e);});
+  hueWrap.addEventListener('pointermove',e=>{if(dH)fromHue(e);});
+  hueWrap.addEventListener('pointerup', ()=>dH=false);
+
+  hexInput.addEventListener('input', e=>{
+    const v=e.target.value;
+    if(/^#[0-9a-fA-F]{6}$/.test(v)){
+      _selColor=v; [hue,sat,lit]=hexToHsl(v); draw();
+    }
+  });
+
+  applyBtn.addEventListener('click', ()=>{ onSelect(_selColor); modal.dismiss(null,'cancel'); });
+  backBtn.addEventListener('click',  ()=>modal.dismiss(null,'cancel'));
+
+  await modal.present();
+  // Redraw depois da animação do modal completar para o rect do canvas ser correcto
+  setTimeout(draw, 320);
+}
+
+// ── Modal de cor principal ──
+window.openColorModal = async function() {
+  saveRange();
+  if (_colorModal) { await _colorModal.dismiss(null,'cancel'); _colorModal = null; }
+  _selColor = curColor;
+
+  // swatches
+  const grid = document.createElement('div');
+  grid.className='color-grid';
+  PRESET_COLORS.forEach(c=>{
+    const s=document.createElement('div');
+    s.className='color-swatch'; s.style.background=c;
+    if(c==='#ffffff') s.style.boxShadow='inset 0 0 0 1px #ccc';
+    s.dataset.color=c;
+    s.classList.toggle('selected', c.toLowerCase()===curColor.toLowerCase());
+    s.addEventListener('click', ()=>{
+      _selColor=c;
+      grid.querySelectorAll('.color-swatch').forEach(x=>x.classList.toggle('selected',x.dataset.color===c));
+    });
+    grid.appendChild(s);
+  });
+
+  // botão personalizar — pill
+  const customBtn = document.createElement('ion-button');
+  customBtn.setAttribute('expand','block');
+  customBtn.setAttribute('fill','outline');
+  customBtn.style.cssText='--border-radius:999px;--color:var(--text);--border-color:var(--border);--box-shadow:none;margin:0 0 10px;';
+  customBtn.textContent='Personalizar cor';
+  customBtn.addEventListener('click', ()=>openPickerModal(c=>{
+    _selColor=c;
+    grid.querySelectorAll('.color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color.toLowerCase()===c.toLowerCase()));
+  }));
+
+  // botão aplicar — pill
+  const applyBtn = document.createElement('ion-button');
+  applyBtn.setAttribute('expand','block');
+  applyBtn.style.cssText='--background:var(--acc);--color:var(--acc-c);--border-radius:999px;--box-shadow:none;margin:0 0 8px;';
+  applyBtn.textContent='Aplicar';
+  applyBtn.addEventListener('click',()=>{
+    curColor=_selColor;
+    document.getElementById('color-dot').style.background=curColor;
+    modal.dismiss(null,'cancel');
+    setTimeout(()=>{getActiveEditor().focus();restoreRange();document.execCommand('foreColor',false,curColor);},120);
+  });
+
+  // header sticky
+  const header = document.createElement('div');
+  header.className='m-header';
+  header.style.cssText='position:sticky;top:0;z-index:10;background:var(--card);';
+  const titleEl = document.createElement('span');
+  titleEl.className='m-title'; titleEl.textContent='Cor da letra';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className='m-cancel'; cancelBtn.textContent='Fechar';
+  cancelBtn.addEventListener('click',()=>modal.dismiss(null,'cancel'));
+  header.appendChild(titleEl); header.appendChild(cancelBtn);
+
+  const inner = document.createElement('div');
+  inner.className='cm-inner';
+  inner.appendChild(grid);
+  inner.appendChild(customBtn);
+  inner.appendChild(applyBtn);
+
+  const content = document.createElement('ion-content');
+  content.setAttribute('scroll-y','true');
+  content.style.setProperty('--background','var(--card)');
+  content.appendChild(inner);
+  content.insertBefore(header, content.firstChild);
+
+  const modal = makeIonModal();
+  const bp = Math.min(0.95, (56 + 260 + 100 + 48) / window.innerHeight);
+  modal.breakpoints       = [0, bp];
+  modal.initialBreakpoint = bp;
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+
+  _colorModal = modal;
+  modal.addEventListener('didDismiss',()=>{ modal.remove(); _colorModal=null; });
+  await modal.present();
+};
+
+window.closeColorModal = function() {
+  if (_colorModal) _colorModal.dismiss();
+};
+
+// ── OPÇÕES ──
+window.openOpcoes = function() {
+  showListModal('Opções', [
+    { text:'Baixar como PDF',    noCheck:true, handler: exportPDF      },
+    { text:'Baixar como DOCX',   noCheck:true, handler: exportDocx     },
+    { text:'Baixar como TXT',    noCheck:true, handler: exportTXT      },
+    { text:'Partilhar PDF',      noCheck:true, handler: sharePDF       },
+    { text:'Armazenar na nuvem', noCheck:true, handler: saveCloud      },
+    { text:'Nova página',        noCheck:true, handler: addPageManual  },
+    { text:'Limpar tudo',        noCheck:true, danger:true, handler: clearAll },
+  ]);
+};
+function exportPDF()    { showToast('A gerar PDF…'); setProgress(true); setTimeout(()=>{ setProgress(false); window.print(); },600); }
+function exportDocx()   { showToast('DOCX: brevemente'); }
+function exportTXT()    { const b=new Blob([pages.map(p=>p.editor.innerText).join('\n\n--- Página ---\n\n')],{type:'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='documento.txt';a.click();showToast('TXT exportado!'); }
+async function sharePDF(){ if(navigator.share)try{await navigator.share({title:'Documento Aria'});}catch(e){}else showToast('Partilha não suportada'); }
+function saveCloud()    { setProgress(true); setTimeout(()=>{ setProgress(false); showToast('Guardado na nuvem ✓'); },1800); }
+function addPageManual(){ createPage(pages.length); applyScale(); }
+function clearAll()     { document.getElementById('doc-pages').innerHTML=''; pages=[]; activePg=0; createPage(0); applyScale(); updateMeta(); showToast('Documento limpo'); }
+
+// ── IA ──
+window.openGemini = function() {
+  const sel = (window.getSelection()?.toString()||'').trim();
+  showListModal(sel ? `"${sel.slice(0,40)}…"` : 'Pedir à IA', [
+    { text:'Melhorar escrita',     noCheck:true, handler:()=>aiRun('Melhorar escrita')     },
+    { text:'Resumir',              noCheck:true, handler:()=>aiRun('Resumir')              },
+    { text:'Continuar texto',      noCheck:true, handler:()=>aiRun('Continuar texto')      },
+    { text:'Traduzir para inglês', noCheck:true, handler:()=>aiRun('Traduzir para inglês') },
+    { text:'Corrigir gramática',   noCheck:true, handler:()=>aiRun('Corrigir gramática')   },
+  ]);
+};
+function aiRun(a) { setProgress(true); setTimeout(()=>{ setProgress(false); showToast(`IA: ${a} concluído`); },1500); }
+</script>
+
+<script>
+// ── Flutter Bridge ──
+// Flutter chama estas funções via JavascriptChannel "FlutterBridge"
+window._docTitle = 'Sem título';
+window._docId = null;
+
+// Chamado pelo Flutter ao abrir um documento existente
+window.loadDocument = function(id, title, htmlContent) {
+  window._docId = id;
+  window._docTitle = title;
+  document.getElementById('doc-title-text').textContent = title;
+  if (htmlContent) {
+    document.getElementById('doc-pages').innerHTML = '';
+    pages = []; activePg = 0;
+  }
+  createPage(0); applyScale(); updateMeta();
+  if (htmlContent && pages[0]) {
+    pages[0].editor.innerHTML = htmlContent;
+  } else {
+    pages[0]?.editor?.focus();
+  }
+};
+
+// Chamado pelo Flutter para obter o conteúdo actual
+window.getDocumentContent = function() {
+  const html = pages.map(p => p.editor.innerHTML).join('<!-- PAGE_BREAK -->');
+  const text = pages.map(p => p.editor.innerText).join('\n\n').trim();
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  return JSON.stringify({ html, text, words, title: window._docTitle });
+};
+
+// Botão guardar — envia para Flutter
+window.saveDocument = function() {
+  const data = window.getDocumentContent();
+  if (window.FlutterBridge) {
+    window.FlutterBridge.postMessage(JSON.stringify({
+      action: 'save',
+      id: window._docId,
+      title: window._docTitle,
+      data: data
+    }));
+  }
+};
+
+// Actualizar título
+window.setDocTitle = function(t) {
+  window._docTitle = t;
+  const el = document.getElementById('doc-title-text');
+  if (el) el.textContent = t;
+};
+
+// Init — cria primeira página se ainda não existir
+if (pages.length === 0) { createPage(0); applyScale(); updateMeta(); }
+</script>
+</body>
+</html>
