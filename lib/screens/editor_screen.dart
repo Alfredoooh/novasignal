@@ -9,6 +9,16 @@ import '../widgets/theme.dart';
 // Importação condicional — WebView só no nativo, iframe só na web
 import 'editor_native.dart' if (dart.library.html) 'editor_web.dart';
 
+/// Interface pública exposta aos ficheiros de editor (web/native).
+/// Evita referenciar [_EditorScreenState] directamente a partir de
+/// ficheiros externos, o que causaria erros de compilação em Dart.
+abstract class EditorController {
+  ADocument? get document;
+  Future<void> handleSaveMessage(Map<String, dynamic> data);
+  void handleBack();
+  void setSaving(bool v);
+}
+
 class EditorScreen extends StatefulWidget {
   final ADocument? document;
   const EditorScreen({super.key, this.document});
@@ -16,9 +26,13 @@ class EditorScreen extends StatefulWidget {
   State<EditorScreen> createState() => _EditorScreenState();
 }
 
-class _EditorScreenState extends State<EditorScreen> {
+class _EditorScreenState extends State<EditorScreen>
+    implements EditorController {
   bool _saving = false;
   String _title = 'Sem título';
+
+  @override
+  ADocument? get document => widget.document;
 
   @override
   void initState() {
@@ -27,8 +41,10 @@ class _EditorScreenState extends State<EditorScreen> {
   }
 
   // Chamado pelo editor (web ou nativo) ao receber mensagem "save"
+  @override
   Future<void> handleSaveMessage(Map<String, dynamic> data) async {
-    final innerData = jsonDecode(data['data'] as String) as Map<String, dynamic>;
+    final innerData =
+        jsonDecode(data['data'] as String) as Map<String, dynamic>;
     final now = DateTime.now();
     final id = (data['id'] as String?)?.isNotEmpty == true
         ? data['id'] as String
@@ -47,24 +63,34 @@ class _EditorScreenState extends State<EditorScreen> {
 
     await DocumentService.instance.save(doc);
     if (mounted) {
-      setState(() { _saving = false; _title = doc.title; });
+      setState(() {
+        _saving = false;
+        _title = doc.title;
+      });
       _snack('Guardado');
     }
   }
 
   // Chamado pelo editor ao receber "back"
+  @override
   void handleBack() {
     Navigator.of(context).pop();
   }
 
-  void setSaving(bool v) { if (mounted) setState(() => _saving = v); }
+  @override
+  void setSaving(bool v) {
+    if (mounted) setState(() => _saving = v);
+  }
 
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w700)),
+      content: Text(msg,
+          style: const TextStyle(
+              fontFamily: 'Syne', fontWeight: FontWeight.w700)),
       backgroundColor: AriaTheme.acc,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       duration: const Duration(seconds: 2),
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
     ));
@@ -74,8 +100,6 @@ class _EditorScreenState extends State<EditorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // O editor cuida do próprio header — sem AppBar Flutter
-      // para não duplicar com o header do Ionic
       body: buildEditorView(context, this),
     );
   }
