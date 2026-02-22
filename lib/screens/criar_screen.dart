@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../widgets/theme.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'editor_screen.dart';
 
 class CriarScreen extends StatelessWidget {
@@ -17,7 +16,7 @@ class CriarScreen extends StatelessWidget {
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text('Criar',
-          style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800, fontSize: 18)),
+          style: TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w800, fontSize: 18)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: const Color(0xFFF0F0F0)),
@@ -28,16 +27,14 @@ class CriarScreen extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 22, 20, 10),
-            child: Text(
-              'ESCOLHE UM TIPO',
+            child: Text('ESCOLHE UM TIPO',
               style: TextStyle(
-                fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800,
+                fontFamily: 'Syne', fontWeight: FontWeight.w800,
                 fontSize: 11, letterSpacing: 1.4,
                 color: Color(0xFFBBBBBB),
               ),
             ),
           ),
-          // Documento
           _CreateItem(
             icon: Icons.description_outlined,
             iconColor: AriaTheme.acc,
@@ -45,14 +42,10 @@ class CriarScreen extends StatelessWidget {
             title: 'Documento',
             subtitle: 'Texto com formatação rica',
             onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditorScreen()),
-              );
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => const EditorScreen()));
               onDocCreated?.call();
             },
           ),
-          // Apresentação (em breve)
           _CreateItem(
             icon: Icons.slideshow_outlined,
             iconColor: const Color(0xFFCCCCCC),
@@ -61,7 +54,6 @@ class CriarScreen extends StatelessWidget {
             subtitle: 'Em breve',
             disabled: true,
           ),
-          // Folha de cálculo (em breve)
           _CreateItem(
             icon: Icons.table_chart_outlined,
             iconColor: const Color(0xFFCCCCCC),
@@ -121,12 +113,12 @@ class _CreateItem extends StatelessWidget {
                   children: [
                     Text(title,
                       style: TextStyle(
-                        fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w700,
+                        fontFamily: 'Syne', fontWeight: FontWeight.w700,
                         fontSize: 15, color: disabled ? const Color(0xFFAAAAAA) : const Color(0xFF111111),
                       )),
                     const SizedBox(height: 3),
                     Text(subtitle,
-                      style: const TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontSize: 12.5, color: Color(0xFFBBBBBB))),
+                      style: const TextStyle(fontFamily: 'Syne', fontSize: 12.5, color: Color(0xFFBBBBBB))),
                   ],
                 ),
               ),
