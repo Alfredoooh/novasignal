@@ -15,6 +15,7 @@ dependencies:
 
   # Persistência local
   shared_preferences: ^2.2.3
+  google_fonts: ^6.2.1
 
   # UUID para IDs de documentos
   uuid: ^4.4.0
