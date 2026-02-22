@@ -37,15 +37,15 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: const Text('Eliminar documento',
-          style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800, fontSize: 16)),
+          style: TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w800, fontSize: 16)),
         content: Text('Eliminar "${doc.title}"?',
-          style: const TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontSize: 14)),
+          style: const TextStyle(fontFamily: 'Syne', fontSize: 14)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false),
             child: Text('Cancelar', style: TextStyle(color: AriaTheme.textSub, fontFamily: 'Syne'))),
           TextButton(onPressed: () => Navigator.pop(ctx, true),
             child: Text('Eliminar',
-              style: TextStyle(color: AriaTheme.danger, fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800))),
+              style: TextStyle(color: AriaTheme.danger, fontFamily: 'Syne', fontWeight: FontWeight.w800))),
         ],
       ),
     );
@@ -68,7 +68,6 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // ── App Bar — SEM title no SliverAppBar para evitar duplicação ──
           SliverAppBar(
             backgroundColor: Colors.white,
             surfaceTintColor: Colors.transparent,
@@ -76,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
             expandedHeight: 110,
             elevation: 0,
             automaticallyImplyLeading: false,
-            // Não usar o parâmetro `title` — usamos só o flexibleSpace
             flexibleSpace: LayoutBuilder(builder: (ctx, box) {
               final t = ((box.maxHeight - kToolbarHeight) /
                   (110.0 - kToolbarHeight)).clamp(0.0, 1.0);
@@ -87,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: RichText(
                   text: TextSpan(
                     style: TextStyle(
-                      fontFamily: GoogleFonts.syne().fontFamily,
+                      fontFamily: 'Syne',
                       fontWeight: FontWeight.w800,
                       fontSize: 20 + 14 * t,
                       height: 1,
@@ -105,16 +103,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(height: 1, color: const Color(0xFFF0F0F0)),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
               child: Text('RECENTES',
-                style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800,
+                style: TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w800,
                   fontSize: 11, letterSpacing: 1.4, color: AriaTheme.textSub.withOpacity(.5))),
             ),
           ),
-
           if (_docs.isEmpty)
             SliverFillRemaining(child: _buildEmpty())
           else
@@ -134,11 +130,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       const SizedBox(height: 16),
       const Text('Ainda vazio',
-        style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w800, fontSize: 17, color: Color(0xFF111111))),
+        style: TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w800, fontSize: 17, color: Color(0xFF111111))),
       const SizedBox(height: 8),
       Text('Os teus documentos aparecem aqui.\nVai a Criar para começar.',
         textAlign: TextAlign.center,
-        style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontSize: 13.5, color: AriaTheme.textSub, height: 1.6)),
+        style: TextStyle(fontFamily: 'Syne', fontSize: 13.5, color: AriaTheme.textSub, height: 1.6)),
     ]),
   );
 
@@ -157,20 +153,20 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(doc.title,
-            style: const TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF111111)),
+            style: const TextStyle(fontFamily: 'Syne', fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF111111)),
             maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 3),
           Text(doc.preview,
-            style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontSize: 12.5, color: AriaTheme.textSub),
+            style: TextStyle(fontFamily: 'Syne', fontSize: 12.5, color: AriaTheme.textSub),
             maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
           Row(children: [
             Text(_fmt(doc.updatedAt),
-              style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontSize: 11, color: AriaTheme.textSub.withOpacity(.6))),
+              style: TextStyle(fontFamily: 'Syne', fontSize: 11, color: AriaTheme.textSub.withOpacity(.6))),
             if (doc.wordCount > 0) ...[
               Text(' · ', style: TextStyle(color: AriaTheme.textSub.withOpacity(.4), fontSize: 11)),
               Text('${doc.wordCount} palavras',
-                style: TextStyle(fontFamily: GoogleFonts.syne().fontFamily, fontSize: 11, color: AriaTheme.textSub.withOpacity(.6))),
+                style: TextStyle(fontFamily: 'Syne', fontSize: 11, color: AriaTheme.textSub.withOpacity(.6))),
             ],
           ]),
         ])),
