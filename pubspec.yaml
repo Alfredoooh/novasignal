@@ -11,15 +11,19 @@ dependencies:
   flutter:
     sdk: flutter
   
-  #web_socket_channel: ^2.4.0
-  #feather_icons: any
-  animations: any
-  #bootstrap_icons: any
-  flutter_inappwebview: any
-  #flutter_svg: any
-  # WebView para gráficos LightweightCharts
-  flutter_svg: any
-  flutter_staggered_grid_view: any
+webview_flutter: ^4.7.0
+
+  # Persistência local
+  shared_preferences: ^2.2.3
+
+  # UUID para IDs de documentos
+  uuid: ^4.4.0
+
+  # Formatação de datas
+  intl: ^0.19.0
+
+  # Gestos e animações
+  flutter_animate: ^4.5.0
 
 dev_dependencies:
   flutter_test:
