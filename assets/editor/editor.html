@@ -348,10 +348,9 @@
     }
   </style>
 
-  <!-- Geração de PDF sem diálogo de impressão -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <!-- Conversão DOCX → HTML -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Transições de tema suaves globais -->
   <style>
@@ -372,13 +371,13 @@
       <ion-toolbar>
         <ion-buttons slot="start">
           <button class="bar-btn" onclick="goHome()">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
-              <path d="M20,11H7.83l5.59-5.59L12,4l-8,8,8,8,1.41-1.41L7.83,13H20v-2Z"/>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
+              <path d="M.88,14.09,4.75,18a1,1,0,0,0,1.42,0h0a1,1,0,0,0,0-1.42L2.61,13H23a1,1,0,0,0,1-1h0a1,1,0,0,0-1-1H2.55L6.17,7.38A1,1,0,0,0,6.17,6h0A1,1,0,0,0,4.75,6L.88,9.85A3,3,0,0,0,.88,14.09Z"/>
             </svg>
           </button>
         </ion-buttons>
         <ion-title>
-          <span class="doc-title-text" id="doc-title-text">Sem título</span>
+          <span class="doc-title-text" id="doc-title-text" onclick="openRenameDialog()" style="cursor:pointer;" title="Clique para renomear">Sem título</span>
         </ion-title>
         <ion-buttons slot="end" style="gap:4px;padding-right:8px;">
           <button class="bar-btn" onclick="window.saveDocument()" title="Guardar" style="color:var(--acc);font-family:'Syne',sans-serif;font-size:.75rem;font-weight:800;width:auto;padding:0 6px;">Guardar</button>
@@ -489,6 +488,10 @@
             </svg>
           </button>
         </div>
+        <div class="tb-sep"></div>
+        <button class="tb-pill-btn" onclick="openInsertModal()">Inserir</button>
+        <div class="tb-sep"></div>
+        <button class="tb-pill-btn" onclick="openLayoutModal()">Layout</button>
       </div>
 
       <ion-progress-bar id="prog" value="0"
@@ -1213,75 +1216,339 @@ window.closeColorModal = function() {
   if (_colorModal) _colorModal.dismiss();
 };
 
-// ── OPÇÕES ──
 window.openOpcoes = function() {
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
   showListModal('Opções', [
     { text:'Baixar como PDF',    noCheck:true, handler: exportPDF      },
-    { text:'Baixar como DOCX',   noCheck:true, handler: exportDocx     },
     { text:'Baixar como TXT',    noCheck:true, handler: exportTXT      },
     { text:'Partilhar PDF',      noCheck:true, handler: sharePDF       },
-    { text:'Armazenar na nuvem', noCheck:true, handler: saveCloud      },
     { text:'Nova página',        noCheck:true, handler: addPageManual  },
+    { text: isDark ? 'Papel branco (modo escuro)' : 'Papel branco ativo', noCheck:true, handler: toggleWhitePaper },
     { text:'Limpar tudo',        noCheck:true, danger:true, handler: clearAll },
   ]);
 };
-function exportPDF() {
+
+let _whitePaperForced = false;
+function toggleWhitePaper() {
+  _whitePaperForced = !_whitePaperForced;
+  document.querySelectorAll('.page-wrap').forEach(p => {
+    p.style.background = _whitePaperForced ? '#ffffff' : '';
+    p.querySelector('.page-editor').style.color = _whitePaperForced ? '#111111' : '';
+  });
+  showToast(_whitePaperForced ? 'Papel branco ativado' : 'Papel voltou ao tema');
+}
+
+async function exportPDF() {
+  if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+    showToast('A carregar bibliotecas…');
+    await new Promise(r => setTimeout(r, 800));
+  }
   showToast('A gerar PDF…');
   setProgress(true);
 
-  // Clonar páginas para o html2pdf (preserva estilos mas remove editabilidade)
-  const pagesEl = document.getElementById('doc-pages');
-  const clone   = pagesEl.cloneNode(true);
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'px', format: [794, 1123], orientation: 'portrait', hotfixes: ['px_scaling'] });
 
-  // Remover atributos contenteditable do clone
-  clone.querySelectorAll('[contenteditable]').forEach(el => {
-    el.removeAttribute('contenteditable');
+    for (let i = 0; i < pages.length; i++) {
+      const wrap = pages[i].wrap;
+
+      // Guardar estado do transform para restaurar depois
+      const origTransform = wrap.style.transform;
+      const origMargin    = wrap.style.marginBottom;
+
+      // Reset scale para captura em tamanho real
+      wrap.style.transform    = 'none';
+      wrap.style.marginBottom = '0';
+      wrap.style.width        = '794px';
+      wrap.style.height       = '1123px';
+
+      // Fundo sempre branco no PDF
+      const origBg = wrap.style.background;
+      wrap.style.background = '#ffffff';
+      const ed = pages[i].editor;
+      const origColor = ed.style.color;
+      ed.style.color = '#111111';
+
+      const canvas = await html2canvas(wrap, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123,
+      });
+
+      // Restaurar estilos
+      wrap.style.transform    = origTransform;
+      wrap.style.marginBottom = origMargin;
+      wrap.style.background   = origBg;
+      ed.style.color          = origColor;
+
+      if (i > 0) pdf.addPage([794, 1123], 'portrait');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 794, 1123);
+    }
+
+    applyScale(); // restaurar scale da UI
+
+    const base64 = pdf.output('datauristring').split(',')[1];
+    setProgress(false);
+    _sendFlutter({ action: 'exportPDF', base64, title: window._docTitle || 'documento' });
+    showToast('PDF gerado!');
+  } catch(err) {
+    setProgress(false);
+    applyScale();
+    showToast('Erro ao gerar PDF');
+    console.error('exportPDF error:', err);
+  }
+}
+
+function exportTXT() {
+  const b = new Blob([pages.map(p=>p.editor.innerText).join('\n\n--- Página ---\n\n')], {type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='documento.txt'; a.click();
+  showToast('TXT exportado!');
+}
+async function sharePDF(){ if(navigator.share)try{await navigator.share({title:'Documento Aria'});}catch(e){}else showToast('Partilha não suportada'); }
+function addPageManual(){ createPage(pages.length); applyScale(); }
+function clearAll(){ document.getElementById('doc-pages').innerHTML=''; pages=[]; activePg=0; createPage(0); applyScale(); updateMeta(); showToast('Documento limpo'); }
+
+// ── Renomear título ──
+window.openRenameDialog = function() {
+  const modal = makeIonModal();
+  modal.breakpoints       = [0, 0.42];
+  modal.initialBreakpoint = 0.42;
+
+  const header = document.createElement('div');
+  header.className = 'm-header';
+  header.style.cssText = 'position:sticky;top:0;z-index:10;background:var(--card);';
+  const titleEl = document.createElement('span');
+  titleEl.className = 'm-title'; titleEl.textContent = 'Renomear documento';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'm-cancel'; cancelBtn.textContent = 'Cancelar';
+  cancelBtn.addEventListener('click', () => modal.dismiss(null, 'cancel'));
+  header.appendChild(titleEl); header.appendChild(cancelBtn);
+
+  const input = document.createElement('ion-input');
+  input.value     = window._docTitle || '';
+  input.placeholder = 'Nome do documento';
+  input.clearInput = true;
+  input.style.cssText = '--padding-start:20px;--padding-end:20px;--background:var(--toolbar-pill);--border-radius:12px;font-family:Syne,sans-serif;margin:16px 20px 0;';
+
+  const applyBtn = document.createElement('ion-button');
+  applyBtn.setAttribute('expand','block');
+  applyBtn.style.cssText = '--background:var(--acc);--color:var(--acc-c);--border-radius:999px;--box-shadow:none;margin:14px 20px 24px;';
+  applyBtn.textContent = 'Guardar';
+  applyBtn.addEventListener('click', async () => {
+    const v = ((await input.getInputElement())?.value || input.value || '').trim();
+    if (v) {
+      window._docTitle = v;
+      const el = document.getElementById('doc-title-text');
+      if (el) el.textContent = v;
+    }
+    modal.dismiss(null, 'cancel');
   });
 
-  // Estilos inline para o clone (A4 real sem transform scale)
-  clone.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:16px;background:transparent;';
-  clone.querySelectorAll('.page-wrap').forEach(pw => {
-    pw.style.transform = 'none';
-    pw.style.marginBottom = '0';
-    pw.style.width  = '794px';
-    pw.style.height = '1123px';
-  });
+  const inner = document.createElement('div');
+  inner.appendChild(input);
+  inner.appendChild(applyBtn);
 
-  const opt = {
-    margin:    0,
-    filename:  (window._docTitle || 'documento') + '.pdf',
-    image:     { type: 'jpeg', quality: 0.96 },
-    html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-    jsPDF:     { unit: 'px', format: [794, 1123], orientation: 'portrait', hotfixes: ['px_scaling'] },
-    pagebreak: { mode: ['avoid-all', 'css'], before: '.page-wrap' }
+  const content = document.createElement('ion-content');
+  content.setAttribute('scroll-y','false');
+  content.style.setProperty('--background','var(--card)');
+  content.appendChild(inner);
+  content.insertBefore(header, content.firstChild);
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  modal.addEventListener('didDismiss', () => modal.remove());
+  modal.present().then(() => {
+    setTimeout(() => input.setFocus(), 200);
+  });
+};
+
+// ── Modal Inserir ──
+window.openInsertModal = function() {
+  saveRange();
+  const items = [
+    { icon:'📋', label:'Tabela', handler: insertTable },
+    { icon:'─', label:'Linha horizontal', handler: ()=>{ getActiveEditor().focus(); restoreRange(); document.execCommand('insertHorizontalRule',false,null); } },
+    { icon:'❝', label:'Citação', handler: ()=>{ getActiveEditor().focus(); restoreRange(); document.execCommand('formatBlock',false,'blockquote'); } },
+    { icon:'<>', label:'Código', handler: insertCode },
+    { icon:'🔗', label:'Link', handler: insertLink },
+    { icon:'•', label:'Lista com marcas', handler: ()=>{ fmt('insertUnorderedList'); } },
+    { icon:'1.', label:'Lista numerada', handler: ()=>{ fmt('insertOrderedList'); } },
+    { icon:'⬛', label:'Quebra de página', handler: ()=>{ getActiveEditor().focus(); restoreRange(); document.execCommand('insertHTML',false,'<div style="page-break-after:always;height:0;"></div>'); } },
+  ];
+  showListModal('Inserir elemento', items.map(it => ({
+    noCheck: true,
+    render: el => {
+      el.style.cssText = 'display:flex;align-items:center;gap:14px;';
+      const ico = document.createElement('span');
+      ico.style.cssText = 'width:32px;height:32px;border-radius:8px;background:var(--toolbar-pill);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;font-family:monospace;';
+      ico.textContent = it.icon;
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-family:Syne,sans-serif;font-size:.9rem;';
+      lbl.textContent = it.label;
+      el.appendChild(ico); el.appendChild(lbl);
+    },
+    handler: it.handler,
+  })));
+};
+
+function insertTable() {
+  getActiveEditor().focus(); restoreRange();
+  const html = `<table style="border-collapse:collapse;width:100%;margin:.5em 0;">
+    <thead><tr>
+      <th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho 1</th>
+      <th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho 2</th>
+      <th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho 3</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td></tr>
+      <tr><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td></tr>
+    </tbody>
+  </table><p><br></p>`;
+  document.execCommand('insertHTML', false, html);
+}
+
+function insertCode() {
+  getActiveEditor().focus(); restoreRange();
+  document.execCommand('insertHTML', false, '<pre style="background:rgba(0,0,0,.06);border-radius:8px;padding:12px 14px;font-family:\'Space Mono\',monospace;font-size:.82rem;margin:.5em 0;overflow-x:auto;"><code>// código aqui</code></pre><p><br></p>');
+}
+
+function insertLink() {
+  const url = prompt('URL do link:');
+  if (url) {
+    getActiveEditor().focus(); restoreRange();
+    document.execCommand('createLink', false, url);
+    getActiveEditor().querySelectorAll('a').forEach(a => { a.target='_blank'; });
+  }
+}
+
+// ── Modal Layout ──
+window.openLayoutModal = function() {
+  const modal = makeIonModal();
+  modal.breakpoints       = [0, 0.72];
+  modal.initialBreakpoint = 0.72;
+
+  const header = document.createElement('div');
+  header.className = 'm-header';
+  header.style.cssText = 'position:sticky;top:0;z-index:10;background:var(--card);';
+  const titleEl = document.createElement('span');
+  titleEl.className = 'm-title'; titleEl.textContent = 'Layout da página';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'm-cancel'; cancelBtn.textContent = 'Fechar';
+  cancelBtn.addEventListener('click', () => modal.dismiss(null, 'cancel'));
+  header.appendChild(titleEl); header.appendChild(cancelBtn);
+
+  const inner = document.createElement('div');
+  inner.style.cssText = 'padding:16px 20px 48px;';
+
+  // Secção: Tamanho
+  const secLabel = (txt) => {
+    const l = document.createElement('p');
+    l.style.cssText = 'font-family:Syne,sans-serif;font-size:.6rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);margin:0 0 10px;';
+    l.textContent = txt; return l;
   };
 
-  html2pdf()
-    .set(opt)
-    .from(clone)
-    .outputPdf('datauristring')
-    .then(dataUri => {
-      setProgress(false);
-      const base64 = dataUri.split(',')[1];
-      _sendFlutter({
-        action: 'exportPDF',
-        base64: base64,
-        title: window._docTitle || 'documento'
+  const pageFormats = [
+    { label:'A4', w:794, h:1123 },
+    { label:'A5', w:559, h:794 },
+    { label:'Letter', w:816, h:1056 },
+    { label:'Legal', w:816, h:1344 },
+  ];
+
+  inner.appendChild(secLabel('Tamanho do papel'));
+  const fmtRow = document.createElement('div');
+  fmtRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;';
+  const curFmt = pageFormats[0];
+  pageFormats.forEach(f => {
+    const btn = document.createElement('button');
+    const sel = f.label === 'A4';
+    btn.style.cssText = `height:36px;padding:0 18px;border-radius:999px;border:1.5px solid ${sel?'var(--acc)':'var(--border)'};background:${sel?'rgba(var(--acc-rgb),.1)':'transparent'};color:${sel?'var(--acc)':'var(--text)'};font-family:Syne,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;`;
+    btn.textContent = f.label;
+    btn.addEventListener('click', () => {
+      fmtRow.querySelectorAll('button').forEach(b => {
+        b.style.borderColor = 'var(--border)'; b.style.color = 'var(--text)'; b.style.background = 'transparent';
       });
-      showToast('PDF gerado!');
-    })
-    .catch(err => {
-      setProgress(false);
-      showToast('Erro ao gerar PDF');
-      console.error('html2pdf error:', err);
+      btn.style.borderColor = 'var(--acc)'; btn.style.color = 'var(--acc)'; btn.style.background = 'rgba(var(--acc-rgb),.1)';
+      document.querySelectorAll('.page-wrap').forEach(p => {
+        p.style.width = f.w + 'px'; p.style.height = f.h + 'px';
+      });
+      applyScale();
     });
-}
-function exportDocx()   { showToast('DOCX: brevemente'); }
-function exportTXT()    { const b=new Blob([pages.map(p=>p.editor.innerText).join('\n\n--- Página ---\n\n')],{type:'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='documento.txt';a.click();showToast('TXT exportado!'); }
-async function sharePDF(){ if(navigator.share)try{await navigator.share({title:'Documento Aria'});}catch(e){}else showToast('Partilha não suportada'); }
-function saveCloud()    { setProgress(true); setTimeout(()=>{ setProgress(false); showToast('Guardado na nuvem ✓'); },1800); }
-function addPageManual(){ createPage(pages.length); applyScale(); }
-function clearAll()     { document.getElementById('doc-pages').innerHTML=''; pages=[]; activePg=0; createPage(0); applyScale(); updateMeta(); showToast('Documento limpo'); }
+    fmtRow.appendChild(btn);
+  });
+  inner.appendChild(fmtRow);
+
+  // Margens
+  inner.appendChild(secLabel('Margens'));
+  const margins = [
+    { label:'Estreitas', v:48, h:48 },
+    { label:'Normais', v:94, h:94 },
+    { label:'Largas', v:120, h:120 },
+  ];
+  const marginRow = document.createElement('div');
+  marginRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;';
+  margins.forEach((m, i) => {
+    const btn = document.createElement('button');
+    const sel = i === 1;
+    btn.style.cssText = `height:36px;padding:0 18px;border-radius:999px;border:1.5px solid ${sel?'var(--acc)':'var(--border)'};background:${sel?'rgba(var(--acc-rgb),.1)':'transparent'};color:${sel?'var(--acc)':'var(--text)'};font-family:Syne,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;`;
+    btn.textContent = m.label;
+    btn.addEventListener('click', () => {
+      marginRow.querySelectorAll('button').forEach(b => {
+        b.style.borderColor = 'var(--border)'; b.style.color = 'var(--text)'; b.style.background = 'transparent';
+      });
+      btn.style.borderColor = 'var(--acc)'; btn.style.color = 'var(--acc)'; btn.style.background = 'rgba(var(--acc-rgb),.1)';
+      document.querySelectorAll('.page-editor').forEach(p => {
+        p.parentElement.style.padding = m.v + 'px ' + m.h + 'px';
+      });
+    });
+    marginRow.appendChild(btn);
+  });
+  inner.appendChild(marginRow);
+
+  // Espaçamento de linha
+  inner.appendChild(secLabel('Espaçamento de linha'));
+  const spacings = [
+    { label:'Simples', v:'1.4' },
+    { label:'1,5 linhas', v:'1.65' },
+    { label:'Duplo', v:'2.0' },
+  ];
+  const spacingRow = document.createElement('div');
+  spacingRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;';
+  spacings.forEach((s, i) => {
+    const btn = document.createElement('button');
+    const sel = i === 0;
+    btn.style.cssText = `height:36px;padding:0 18px;border-radius:999px;border:1.5px solid ${sel?'var(--acc)':'var(--border)'};background:${sel?'rgba(var(--acc-rgb),.1)':'transparent'};color:${sel?'var(--acc)':'var(--text)'};font-family:Syne,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;`;
+    btn.textContent = s.label;
+    btn.addEventListener('click', () => {
+      spacingRow.querySelectorAll('button').forEach(b => {
+        b.style.borderColor = 'var(--border)'; b.style.color = 'var(--text)'; b.style.background = 'transparent';
+      });
+      btn.style.borderColor = 'var(--acc)'; btn.style.color = 'var(--acc)'; btn.style.background = 'rgba(var(--acc-rgb),.1)';
+      document.querySelectorAll('.page-editor').forEach(p => {
+        p.style.lineHeight = s.v;
+      });
+    });
+    spacingRow.appendChild(btn);
+  });
+  inner.appendChild(spacingRow);
+
+  const content = document.createElement('ion-content');
+  content.setAttribute('scroll-y','true');
+  content.style.setProperty('--background','var(--card)');
+  content.appendChild(inner);
+  content.insertBefore(header, content.firstChild);
+
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+  modal.addEventListener('didDismiss', () => modal.remove());
+  modal.present();
+};
 
 // ── IA ──
 window.openGemini = function() {
