@@ -10,6 +10,9 @@ import 'editor_native.dart' if (dart.library.html) 'editor_web.dart';
 
 abstract class EditorController {
   ADocument? get document;
+  String? get importHtml;
+  String? get importTitle;
+  String? get importDocxBase64;
   Future<void> handleSaveMessage(Map<String, dynamic> data);
   void handleBack();
   void setSaving(bool v);
@@ -17,7 +20,18 @@ abstract class EditorController {
 
 class EditorScreen extends StatefulWidget {
   final ADocument? document;
-  const EditorScreen({super.key, this.document});
+  final String? importHtml;
+  final String? importTitle;
+  final String? importDocxBase64;
+
+  const EditorScreen({
+    super.key,
+    this.document,
+    this.importHtml,
+    this.importTitle,
+    this.importDocxBase64,
+  });
+
   @override
   State<EditorScreen> createState() => _EditorScreenState();
 }
@@ -26,8 +40,10 @@ class _EditorScreenState extends State<EditorScreen>
     implements EditorController {
   bool _saving = false;
 
-  @override
-  ADocument? get document => widget.document;
+  @override ADocument? get document        => widget.document;
+  @override String?    get importHtml       => widget.importHtml;
+  @override String?    get importTitle      => widget.importTitle;
+  @override String?    get importDocxBase64 => widget.importDocxBase64;
 
   @override
   Future<void> handleSaveMessage(Map<String, dynamic> data) async {
@@ -77,9 +93,8 @@ class _EditorScreenState extends State<EditorScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = themeNotifier.isDark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.background;
     return Scaffold(
-      backgroundColor: Color(isDark ? 0xFF0D0D0D : 0xFFFFFFFF),
+      backgroundColor: Color(isDark ? 0xFF242424 : 0xFFFFFFFF),
       body: buildEditorView(context, this),
     );
   }
