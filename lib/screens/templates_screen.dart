@@ -16,7 +16,7 @@ const _templates = [
     category: 'Negócios',
     title: 'Proposta Comercial',
     preview: 'Proposta de negócio profissional com secções de escopo, orçamento e cronograma.',
-    html: '<h1>Proposta Comercial</h1><p><strong>Data:</strong> ___________</p><p><strong>Para:</strong> ___________</p><h2>Introdução</h2><p>Apresentamos esta proposta com o objetivo de atender às suas necessidades.</p><h2>Escopo do Projeto</h2><p>O projeto contempla as seguintes entregas:</p><ul><li>Entrega 1</li><li>Entrega 2</li><li>Entrega 3</li></ul><h2>Investimento</h2><p>Valor total: R$ ___________</p><h2>Prazo</h2><p>Prazo estimado: ___________ semanas</p>',
+    html: '<h1>Proposta Comercial</h1><p><strong>Data:</strong> ___________</p><p><strong>Para:</strong> ___________</p><h2>Introdução</h2><p>Apresentamos esta proposta com o objetivo de atender às suas necessidades.</p><h2>Escopo do Projeto</h2><p>O projeto contempla as seguintes entregas:</p><ul><li>Entrega 1</li><li>Entrega 2</li><li>Entrega 3</li></ul><h2>Investimento</h2><p>Valor total: R\$ ___________</p><h2>Prazo</h2><p>Prazo estimado: ___________ semanas</p>',
   ),
   _TemplateData(
     category: 'Académico',
