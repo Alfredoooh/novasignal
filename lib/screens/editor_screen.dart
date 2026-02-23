@@ -1,17 +1,13 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import '../models/document.dart';
 import '../services/document_service.dart';
 import '../widgets/theme.dart';
 
-// Importação condicional — WebView só no nativo, iframe só na web
 import 'editor_native.dart' if (dart.library.html) 'editor_web.dart';
 
-/// Interface pública exposta aos ficheiros de editor (web/native).
-/// Evita referenciar [_EditorScreenState] directamente a partir de
-/// ficheiros externos, o que causaria erros de compilação em Dart.
 abstract class EditorController {
   ADocument? get document;
   Future<void> handleSaveMessage(Map<String, dynamic> data);
@@ -29,22 +25,13 @@ class EditorScreen extends StatefulWidget {
 class _EditorScreenState extends State<EditorScreen>
     implements EditorController {
   bool _saving = false;
-  String _title = 'Sem título';
 
   @override
   ADocument? get document => widget.document;
 
   @override
-  void initState() {
-    super.initState();
-    _title = widget.document?.title ?? 'Sem título';
-  }
-
-  // Chamado pelo editor (web ou nativo) ao receber mensagem "save"
-  @override
   Future<void> handleSaveMessage(Map<String, dynamic> data) async {
-    final innerData =
-        jsonDecode(data['data'] as String) as Map<String, dynamic>;
+    final innerData = jsonDecode(data['data'] as String) as Map<String, dynamic>;
     final now = DateTime.now();
     final id = (data['id'] as String?)?.isNotEmpty == true
         ? data['id'] as String
@@ -63,34 +50,25 @@ class _EditorScreenState extends State<EditorScreen>
 
     await DocumentService.instance.save(doc);
     if (mounted) {
-      setState(() {
-        _saving = false;
-        _title = doc.title;
-      });
+      setState(() => _saving = false);
       _snack('Guardado');
     }
   }
 
-  // Chamado pelo editor ao receber "back"
   @override
-  void handleBack() {
-    Navigator.of(context).pop();
-  }
+  void handleBack() => Navigator.of(context).pop();
 
   @override
-  void setSaving(bool v) {
-    if (mounted) setState(() => _saving = v);
-  }
+  void setSaving(bool v) { if (mounted) setState(() => _saving = v); }
 
   void _snack(String msg) {
+    final isDark = themeNotifier.isDark;
+    final acc = accColor(isDark);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg,
-          style: const TextStyle(
-              fontFamily: 'Syne', fontWeight: FontWeight.w700)),
-      backgroundColor: AriaTheme.acc,
+      content: Text(msg, style: GoogleFonts.syne(fontWeight: FontWeight.w700, color: Colors.white)),
+      backgroundColor: acc,
       behavior: SnackBarBehavior.floating,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       duration: const Duration(seconds: 2),
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
     ));
@@ -98,8 +76,10 @@ class _EditorScreenState extends State<EditorScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = themeNotifier.isDark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.background;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(isDark ? 0xFF0D0D0D : 0xFFFFFFFF),
       body: buildEditorView(context, this),
     );
   }
