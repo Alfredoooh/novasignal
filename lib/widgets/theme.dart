@@ -1,55 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AriaTheme {
-  static const acc       = Color(0xFFE0185E);
-  static const bg        = Color(0xFFFFFFFF);
-  static const card      = Color(0xFFFFFFFF);
-  static const border    = Color(0xFFF0F0F0);
-  static const textPrimary = Color(0xFF111111);
-  static const textSub   = Color(0xFF8E8E93);
-  static const danger    = Color(0xFFFF3B30);
+// ─────────────────────────────────────────────
+// CORES — padrão exacto da referência
+// ─────────────────────────────────────────────
+class AppColors {
+  // Light
+  static const background    = Color(0xFFFFFFFF);
+  static const surface       = Color(0xFFFFFFFF);
+  static const textPrimary   = Color(0xFF000000);
+  static const textSecondary = Color(0xFF6B6B6B);
+  static const divider       = Color(0xFFE0E0E0);
+  static const navBg         = Color(0xFFFFFFFF);
+  static const navUnselected = Color(0xFF8E8E8E);
+  static const navSelected   = Color(0xFF000000);
+  static const pillLight     = Color(0xFF3A3A3A);
+  static const pillLightIcon = Color(0xFFFFFFFF);
 
-  // Syne carregada via google_fonts — funciona na web E no nativo
-  static TextStyle syne({
-    double fontSize = 14,
-    FontWeight fontWeight = FontWeight.w400,
-    Color color = textPrimary,
-    double? letterSpacing,
-    double? height,
-  }) => GoogleFonts.syne(
-    fontSize: fontSize,
-    fontWeight: fontWeight,
-    color: color,
-    letterSpacing: letterSpacing,
-    height: height,
-  );
+  // Dark
+  static const darkBackground    = Color(0xFF0D0D0D);
+  static const darkSurface       = Color(0xFF272727);
+  static const darkTextPrimary   = Color(0xFFFFFFFF);
+  static const darkTextSecondary = Color(0xFF8E8E8E);
+  static const darkDivider       = Color(0xFF2C2C2C);
+  static const darkNavBg         = Color(0xFF0D0D0D);
+  static const darkNavUnselected = Color(0xFF8E8E8E);
+  static const darkNavSelected   = Color(0xFFFFFFFF);
+  static const pillDark          = Color(0xFFE0E0E0);
+  static const pillDarkIcon      = Color(0xFF0D0D0D);
 
-  static ThemeData get theme {
-    final base = ThemeData.light(useMaterial3: true);
-    // Aplica Syne como fonte base via google_fonts
-    return base.copyWith(
-      colorScheme: const ColorScheme.light(
-        primary: acc,
-        surface: bg,
-        onPrimary: Colors.white,
-        onSurface: textPrimary,
-      ),
-      scaffoldBackgroundColor: bg,
-      textTheme: GoogleFonts.syneTextTheme(base.textTheme).apply(
-        bodyColor: textPrimary,
-        displayColor: textPrimary,
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: card,
-        surfaceTintColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        foregroundColor: textPrimary,
-        titleTextStyle: GoogleFonts.syne(
-          fontWeight: FontWeight.w800, fontSize: 18, color: textPrimary),
-      ),
-      dividerColor: border,
-      dividerTheme: const DividerThemeData(color: border, thickness: 1, space: 0),
-    );
-  }
+  // Accent Aria
+  static const acc     = Color(0xFFE0185E);
+  static const accDark = Color(0xFFFF6B9D);
+  static const danger  = Color(0xFFFF3B30);
 }
+
+// ─────────────────────────────────────────────
+// THEME NOTIFIER
+// ─────────────────────────────────────────────
+class ThemeNotifier extends ChangeNotifier {
+  bool _isDark = false;
+  bool get isDark => _isDark;
+  void toggle() { _isDark = !_isDark; notifyListeners(); }
+}
+
+final themeNotifier = ThemeNotifier();
+
+// ─────────────────────────────────────────────
+// HELPER — cor accent consoante tema
+// ─────────────────────────────────────────────
+Color accColor(bool isDark) => isDark ? AppColors.accDark : AppColors.acc;
