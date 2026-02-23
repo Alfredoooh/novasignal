@@ -6,6 +6,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'screens/home_screen.dart';
 import 'screens/criar_screen.dart';
 import 'screens/templates_screen.dart';
+import 'screens/activity_screen.dart';
+import 'screens/agenda_screen.dart';
 import 'services/document_service.dart';
 import 'widgets/theme.dart';
 
@@ -17,12 +19,15 @@ const _homeFilled  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24
 const _criarOutline = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m15,13c0,.553-.447,1-1,1s-1-.447-1-1v-2h-2c-.553,0-1-.447-1-1s.447-1,1-1h2v-2c0-.553.447-1,1-1s1,.447,1,1v2h2c.553,0,1,.447,1,1s-.447,1-1,1h-2v2Zm9-8v8.373c0,1.053-.427,2.084-1.172,2.828l-2.627,2.627c-.744.745-1.775,1.172-2.828,1.172h-8.373c-2.757,0-5-2.243-5-5V5C4,2.243,6.243,0,9,0h10c2.757,0,5,2.243,5,5Zm-15,13h8v-3c0-1.105.895-2,2-2h3V5c0-1.654-1.346-3-3-3h-10c-1.654,0-3,1.346-3,3v10c0,1.654,1.346,3,3,3Zm8,4H5c-1.654,0-3-1.346-3-3V7c0-.553-.447-1-1-1s-1,.447-1,1v12c0,2.757,2.243,5,5,5h12c.553,0,1-.447,1-1s-.447-1-1-1Z"/></svg>';
 const _criarFilled  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17,24H5c-2.757,0-5-2.243-5-5V7c0-.553.447-1,1-1s1,.447,1,1v12c0,1.654,1.346,3,3,3h12c.553,0,1,.447,1,1s-.447,1-1,1Zm0-4h-8c-2.757,0-5-2.243-5-5V5C4,2.243,6.243,0,9,0h10c2.757,0,5,2.243,5,5v8h-4c-1.654,0-3,1.346-3,3v4Zm-2-7v-2h2c.553,0,1-.447,1-1s-.447-1-1-1h-2v-2c0-.553-.447-1-1-1s-1,.447-1,1v2h-2c-.553,0-1,.447-1,1s.447,1,1,1h2v2c0,.553.447,1,1,1s1-.447,1-1Zm5,2c-.552,0-1,.448-1,1v3.642c.443-.198.855-.467,1.201-.814l2.627-2.627c.346-.346.616-.758.814-1.201h-3.642Z"/></svg>';
 
-// Ícones Templates fornecidos pelo utilizador
 const _templatesOutline = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m9,0h-4C2.243,0,0,2.243,0,5v2c0,1.103.897,2,2,2h7c1.103,0,2-.897,2-2V2c0-1.103-.897-2-2-2ZM2,7v-2c0-1.654,1.346-3,3-3h4l.002,5H2Zm20,8h-7c-1.103,0-2,.897-2,2v5c0,1.103.897,2,2,2h4c2.757,0,5-2.243,5-5v-2c0-1.103-.897-2-2-2Zm0,4c0,1.654-1.346,3-3,3h-4v-5h7v2ZM19,0h-4c-1.103,0-2,.897-2,2v9c0,1.103.897,2,2,2h7c1.103,0,2-.897,2-2v-6c0-2.757-2.243-5-5-5Zm-4,11V2h4c1.654,0,3,1.346,3,3l.002,6h-7.002Zm-6,0H2c-1.103,0-2,.897-2,2v6c0,2.757,2.243,5,5,5h4c1.103,0,2-.897,2-2v-9c0-1.103-.897-2-2-2Zm-4,11c-1.654,0-3-1.346-3-3v-6h7l.002,9h-4.002Z"/></svg>';
 const _templatesFilled  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m9,9H2c-1.103,0-2-.897-2-2v-2C0,2.243,2.243,0,5,0h4c1.103,0,2,.897,2,2v5c0,1.103-.897,2-2,2Zm10,15h-4c-1.103,0-2-.897-2-2v-5c0-1.103.897-2,2-2h7c1.103,0,2,.897,2,2v2c0,2.757-2.243,5-5,5Zm3-11h-7c-1.103,0-2-.897-2-2V2c0-1.103.897-2,2-2h4c2.757,0,5,2.243,5,5v6c0,1.103-.897,2-2,2Zm-13,11h-4c-2.757,0-5-2.243-5-5v-6c0-1.103.897-2,2-2h7c1.103,0,2,.897,2,2v9c0,1.103-.897,2-2,2Z"/></svg>';
 
 const _sunSvg  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,17c-2.76,0-5-2.24-5-5s2.24-5,5-5,5,2.24,5,5-2.24,5-5,5Zm1-13V1c0-.55-.45-1-1-1s-1,.45-1,1v3c0,.55,.45,1,1,1s1-.45,1-1Zm0,19v-3c0-.55-.45-1-1-1s-1,.45-1,1v3c0,.55,.45,1,1,1s1-.45,1-1ZM5,12c0-.55-.45-1-1-1H1c-.55,0-1,.45-1,1s.45,1,1,1h3c.55,0,1-.45,1-1Zm19,0c0-.55-.45-1-1-1h-3c-.55,0-1,.45-1,1s.45,1,1,1h3c.55,0,1-.45,1-1ZM6.71,6.71c.39-.39,.39-1.02,0-1.41l-2-2c-.39-.39-1.02-.39-1.41,0s-.39,1.02,0,1.41l2,2c.2,.2,.45,.29,.71,.29s.51-.1,.71-.29Zm14,14c.39-.39,.39-1.02,0-1.41l-2-2c-.39-.39-1.02-.39-1.41,0s-.39,1.02,0,1.41l2,2c.2,.2,.45,.29,.71,.29s.51-.1,.71-.29Zm-16,0l2-2c.39-.39,.39-1.02,0-1.41s-1.02-.39-1.41,0l-2,2c-.39,.39-.39,1.02,0,1.41,.2,.2,.45,.29,.71,.29s.51-.1,.71-.29ZM18.71,6.71l2-2c.39-.39,.39-1.02,0-1.41s-1.02-.39-1.41,0l-2,2c-.39,.39-.39,1.02,0,1.41,.2,.2,.45,.29,.71,.29s.51-.1,.71-.29Z"/></svg>';
 const _moonSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m15,12.5c0,3.018,1.5,5.733,3.54,7.646.85.798.462,2.242-.668,2.527-1.381.348-3.09.431-4.63.187C8.396,22.091,4.565,18.053,4.061,13.173,3.378,6.571,8.539,1,15,1c1.279,0,2.861.223,4,.629,1.106.394,1.344,1.867.417,2.588C16.948,6.136,15,9.13,15,12.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+// ─── SVG botões do AppBar ──────────────────────────────────────────────────────
+const _historySvg  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,24C5.383,24,0,18.617,0,12S5.383,0,12,0s12,5.383,12,12-5.383,12-12,12Zm0-22C6.486,2,2,6.486,2,12s4.486,10,10,10,10-4.486,10-10S17.514,2,12,2Zm5,10c0-.553-.447-1-1-1h-3V6c0-.553-.448-1-1-1s-1,.447-1,1v6c0,.553,.448,1,1,1h4c.553,0,1-.447,1-1Z"/></svg>';
+const _calendarSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,2H18V1a1,1,0,0,0-2,0V2H8V1A1,1,0,0,0,6,1V2H5A5.006,5.006,0,0,0,0,7V19a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V7A5.006,5.006,0,0,0,19,2ZM2,7A3,3,0,0,1,5,4H19a3,3,0,0,1,3,3V8H2ZM19,22H5a3,3,0,0,1-3-3V10H22v9A3,3,0,0,1,19,22Z"/><circle cx="12" cy="15" r="1.5"/><circle cx="7" cy="15" r="1.5"/><circle cx="17" cy="15" r="1.5"/></svg>';
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
@@ -57,7 +62,7 @@ class _AriaAppState extends State<AriaApp> {
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
     ));
 
-    final baseText = GoogleFonts.syneTextTheme();
+    final baseText = GoogleFonts.robotoTextTheme();
 
     final lightTheme = ThemeData(
       useMaterial3: true,
@@ -78,7 +83,7 @@ class _AriaAppState extends State<AriaApp> {
         scrolledUnderElevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: GoogleFonts.syne(
+        titleTextStyle: GoogleFonts.roboto(
             color: AppColors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w700),
@@ -93,14 +98,6 @@ class _AriaAppState extends State<AriaApp> {
         ),
         elevation: 4,
         shadowColor: Colors.black26,
-      ),
-      cardTheme: CardThemeData(
-        color: AppColors.surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppColors.divider),
-        ),
       ),
     );
 
@@ -123,7 +120,7 @@ class _AriaAppState extends State<AriaApp> {
         scrolledUnderElevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: GoogleFonts.syne(
+        titleTextStyle: GoogleFonts.roboto(
             color: AppColors.darkTextPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w700),
@@ -138,14 +135,6 @@ class _AriaAppState extends State<AriaApp> {
         ),
         elevation: 4,
         shadowColor: Colors.black54,
-      ),
-      cardTheme: CardThemeData(
-        color: AppColors.darkSurface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppColors.darkDivider),
-        ),
       ),
     );
 
@@ -188,6 +177,14 @@ class _MainShellState extends State<MainShell> {
   void _onTheme() => setState(() {});
   void _reloadHome() => _homeKey.currentState?.load();
 
+  void _openHistory() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityScreen()));
+  }
+
+  void _openAgenda() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const AgendaScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark      = themeNotifier.isDark;
@@ -218,12 +215,25 @@ class _MainShellState extends State<MainShell> {
         automaticallyImplyLeading: false,
         title: Text(
           _titles[_idx],
-          style: GoogleFonts.syne(
-              color: textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.w700),
+          style: GoogleFonts.roboto(
+              color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
         ),
         actions: [
+          // History button
+          _AppBarIconBtn(
+            svg: _historySvg,
+            color: textPrimary,
+            onTap: _openHistory,
+            tooltip: 'Atividade',
+          ),
+          // Calendar button
+          _AppBarIconBtn(
+            svg: _calendarSvg,
+            color: textPrimary,
+            onTap: _openAgenda,
+            tooltip: 'Agenda',
+          ),
+          // Theme popup
           _ThemePopupMenu(
             isDark: isDark,
             textPrimary: textPrimary,
@@ -284,7 +294,41 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-// ─── NAV ITEM ANIMADO (pulse + crossfade) ─────────────────────────────────────
+// ─── AppBar icon button ────────────────────────────────────────────────────────
+
+class _AppBarIconBtn extends StatelessWidget {
+  final String svg;
+  final Color color;
+  final VoidCallback onTap;
+  final String tooltip;
+
+  const _AppBarIconBtn({
+    required this.svg,
+    required this.color,
+    required this.onTap,
+    required this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 40, height: 40,
+          alignment: Alignment.center,
+          child: SvgPicture.string(svg,
+              width: 22, height: 22,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn)),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── NAV ITEM ANIMADO (zoom in/out suave) ─────────────────────────────────────
 
 class _AnimatedNavItem extends StatefulWidget {
   final String outlineSvg;
@@ -309,37 +353,37 @@ class _AnimatedNavItem extends StatefulWidget {
 
 class _AnimatedNavItemState extends State<_AnimatedNavItem>
     with SingleTickerProviderStateMixin {
-  late AnimationController _pulse;
+  late AnimationController _ctrl;
   late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
+    _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 340),
+      duration: const Duration(milliseconds: 280),
     );
-    // Escala: sobe rapidamente depois volta com bounce suave
+    // Smooth zoom in then zoom out
     _scale = TweenSequence<double>([
       TweenSequenceItem(
-          tween: Tween(begin: 1.0, end: 1.28)
+          tween: Tween(begin: 1.0, end: 1.22)
               .chain(CurveTween(curve: Curves.easeOut)),
-          weight: 38),
+          weight: 40),
       TweenSequenceItem(
-          tween: Tween(begin: 1.28, end: 1.0)
-              .chain(CurveTween(curve: Curves.elasticOut)),
-          weight: 62),
-    ]).animate(_pulse);
+          tween: Tween(begin: 1.22, end: 1.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 60),
+    ]).animate(_ctrl);
   }
 
   @override
   void dispose() {
-    _pulse.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   void _handleTap() {
-    _pulse.forward(from: 0);
+    _ctrl.forward(from: 0);
     widget.onTap();
   }
 
@@ -355,38 +399,38 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _handleTap,
-        child: ScaleTransition(
-          scale: _scale,
+        child: AnimatedBuilder(
+          animation: _scale,
+          builder: (ctx, child) => Transform.scale(
+            scale: _scale.value,
+            child: child,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Crossfade outline ↔ filled com micro-escala
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 transitionBuilder: (child, anim) => FadeTransition(
                   opacity: anim,
                   child: ScaleTransition(
-                    scale:
-                        Tween<double>(begin: 0.78, end: 1.0).animate(anim),
+                    scale: Tween<double>(begin: 0.8, end: 1.0).animate(anim),
                     child: child,
                   ),
                 ),
                 child: SvgPicture.string(
                   sel ? widget.filledSvg : widget.outlineSvg,
                   key: ValueKey(sel),
-                  width: 22,
-                  height: 22,
+                  width: 22, height: 22,
                   colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
                 ),
               ),
               const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 180),
-                style: GoogleFonts.syne(
+                style: GoogleFonts.roboto(
                   color: color,
                   fontSize: 11,
-                  fontWeight:
-                      sel ? FontWeight.w700 : FontWeight.w400,
+                  fontWeight: sel ? FontWeight.w700 : FontWeight.w400,
                 ),
                 child: Text(widget.label),
               ),
@@ -427,8 +471,7 @@ class _ThemePopupMenuState extends State<_ThemePopupMenu> {
     final textSec     = widget.textSec;
     final surfBg      = widget.surfBg;
     final acc         = accColor(isDark);
-    final borderColor =
-        isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade300;
+    final borderColor = isDark ? const Color(0xFF3A3A3A) : Colors.grey.shade300;
 
     return PopupMenuButton<String>(
       onOpened:   () => setState(() => _isOpen = true),
@@ -449,8 +492,7 @@ class _ThemePopupMenuState extends State<_ThemePopupMenu> {
       icon: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        width: 38,
-        height: 38,
+        width: 38, height: 38,
         decoration: BoxDecoration(
           color: _isOpen
               ? (isDark ? Colors.white12 : Colors.black12)
@@ -548,16 +590,12 @@ class _ThemeMenuItemState extends State<_ThemeMenuItem>
                 child: isDark
                     ? SvgPicture.string(_sunSvg,
                         key: const ValueKey('sun'),
-                        width: 20,
-                        height: 20,
-                        colorFilter:
-                            ColorFilter.mode(widget.acc, BlendMode.srcIn))
+                        width: 20, height: 20,
+                        colorFilter: ColorFilter.mode(widget.acc, BlendMode.srcIn))
                     : SvgPicture.string(_moonSvg,
                         key: const ValueKey('moon'),
-                        width: 20,
-                        height: 20,
-                        colorFilter: ColorFilter.mode(
-                            widget.textPrim, BlendMode.srcIn)),
+                        width: 20, height: 20,
+                        colorFilter: ColorFilter.mode(widget.textPrim, BlendMode.srcIn)),
               ),
             ),
           ),
@@ -568,8 +606,7 @@ class _ThemeMenuItemState extends State<_ThemeMenuItem>
               opacity: anim,
               child: SlideTransition(
                 position: Tween<Offset>(
-                  begin: const Offset(0.1, 0),
-                  end: Offset.zero,
+                  begin: const Offset(0.1, 0), end: Offset.zero,
                 ).animate(anim),
                 child: child,
               ),
@@ -577,10 +614,8 @@ class _ThemeMenuItemState extends State<_ThemeMenuItem>
             child: Text(
               label,
               key: ValueKey(label),
-              style: GoogleFonts.syne(
-                color: widget.textPrim,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+              style: GoogleFonts.roboto(
+                color: widget.textPrim, fontWeight: FontWeight.w600, fontSize: 14,
               ),
             ),
           ),
@@ -605,8 +640,7 @@ class _ThreeDotsIcon extends StatelessWidget {
       '<circle cx="12" cy="12" r="2"/>'
       '<circle cx="19" cy="12" r="2"/>'
       '</svg>',
-      width: 22,
-      height: 22,
+      width: 22, height: 22,
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
   }
