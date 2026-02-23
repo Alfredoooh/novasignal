@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../widgets/theme.dart';
 import 'editor_screen.dart';
 
+// ─── Templates disponíveis ───────────────────────────
 const _templates = [
   _TemplateData(
     category: 'Negócios',
@@ -15,7 +16,7 @@ const _templates = [
     category: 'Negócios',
     title: 'Proposta Comercial',
     preview: 'Proposta de negócio profissional com secções de escopo, orçamento e cronograma.',
-    html: '<h1>Proposta Comercial</h1><p><strong>Data:</strong> ___________</p><p><strong>Para:</strong> ___________</p><h2>Introdução</h2><p>Apresentamos esta proposta com o objetivo de atender às suas necessidades.</p><h2>Escopo do Projeto</h2><p>O projeto contempla as seguintes entregas:</p><ul><li>Entrega 1</li><li>Entrega 2</li><li>Entrega 3</li></ul><h2>Investimento</h2><p>Valor total: R\$ ___________</p><h2>Prazo</h2><p>Prazo estimado: ___________ semanas</p>',
+    html: '<h1>Proposta Comercial</h1><p><strong>Data:</strong> ___________</p><p><strong>Para:</strong> ___________</p><h2>Introdução</h2><p>Apresentamos esta proposta com o objetivo de atender às suas necessidades.</p><h2>Escopo do Projeto</h2><p>O projeto contempla as seguintes entregas:</p><ul><li>Entrega 1</li><li>Entrega 2</li><li>Entrega 3</li></ul><h2>Investimento</h2><p>Valor total: R$ ___________</p><h2>Prazo</h2><p>Prazo estimado: ___________ semanas</p>',
   ),
   _TemplateData(
     category: 'Académico',
@@ -68,6 +69,7 @@ class _TemplateData {
   });
 }
 
+// ─── SVG helpers ─────────────────────────────────────
 const _searchSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M23.707,22.293l-5.969-5.969a10.016,10.016,0,1,0-1.414,1.414l5.969,5.969a1,1,0,0,0,1.414-1.414ZM10,18a8,8,0,1,1,8-8A8.009,8.009,0,0,1,10,18Z"/>
@@ -77,6 +79,7 @@ const _searchSvg = '''
 Widget _svg(String d, Color c, {double s = 20}) => SvgPicture.string(
     d, width: s, height: s, colorFilter: ColorFilter.mode(c, BlendMode.srcIn));
 
+// ─── Screen ──────────────────────────────────────────
 class TemplatesScreen extends StatefulWidget {
   const TemplatesScreen({super.key});
   @override
@@ -179,6 +182,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
       body: Column(
         children: [
           Container(height: 0.5, color: divColor),
+          // Search bar
           Container(
             margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             height: 44,
@@ -208,6 +212,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
               ],
             ),
           ),
+          // Category chips
           SizedBox(
             height: 48,
             child: ListView(
@@ -232,6 +237,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
             ),
           ),
           Container(height: 0.5, color: divColor),
+          // Template grid
           Expanded(
             child: filtered.isEmpty
                 ? Center(
@@ -342,6 +348,7 @@ class _TemplateCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Paper preview
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -394,6 +401,7 @@ class _TemplateCard extends StatelessWidget {
                 ),
               ),
             ),
+            // Info
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
