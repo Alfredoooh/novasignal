@@ -10,6 +10,7 @@ import 'editor_native.dart' if (dart.library.html) 'editor_web.dart';
 
 abstract class EditorController {
   ADocument? get document;
+  DocType get docType;
   String? get importHtml;
   String? get importTitle;
   String? get importDocxBase64;
@@ -20,6 +21,7 @@ abstract class EditorController {
 
 class EditorScreen extends StatefulWidget {
   final ADocument? document;
+  final DocType docType;
   final String? importHtml;
   final String? importTitle;
   final String? importDocxBase64;
@@ -27,6 +29,7 @@ class EditorScreen extends StatefulWidget {
   const EditorScreen({
     super.key,
     this.document,
+    this.docType = DocType.document,
     this.importHtml,
     this.importTitle,
     this.importDocxBase64,
@@ -41,6 +44,7 @@ class _EditorScreenState extends State<EditorScreen>
   bool _saving = false;
 
   @override ADocument? get document        => widget.document;
+  @override DocType    get docType         => widget.document?.docType ?? widget.docType;
   @override String?    get importHtml       => widget.importHtml;
   @override String?    get importTitle      => widget.importTitle;
   @override String?    get importDocxBase64 => widget.importDocxBase64;
@@ -62,6 +66,7 @@ class _EditorScreenState extends State<EditorScreen>
       wordCount: innerData['words'] as int? ?? 0,
       createdAt: widget.document?.createdAt ?? now,
       updatedAt: now,
+      docType: widget.document?.docType ?? widget.docType,
     );
 
     await DocumentService.instance.save(doc);
@@ -81,7 +86,7 @@ class _EditorScreenState extends State<EditorScreen>
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: GoogleFonts.syne(fontWeight: FontWeight.w700, color: Colors.white)),
+      content: Text(msg, style: GoogleFonts.roboto(fontWeight: FontWeight.w700, color: Colors.white)),
       backgroundColor: acc,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
