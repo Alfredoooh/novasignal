@@ -14,11 +14,11 @@
   <style>
     body[data-theme="dark"] {
       --acc:#ff6b9d; --acc-rgb:255,107,157; --acc-c:#000;
-      --bg:#1c1c1e; --card:#2c2c2e; --border:#3a3a3c;
-      --text:#e0e0e0; --sub:#8e8e93; --danger:#ff453a;
-      --paper:#242424; --paper-text:#ddd;
-      --toolbar-bg:#2c2c2e; --toolbar-pill:#3a3a3c;
-      --sheet:#1c1c1e; --sheet-txt:#e0e0e0;
+      --bg:#242424; --card:#363636; --border:#404040;
+      --text:#e8e8e8; --sub:#8e8e93; --danger:#ff453a;
+      --paper:#2e2e2e; --paper-text:#e0e0e0;
+      --toolbar-bg:#363636; --toolbar-pill:#404040;
+      --sheet:#242424; --sheet-txt:#e8e8e8;
     }
     :root, body[data-theme="light"] {
       --acc:#e0185e; --acc-rgb:224,24,94; --acc-c:#fff;
@@ -45,7 +45,7 @@
     ion-toolbar { --background:var(--card); --border-color:transparent; }
     ion-header  { border-bottom:1px solid var(--border); }
     ion-header::after { display:none !important; }
-    ion-content { --background:#ffffff; }
+    ion-content { --background:var(--bg); }
     .app-title  { font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem; }
 
     .bar-btn {
@@ -243,7 +243,7 @@
     /* ── Views ── */
     .view {
       position:fixed; inset:0; display:none;
-      flex-direction:column; background:#fff; overflow:hidden;
+      flex-direction:column; background:var(--bg); overflow:hidden;
     }
     .view.active { display:flex; }
     #view-editor { z-index:10; }
@@ -254,9 +254,10 @@
 
     /* Header nativo sem Ionic */
     .native-header {
-      background:#fff; border-bottom:1px solid #f0f0f0;
+      background:var(--bg); border-bottom:1px solid var(--border);
       padding: env(safe-area-inset-top,44px) 20px 14px;
       display:flex; align-items:flex-end; flex-shrink:0; min-height:60px;
+      transition: background .3s ease;
     }
     .native-scroll {
       flex:1; overflow-y:auto; overflow-x:hidden;
@@ -266,17 +267,18 @@
     /* ── Tab bar ── */
     .app-tabbar {
       position:fixed; bottom:0; left:0; right:0; z-index:200;
-      display:flex; background:#fff; border-top:1px solid #f0f0f0;
+      display:flex; background:var(--bg); border-top:1px solid var(--border);
       padding-bottom:env(safe-area-inset-bottom,0);
+      transition: background .3s ease;
     }
     .tab-btn {
       flex:1; display:flex; flex-direction:column; align-items:center;
       justify-content:center; gap:5px; padding:10px 0 14px;
-      border:none; background:transparent; cursor:pointer; color:#bbb;
+      border:none; background:transparent; cursor:pointer; color:var(--sub);
       font-family:'Syne',sans-serif; font-size:.58rem; font-weight:800;
       letter-spacing:.06em; text-transform:uppercase; transition:color .15s;
     }
-    .tab-btn svg { fill:#ccc; transition:fill .15s; display:block; }
+    .tab-btn svg { fill:var(--sub); transition:fill .15s; display:block; }
     .tab-btn.active { color:var(--acc); }
     .tab-btn.active svg { fill:var(--acc); }
     .tab-btn:active { opacity:.5; }
@@ -284,7 +286,7 @@
     /* ── HOME ── */
     .h-hero {
       padding:32px 24px 28px;
-      border-bottom:1px solid #f5f5f5;
+      border-bottom:1px solid var(--border);
     }
     .h-hero-pill {
       display:inline-flex; align-items:center;
@@ -295,16 +297,16 @@
     }
     .h-hero-title {
       font-family:'Syne',sans-serif; font-size:2.1rem; font-weight:800;
-      color:#111; margin:0 0 10px; line-height:1.1;
+      color:var(--text); margin:0 0 10px; line-height:1.1;
     }
     .h-hero-sub {
       font-family:'Syne',sans-serif; font-size:.82rem;
-      color:#aaa; margin:0; font-weight:500;
+      color:var(--sub); margin:0; font-weight:500;
     }
     .h-sect-row { padding:22px 20px 8px; }
     .h-sect-label {
       font-family:'Syne',sans-serif; font-size:.6rem; font-weight:800;
-      letter-spacing:.14em; text-transform:uppercase; color:#ccc;
+      letter-spacing:.14em; text-transform:uppercase; color:var(--sub);
     }
     .h-empty {
       display:flex; flex-direction:column; align-items:center;
@@ -317,28 +319,28 @@
     }
     .h-empty-msg {
       font-family:'Syne',sans-serif; font-size:.83rem;
-      color:#bbb; margin:0; line-height:1.65;
+      color:var(--sub); margin:0; line-height:1.65;
     }
     .h-empty-msg b { color:var(--acc); font-weight:800; cursor:pointer; }
 
     /* ── CRIAR ── */
     .c-item {
       display:flex; align-items:center; gap:16px; padding:18px 20px;
-      background:#fff; border:none; cursor:pointer; width:100%;
-      border-bottom:1px solid #f5f5f5;
+      background:var(--bg); border:none; cursor:pointer; width:100%;
+      border-bottom:1px solid var(--border);
       -webkit-tap-highlight-color:transparent; transition:background .1s;
     }
-    .c-item:active { background:#fafafa; }
+    .c-item:active { background:var(--card); }
     .c-item--dim { opacity:.3; pointer-events:none; }
     .c-item-icon {
       width:46px; height:46px; border-radius:13px; flex-shrink:0;
       display:flex; align-items:center; justify-content:center;
     }
     .c-item-icon--acc { background:rgba(224,24,94,.1); }
-    .c-item-icon--muted { background:#f5f5f5; }
+    .c-item-icon--muted { background:var(--toolbar-pill); }
     .c-item-info { flex:1; display:flex; flex-direction:column; gap:3px; text-align:left; }
-    .c-item-title { font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; color:#111; }
-    .c-item-sub { font-family:'Syne',sans-serif; font-size:.73rem; color:#bbb; }
+    .c-item-title { font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; color:var(--text); }
+    .c-item-sub { font-family:'Syne',sans-serif; font-size:.73rem; color:var(--sub); }
 
     /* ── Doc title editor ── */
     .doc-title-text {
@@ -346,6 +348,19 @@
     }
   </style>
 
+  <!-- Geração de PDF sem diálogo de impressão -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Conversão DOCX → HTML -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+  <!-- Transições de tema suaves globais -->
+  <style>
+    body, .view, .native-header, .app-tabbar, ion-toolbar, ion-content,
+    .fmt-bar, .doc-scroll, .m-inner, .m-header, .tb-pill-btn,
+    .tb-group, .fb, .bar-btn {
+      transition: background-color .3s ease, color .3s ease, border-color .3s ease;
+    }
+  </style>
 </head>
 <body data-theme="light">
 <ion-app>
@@ -1210,7 +1225,57 @@ window.openOpcoes = function() {
     { text:'Limpar tudo',        noCheck:true, danger:true, handler: clearAll },
   ]);
 };
-function exportPDF()    { showToast('A gerar PDF…'); setProgress(true); setTimeout(()=>{ setProgress(false); window.print(); },600); }
+function exportPDF() {
+  showToast('A gerar PDF…');
+  setProgress(true);
+
+  // Clonar páginas para o html2pdf (preserva estilos mas remove editabilidade)
+  const pagesEl = document.getElementById('doc-pages');
+  const clone   = pagesEl.cloneNode(true);
+
+  // Remover atributos contenteditable do clone
+  clone.querySelectorAll('[contenteditable]').forEach(el => {
+    el.removeAttribute('contenteditable');
+  });
+
+  // Estilos inline para o clone (A4 real sem transform scale)
+  clone.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:16px;background:transparent;';
+  clone.querySelectorAll('.page-wrap').forEach(pw => {
+    pw.style.transform = 'none';
+    pw.style.marginBottom = '0';
+    pw.style.width  = '794px';
+    pw.style.height = '1123px';
+  });
+
+  const opt = {
+    margin:    0,
+    filename:  (window._docTitle || 'documento') + '.pdf',
+    image:     { type: 'jpeg', quality: 0.96 },
+    html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+    jsPDF:     { unit: 'px', format: [794, 1123], orientation: 'portrait', hotfixes: ['px_scaling'] },
+    pagebreak: { mode: ['avoid-all', 'css'], before: '.page-wrap' }
+  };
+
+  html2pdf()
+    .set(opt)
+    .from(clone)
+    .outputPdf('datauristring')
+    .then(dataUri => {
+      setProgress(false);
+      const base64 = dataUri.split(',')[1];
+      _sendFlutter({
+        action: 'exportPDF',
+        base64: base64,
+        title: window._docTitle || 'documento'
+      });
+      showToast('PDF gerado!');
+    })
+    .catch(err => {
+      setProgress(false);
+      showToast('Erro ao gerar PDF');
+      console.error('html2pdf error:', err);
+    });
+}
 function exportDocx()   { showToast('DOCX: brevemente'); }
 function exportTXT()    { const b=new Blob([pages.map(p=>p.editor.innerText).join('\n\n--- Página ---\n\n')],{type:'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='documento.txt';a.click();showToast('TXT exportado!'); }
 async function sharePDF(){ if(navigator.share)try{await navigator.share({title:'Documento Aria'});}catch(e){}else showToast('Partilha não suportada'); }
@@ -1248,6 +1313,66 @@ function _sendFlutter(obj) {
     window.parent.postMessage(obj, '*');
   }
 }
+
+// ── Alterar tema (chamado pelo Flutter quando o utilizador muda tema) ──
+window.setTheme = function(isDark) {
+  document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  // Forçar repaint do ion-content se necessário
+  const content = document.querySelector('ion-content');
+  if (content) {
+    content.style.setProperty('--background', 'var(--bg)');
+  }
+};
+
+// ── Carregar DOCX via mammoth.js (base64) ──
+window.loadDocxBase64 = function(b64Str) {
+  try {
+    // Converter base64 para ArrayBuffer
+    const binaryStr  = atob(b64Str);
+    const bytes      = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    const buffer = bytes.buffer;
+
+    mammoth.convertToHtml({ arrayBuffer: buffer })
+      .then(result => {
+        const html = result.value || '<p>Documento vazio</p>';
+        document.getElementById('doc-pages').innerHTML = '';
+        pages = []; activePg = 0;
+        createPage(0); applyScale(); updateMeta();
+
+        // Dividir HTML por páginas de forma heurística
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const children = Array.from(div.children);
+
+        let pageIdx = 0;
+        let charCount = 0;
+        const CHARS_PER_PAGE = 1800;
+
+        children.forEach(child => {
+          if (pageIdx >= pages.length) createPage(pageIdx);
+          pages[pageIdx].editor.appendChild(child.cloneNode(true));
+          charCount += (child.textContent || '').length;
+          if (charCount >= CHARS_PER_PAGE) {
+            pageIdx++;
+            charCount = 0;
+            createPage(pageIdx);
+            applyScale();
+          }
+        });
+
+        updateMeta();
+        showToast('DOCX carregado!');
+      })
+      .catch(err => {
+        showToast('Erro ao converter DOCX');
+        console.error(err);
+      });
+  } catch(e) {
+    showToast('Erro ao carregar DOCX');
+    console.error(e);
+  }
+};
 
 // Guardar documento → envia para Flutter
 window.saveDocument = function() {
@@ -1315,6 +1440,15 @@ window.addEventListener('load', function() {
   }
   // Cria primeira página se ainda não existir
   if (pages.length === 0) { createPage(0); applyScale(); updateMeta(); }
+  // Processar DOCX pendente (injectado antes do mammoth carregar)
+  if (window._pendingDocx) {
+    setTimeout(() => {
+      if (typeof window.loadDocxBase64 === 'function') {
+        window.loadDocxBase64(window._pendingDocx);
+        window._pendingDocx = null;
+      }
+    }, 500);
+  }
 });
 </script>
 </body>
