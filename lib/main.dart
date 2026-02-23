@@ -9,7 +9,7 @@ import 'services/document_service.dart';
 import 'widgets/theme.dart';
 
 // ─────────────────────────────────────────────
-// SVGs INLINE — casa outline/filled + doc outline/filled
+// SVGs INLINE
 // ─────────────────────────────────────────────
 const _homeOutline = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -23,33 +23,34 @@ const _homeFilled = '''
 </svg>
 ''';
 
-const _docOutline = '''
+// Ícone de "Criar" (outline) — fornecido pelo utilizador
+const _criarOutline = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M18,2H9.828A3.977,3.977,0,0,0,7,3.172L2.172,8A3.977,3.977,0,0,0,1,10.828V20a3,3,0,0,0,3,3H18a3,3,0,0,0,3-3V5A3,3,0,0,0,18,2ZM7,5.414V8H4.414ZM19,20a1,1,0,0,1-1,1H4a1,1,0,0,1-1-1V10H8A1,1,0,0,0,9,9V3h9a1,1,0,0,1,1,1ZM13,17H8a1,1,0,0,1,0-2h5a1,1,0,0,1,0,2Zm3-4H8a1,1,0,0,1,0-2h8a1,1,0,0,1,0,2Z"/>
+<path d="m15,13c0,.553-.447,1-1,1s-1-.447-1-1v-2h-2c-.553,0-1-.447-1-1s.447-1,1-1h2v-2c0-.553.447-1,1-1s1,.447,1,1v2h2c.553,0,1,.447,1,1s-.447,1-1,1h-2v2Zm9-8v8.373c0,1.053-.427,2.084-1.172,2.828l-2.627,2.627c-.744.745-1.775,1.172-2.828,1.172h-8.373c-2.757,0-5-2.243-5-5V5C4,2.243,6.243,0,9,0h10c2.757,0,5,2.243,5,5Zm-15,13h8v-3c0-1.105.895-2,2-2h3V5c0-1.654-1.346-3-3-3h-10c-1.654,0-3,1.346-3,3v10c0,1.654,1.346,3,3,3Zm8,4H5c-1.654,0-3-1.346-3-3V7c0-.553-.447-1-1-1s-1,.447-1,1v12c0,2.757,2.243,5,5,5h12c.553,0,1-.447,1-1s-.447-1-1-1Z"/>
 </svg>
 ''';
 
-const _docFilled = '''
+// Ícone de "Criar" (filled) — fornecido pelo utilizador
+const _criarFilled = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M18,2H9.828A3.977,3.977,0,0,0,7,3.172L2.172,8A3.977,3.977,0,0,0,1,10.828V20a3,3,0,0,0,3,3H18a3,3,0,0,0,3-3V5A3,3,0,0,0,18,2ZM13,17H8a1,1,0,0,1,0-2h5a1,1,0,0,1,0,2Zm3-4H8a1,1,0,0,1,0-2h8a1,1,0,0,1,0,2Z"/>
+<path d="m17,24H5c-2.757,0-5-2.243-5-5V7c0-.553.447-1,1-1s1,.447,1,1v12c0,1.654,1.346,3,3,3h12c.553,0,1,.447,1,1s-.447,1-1,1Zm0-4h-8c-2.757,0-5-2.243-5-5V5C4,2.243,6.243,0,9,0h10c2.757,0,5,2.243,5,5v8h-4c-1.654,0-3,1.346-3,3v4Zm-2-7v-2h2c.553,0,1-.447,1-1s-.447-1-1-1h-2v-2c0-.553-.447-1-1-1s-1,.447-1,1v2h-2c-.553,0-1,.447-1,1s.447,1,1,1h2v2c0,.553.447,1,1,1s1-.447,1-1Zm5,2c-.552,0-1,.448-1,1v3.642c.443-.198.855-.467,1.201-.814l2.627-2.627c.346-.346.616-.758.814-1.201h-3.642Z"/>
 </svg>
 ''';
 
-const _moonSvg = '''
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M21.064,13.679A9.722,9.722,0,0,1,10.321,2.936,9.737,9.737,0,0,0,2,12a10,10,0,0,0,10,10,9.738,9.738,0,0,0,9.064-6.138A9.748,9.748,0,0,1,21.064,13.679Z"/>
-</svg>
-''';
-
+// Ícone Sol (tema claro) — fornecido pelo utilizador
 const _sunSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path d="M12,17a5,5,0,1,1,5-5A5.006,5.006,0,0,1,12,17ZM12,9a3,3,0,1,0,3,3A3,3,0,0,0,12,9Zm1,8.95V20a1,1,0,0,1-2,0V17.95A5.035,5.035,0,0,1,9,17.268V19a1,1,0,0,1-2,0v-1.268A5.017,5.017,0,0,1,5.268,17H4a1,1,0,0,1,0-2H5.05A5.035,5.035,0,0,1,4.732,13H3a1,1,0,0,1,0-2H4.732A5.035,5.035,0,0,1,5.05,11H4A1,1,0,0,1,4,9H5.268A5.017,5.017,0,0,1,7,7.268V6A1,1,0,0,1,9,6V7.05A5.035,5.035,0,0,1,11,6.732V5a1,1,0,0,1,2,0V6.732A5.035,5.035,0,0,1,15,7.05V6a1,1,0,0,1,2,0V7.268A5.017,5.017,0,0,1,18.732,9H20a1,1,0,0,1,0,2H18.95A5.035,5.035,0,0,1,19.268,13H21a1,1,0,0,1,0,2H19.268A5.035,5.035,0,0,1,18.95,15H20a1,1,0,0,1,0,2H18.732A5.017,5.017,0,0,1,17,18.732V20a1,1,0,0,1-2,0V18.95A5.035,5.035,0,0,1,13,19.268Z"/>
+<path d="M12,17c-2.76,0-5-2.24-5-5s2.24-5,5-5,5,2.24,5,5-2.24,5-5,5Zm1-13V1c0-.55-.45-1-1-1s-1,.45-1,1v3c0,.55,.45,1,1,1s1-.45,1-1Zm0,19v-3c0-.55-.45-1-1-1s-1,.45-1,1v3c0,.55,.45,1,1,1s1-.45,1-1ZM5,12c0-.55-.45-1-1-1H1c-.55,0-1,.45-1,1s.45,1,1,1h3c.55,0,1-.45,1-1Zm19,0c0-.55-.45-1-1-1h-3c-.55,0-1,.45-1,1s.45,1,1,1h3c.55,0,1-.45,1-1ZM6.71,6.71c.39-.39,.39-1.02,0-1.41l-2-2c-.39-.39-1.02-.39-1.41,0s-.39,1.02,0,1.41l2,2c.2,.2,.45,.29,.71,.29s.51-.1,.71-.29Zm14,14c.39-.39,.39-1.02,0-1.41l-2-2c-.39-.39-1.02-.39-1.41,0s-.39,1.02,0,1.41l2,2c.2,.2,.45,.29,.71,.29s.51-.1,.71-.29Zm-16,0l2-2c.39-.39,.39-1.02,0-1.41s-1.02-.39-1.41,0l-2,2c-.39,.39-.39,1.02,0,1.41,.2,.2,.45,.29,.71,.29s.51-.1,.71-.29ZM18.71,6.71l2-2c.39-.39,.39-1.02,0-1.41s-1.02-.39-1.41,0l-2,2c-.39,.39-.39,1.02,0,1.41,.2,.2,.45,.29,.71,.29s.51-.1,.71-.29Z"/>
 </svg>
 ''';
 
-// ─────────────────────────────────────────────
-// HELPER SVG — exactamente igual à referência
-// ─────────────────────────────────────────────
+// Ícone Lua (tema escuro) — fornecido pelo utilizador
+const _moonSvg = '''
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<path d="m15,12.5c0,3.018,1.5,5.733,3.54,7.646.85.798.462,2.242-.668,2.527-1.381.348-3.09.431-4.63.187C8.396,22.091,4.565,18.053,4.061,13.173,3.378,6.571,8.539,1,15,1c1.279,0,2.861.223,4,.629,1.106.394,1.344,1.867.417,2.588C16.948,6.136,15,9.13,15,12.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+''';
+
 Widget _svg(String data, Color color, {double size = 22}) =>
     SvgPicture.string(data,
         width: size, height: size,
@@ -66,7 +67,7 @@ void main() async {
 }
 
 // ─────────────────────────────────────────────
-// APP ROOT — StatefulWidget que escuta o ThemeNotifier
+// APP ROOT
 // ─────────────────────────────────────────────
 class AriaApp extends StatefulWidget {
   const AriaApp({super.key});
@@ -90,25 +91,24 @@ class _AriaAppState extends State<AriaApp> {
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
     ));
 
-    // Pill do ícone selected — igual à referência
-    final pillColor    = isDark ? AppColors.pillDark     : AppColors.pillLight;
-    final pillIcon     = isDark ? AppColors.pillDarkIcon  : AppColors.pillLightIcon;
-    final navUnsel     = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
-    final navSel       = isDark ? AppColors.darkNavSelected   : AppColors.navSelected;
+    // Sem pills — indicador completamente transparente
+    // Ícone seleccionado: preto (claro) / branco (escuro)
+    final navSelected   = isDark ? AppColors.darkNavSelected  : AppColors.navSelected;
+    final navUnselected = isDark ? AppColors.darkNavUnselected : AppColors.navUnselected;
 
     final navTheme = NavigationBarThemeData(
       backgroundColor: isDark ? AppColors.darkNavBg : AppColors.navBg,
-      indicatorColor: pillColor,
-      indicatorShape: const StadiumBorder(),
+      indicatorColor: Colors.transparent,   // ← sem pill
+      indicatorShape: const RoundedRectangleBorder(),
       iconTheme: WidgetStateProperty.resolveWith((s) {
         if (s.contains(WidgetState.selected))
-          return IconThemeData(color: pillIcon, size: 22);
-        return IconThemeData(color: navUnsel, size: 22);
+          return IconThemeData(color: navSelected, size: 22);
+        return IconThemeData(color: navUnselected, size: 22);
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((s) {
         if (s.contains(WidgetState.selected))
-          return GoogleFonts.syne(color: navSel, fontWeight: FontWeight.w700, fontSize: 11);
-        return GoogleFonts.syne(color: navUnsel, fontWeight: FontWeight.w400, fontSize: 11);
+          return GoogleFonts.syne(color: navSelected, fontWeight: FontWeight.w700, fontSize: 11);
+        return GoogleFonts.syne(color: navUnselected, fontWeight: FontWeight.w400, fontSize: 11);
       }),
       elevation: 0,
       shadowColor: Colors.transparent,
@@ -199,7 +199,7 @@ class _AriaAppState extends State<AriaApp> {
 }
 
 // ─────────────────────────────────────────────
-// SHELL PRINCIPAL — padrão exacto da referência
+// SHELL PRINCIPAL
 // ─────────────────────────────────────────────
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -207,9 +207,13 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with SingleTickerProviderStateMixin {
   int _idx = 0;
   final _homeKey = GlobalKey<HomeScreenState>();
+
+  // Animação do ícone sol/lua no popup menu
+  late final AnimationController _themeIconCtrl;
+  late final Animation<double> _themeIconAnim;
 
   static const _titles = ['Início', 'Criar'];
 
@@ -217,15 +221,29 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     themeNotifier.addListener(_onTheme);
+    _themeIconCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _themeIconAnim = CurvedAnimation(parent: _themeIconCtrl, curve: Curves.easeInOut);
   }
 
   @override
   void dispose() {
     themeNotifier.removeListener(_onTheme);
+    _themeIconCtrl.dispose();
     super.dispose();
   }
 
-  void _onTheme() => setState(() {});
+  void _onTheme() {
+    setState(() {});
+    if (themeNotifier.isDark) {
+      _themeIconCtrl.forward();
+    } else {
+      _themeIconCtrl.reverse();
+    }
+  }
+
   void _reloadHome() => _homeKey.currentState?.load();
 
   @override
@@ -233,13 +251,14 @@ class _MainShellState extends State<MainShell> {
     final isDark       = themeNotifier.isDark;
     final textPrimary  = isDark ? AppColors.darkTextPrimary   : AppColors.textPrimary;
     final navUnsel     = isDark ? AppColors.darkNavUnselected  : AppColors.navUnselected;
-    final pillIcon     = isDark ? AppColors.pillDarkIcon       : AppColors.pillLightIcon;
+    final navSel       = isDark ? AppColors.darkNavSelected    : AppColors.navSelected;
     final divColor     = isDark ? AppColors.darkDivider        : AppColors.divider;
     final navBg        = isDark ? AppColors.darkNavBg          : AppColors.navBg;
     final bg           = isDark ? AppColors.darkBackground     : AppColors.background;
+    final surfBg       = isDark ? AppColors.darkSurface        : AppColors.surface;
+    final textSec      = isDark ? AppColors.darkTextSecondary  : AppColors.textSecondary;
 
-    // Ícone selected: usa pillIcon (branco/preto no interior da pill)
-    const double iconSize = 21.6;
+    const double iconSize = 22.0;
 
     final pages = <Widget>[
       HomeScreen(key: _homeKey),
@@ -251,7 +270,7 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       backgroundColor: bg,
-      // AppBar flat sem sombra — igual à referência
+      // ── AppBar fixo — sem efeitos de scroll
       appBar: AppBar(
         backgroundColor: bg,
         elevation: 0,
@@ -265,23 +284,25 @@ class _MainShellState extends State<MainShell> {
             color: textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
         ),
         actions: [
-          // Toggle tema claro/escuro
-          IconButton(
-            icon: _svg(isDark ? _sunSvg : _moonSvg, textPrimary, size: 22),
-            onPressed: themeNotifier.toggle,
-            tooltip: isDark ? 'Modo claro' : 'Modo escuro',
+          // ── Popup menu (3 pontos) com toggle de tema + transições suaves
+          _ThemePopupMenu(
+            isDark: isDark,
+            textPrimary: textPrimary,
+            textSec: textSec,
+            surfBg: surfBg,
+            iconAnim: _themeIconAnim,
           ),
           const SizedBox(width: 4),
         ],
       ),
-      // Transição fade entre tabs — igual à referência
+      // Transição fade entre tabs
       body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 220),
         transitionBuilder: (child, anim) =>
             FadeTransition(opacity: anim, child: child),
         child: KeyedSubtree(key: ValueKey(_idx), child: pages[_idx]),
       ),
-      // Bottom nav — estrutura EXACTA da referência
+      // Bottom nav sem pills
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -290,28 +311,255 @@ class _MainShellState extends State<MainShell> {
             selectedIndex: _idx,
             onDestinationSelected: (i) => setState(() => _idx = i),
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            animationDuration: const Duration(milliseconds: 450),
+            animationDuration: const Duration(milliseconds: 350),
             backgroundColor: navBg,
             elevation: 0,
             shadowColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             height: 64,
-            indicatorColor: Colors.transparent,
+            indicatorColor: Colors.transparent,   // ← sem pill
             destinations: [
               NavigationDestination(
                 icon:         _svg(_homeOutline, navUnsel,   size: iconSize),
-                selectedIcon: _svg(_homeFilled,  pillIcon,   size: iconSize),
+                selectedIcon: _svg(_homeFilled,  navSel,     size: iconSize),
                 label: 'Início',
               ),
               NavigationDestination(
-                icon:         _svg(_docOutline, navUnsel,  size: iconSize),
-                selectedIcon: _svg(_docFilled,  pillIcon,  size: iconSize),
+                icon:         _svg(_criarOutline, navUnsel,  size: iconSize),
+                selectedIcon: _svg(_criarFilled,  navSel,    size: iconSize),
                 label: 'Criar',
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Widget popup menu com tema + transições suaves
+// ─────────────────────────────────────────────
+class _ThemePopupMenu extends StatefulWidget {
+  final bool isDark;
+  final Color textPrimary;
+  final Color textSec;
+  final Color surfBg;
+  final Animation<double> iconAnim;
+
+  const _ThemePopupMenu({
+    required this.isDark,
+    required this.textPrimary,
+    required this.textSec,
+    required this.surfBg,
+    required this.iconAnim,
+  });
+
+  @override
+  State<_ThemePopupMenu> createState() => _ThemePopupMenuState();
+}
+
+class _ThemePopupMenuState extends State<_ThemePopupMenu>
+    with SingleTickerProviderStateMixin {
+  bool _isOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark     = widget.isDark;
+    final textPrim   = widget.textPrimary;
+    final textSec    = widget.textSec;
+    final surfBg     = widget.surfBg;
+    final acc        = accColor(isDark);
+
+    return PopupMenuButton<String>(
+      onOpened: () => setState(() => _isOpen = true),
+      onCanceled: () => setState(() => _isOpen = false),
+      onSelected: (v) {
+        setState(() => _isOpen = false);
+        if (v == 'theme') themeNotifier.toggle();
+      },
+      tooltip: 'Mais opções',
+      offset: const Offset(0, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: surfBg,
+      elevation: 12,
+      icon: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: _isOpen
+              ? (isDark ? Colors.white12 : Colors.black12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(19),
+        ),
+        child: Center(
+          child: _ThreeDotsIcon(color: textPrim),
+        ),
+      ),
+      itemBuilder: (_) => [
+        PopupMenuItem<String>(
+          value: 'theme',
+          padding: EdgeInsets.zero,
+          child: _ThemeMenuItem(
+            isDark: isDark,
+            textPrim: textPrim,
+            textSec: textSec,
+            acc: acc,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Item do popup — toggle de tema com transição
+// ─────────────────────────────────────────────
+class _ThemeMenuItem extends StatefulWidget {
+  final bool isDark;
+  final Color textPrim;
+  final Color textSec;
+  final Color acc;
+  const _ThemeMenuItem({
+    required this.isDark,
+    required this.textPrim,
+    required this.textSec,
+    required this.acc,
+  });
+  @override
+  State<_ThemeMenuItem> createState() => _ThemeMenuItemState();
+}
+
+class _ThemeMenuItemState extends State<_ThemeMenuItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _rotate;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+      value: widget.isDark ? 1.0 : 0.0,
+    );
+    _rotate = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeIn);
+  }
+
+  @override
+  void didUpdateWidget(_ThemeMenuItem old) {
+    super.didUpdateWidget(old);
+    if (old.isDark != widget.isDark) {
+      if (widget.isDark) {
+        _ctrl.forward();
+      } else {
+        _ctrl.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final label  = isDark ? 'Modo claro' : 'Modo escuro';
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.transparent,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Ícone com animação rotate + fade
+            AnimatedBuilder(
+              animation: _ctrl,
+              builder: (_, __) {
+                return Transform.rotate(
+                  angle: _rotate.value * 3.14159,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: ScaleTransition(scale: anim, child: child),
+                    ),
+                    child: isDark
+                        ? SvgPicture.string(_sunSvg,
+                            key: const ValueKey('sun'),
+                            width: 20, height: 20,
+                            colorFilter: ColorFilter.mode(
+                                widget.acc, BlendMode.srcIn))
+                        : SvgPicture.string(_moonSvg,
+                            key: const ValueKey('moon'),
+                            width: 20, height: 20,
+                            colorFilter: ColorFilter.mode(
+                                widget.textPrim, BlendMode.srcIn)),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 12),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.1, 0),
+                    end: Offset.zero,
+                  ).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: Text(
+                label,
+                key: ValueKey(label),
+                style: GoogleFonts.syne(
+                  color: widget.textPrim,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Três pontinhos (ellipsis) customizado
+// ─────────────────────────────────────────────
+class _ThreeDotsIcon extends StatelessWidget {
+  final Color color;
+  const _ThreeDotsIcon({required this.color});
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.string(
+      '''<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="5"  cy="12" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="19" cy="12" r="2"/>
+      </svg>''',
+      width: 22, height: 22,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
   }
 }
