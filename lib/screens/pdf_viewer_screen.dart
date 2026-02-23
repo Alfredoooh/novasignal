@@ -80,14 +80,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: SvgPicture.string(
-            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20,11H7.83l5.59-5.59L12,4l-8,8,8,8,1.41-1.41L7.83,13H20v-2Z"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M.88,14.09,4.75,18a1,1,0,0,0,1.42,0h0a1,1,0,0,0,0-1.42L2.61,13H23a1,1,0,0,0,1-1h0a1,1,0,0,0-1-1H2.55L6.17,7.38A1,1,0,0,0,6.17,6h0A1,1,0,0,0,4.75,6L.88,9.85A3,3,0,0,0,.88,14.09Z"/></svg>',
             width: 22, height: 22,
             colorFilter: ColorFilter.mode(textPrimary, BlendMode.srcIn),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(widget.title,
-          style: GoogleFonts.syne(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+          style: GoogleFonts.roboto(color: textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
           maxLines: 1, overflow: TextOverflow.ellipsis,
         ),
         actions: [
