@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'editor_screen.dart';
 
-// Chamado por editor_screen.dart via importação condicional
 Widget buildEditorView(BuildContext context, EditorController controller) {
   return _NativeEditorView(controller: controller);
 }
@@ -45,10 +44,8 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       ''');
     } else {
       final he = doc.htmlContent
-          .replaceAll(r'\', r'\\')
-          .replaceAll("'", r"\'")
-          .replaceAll('\n', r'\n')
-          .replaceAll('\r', '');
+        .replaceAll(r'\', r'\\').replaceAll("'", r"\'")
+        .replaceAll('\n', r'\n').replaceAll('\r', '');
       final te = doc.title.replaceAll("'", r"\'");
       _wvc.runJavaScript('''
         window._docId = '${doc.id}'; window._docTitle = '$te';
@@ -69,19 +66,14 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       final d = jsonDecode(msg.message) as Map<String, dynamic>;
       if (d['action'] == 'save') widget.controller.handleSaveMessage(d);
       if (d['action'] == 'back') widget.controller.handleBack();
-    } catch (e) {
-      debugPrint('bridge: $e');
-    }
+    } catch (e) { debugPrint('bridge: $e'); }
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(children: [
       WebViewWidget(controller: _wvc),
-      if (_loading)
-        const Center(
-            child: CircularProgressIndicator(
-                color: Color(0xFFE0185E), strokeWidth: 2)),
+      if (_loading) const Center(child: CircularProgressIndicator(color: Color(0xFFE0185E), strokeWidth: 2)),
     ]);
   }
 }
