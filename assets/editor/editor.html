@@ -527,10 +527,11 @@ function showView(id) {
 }
 
 function goHome() {
-  // Comunica com Flutter (WebView nativo) ou com o parent (iframe web)
-  if (window.FlutterBridge) {
-    window.FlutterBridge.postMessage(JSON.stringify({ action: 'back' }));
+  // InAppWebView (nativo) — usa callHandler
+  if (window.flutter_inappwebview) {
+    window.flutter_inappwebview.callHandler('FlutterBridge', JSON.stringify({ action: 'back' }));
   } else if (window.parent && window.parent !== window) {
+    // iframe web
     window.parent.postMessage({ action: 'back' }, '*');
   } else {
     history.back();
@@ -1232,7 +1233,69 @@ function aiRun(a) { setProgress(true); setTimeout(()=>{ setProgress(false); show
 </script>
 
 <script>
-// ── Bridge bidirecional Flutter Web ↔ Editor HTML ──
+// ── Flutter Bridge (InAppWebView + iframe web) ──
+window._docTitle = 'Sem título';
+window._docId = null;
+
+// Envia mensagem para o Flutter — suporta InAppWebView e iframe web
+function _sendFlutter(obj) {
+  const msg = JSON.stringify(obj);
+  if (window.flutter_inappwebview) {
+    // InAppWebView — callHandler
+    window.flutter_inappwebview.callHandler('FlutterBridge', msg);
+  } else if (window.parent && window.parent !== window) {
+    // iframe / Flutter Web
+    window.parent.postMessage(obj, '*');
+  }
+}
+
+// Guardar documento → envia para Flutter
+window.saveDocument = function() {
+  const html = pages.map(p => p.editor.innerHTML).join('<!-- PAGE_BREAK -->');
+  const text = pages.map(p => p.editor.innerText).join('\n\n').trim();
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  const data = JSON.stringify({ html, text, words, title: window._docTitle });
+  _sendFlutter({
+    action: 'save',
+    id: window._docId,
+    title: window._docTitle,
+    data: data,
+  });
+};
+
+// Carregar documento — chamado pelo Flutter via evaluateJavascript
+window.loadDocument = function(id, title, htmlContent) {
+  window._docId = id;
+  window._docTitle = title || 'Sem título';
+  const el = document.getElementById('doc-title-text');
+  if (el) el.textContent = window._docTitle;
+  document.getElementById('doc-pages').innerHTML = '';
+  pages = []; activePg = 0;
+  createPage(0); applyScale(); updateMeta();
+  if (htmlContent && pages[0]) {
+    pages[0].editor.innerHTML = htmlContent;
+    updateMeta();
+  } else {
+    setTimeout(() => pages[0]?.editor?.focus(), 300);
+  }
+};
+
+// Actualizar título — chamado pelo Flutter
+window.setDocTitle = function(t) {
+  window._docTitle = t;
+  const el = document.getElementById('doc-title-text');
+  if (el) el.textContent = t;
+};
+
+// Obter conteúdo — para uso interno
+window.getDocumentContent = function() {
+  const html = pages.map(p => p.editor.innerHTML).join('<!-- PAGE_BREAK -->');
+  const text = pages.map(p => p.editor.innerText).join('\n\n').trim();
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  return JSON.stringify({ html, text, words, title: window._docTitle });
+};
+
+// Bridge bidirecional Web ↔ iframe
 window.addEventListener('message', function(e) {
   const d = e.data;
   if (!d || typeof d !== 'object') return;
@@ -1244,11 +1307,14 @@ window.addEventListener('message', function(e) {
     window.saveDocument();
   }
 });
-// Avisa o parent que o editor está pronto
+
+// Avisa parent que está pronto (iframe web)
 window.addEventListener('load', function() {
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({ action: 'editorReady' }, '*');
   }
+  // Cria primeira página se ainda não existir
+  if (pages.length === 0) { createPage(0); applyScale(); updateMeta(); }
 });
 </script>
 </body>
