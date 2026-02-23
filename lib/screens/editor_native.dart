@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import '../widgets/theme.dart';
 import 'editor_screen.dart';
 
 Widget buildEditorView(BuildContext context, EditorController controller) {
@@ -15,40 +16,109 @@ class _NativeEditorView extends StatefulWidget {
 }
 
 class _NativeEditorViewState extends State<_NativeEditorView> {
-  late final WebViewController _wvc;
+  InAppWebViewController? _wvc;
   bool _loading = true;
 
+  // Opções do InAppWebView — equivalente ao JavaScriptMode.unrestricted
+  final _settings = InAppWebViewSettings(
+    javaScriptEnabled: true,
+    javaScriptCanOpenWindowsAutomatically: true,
+    allowFileAccessFromFileURLs: true,
+    allowUniversalAccessFromFileURLs: true,
+    mediaPlaybackRequiresUserGesture: false,
+    transparentBackground: false,
+    useShouldOverrideUrlLoading: false,
+    // Desabilita scroll bounce no iOS para parecer mais nativo
+    disallowOverScroll: true,
+    // Melhor rendering de texto
+    textZoom: 100,
+  );
+
   @override
-  void initState() {
-    super.initState();
-    _wvc = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.white)
-      ..addJavaScriptChannel('FlutterBridge', onMessageReceived: _onMsg)
-      ..setNavigationDelegate(NavigationDelegate(onPageFinished: (_) {
-        setState(() => _loading = false);
-        _inject();
-      }))
-      ..loadFlutterAsset('assets/editor/editor.html');
+  Widget build(BuildContext context) {
+    final isDark = themeNotifier.isDark;
+    final bg = isDark ? const Color(0xFF0D0D0D) : Colors.white;
+
+    return Stack(children: [
+      InAppWebView(
+        // Carrega o HTML do asset directamente
+        initialFile: 'assets/editor/editor.html',
+        initialSettings: _settings,
+
+        onWebViewCreated: (ctrl) {
+          _wvc = ctrl;
+
+          // Canal de mensagens HTML → Flutter
+          // Equivalente ao addJavaScriptChannel do webview_flutter
+          ctrl.addJavaScriptHandler(
+            handlerName: 'FlutterBridge',
+            callback: (args) {
+              try {
+                final raw = args.isNotEmpty ? args[0] : null;
+                if (raw == null) return;
+                final msg = raw is String ? raw : jsonEncode(raw);
+                final d = jsonDecode(msg) as Map<String, dynamic>;
+                if (d['action'] == 'save') widget.controller.handleSaveMessage(d);
+                if (d['action'] == 'back')  widget.controller.handleBack();
+              } catch (e) {
+                debugPrint('FlutterBridge error: $e');
+              }
+            },
+          );
+        },
+
+        onLoadStop: (ctrl, url) async {
+          if (mounted) setState(() => _loading = false);
+          _inject();
+        },
+
+        onConsoleMessage: (ctrl, msg) {
+          debugPrint('[WebView console] ${msg.message}');
+        },
+      ),
+
+      if (_loading)
+        Container(
+          color: bg,
+          child: Center(
+            child: CircularProgressIndicator(
+              color: isDark ? AppColors.accDark : AppColors.acc,
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+    ]);
   }
 
-  void _inject() {
+  // ── Injecta o documento no editor HTML ──
+  void _inject() async {
+    final ctrl = _wvc;
+    if (ctrl == null) return;
+
     final doc = widget.controller.document;
+
     if (doc == null) {
-      _wvc.runJavaScript('''
-        window._docId = null; window._docTitle = 'Sem título';
+      // Documento novo
+      await ctrl.evaluateJavascript(source: '''
+        window._docId = null;
+        window._docTitle = 'Sem título';
         if (typeof createPage === 'function' && pages.length === 0) {
           createPage(0); applyScale(); updateMeta();
           setTimeout(() => pages[0]?.editor?.focus(), 300);
         }
       ''');
     } else {
+      // Documento existente — escapa o conteúdo para JS
       final he = doc.htmlContent
-        .replaceAll(r'\', r'\\').replaceAll("'", r"\'")
-        .replaceAll('\n', r'\n').replaceAll('\r', '');
+          .replaceAll(r'\', r'\\')
+          .replaceAll("'", r"\'")
+          .replaceAll('\n', r'\n')
+          .replaceAll('\r', '');
       final te = doc.title.replaceAll("'", r"\'");
-      _wvc.runJavaScript('''
-        window._docId = '${doc.id}'; window._docTitle = '$te';
+
+      await ctrl.evaluateJavascript(source: '''
+        window._docId = '${doc.id}';
+        window._docTitle = '$te';
         const el = document.getElementById('doc-title-text');
         if (el) el.textContent = '$te';
         if (typeof createPage === 'function') {
@@ -59,21 +129,5 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
         }
       ''');
     }
-  }
-
-  void _onMsg(JavaScriptMessage msg) {
-    try {
-      final d = jsonDecode(msg.message) as Map<String, dynamic>;
-      if (d['action'] == 'save') widget.controller.handleSaveMessage(d);
-      if (d['action'] == 'back') widget.controller.handleBack();
-    } catch (e) { debugPrint('bridge: $e'); }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(children: [
-      WebViewWidget(controller: _wvc),
-      if (_loading) const Center(child: CircularProgressIndicator(color: Color(0xFFE0185E), strokeWidth: 2)),
-    ]);
   }
 }
