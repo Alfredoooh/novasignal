@@ -7,7 +7,6 @@ import '../services/document_service.dart';
 import '../widgets/theme.dart';
 import 'editor_screen.dart';
 
-// SVGs inline usados neste ecrã
 const _docIconSvg = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M18,2H9.828A3.977,3.977,0,0,0,7,3.172L2.172,8A3.977,3.977,0,0,0,1,10.828V20a3,3,0,0,0,3,3H18a3,3,0,0,0,3-3V5A3,3,0,0,0,18,2ZM7,5.414V8H4.414ZM19,20a1,1,0,0,1-1,1H4a1,1,0,0,1-1-1V10H8A1,1,0,0,0,9,9V3h9a1,1,0,0,1,1,1ZM13,17H8a1,1,0,0,1,0-2h5a1,1,0,0,1,0,2Zm3-4H8a1,1,0,0,1,0-2h8a1,1,0,0,1,0,2Z"/>
@@ -29,7 +28,6 @@ const _chevronSvg = '''
 Widget _svg(String d, Color c, {double s = 20}) => SvgPicture.string(
     d, width: s, height: s, colorFilter: ColorFilter.mode(c, BlendMode.srcIn));
 
-// HomeScreenState é público para GlobalKey no MainShell
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -53,7 +51,6 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTheme() => setState(() {});
-
   Future<void> load() => _load();
 
   Future<void> _load() async {
@@ -68,10 +65,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteDoc(ADocument doc) async {
-    final isDark       = themeNotifier.isDark;
-    final bg           = isDark ? AppColors.darkSurface    : AppColors.surface;
-    final textPrimary  = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final textSec      = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final isDark      = themeNotifier.isDark;
+    final bg          = isDark ? AppColors.darkSurface    : AppColors.surface;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final textSec     = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -119,62 +116,30 @@ class HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: bg,
-      body: CustomScrollView(
-        slivers: [
-          // ── Large title colapsável — sem duplicação
-          SliverAppBar(
-            backgroundColor: bg,
-            surfaceTintColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            pinned: true,
-            expandedHeight: 100,
-            automaticallyImplyLeading: false,
-            // Sem `title:` aqui — só flexibleSpace para evitar duplicação
-            flexibleSpace: LayoutBuilder(builder: (ctx, box) {
-              final t = ((box.maxHeight - kToolbarHeight) /
-                  (100.0 - kToolbarHeight)).clamp(0.0, 1.0);
-              return Container(
-                color: bg,
-                alignment: Alignment.bottomLeft,
-                padding: EdgeInsets.only(left: 20, bottom: 12 + 4 * t),
-                child: Text(
-                  'Início',
-                  style: GoogleFonts.syne(
-                    color: textPrimary,
-                    fontSize: 20 + 12 * t,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-              );
-            }),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Container(height: 0.5, color: divColor),
-            ),
-          ),
-
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Separador fixo abaixo da AppBar herdada do shell
+          Container(height: 0.5, color: divColor),
           // ── Label RECENTES
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-              child: Text('RECENTES',
-                style: GoogleFonts.syne(
-                  color: textSec, fontSize: 11,
-                  fontWeight: FontWeight.w600, letterSpacing: 1.2)),
-            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
+            child: Text('RECENTES',
+              style: GoogleFonts.syne(
+                color: textSec, fontSize: 11,
+                fontWeight: FontWeight.w600, letterSpacing: 1.2)),
           ),
-
           // ── Lista ou estado vazio
-          if (_docs.isEmpty)
-            SliverFillRemaining(child: _buildEmpty(textPrimary, textSec, acc))
-          else
-            SliverList(delegate: SliverChildBuilderDelegate(
-              (ctx, i) => _buildTile(_docs[i], textPrimary, textSec, divColor, acc),
-              childCount: _docs.length,
-            )),
+          Expanded(
+            child: _docs.isEmpty
+                ? _buildEmpty(textPrimary, textSec, acc)
+                : ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: _docs.length,
+                    itemBuilder: (ctx, i) =>
+                        _buildTile(_docs[i], textPrimary, textSec, divColor, acc),
+                  ),
+          ),
         ],
       ),
     );
@@ -204,7 +169,6 @@ class HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(border: Border(bottom: BorderSide(color: div, width: 0.5))),
           child: Row(children: [
-            // Ícone do documento
             Container(
               width: 44, height: 44,
               decoration: BoxDecoration(color: acc.withOpacity(.1), borderRadius: BorderRadius.circular(12)),
