@@ -53,3 +53,15 @@ final themeNotifier = ThemeNotifier();
 // HELPER — cor accent consoante tema
 // ─────────────────────────────────────────────
 Color accColor(bool isDark) => isDark ? AppColors.accDark : AppColors.acc;
+
+// ─────────────────────────────────────────────
+// PAPER WHITE NOTIFIER (dark mode paper color)
+// ─────────────────────────────────────────────
+class PaperWhiteNotifier extends ChangeNotifier {
+  bool _isWhite = false;
+  bool get isWhite => _isWhite;
+  void toggle() { _isWhite = !_isWhite; notifyListeners(); }
+  void set(bool v) { if (_isWhite != v) { _isWhite = v; notifyListeners(); } }
+}
+
+final paperWhiteNotifier = PaperWhiteNotifier();
