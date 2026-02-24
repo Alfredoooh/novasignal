@@ -138,9 +138,10 @@
       display:flex; align-items:center; justify-content:space-between;
       padding:14px 20px; border-bottom:1px solid var(--border);
       cursor:pointer; gap:12px; min-height:56px;
+      color:var(--text);
     }
-    .m-item:active { background:rgba(0,0,0,.04); }
-    .m-item-label { flex:1; }
+    .m-item:active { background:rgba(128,128,128,.08); }
+    .m-item-label { flex:1; color:var(--text); }
     .m-item-check {
       width:20px; height:20px; flex-shrink:0;
       display:flex; align-items:center; justify-content:center;
@@ -489,6 +490,46 @@
           </button>
         </div>
         <div class="tb-sep"></div>
+
+        <!-- Sobrescrito / Subscrito -->
+        <div class="tb-group">
+          <button class="fb" id="btn-sup" onclick="fmt('superscript')" title="Sobrescrito">
+            <ion-icon name="arrow-up-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
+          </button>
+          <button class="fb" id="btn-sub" onclick="fmt('subscript')" title="Subscrito">
+            <ion-icon name="arrow-down-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
+          </button>
+        </div>
+        <div class="tb-sep"></div>
+
+        <!-- Recuo -->
+        <div class="tb-group">
+          <button class="fb" onclick="fmt('outdent')" title="Diminuir recuo">
+            <ion-icon name="arrow-back-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
+          </button>
+          <button class="fb" onclick="fmt('indent')" title="Aumentar recuo">
+            <ion-icon name="arrow-forward-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
+          </button>
+        </div>
+        <div class="tb-sep"></div>
+
+        <!-- Limpar formatação -->
+        <div class="tb-group">
+          <button class="fb" onclick="fmt('removeFormat')" title="Limpar formatação">
+            <ion-icon name="close-circle-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
+          </button>
+        </div>
+        <div class="tb-sep"></div>
+
+        <!-- Cor de fundo do texto -->
+        <div class="tb-group">
+          <button class="tb-color-btn" onclick="openBgColorModal()" title="Cor de fundo">
+            <div id="bg-color-dot" style="width:18px;height:18px;border-radius:3px;background:#ffff00;border:2px solid rgba(0,0,0,.18);pointer-events:none;"></div>
+          </button>
+        </div>
+        <div class="tb-sep"></div>
+
+        <div class="tb-sep"></div>
         <button class="tb-pill-btn" onclick="openInsertModal()">Inserir</button>
         <div class="tb-sep"></div>
         <button class="tb-pill-btn" onclick="openLayoutModal()">Layout</button>
@@ -776,8 +817,8 @@ function fmtAlign(cmd) {
   if (map[cmd]) document.getElementById(map[cmd])?.classList.add('on');
 }
 function updateStates() {
-  ['b','i','u','s','ul','ol'].forEach(k => {
-    const cmd = {b:'bold',i:'italic',u:'underline',s:'strikeThrough',ul:'insertUnorderedList',ol:'insertOrderedList'}[k];
+  ['b','i','u','s','ul','ol','sup','sub'].forEach(k => {
+    const cmd = {b:'bold',i:'italic',u:'underline',s:'strikeThrough',ul:'insertUnorderedList',ol:'insertOrderedList',sup:'superscript',sub:'subscript'}[k];
     document.getElementById('btn-'+k)?.classList.toggle('on', document.queryCommandState(cmd));
   });
 }
@@ -821,68 +862,19 @@ async function showSheet(header, buttons) {
 // ── ESTILO ──
 window.openStyleModal = function() {
   saveRange();
-  const defs = [
-    { tag:'h1', label:'Título',    style:'font-family:"Syne",sans-serif;font-weight:800;font-size:1.6rem;line-height:1.2;' },
-    { tag:'h2', label:'Subtítulo', style:'font-family:"Syne",sans-serif;font-weight:700;font-size:1.2rem;' },
-    { tag:'h3', label:'Secção',    style:'font-family:"Syne",sans-serif;font-weight:600;font-size:1rem;' },
-    { tag:'p',  label:'Corpo',     style:'font-family:Georgia,serif;font-size:.95rem;' },
-    { tag:'blockquote', label:'Citação', style:'font-family:Georgia,serif;font-size:.95rem;font-style:italic;color:#888;border-left:3px solid var(--acc);padding-left:10px;' },
-  ];
-  showListModal('Estilo do texto', defs.map(o => ({
-    selected: curStyle === o.tag,
-    render: el => {
-      el.style.cssText = o.style;
-      el.textContent = o.label;
-    },
-    handler: () => {
-      curStyle = o.tag;
-      document.getElementById('style-label').textContent = o.label;
-      getActiveEditor().focus(); restoreRange();
-      document.execCommand('formatBlock', false, o.tag);
-    },
-  })));
+  _sendFlutter({ action:'modal', type:'style', current: curStyle });
 };
 
 // ── FONTE ──
 window.openFontModal = function() {
   saveRange();
-  showListModal('Tipo de letra', FONT_DEFS.map(f => ({
-    selected: curFont === f.family,
-    render: el => {
-      const fallback = f.cat === 'mono' ? 'monospace' : f.cat === 'serif' ? 'serif' : 'sans-serif';
-      el.style.fontFamily = `'${f.family}', ${fallback}`;
-      el.style.fontSize = '1rem';
-      el.style.lineHeight = '1.4';
-      el.textContent = f.label;
-    },
-    handler: () => {
-      curFont = f.family;
-      document.getElementById('font-label').textContent = f.label;
-      getActiveEditor().focus(); restoreRange();
-      document.execCommand('fontName', false, f.family);
-    },
-  })));
+  _sendFlutter({ action:'modal', type:'font', current: curFont, fonts: FONT_DEFS.map(f=>({label:f.label,family:f.family,cat:f.cat})) });
 };
 
 // ── TAMANHO ──
 window.openSizeModal = function() {
   saveRange();
-  showListModal('Tamanho da letra', SIZES.map(s => ({
-    selected: curSize === s,
-    render: el => {
-      el.style.cssText = `font-size:${Math.max(12, Math.min(s, 22))}px;line-height:1.3;`;
-      el.textContent = s + ' pt';
-    },
-    handler: () => {
-      curSize = s;
-      document.getElementById('size-label').textContent = String(s);
-      getActiveEditor().focus(); restoreRange();
-      document.execCommand('fontSize', false, '7');
-      getActiveEditor().querySelectorAll('font[size="7"]').forEach(el => {
-        el.removeAttribute('size'); el.style.fontSize = s + 'px';
-      });
-    },
-  })));
+  _sendFlutter({ action:'modal', type:'size', current: curSize, sizes: SIZES });
 };
 
 // ── COR DA FONTE ──
@@ -892,340 +884,14 @@ let _pickerModal = null;
 function hslToHex(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l);const f=n=>{const k=(n+h/30)%12;const c=l-a*Math.max(-1,Math.min(k-3,9-k,1));return Math.round(255*c).toString(16).padStart(2,'0')};return'#'+f(0)+f(8)+f(4)}
 function hexToHsl(hex){let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;if(max===min){h=s=0}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=((g-b)/d+(g<b?6:0))/6;break;case g:h=((b-r)/d+2)/6;break;case b:h=((r-g)/d+4)/6;break}}return[Math.round(h*360),Math.round(s*100),Math.round(l*100)]}
 
-function makeIonModal() {
-  const modal = document.createElement('ion-modal');
-  modal.backdropDismiss = true;
-  modal.handle          = true;
-
-  // Bloqueia dismiss por gesto (swipe) quando o conteúdo está scrollado para baixo
-  // Usa uma flag síncrona actualizada pelo evento scroll — sem async
-  let _scrollTop = 0;
-  modal.addEventListener('ionModalDidPresent', () => {
-    const content = modal.querySelector('ion-content');
-    if (!content) return;
-    content.addEventListener('ionScroll', e => {
-      _scrollTop = e.detail?.scrollTop ?? 0;
-    });
-  });
-
-  modal.canDismiss = (data, role) => {
-    // Backdrop e cancel — sempre fechar
-    if (role === 'backdrop' || role === 'cancel') return true;
-    // Gesture (swipe do handle) — só fechar se estiver no topo
-    return _scrollTop <= 2;
-  };
-
-  modal.style.setProperty('--border-radius', '0');
-  modal.style.setProperty('--background', 'var(--card)');
-  return modal;
-}
-
-// ── Modal genérico de lista ──
-async function showListModal(titleText, items) {
-  const modal = makeIonModal();
-
-  // Header sticky — fora do ion-content, directamente no modal
-  const stickyHeader = document.createElement('div');
-  stickyHeader.className = 'm-header';
-  stickyHeader.style.cssText = 'position:sticky;top:0;z-index:10;background:var(--card);';
-  const titleEl = document.createElement('span');
-  titleEl.className = 'm-title'; titleEl.textContent = titleText;
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'm-cancel'; cancelBtn.textContent = 'Fechar';
-  cancelBtn.addEventListener('click', () => modal.dismiss(null, 'cancel'));
-  stickyHeader.appendChild(titleEl); stickyHeader.appendChild(cancelBtn);
-
-  const list = document.createElement('ul');
-  list.className = 'm-list';
-  items.forEach(item => {
-    const li = document.createElement('li');
-    li.className = 'm-item' + (item.selected ? ' selected' : '');
-
-    const label = document.createElement('div');
-    label.className = 'm-item-label';
-    if (item.render) { item.render(label); } else { label.textContent = item.text; }
-
-    const check = document.createElement('div');
-    check.className = 'm-item-check';
-    check.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-
-    li.appendChild(label);
-    if (!item.noCheck) li.appendChild(check);
-    if (item.danger) li.style.color = 'var(--danger)';
-
-    li.addEventListener('click', () => {
-      if (!item.noCheck) {
-        list.querySelectorAll('.m-item').forEach(x => x.classList.remove('selected'));
-        li.classList.add('selected');
-      }
-      modal.dismiss(null, 'cancel');
-      if (item.handler) setTimeout(item.handler, 80);
-    });
-    list.appendChild(li);
-  });
-
-  const listWrap = document.createElement('div');
-  listWrap.style.cssText = 'padding-bottom:48px;';
-  listWrap.appendChild(list);
-
-  const content = document.createElement('ion-content');
-  content.setAttribute('scroll-y', 'true');
-  content.style.setProperty('--background', 'var(--card)');
-  content.appendChild(listWrap);
-
-  // Header sticky dentro do ion-content via slot
-  modal.appendChild(content);
-  // Injectar header como primeiro filho do shadow via slot não funciona —
-  // em vez disso metemos o header dentro do content mas sticky
-  content.insertBefore(stickyHeader, content.firstChild);
-
-  document.body.appendChild(modal);
-
-  const estimated = 56 + items.length * 56 + 48;
-  const bp = Math.min(0.95, estimated / window.innerHeight);
-  modal.breakpoints       = [0, bp];
-  modal.initialBreakpoint = bp;
-
-  modal.addEventListener('didDismiss', () => modal.remove());
-  await modal.present();
-  return modal;
-}
-
-// ── Modal do picker HSL ──
-async function openPickerModal(onSelect) {
-  if (_pickerModal) { await _pickerModal.dismiss(null,'cancel'); _pickerModal = null; }
-
-  let [hue, sat, lit] = hexToHsl(_selColor.length===7 ? _selColor : '#111111');
-
-  // canvas
-  const canvasWrap = document.createElement('div');
-  canvasWrap.className = 'cp-canvas-wrap';
-  const canvas = document.createElement('canvas');
-  canvas.width=600; canvas.height=400;
-  const cursor = document.createElement('div');
-  cursor.className='cp-cursor';
-  canvasWrap.appendChild(canvas); canvasWrap.appendChild(cursor);
-
-  // hue slider
-  const hueWrap = document.createElement('div');
-  hueWrap.className='cp-slider-wrap'; hueWrap.id='cp-hue-slider';
-  const hueThumb = document.createElement('div');
-  hueThumb.className='cp-slider-thumb';
-  hueWrap.appendChild(hueThumb);
-
-  // hex row
-  const hexRow = document.createElement('div');
-  hexRow.className='cp-hex-row';
-  const previewBox = document.createElement('div');
-  previewBox.className='cp-preview';
-  previewBox.style.background=_selColor;
-  const hexInput = document.createElement('input');
-  hexInput.className='cp-hex-input'; hexInput.type='text';
-  hexInput.value=_selColor; hexInput.maxLength=7; hexInput.placeholder='#000000';
-  hexRow.appendChild(previewBox); hexRow.appendChild(hexInput);
-
-  // botões — pill 100%
-  const applyBtn = document.createElement('ion-button');
-  applyBtn.setAttribute('expand','block');
-  applyBtn.style.cssText='--background:var(--acc);--color:var(--acc-c);--border-radius:999px;--box-shadow:none;margin:0 0 10px;';
-  applyBtn.textContent='Usar esta cor';
-
-  const backBtn = document.createElement('ion-button');
-  backBtn.setAttribute('expand','block');
-  backBtn.setAttribute('fill','outline');
-  backBtn.style.cssText='--border-radius:999px;--color:var(--text);--border-color:var(--border);--box-shadow:none;margin:0;';
-  backBtn.textContent='Voltar';
-
-  // header sticky
-  const header = document.createElement('div');
-  header.className = 'm-header';
-  header.style.cssText='position:sticky;top:0;z-index:10;background:var(--card);';
-  const titleEl = document.createElement('span');
-  titleEl.className='m-title'; titleEl.textContent='Personalizar cor';
-  const closeBtn = document.createElement('button');
-  closeBtn.className='m-cancel'; closeBtn.textContent='Fechar';
-  closeBtn.addEventListener('click', () => modal.dismiss(null,'cancel'));
-  header.appendChild(titleEl); header.appendChild(closeBtn);
-
-  const inner = document.createElement('div');
-  inner.className='cm-inner';
-  inner.appendChild(canvasWrap);
-  inner.appendChild(hueWrap);
-  inner.appendChild(hexRow);
-  inner.appendChild(applyBtn);
-  inner.appendChild(backBtn);
-
-  const content = document.createElement('ion-content');
-  content.setAttribute('scroll-y','false');
-  content.style.setProperty('--background','var(--card)');
-  content.appendChild(inner);
-  content.insertBefore(header, content.firstChild);
-
-  const modal = makeIonModal();
-  modal.breakpoints       = [0, 0.88];
-  modal.initialBreakpoint = 0.88;
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-  _pickerModal = modal;
-  modal.addEventListener('didDismiss', ()=>{ modal.remove(); _pickerModal=null; });
-
-  // ── draw ──
-  function draw() {
-    const ctx = canvas.getContext('2d');
-    const w=canvas.width, h=canvas.height;
-    const gH=ctx.createLinearGradient(0,0,w,0);
-    gH.addColorStop(0,'#fff'); gH.addColorStop(1,`hsl(${hue},100%,50%)`);
-    ctx.fillStyle=gH; ctx.fillRect(0,0,w,h);
-    const gV=ctx.createLinearGradient(0,0,0,h);
-    gV.addColorStop(0,'rgba(0,0,0,0)'); gV.addColorStop(1,'#000');
-    ctx.fillStyle=gV; ctx.fillRect(0,0,w,h);
-    // cursor — converte HSL→posição SV
-    const sv_s = sat/100;
-    const sv_v = (lit/100) + sv_s*(1 - Math.abs(2*lit/100-1))/2;
-    const sv_sn = sv_v > 0 ? sv_s*(1 - Math.abs(2*lit/100-1))/(2*sv_v) : 0;
-    cursor.style.left  = `${Math.max(0,Math.min(100, sv_sn*100))}%`;
-    cursor.style.top   = `${Math.max(0,Math.min(100, (1-sv_v)*100))}%`;
-    cursor.style.background = _selColor;
-    hueThumb.style.left=(hue/360*100)+'%';
-    previewBox.style.background=_selColor;
-    hexInput.value=_selColor;
-  }
-
-  function fromCanvas(e) {
-    const rect=canvas.getBoundingClientRect();
-    const px=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-    const py=Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
-    // SV → HSL
-    const sv_v = 1 - py;
-    const sv_s = px;
-    const l2 = sv_v*(1 - sv_s/2);
-    sat = l2===0||l2===1 ? 0 : Math.round((sv_v - l2)/Math.min(l2,1-l2)*100);
-    lit = Math.round(l2*100);
-    _selColor=hslToHex(hue,sat,lit); draw();
-  }
-  function fromHue(e) {
-    const rect=hueWrap.getBoundingClientRect();
-    hue=Math.round(Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))*360);
-    _selColor=hslToHex(hue,sat,lit); draw();
-  }
-
-  let dC=false, dH=false;
-  canvas.addEventListener('pointerdown',e=>{dC=true;canvas.setPointerCapture(e.pointerId);fromCanvas(e);});
-  canvas.addEventListener('pointermove',e=>{if(dC)fromCanvas(e);});
-  canvas.addEventListener('pointerup',  ()=>dC=false);
-  hueWrap.addEventListener('pointerdown',e=>{dH=true;hueWrap.setPointerCapture(e.pointerId);fromHue(e);});
-  hueWrap.addEventListener('pointermove',e=>{if(dH)fromHue(e);});
-  hueWrap.addEventListener('pointerup', ()=>dH=false);
-
-  hexInput.addEventListener('input', e=>{
-    const v=e.target.value;
-    if(/^#[0-9a-fA-F]{6}$/.test(v)){
-      _selColor=v; [hue,sat,lit]=hexToHsl(v); draw();
-    }
-  });
-
-  applyBtn.addEventListener('click', ()=>{ onSelect(_selColor); modal.dismiss(null,'cancel'); });
-  backBtn.addEventListener('click',  ()=>modal.dismiss(null,'cancel'));
-
-  await modal.present();
-  // Redraw depois da animação do modal completar para o rect do canvas ser correcto
-  setTimeout(draw, 320);
-}
-
-// ── Modal de cor principal ──
-window.openColorModal = async function() {
+window.openColorModal = function() {
   saveRange();
-  if (_colorModal) { await _colorModal.dismiss(null,'cancel'); _colorModal = null; }
-  _selColor = curColor;
-
-  // swatches
-  const grid = document.createElement('div');
-  grid.className='color-grid';
-  PRESET_COLORS.forEach(c=>{
-    const s=document.createElement('div');
-    s.className='color-swatch'; s.style.background=c;
-    if(c==='#ffffff') s.style.boxShadow='inset 0 0 0 1px #ccc';
-    s.dataset.color=c;
-    s.classList.toggle('selected', c.toLowerCase()===curColor.toLowerCase());
-    s.addEventListener('click', ()=>{
-      _selColor=c;
-      grid.querySelectorAll('.color-swatch').forEach(x=>x.classList.toggle('selected',x.dataset.color===c));
-    });
-    grid.appendChild(s);
-  });
-
-  // botão personalizar — pill
-  const customBtn = document.createElement('ion-button');
-  customBtn.setAttribute('expand','block');
-  customBtn.setAttribute('fill','outline');
-  customBtn.style.cssText='--border-radius:999px;--color:var(--text);--border-color:var(--border);--box-shadow:none;margin:0 0 10px;';
-  customBtn.textContent='Personalizar cor';
-  customBtn.addEventListener('click', ()=>openPickerModal(c=>{
-    _selColor=c;
-    grid.querySelectorAll('.color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color.toLowerCase()===c.toLowerCase()));
-  }));
-
-  // botão aplicar — pill
-  const applyBtn = document.createElement('ion-button');
-  applyBtn.setAttribute('expand','block');
-  applyBtn.style.cssText='--background:var(--acc);--color:var(--acc-c);--border-radius:999px;--box-shadow:none;margin:0 0 8px;';
-  applyBtn.textContent='Aplicar';
-  applyBtn.addEventListener('click',()=>{
-    curColor=_selColor;
-    document.getElementById('color-dot').style.background=curColor;
-    modal.dismiss(null,'cancel');
-    setTimeout(()=>{getActiveEditor().focus();restoreRange();document.execCommand('foreColor',false,curColor);},120);
-  });
-
-  // header sticky
-  const header = document.createElement('div');
-  header.className='m-header';
-  header.style.cssText='position:sticky;top:0;z-index:10;background:var(--card);';
-  const titleEl = document.createElement('span');
-  titleEl.className='m-title'; titleEl.textContent='Cor da letra';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className='m-cancel'; cancelBtn.textContent='Fechar';
-  cancelBtn.addEventListener('click',()=>modal.dismiss(null,'cancel'));
-  header.appendChild(titleEl); header.appendChild(cancelBtn);
-
-  const inner = document.createElement('div');
-  inner.className='cm-inner';
-  inner.appendChild(grid);
-  inner.appendChild(customBtn);
-  inner.appendChild(applyBtn);
-
-  const content = document.createElement('ion-content');
-  content.setAttribute('scroll-y','true');
-  content.style.setProperty('--background','var(--card)');
-  content.appendChild(inner);
-  content.insertBefore(header, content.firstChild);
-
-  const modal = makeIonModal();
-  const bp = Math.min(0.95, (56 + 260 + 100 + 48) / window.innerHeight);
-  modal.breakpoints       = [0, bp];
-  modal.initialBreakpoint = bp;
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-
-  _colorModal = modal;
-  modal.addEventListener('didDismiss',()=>{ modal.remove(); _colorModal=null; });
-  await modal.present();
+  _sendFlutter({ action:'modal', type:'color', current: curColor, presets: PRESET_COLORS });
 };
-
-window.closeColorModal = function() {
-  if (_colorModal) _colorModal.dismiss();
-};
+window.closeColorModal = function() {};
 
 window.openOpcoes = function() {
-  const isDark = document.body.getAttribute('data-theme') === 'dark';
-  showListModal('Opções', [
-    { text:'Baixar como PDF',    noCheck:true, handler: exportPDF      },
-    { text:'Baixar como TXT',    noCheck:true, handler: exportTXT      },
-    { text:'Partilhar PDF',      noCheck:true, handler: sharePDF       },
-    { text:'Nova página',        noCheck:true, handler: addPageManual  },
-    { text: isDark ? 'Papel branco (modo escuro)' : 'Papel branco ativo', noCheck:true, handler: toggleWhitePaper },
-    { text:'Limpar tudo',        noCheck:true, danger:true, handler: clearAll },
-  ]);
+  _sendFlutter({ action:'modal', type:'opcoes' });
 };
 
 let _whitePaperForced = false;
@@ -1317,85 +983,13 @@ function clearAll(){ document.getElementById('doc-pages').innerHTML=''; pages=[]
 
 // ── Renomear título ──
 window.openRenameDialog = function() {
-  const modal = makeIonModal();
-  modal.breakpoints       = [0, 0.42];
-  modal.initialBreakpoint = 0.42;
-
-  const header = document.createElement('div');
-  header.className = 'm-header';
-  header.style.cssText = 'position:sticky;top:0;z-index:10;background:var(--card);';
-  const titleEl = document.createElement('span');
-  titleEl.className = 'm-title'; titleEl.textContent = 'Renomear documento';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'm-cancel'; cancelBtn.textContent = 'Cancelar';
-  cancelBtn.addEventListener('click', () => modal.dismiss(null, 'cancel'));
-  header.appendChild(titleEl); header.appendChild(cancelBtn);
-
-  const input = document.createElement('ion-input');
-  input.value     = window._docTitle || '';
-  input.placeholder = 'Nome do documento';
-  input.clearInput = true;
-  input.style.cssText = '--padding-start:20px;--padding-end:20px;--background:var(--toolbar-pill);--border-radius:12px;font-family:Syne,sans-serif;margin:16px 20px 0;';
-
-  const applyBtn = document.createElement('ion-button');
-  applyBtn.setAttribute('expand','block');
-  applyBtn.style.cssText = '--background:var(--acc);--color:var(--acc-c);--border-radius:999px;--box-shadow:none;margin:14px 20px 24px;';
-  applyBtn.textContent = 'Guardar';
-  applyBtn.addEventListener('click', async () => {
-    const v = ((await input.getInputElement())?.value || input.value || '').trim();
-    if (v) {
-      window._docTitle = v;
-      const el = document.getElementById('doc-title-text');
-      if (el) el.textContent = v;
-    }
-    modal.dismiss(null, 'cancel');
-  });
-
-  const inner = document.createElement('div');
-  inner.appendChild(input);
-  inner.appendChild(applyBtn);
-
-  const content = document.createElement('ion-content');
-  content.setAttribute('scroll-y','false');
-  content.style.setProperty('--background','var(--card)');
-  content.appendChild(inner);
-  content.insertBefore(header, content.firstChild);
-
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-  modal.addEventListener('didDismiss', () => modal.remove());
-  modal.present().then(() => {
-    setTimeout(() => input.setFocus(), 200);
-  });
+  _sendFlutter({ action:'modal', type:'rename', current: window._docTitle || '' });
 };
 
 // ── Modal Inserir ──
 window.openInsertModal = function() {
   saveRange();
-  const items = [
-    { icon:'📋', label:'Tabela', handler: insertTable },
-    { icon:'─', label:'Linha horizontal', handler: ()=>{ getActiveEditor().focus(); restoreRange(); document.execCommand('insertHorizontalRule',false,null); } },
-    { icon:'❝', label:'Citação', handler: ()=>{ getActiveEditor().focus(); restoreRange(); document.execCommand('formatBlock',false,'blockquote'); } },
-    { icon:'<>', label:'Código', handler: insertCode },
-    { icon:'🔗', label:'Link', handler: insertLink },
-    { icon:'•', label:'Lista com marcas', handler: ()=>{ fmt('insertUnorderedList'); } },
-    { icon:'1.', label:'Lista numerada', handler: ()=>{ fmt('insertOrderedList'); } },
-    { icon:'⬛', label:'Quebra de página', handler: ()=>{ getActiveEditor().focus(); restoreRange(); document.execCommand('insertHTML',false,'<div style="page-break-after:always;height:0;"></div>'); } },
-  ];
-  showListModal('Inserir elemento', items.map(it => ({
-    noCheck: true,
-    render: el => {
-      el.style.cssText = 'display:flex;align-items:center;gap:14px;';
-      const ico = document.createElement('span');
-      ico.style.cssText = 'width:32px;height:32px;border-radius:8px;background:var(--toolbar-pill);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;font-family:monospace;';
-      ico.textContent = it.icon;
-      const lbl = document.createElement('span');
-      lbl.style.cssText = 'font-family:Syne,sans-serif;font-size:.9rem;';
-      lbl.textContent = it.label;
-      el.appendChild(ico); el.appendChild(lbl);
-    },
-    handler: it.handler,
-  })));
+  _sendFlutter({ action:'modal', type:'insert' });
 };
 
 function insertTable() {
@@ -1430,138 +1024,48 @@ function insertLink() {
 
 // ── Modal Layout ──
 window.openLayoutModal = function() {
-  const modal = makeIonModal();
-  modal.breakpoints       = [0, 0.72];
-  modal.initialBreakpoint = 0.72;
-
-  const header = document.createElement('div');
-  header.className = 'm-header';
-  header.style.cssText = 'position:sticky;top:0;z-index:10;background:var(--card);';
-  const titleEl = document.createElement('span');
-  titleEl.className = 'm-title'; titleEl.textContent = 'Layout da página';
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'm-cancel'; cancelBtn.textContent = 'Fechar';
-  cancelBtn.addEventListener('click', () => modal.dismiss(null, 'cancel'));
-  header.appendChild(titleEl); header.appendChild(cancelBtn);
-
-  const inner = document.createElement('div');
-  inner.style.cssText = 'padding:16px 20px 48px;';
-
-  // Secção: Tamanho
-  const secLabel = (txt) => {
-    const l = document.createElement('p');
-    l.style.cssText = 'font-family:Syne,sans-serif;font-size:.6rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);margin:0 0 10px;';
-    l.textContent = txt; return l;
-  };
-
-  const pageFormats = [
-    { label:'A4', w:794, h:1123 },
-    { label:'A5', w:559, h:794 },
-    { label:'Letter', w:816, h:1056 },
-    { label:'Legal', w:816, h:1344 },
-  ];
-
-  inner.appendChild(secLabel('Tamanho do papel'));
-  const fmtRow = document.createElement('div');
-  fmtRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;';
-  const curFmt = pageFormats[0];
-  pageFormats.forEach(f => {
-    const btn = document.createElement('button');
-    const sel = f.label === 'A4';
-    btn.style.cssText = `height:36px;padding:0 18px;border-radius:999px;border:1.5px solid ${sel?'var(--acc)':'var(--border)'};background:${sel?'rgba(var(--acc-rgb),.1)':'transparent'};color:${sel?'var(--acc)':'var(--text)'};font-family:Syne,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;`;
-    btn.textContent = f.label;
-    btn.addEventListener('click', () => {
-      fmtRow.querySelectorAll('button').forEach(b => {
-        b.style.borderColor = 'var(--border)'; b.style.color = 'var(--text)'; b.style.background = 'transparent';
-      });
-      btn.style.borderColor = 'var(--acc)'; btn.style.color = 'var(--acc)'; btn.style.background = 'rgba(var(--acc-rgb),.1)';
-      document.querySelectorAll('.page-wrap').forEach(p => {
-        p.style.width = f.w + 'px'; p.style.height = f.h + 'px';
-      });
-      applyScale();
-    });
-    fmtRow.appendChild(btn);
-  });
-  inner.appendChild(fmtRow);
-
-  // Margens
-  inner.appendChild(secLabel('Margens'));
-  const margins = [
-    { label:'Estreitas', v:48, h:48 },
-    { label:'Normais', v:94, h:94 },
-    { label:'Largas', v:120, h:120 },
-  ];
-  const marginRow = document.createElement('div');
-  marginRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;';
-  margins.forEach((m, i) => {
-    const btn = document.createElement('button');
-    const sel = i === 1;
-    btn.style.cssText = `height:36px;padding:0 18px;border-radius:999px;border:1.5px solid ${sel?'var(--acc)':'var(--border)'};background:${sel?'rgba(var(--acc-rgb),.1)':'transparent'};color:${sel?'var(--acc)':'var(--text)'};font-family:Syne,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;`;
-    btn.textContent = m.label;
-    btn.addEventListener('click', () => {
-      marginRow.querySelectorAll('button').forEach(b => {
-        b.style.borderColor = 'var(--border)'; b.style.color = 'var(--text)'; b.style.background = 'transparent';
-      });
-      btn.style.borderColor = 'var(--acc)'; btn.style.color = 'var(--acc)'; btn.style.background = 'rgba(var(--acc-rgb),.1)';
-      document.querySelectorAll('.page-editor').forEach(p => {
-        p.parentElement.style.padding = m.v + 'px ' + m.h + 'px';
-      });
-    });
-    marginRow.appendChild(btn);
-  });
-  inner.appendChild(marginRow);
-
-  // Espaçamento de linha
-  inner.appendChild(secLabel('Espaçamento de linha'));
-  const spacings = [
-    { label:'Simples', v:'1.4' },
-    { label:'1,5 linhas', v:'1.65' },
-    { label:'Duplo', v:'2.0' },
-  ];
-  const spacingRow = document.createElement('div');
-  spacingRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;';
-  spacings.forEach((s, i) => {
-    const btn = document.createElement('button');
-    const sel = i === 0;
-    btn.style.cssText = `height:36px;padding:0 18px;border-radius:999px;border:1.5px solid ${sel?'var(--acc)':'var(--border)'};background:${sel?'rgba(var(--acc-rgb),.1)':'transparent'};color:${sel?'var(--acc)':'var(--text)'};font-family:Syne,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;`;
-    btn.textContent = s.label;
-    btn.addEventListener('click', () => {
-      spacingRow.querySelectorAll('button').forEach(b => {
-        b.style.borderColor = 'var(--border)'; b.style.color = 'var(--text)'; b.style.background = 'transparent';
-      });
-      btn.style.borderColor = 'var(--acc)'; btn.style.color = 'var(--acc)'; btn.style.background = 'rgba(var(--acc-rgb),.1)';
-      document.querySelectorAll('.page-editor').forEach(p => {
-        p.style.lineHeight = s.v;
-      });
-    });
-    spacingRow.appendChild(btn);
-  });
-  inner.appendChild(spacingRow);
-
-  const content = document.createElement('ion-content');
-  content.setAttribute('scroll-y','true');
-  content.style.setProperty('--background','var(--card)');
-  content.appendChild(inner);
-  content.insertBefore(header, content.firstChild);
-
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-  modal.addEventListener('didDismiss', () => modal.remove());
-  modal.present();
+  _sendFlutter({ action:'modal', type:'layout' });
 };
 
 // ── IA ──
 window.openGemini = function() {
   const sel = (window.getSelection()?.toString()||'').trim();
-  showListModal(sel ? `"${sel.slice(0,40)}…"` : 'Pedir à IA', [
-    { text:'Melhorar escrita',     noCheck:true, handler:()=>aiRun('Melhorar escrita')     },
-    { text:'Resumir',              noCheck:true, handler:()=>aiRun('Resumir')              },
-    { text:'Continuar texto',      noCheck:true, handler:()=>aiRun('Continuar texto')      },
-    { text:'Traduzir para inglês', noCheck:true, handler:()=>aiRun('Traduzir para inglês') },
-    { text:'Corrigir gramática',   noCheck:true, handler:()=>aiRun('Corrigir gramática')   },
-  ]);
+  saveRange();
+  _sendFlutter({ action:'modal', type:'gemini', selectedText: sel.slice(0,200) });
 };
 function aiRun(a) { setProgress(true); setTimeout(()=>{ setProgress(false); showToast(`IA: ${a} concluído`); },1500); }
+
+// ── Cor de fundo do texto ──
+let _curBgColor = '#ffff00';
+window.openBgColorModal = function() {
+  saveRange();
+  _sendFlutter({ action:'modal', type:'bgColor', current: _curBgColor });
+};
+
+// ── Duplicar página ──
+function duplicatePage() {
+  if (!pages[activePg]) return;
+  const html = pages[activePg].editor.innerHTML;
+  createPage(pages.length);
+  pages[pages.length - 1].editor.innerHTML = html;
+  applyScale(); updateMeta(); showToast('Página duplicada');
+}
+
+// ── Estatísticas ──
+function showDocStats() {
+  const text = pages.map(p => p.editor.innerText).join(' ').trim();
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  const chars = text.length;
+  const charsNoSp = text.replace(/\s/g,'').length;
+  const sentences = (text.match(/[.!?]+/g)||[]).length;
+  const readMin = Math.max(1, Math.round(words/200));
+  _sendFlutter({ action:'modal', type:'stats', words, chars, charsNoSp, sentences, pages: pages.length, readMin });
+}
+
+// ── Localizar e substituir ──
+window.openFindReplace = function() {
+  _sendFlutter({ action:'modal', type:'findReplace' });
+};
 </script>
 
 <script>
@@ -1580,6 +1084,129 @@ function _sendFlutter(obj) {
     window.parent.postMessage(obj, '*');
   }
 }
+
+// ── Recebe resultado de modal nativo Flutter e aplica no editor ──
+window._modalResult = function(data) {
+  const type = data.type;
+  getActiveEditor().focus();
+  restoreRange();
+
+  if (type === 'style') {
+    const labels = { h1:'Título', h2:'Subtítulo', h3:'Secção', p:'Corpo', blockquote:'Citação' };
+    curStyle = data.tag;
+    const el = document.getElementById('style-label');
+    if (el) el.textContent = labels[data.tag] || data.tag;
+    document.execCommand('formatBlock', false, data.tag);
+
+  } else if (type === 'font') {
+    curFont = data.family;
+    const el = document.getElementById('font-label');
+    if (el) el.textContent = data.label;
+    document.execCommand('fontName', false, data.family);
+
+  } else if (type === 'size') {
+    curSize = data.size;
+    const el = document.getElementById('size-label');
+    if (el) el.textContent = String(data.size);
+    document.execCommand('fontSize', false, '7');
+    getActiveEditor().querySelectorAll('font[size="7"]').forEach(e => {
+      e.removeAttribute('size'); e.style.fontSize = data.size + 'px';
+    });
+
+  } else if (type === 'color') {
+    curColor = data.color;
+    const dot = document.getElementById('color-dot');
+    if (dot) dot.style.background = curColor;
+    document.execCommand('foreColor', false, curColor);
+
+  } else if (type === 'bgColor') {
+    _curBgColor = data.color;
+    const dot = document.getElementById('bg-color-dot');
+    if (dot) dot.style.background = data.color === 'transparent' ? 'transparent' : data.color;
+    document.execCommand('hiliteColor', false, data.color === 'transparent' ? 'transparent' : data.color);
+
+  } else if (type === 'link') {
+    if (data.url) {
+      if (data.text) {
+        document.execCommand('insertHTML', false, `<a href="${data.url}" target="_blank">${data.text || data.url}</a>`);
+      } else {
+        document.execCommand('createLink', false, data.url);
+        getActiveEditor().querySelectorAll('a').forEach(a => { a.target='_blank'; });
+      }
+    }
+
+  } else if (type === 'image') {
+    if (data.url) {
+      const alt = data.alt || '';
+      document.execCommand('insertHTML', false, `<img src="${data.url}" alt="${alt}" style="max-width:100%;height:auto;border-radius:4px;" />`);
+    }
+
+  } else if (type === 'table') {
+    const r = parseInt(data.rows) || 3;
+    const c = parseInt(data.cols) || 3;
+    const headerRow = Array.from({length:c}, (_,i)=>`<th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho ${i+1}</th>`).join('');
+    const bodyRow  = Array.from({length:c}, ()=>`<td style="border:1px solid #ccc;padding:6px 10px;">Célula</td>`).join('');
+    const bodyRows = Array.from({length:r-1}, ()=>`<tr>${bodyRow}</tr>`).join('');
+    document.execCommand('insertHTML', false, `<table style="border-collapse:collapse;width:100%;margin:.5em 0;"><thead><tr>${headerRow}</tr></thead><tbody>${bodyRows}</tbody></table><p><br></p>`);
+
+  } else if (type === 'insert') {
+    if (data.action === 'hr')          document.execCommand('insertHorizontalRule',false,null);
+    else if (data.action === 'blockquote') document.execCommand('formatBlock',false,'blockquote');
+    else if (data.action === 'code')   insertCode();
+    else if (data.action === 'ul')     fmt('insertUnorderedList');
+    else if (data.action === 'ol')     fmt('insertOrderedList');
+    else if (data.action === 'pageBreak') document.execCommand('insertHTML',false,'<div style="page-break-after:always;height:0;"></div>');
+    else if (data.action === 'table')  _sendFlutter({ action:'modal', type:'table' });
+    else if (data.action === 'link')   _sendFlutter({ action:'modal', type:'link', text:(window.getSelection()?.toString()||'') });
+    else if (data.action === 'image')  _sendFlutter({ action:'modal', type:'image' });
+
+  } else if (type === 'opcoes') {
+    if (data.action === 'exportPDF')       exportPDF();
+    else if (data.action === 'exportTXT')  exportTXT();
+    else if (data.action === 'sharePDF')   sharePDF();
+    else if (data.action === 'stats')      showDocStats();
+    else if (data.action === 'findReplace')window.openFindReplace();
+    else if (data.action === 'print')      window.print();
+    else if (data.action === 'duplicate')  duplicatePage();
+    else if (data.action === 'newPage')    addPageManual();
+    else if (data.action === 'whitePaper') toggleWhitePaper();
+    else if (data.action === 'clearAll')   clearAll();
+
+  } else if (type === 'gemini') {
+    if (data.action) aiRun(data.action);
+
+  } else if (type === 'layout') {
+    if (data.format) {
+      const formats = { A4:{w:794,h:1123}, A5:{w:559,h:794}, Letter:{w:816,h:1056}, Legal:{w:816,h:1344} };
+      const f = formats[data.format];
+      if (f) { document.querySelectorAll('.page-wrap').forEach(p=>{ p.style.width=f.w+'px'; p.style.height=f.h+'px'; }); applyScale(); }
+    }
+    if (data.margin) {
+      const margins = { Estreitas:{v:48,h:48}, Normais:{v:94,h:94}, Largas:{v:120,h:120} };
+      const m = margins[data.margin];
+      if (m) document.querySelectorAll('.page-editor').forEach(p=>{ p.parentElement.style.padding=m.v+'px '+m.h+'px'; });
+    }
+    if (data.spacing) {
+      document.querySelectorAll('.page-editor').forEach(p=>{ p.style.lineHeight=data.spacing; });
+    }
+
+  } else if (type === 'findReplace') {
+    if (data.action === 'replace' && data.find) {
+      const re = new RegExp(data.find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+      let n = 0;
+      pages.forEach(p=>{ p.editor.innerHTML = p.editor.innerHTML.replace(re, ()=>{ n++; return data.replaceWith||''; }); });
+      updateMeta();
+      showToast(`${n} substituição(ões) efectuada(s)`);
+    }
+
+  } else if (type === 'rename') {
+    if (data.title) {
+      window._docTitle = data.title;
+      const el = document.getElementById('doc-title-text');
+      if (el) el.textContent = data.title;
+    }
+  }
+};
 
 // ── Alterar tema (chamado pelo Flutter quando o utilizador muda tema) ──
 window.setTheme = function(isDark) {
