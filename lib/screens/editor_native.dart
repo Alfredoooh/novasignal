@@ -922,12 +922,18 @@ class _ListPickerSheet extends StatelessWidget {
                     const SizedBox(width: 14),
                   ],
                   Expanded(child: Text(item.label,
-                    style: GoogleFonts.roboto(
-                      color: item.danger ? const Color(0xFFDC2626) : tp,
-                      fontSize: item.fontSize ?? 15,
-                      fontWeight: item.selected ? FontWeight.w700 : FontWeight.w400,
-                      fontFamily: item.fontFamily,
-                    ),
+                    style: item.fontFamily != null
+                      ? TextStyle(
+                          color: item.danger ? const Color(0xFFDC2626) : tp,
+                          fontSize: item.fontSize ?? 15,
+                          fontWeight: item.selected ? FontWeight.w700 : FontWeight.w400,
+                          fontFamily: item.fontFamily,
+                        )
+                      : GoogleFonts.roboto(
+                          color: item.danger ? const Color(0xFFDC2626) : tp,
+                          fontSize: item.fontSize ?? 15,
+                          fontWeight: item.selected ? FontWeight.w700 : FontWeight.w400,
+                        ),
                   )),
                   if (item.selected)
                     Icon(Icons.check_rounded, color: acc, size: 18),
