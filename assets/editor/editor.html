@@ -1282,21 +1282,74 @@ window.saveDocument = function() {
   });
 };
 
-// Carregar documento — chamado pelo Flutter via evaluateJavascript
-window.loadDocument = function(id, title, htmlContent) {
-  window._docId = id;
+// ── Extrair body de HTML completo ──────────────────────────────
+function _extractBodyHtml(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  const trimmed = raw.trim();
+  // Se for HTML completo com DOCTYPE ou <html>, extrai só o <body>
+  if (/^<!DOCTYPE|^<html/i.test(trimmed)) {
+    const m = trimmed.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (m) return m[1].trim();
+    // Fallback: tenta pegar tudo depois de <body>
+    const idx = trimmed.toLowerCase().indexOf('<body');
+    if (idx >= 0) {
+      const after = trimmed.slice(trimmed.indexOf('>', idx) + 1);
+      const end = after.toLowerCase().lastIndexOf('</body>');
+      return end >= 0 ? after.slice(0, end).trim() : after.trim();
+    }
+  }
+  return trimmed;
+}
+
+// ── Dividir HTML em páginas por PAGE_BREAK ─────────────────────
+function _splitIntoPages(rawHtml, id, title, isNew) {
+  document.getElementById('doc-pages').innerHTML = '';
+  pages = []; activePg = 0;
+  window._docId   = id   || null;
   window._docTitle = title || 'Sem título';
   const el = document.getElementById('doc-title-text');
   if (el) el.textContent = window._docTitle;
-  document.getElementById('doc-pages').innerHTML = '';
-  pages = []; activePg = 0;
-  createPage(0); applyScale(); updateMeta();
-  if (htmlContent && pages[0]) {
-    pages[0].editor.innerHTML = htmlContent;
-    updateMeta();
-  } else {
-    setTimeout(() => pages[0]?.editor?.focus(), 300);
+
+  if (!rawHtml || !rawHtml.trim()) {
+    createPage(0); applyScale(); updateMeta();
+    if (isNew) setTimeout(() => pages[0]?.editor?.focus(), 300);
+    return;
   }
+
+  // Dividir por PAGE_BREAK (documentos guardados com múltiplas páginas)
+  const parts = rawHtml.split('<!-- PAGE_BREAK -->').filter(p => p.trim());
+
+  if (parts.length === 0) {
+    createPage(0); applyScale(); updateMeta();
+    return;
+  }
+
+  parts.forEach((part, i) => {
+    createPage(i);
+    if (pages[i]) pages[i].editor.innerHTML = part.trim();
+  });
+
+  applyScale();
+  updateMeta();
+
+  // Remove placeholder do primeiro editor se há conteúdo
+  if (!isNew && pages[0]) {
+    pages[0].editor.removeAttribute('data-placeholder');
+  }
+}
+
+// ── loadContent — chamado pelo Flutter (nova API) ─────────────
+// Assinatura: loadContent(html, title, id, isNew)
+window.loadContent = function(rawHtml, title, id, isNew) {
+  const bodyHtml = _extractBodyHtml(rawHtml);
+  _splitIntoPages(bodyHtml, id, title, isNew);
+};
+
+// ── loadDocument — chamado internamente / iframe web ──────────
+// Assinatura original: loadDocument(id, title, htmlContent)
+window.loadDocument = function(id, title, htmlContent) {
+  const bodyHtml = _extractBodyHtml(htmlContent);
+  _splitIntoPages(bodyHtml, id, title, !htmlContent || !htmlContent.trim());
 };
 
 // Actualizar título — chamado pelo Flutter
