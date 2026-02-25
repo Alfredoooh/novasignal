@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../widgets/theme.dart';
@@ -13,6 +15,9 @@ import 'editor_screen.dart';
 const _kPill  = 999.0;
 const _kCard  = 18.0;
 const _kModal = 20.0;
+
+// ── Aria Worker ───────────────────────────────────────
+const _kWorkerUrl = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
 
 Widget buildEditorView(BuildContext context, EditorController controller) =>
     _NativeEditorView(controller: controller);
@@ -371,6 +376,167 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     if (result != null) await _injectModalResult(result);
   }
 
+  // ── Image Upload ─────────────────────────────────────
+  Future<void> _showImageUploadModal() async {
+    final isDark = themeNotifier.isDark;
+    final acc = accColor(isDark);
+    
+    final picker = ImagePicker();
+    final result = await _openSheet<Map<String,String>>((_) => _ListPickerSheet(
+      title: 'Inserir imagem',
+      isDark: isDark, acc: acc,
+      items: [
+        const _ListItem(label: 'Câmera', selected: false, leading: '📷'),
+        const _ListItem(label: 'Galeria', selected: false, leading: '🖼'),
+      ],
+      onSelect: (i) => {'src': i == 0 ? 'camera' : 'gallery'},
+    ));
+
+    if (result == null) return;
+    final src = result['src'] ?? 'gallery';
+    
+    XFile? file;
+    try {
+      if (src == 'camera') {
+        file = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+      } else {
+        file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      }
+    } catch (e) {
+      _showSnack('Não foi possível aceder à imagem.', isError: true);
+      return;
+    }
+
+    if (file == null) return;
+    
+    try {
+      final bytes = await file.readAsBytes();
+      final b64 = base64Encode(bytes);
+      final mime = file.mimeType ?? 'image/jpeg';
+      await _injectModalResult({'type': 'imageUpload', 'base64': b64, 'mime': mime, 'alt': file.name});
+    } catch (e) {
+      _showSnack('Erro ao processar imagem.', isError: true);
+    }
+  }
+
+  // ── QR Code ───────────────────────────────────────────
+  Future<void> _showQrCodeModal() async {
+    final isDark = themeNotifier.isDark;
+    final ctrl = TextEditingController();
+    final acc = accColor(isDark);
+    
+    final result = await _openSheet<Map<String,String>>((_) =>
+      _SimpleFormSheet(
+        title: 'Criar QR Code',
+        isDark: isDark, acc: acc,
+        fields: [
+          _FieldDef(ctrl: ctrl, label: 'Conteúdo do QR Code', hint: 'URL, texto, email, telefone…', icon: Icons.qr_code_rounded, keyboard: TextInputType.text),
+        ],
+        confirmLabel: 'Inserir QR Code',
+        onConfirm: () {
+          final v = ctrl.text.trim();
+          if (v.isEmpty) return null;
+          return {'type': 'qrcode', 'content': v};
+        },
+      ),
+    );
+    
+    if (result != null) await _injectModalResult(result);
+  }
+
+  // ── Stickers ──────────────────────────────────────────
+  Future<void> _showStickerModal() async {
+    final isDark = themeNotifier.isDark;
+    final acc = accColor(isDark);
+    final bg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final tp  = isDark ? Colors.white : Colors.black;
+    final div = isDark ? AppColors.darkDivider : AppColors.divider;
+
+    // Packs de stickers
+    final packs = {
+      'Emoções & Símbolos': ['⭐','🌟','💡','🔥','✅','❌','📌','💎','🎯','🚀','💪','🌈','❤️','🎉','📊','📈','💰','🏆','✨','🌙','☀️','⚡','🎨','📝','🔑','💬','📣','🌍','🎵','🎁'],
+      'Negócios':           ['📊','📈','📉','💹','💼','📋','📁','🗂️','📌','📍','✅','☑️','🔔','📧','📞','💻','🖥️','📱','🖨️','🖇️'],
+      'Sinais':             ['⚠️','🚫','✅','❌','ℹ️','❓','❗','💯','🔒','🔓','🔴','🟡','🟢','🔵','⬛','⬜'],
+      'Natureza':           ['🌱','🌿','🍃','🌸','🌺','🌻','🌴','🌊','⛰️','🌋','🌅','☁️','⛅','🌙','⭐','🌟','💫','🌈','☀️'],
+    };
+    
+    String? selectedIcon;
+    String currentPack = packs.keys.first;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setState) => Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+          decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal))),
+          child: Column(children: [
+            // Handle
+            Padding(padding: const EdgeInsets.fromLTRB(0,12,0,0),
+              child: Center(child: Container(width: 40, height: 4,
+                decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
+            Padding(padding: const EdgeInsets.fromLTRB(20,14,20,10),
+              child: Text('Stickers & Ícones', style: GoogleFonts.roboto(color: tp, fontSize: 17, fontWeight: FontWeight.w800))),
+            Container(height: 0.5, color: div),
+            // Pack tabs
+            SizedBox(height: 44,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(12,8,12,0),
+                scrollDirection: Axis.horizontal,
+                children: packs.keys.map((pack) {
+                  final sel = pack == currentPack;
+                  return GestureDetector(
+                    onTap: () => setState(() => currentPack = pack),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: sel ? acc : Colors.transparent,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: sel ? acc : div),
+                      ),
+                      child: Text(pack, style: GoogleFonts.roboto(color: sel ? Colors.white : tp, fontSize: 12, fontWeight: FontWeight.w700)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            // Grid de emojis
+            Expanded(child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
+              itemCount: packs[currentPack]!.length,
+              itemBuilder: (_, i) {
+                final icon = packs[currentPack]![i];
+                final sel = icon == selectedIcon;
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _injectModalResult({'type': 'sticker', 'icon': icon, 'color': '#e0185e'});
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    decoration: BoxDecoration(
+                      color: sel ? acc.withOpacity(.15) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: sel ? acc : Colors.transparent),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(icon, style: const TextStyle(fontSize: 28)),
+                  ),
+                );
+              },
+            )),
+          ]),
+        ),
+      ),
+    );
+  }
+
   // ── Generic sheet helper ──────────────────────────────
   Future<T?> _openSheet<T>(Widget Function(BuildContext) builder) =>
     showModalBottomSheet<T>(
@@ -381,6 +547,69 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       barrierColor: Colors.black54,
       builder: builder,
     );
+
+  // ═════════════════════════════════════════════════════
+  // AI REQUEST — chama Anthropic API
+  // ═════════════════════════════════════════════════════
+  // Token de sessão do Aria Worker
+  static String _ariaToken = '';
+
+  Future<void> _handleAiRequest(Map<String, dynamic> data) async {
+    final prompt   = data['prompt']   as String? ?? '';
+    final aiAction = data['aiAction'] as String? ?? '';
+    if (prompt.isEmpty) return;
+
+    try {
+      // Pesquisas → /ask (Groq compound GA, tempo real)
+      // Geração   → /generate (Gemini 1.5 Flash, grátis)
+      final isSearch = aiAction.contains('Pesquis') || aiAction.contains('internet');
+      final endpoint = isSearch ? '$_kWorkerUrl/ask' : '$_kWorkerUrl/generate';
+
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer $_ariaToken';
+
+      final body = isSearch
+          ? jsonEncode({'query': prompt, 'mode': 'search'})
+          : jsonEncode({
+              'prompt': prompt,
+              'system': 'És um assistente de escrita profissional. Respondes APENAS com o texto solicitado, sem explicações extras. Em português.',
+            });
+
+      final client  = HttpClient();
+      final request = await client.postUrl(Uri.parse(endpoint));
+      headers.forEach((k, v) => request.headers.set(k, v));
+      request.write(body);
+
+      final response     = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+      final decoded      = jsonDecode(responseBody) as Map<String, dynamic>;
+
+      // /ask → { answer } | /generate → { text }
+      final aiText = (decoded['answer'] ?? decoded['text']) as String?;
+
+      if (aiText != null && aiText.isNotEmpty) {
+        final js = jsonEncode({'text': aiText});
+        await _wvc?.evaluateJavascript(
+          source: 'if(typeof window._aiResponse==="function") window._aiResponse($js);',
+        );
+      } else {
+        _showSnack('IA não devolveu resposta.', isError: true);
+        await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
+      }
+    } catch (e) {
+      debugPrint('AI request error (worker): $e');
+      _showSnack('Erro na IA. Verifica a ligação.', isError: true);
+      await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
+    }
+  }
+
+  // ── Definir token do Worker (chamado após login/registo) ────────
+  void setAriaToken(String token) {
+    _ariaToken = token;
+    _wvc?.evaluateJavascript(
+      source: 'if(typeof window.setAriaToken==="function") window.setAriaToken("${token.replaceAll('"', '\"')}");',
+    );
+  }
 
   // ═════════════════════════════════════════════════════
   // PDF EXPORT
@@ -543,6 +772,11 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
                     }
                     break;
 
+                  // ── IA Request (chama Anthropic API) ──
+                  case 'aiRequest':
+                    await _handleAiRequest(d);
+                    break;
+
                   // ── Modais nativos ───────────────────
                   case 'modal':
                     final type = d['type'] as String? ?? '';
@@ -595,6 +829,15 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
                       case 'findReplace':
                         await _showFindReplaceModal();
                         break;
+                      case 'imageUpload':
+                        await _showImageUploadModal();
+                        break;
+                      case 'qrcode':
+                        await _showQrCodeModal();
+                        break;
+                      case 'sticker':
+                        await _showStickerModal();
+                        break;
                     }
                     break;
                 }
@@ -611,6 +854,13 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
           await ctrl.evaluateJavascript(
             source: 'if(typeof window.setTheme==="function") window.setTheme(${isDark ? 'true' : 'false'});',
           );
+          // Injeta token do Aria Worker se disponível
+          if (_ariaToken.isNotEmpty) {
+            final safeToken = _ariaToken.replaceAll('"', '\\"');
+            await ctrl.evaluateJavascript(
+              source: 'if(typeof window.setAriaToken==="function") window.setAriaToken("$safeToken");',
+            );
+          }
           _inject();
         },
 
