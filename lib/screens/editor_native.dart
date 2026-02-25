@@ -415,6 +415,27 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   // ═════════════════════════════════════════════════════
   // INJECT DOCUMENT
   // ═════════════════════════════════════════════════════
+  // ── Passa HTML ao WebView via base64 (evita problemas com escaping) ──
+  Future<void> _injectHtmlBase64(
+    InAppWebViewController ctrl,
+    String html, String title, String? id, bool isNew,
+  ) async {
+    final b64 = base64Encode(utf8.encode(html));
+    final te  = _escapeJs(title);
+    final idJs = id != null ? '"$id"' : 'null';
+    await ctrl.evaluateJavascript(source: '''
+      (function() {
+        const b64 = "$b64";
+        const html = typeof atob !== "undefined"
+          ? decodeURIComponent(Array.from(atob(b64)).map(c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0')).join(''))
+          : "";
+        if (typeof window.loadContent === "function") {
+          window.loadContent(html, "$te", $idJs, ${isNew ? 'true' : 'false'});
+        }
+      })();
+    ''');
+  }
+
   void _inject() async {
     final ctrl = _wvc;
     if (ctrl == null) return;
@@ -425,7 +446,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     final impDocx  = widget.controller.importDocxBase64;
 
     if (impDocx != null && impDocx.isNotEmpty) {
-      final te = (impTitle ?? 'Sem título').replaceAll("'", r"\'");
+      final te = _escapeJs(impTitle ?? 'Sem título');
       await ctrl.evaluateJavascript(source: '''
         window._docId = null;
         if (typeof window.loadContent === "function") {
@@ -436,36 +457,16 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
         }
       ''');
     } else if (impHtml != null && impHtml.isNotEmpty) {
-      final he = _escapeJs(impHtml);
-      final te = _escapeJs(impTitle ?? 'Sem título');
-      await ctrl.evaluateJavascript(source: '''
-        if (typeof window.loadContent === "function") {
-          window.loadContent("$he", "$te", null, false);
-        }
-      ''');
+      await _injectHtmlBase64(ctrl, impHtml, impTitle ?? 'Sem título', null, false);
     } else if (doc == null) {
-      // Novo documento — sem placeholder pois é documento vazio real
       await ctrl.evaluateJavascript(source: '''
         if (typeof window.loadContent === "function") {
           window.loadContent("", "", null, true);
         }
       ''');
     } else {
-      // Documento existente — não mostrar placeholder
-      final he = _escapeJs(doc.htmlContent);
-      final te = _escapeJs(doc.title);
-      final id = doc.id;
-      // Se o HTML está vazio, tratar como novo mas sem placeholder
       final isEmpty = doc.htmlContent.trim().isEmpty;
-      await ctrl.evaluateJavascript(source: '''
-        if (typeof window.loadContent === "function") {
-          window.loadContent("$he", "$te", "$id", ${isEmpty ? 'true' : 'false'});
-          // Se existente e vazio, esconde placeholder
-          if (!$isEmpty && window.pages && window.pages.length > 0) {
-            window.pages[0].editor.removeAttribute("data-placeholder");
-          }
-        }
-      ''');
+      await _injectHtmlBase64(ctrl, doc.htmlContent, doc.title, doc.id, isEmpty);
     }
   }
 
