@@ -8,6 +8,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- ── Icon packs (official CDNs) ── -->
+<!-- Ionicons -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@7/dist/ionicons/ionicons.js"></script>
+<!-- Material Symbols (Google Fonts) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"/>
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<!-- Phosphor Icons -->
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+<!-- Tabler Icons (SVG sprite via CDN, loaded on demand) -->
+<!-- Boxicons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css"/>
+<!-- Remix Icon -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"/>
+<!-- Line Awesome -->
+<link rel="stylesheet" href="https://maxst.icons8.com/vue-static/landings/line-awesome/line-awesome/1.3.0/css/line-awesome.min.css"/>
 <style>
 /* ── Variáveis de tema ── */
 :root {
@@ -341,9 +359,9 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
         </button>
       </div>
       <div class="tb-sep"></div>
-      <button class="tb-pill-btn" onclick="openInsertModal()">Inserir</button>
+      <button class="tb-pill-btn" onclick="openInsertPanel()">Inserir</button>
       <div class="tb-sep"></div>
-      <button class="tb-pill-btn" onclick="openLayoutModal()">Layout</button>
+      <button class="tb-pill-btn" onclick="openLayoutPanel()">Layout</button>
     </div>
 
     <!-- Progress bar -->
@@ -356,6 +374,308 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
     <div class="doc-meta" id="doc-meta">0 palavras</div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════
+     PAINEL DE INSERÇÃO (nativo — sem Flutter)
+════════════════════════════════════════════════ -->
+<div id="insert-backdrop" onclick="closeInsertPanel()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;"></div>
+
+<div id="insert-panel"
+  style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:501;
+         background:var(--card);border-radius:20px 20px 0 0;
+         padding:0 0 env(safe-area-inset-bottom,16px);
+         max-height:92vh;overflow-y:auto;
+         transition:transform .28s cubic-bezier(.4,0,.2,1);
+         transform:translateY(100%);">
+
+  <!-- Handle -->
+  <div style="text-align:center;padding:12px 0 0;">
+    <div style="width:36px;height:4px;border-radius:2px;background:var(--border);display:inline-block;"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div id="ins-tabs" style="display:flex;border-bottom:1px solid var(--border);padding:0 16px;gap:0;">
+    <button class="ins-tab active" onclick="switchInsTab('media')"   data-tab="media">Média</button>
+    <button class="ins-tab"        onclick="switchInsTab('icons')"   data-tab="icons">Ícones</button>
+    <button class="ins-tab"        onclick="switchInsTab('struct')"  data-tab="struct">Estrutura</button>
+    <button class="ins-tab"        onclick="switchInsTab('special')" data-tab="special">Especial</button>
+  </div>
+
+  <!-- Tab: Média -->
+  <div id="ins-tab-media" class="ins-tab-content" style="padding:16px;">
+    <!-- Upload de imagem -->
+    <div class="ins-section-label">Imagem</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <label class="ins-big-btn" style="cursor:pointer;">
+        <span style="font-size:28px;">📁</span>
+        <span>Galeria</span>
+        <input type="file" accept="image/*" style="display:none;" onchange="handleImageUpload(event)"/>
+      </label>
+      <button class="ins-big-btn" onclick="promptImageUrl()">
+        <span style="font-size:28px;">🔗</span>
+        <span>URL</span>
+      </button>
+      <button class="ins-big-btn" onclick="openCamera()">
+        <span style="font-size:28px;">📷</span>
+        <span>Câmara</span>
+      </button>
+    </div>
+
+    <!-- QR Code -->
+    <div class="ins-section-label" style="margin-top:18px;">QR Code</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="qr-input" type="text" placeholder="URL ou texto…"
+        style="flex:1;height:42px;border:1.5px solid var(--border);border-radius:10px;
+               padding:0 14px;font-family:'Syne',sans-serif;font-size:.85rem;
+               background:var(--toolbar-pill);color:var(--text);outline:none;"/>
+      <button onclick="insertQrFromPanel()"
+        style="height:42px;padding:0 18px;border:none;border-radius:10px;
+               background:var(--acc);color:var(--acc-c);
+               font-family:'Syne',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
+        Inserir
+      </button>
+    </div>
+
+    <!-- Assinatura -->
+    <div class="ins-section-label" style="margin-top:18px;">Assinatura</div>
+    <button class="ins-big-btn" style="width:100%;justify-content:flex-start;gap:14px;padding:14px 18px;" onclick="closeInsertPanel();_openSignaturePad();">
+      <span style="font-size:28px;">✍️</span>
+      <span style="font-size:.9rem;">Desenhar assinatura</span>
+    </button>
+  </div>
+
+  <!-- Tab: Ícones — pacotes oficiais via CDN -->
+  <div id="ins-tab-icons" class="ins-tab-content" style="display:none;padding:12px 16px 0;">
+
+    <!-- Linha de controlos -->
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <input id="icon-search" type="text" placeholder="Filtrar ícones do pacote…"
+        oninput="filterIconPack(this.value)"
+        style="flex:1;height:40px;border:1.5px solid var(--border);border-radius:10px;
+               padding:0 12px;font-family:'Syne',sans-serif;font-size:.82rem;
+               background:var(--toolbar-pill);color:var(--text);outline:none;"/>
+      <input type="color" id="icon-color" value="#111111" title="Cor do ícone"
+        style="width:36px;height:36px;border:1.5px solid var(--border);border-radius:8px;
+               cursor:pointer;padding:2px;background:var(--toolbar-pill);"/>
+      <select id="icon-size" onchange="updateIconSize(this.value)"
+        style="height:36px;border:1.5px solid var(--border);border-radius:8px;
+               padding:0 8px;background:var(--toolbar-pill);color:var(--text);
+               font-family:'Syne',sans-serif;font-size:.78rem;outline:none;cursor:pointer;">
+        <option value="16">16px</option>
+        <option value="24" selected>24px</option>
+        <option value="32">32px</option>
+        <option value="48">48px</option>
+        <option value="64">64px</option>
+      </select>
+    </div>
+
+    <!-- Selector de pacote -->
+    <div id="icon-packs"
+      style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;
+             scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-shrink:0;">
+    </div>
+
+    <!-- Info do pacote activo -->
+    <div id="icon-status"
+      style="font-family:'Syne',sans-serif;font-size:.68rem;color:var(--sub);
+             padding:2px 0 8px;min-height:16px;"></div>
+
+    <!-- Grelha de ícones -->
+    <div id="icon-grid"
+      style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));
+             gap:6px;max-height:44vh;overflow-y:auto;padding-bottom:16px;">
+      <div style="grid-column:1/-1;text-align:center;padding:32px 0;
+           font-family:'Syne',sans-serif;font-size:.82rem;color:var(--sub);">
+        Escolhe um pacote acima ↑
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Estrutura -->
+  <div id="ins-tab-struct" class="ins-tab-content" style="display:none;padding:16px;">
+    <div class="ins-section-label">Tabela</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+      <input id="tbl-rows" type="number" value="3" min="1" max="20"
+        style="width:72px;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 10px;
+               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.85rem;outline:none;"
+        placeholder="Lin"/>
+      <span style="color:var(--sub);font-size:.8rem;">×</span>
+      <input id="tbl-cols" type="number" value="3" min="1" max="10"
+        style="width:72px;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 10px;
+               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.85rem;outline:none;"
+        placeholder="Col"/>
+      <button onclick="insertTableFromPanel()"
+        style="flex:1;height:38px;border:none;border-radius:8px;background:var(--acc);color:var(--acc-c);
+               font-family:'Syne',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
+        Inserir tabela
+      </button>
+    </div>
+    <div class="ins-section-label">Bloco de código</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <button class="ins-row-btn" onclick="insertCode()">
+        <span>💻</span><span>Código</span>
+      </button>
+      <button class="ins-row-btn" onclick="insertBlockquote()">
+        <span>❝</span><span>Citação</span>
+      </button>
+      <button class="ins-row-btn" onclick="insertHr()">
+        <span>━</span><span>Separador</span>
+      </button>
+      <button class="ins-row-btn" onclick="insertPageBreak()">
+        <span>📄</span><span>Quebra pág.</span>
+      </button>
+    </div>
+    <div class="ins-section-label">Link</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+      <input id="link-text" type="text" placeholder="Texto do link"
+        style="flex:1;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 12px;
+               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.82rem;outline:none;"/>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="link-url" type="url" placeholder="https://…"
+        style="flex:1;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 12px;
+               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.82rem;outline:none;"/>
+      <button onclick="insertLinkFromPanel()"
+        style="height:38px;padding:0 16px;border:none;border-radius:8px;background:var(--acc);color:var(--acc-c);
+               font-family:'Syne',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab: Especial -->
+  <div id="ins-tab-special" class="ins-tab-content" style="display:none;padding:16px;">
+    <div class="ins-section-label">Símbolos matemáticos</div>
+    <div id="sym-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;"></div>
+    <div class="ins-section-label">Setas e formas</div>
+    <div id="arrow-grid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PAINEL DE LAYOUT (nativo)
+════════════════════════════════════════════════ -->
+<div id="layout-backdrop" onclick="closeLayoutPanel()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;"></div>
+
+<div id="layout-panel"
+  style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:501;
+         background:var(--card);border-radius:20px 20px 0 0;
+         padding:0 0 env(safe-area-inset-bottom,16px);
+         transition:transform .28s cubic-bezier(.4,0,.2,1);
+         transform:translateY(100%);">
+  <div style="text-align:center;padding:12px 0 8px;">
+    <div style="width:36px;height:4px;border-radius:2px;background:var(--border);display:inline-block;"></div>
+  </div>
+  <div style="padding:0 16px 20px;">
+    <div class="ins-section-label">Formato da página</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;">
+      <button class="lay-btn" onclick="applyFormat('A4')">A4</button>
+      <button class="lay-btn" onclick="applyFormat('A5')">A5</button>
+      <button class="lay-btn" onclick="applyFormat('Letter')">Letter</button>
+      <button class="lay-btn" onclick="applyFormat('Legal')">Legal</button>
+    </div>
+    <div class="ins-section-label">Margens</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;">
+      <button class="lay-btn" onclick="applyMargin('Estreitas')">Estreitas</button>
+      <button class="lay-btn lay-btn-active" onclick="applyMargin('Normais')">Normais</button>
+      <button class="lay-btn" onclick="applyMargin('Largas')">Largas</button>
+    </div>
+    <div class="ins-section-label">Espaçamento entre linhas</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;">
+      <button class="lay-btn" onclick="applySpacing('1.2')">Compacto</button>
+      <button class="lay-btn lay-btn-active" onclick="applySpacing('1.5')">Normal</button>
+      <button class="lay-btn" onclick="applySpacing('2')">Duplo</button>
+      <button class="lay-btn" onclick="applySpacing('2.5')">Triplo</button>
+    </div>
+    <div class="ins-section-label">Tema do papel</div>
+    <div style="display:flex;gap:10px;">
+      <button class="lay-btn" style="flex:1;" onclick="applyPaperTheme('white')">☀️ Branco</button>
+      <button class="lay-btn" style="flex:1;" onclick="applyPaperTheme('auto')">🌙 Automático</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Insert panel estilos ── */
+.ins-tab {
+  flex:1; border:none; background:transparent; padding:12px 4px;
+  font-family:'Syne',sans-serif; font-size:.72rem; font-weight:700;
+  color:var(--sub); cursor:pointer; border-bottom:2px solid transparent;
+  transition:color .15s, border-color .15s; white-space:nowrap;
+}
+.ins-tab.active { color:var(--acc); border-bottom-color:var(--acc); }
+.ins-tab-content { display:none; }
+.ins-tab-content.active-tab { display:block !important; }
+
+.ins-section-label {
+  font-family:'Syne',sans-serif; font-size:.6rem; font-weight:800;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--sub);
+  margin-bottom:10px;
+}
+.ins-big-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px; padding:14px 12px;
+  border:1.5px solid var(--border); border-radius:14px;
+  background:var(--toolbar-pill); cursor:pointer; flex:1; min-width:80px;
+  font-family:'Syne',sans-serif; font-size:.72rem; font-weight:700; color:var(--text);
+  transition:background .12s, border-color .12s;
+}
+.ins-big-btn:active { background:rgba(var(--acc-rgb),.1); border-color:var(--acc); }
+
+.ins-row-btn {
+  display:flex; align-items:center; gap:10px; padding:14px 16px;
+  border:1.5px solid var(--border); border-radius:12px;
+  background:var(--toolbar-pill); cursor:pointer;
+  font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700; color:var(--text);
+  transition:background .12s;
+}
+.ins-row-btn:active { background:rgba(var(--acc-rgb),.1); }
+
+.emoji-btn {
+  width:100%; aspect-ratio:1; border:none; background:var(--toolbar-pill);
+  border-radius:10px; font-size:22px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .1s, background .1s;
+}
+.emoji-btn:active { transform:scale(.82); background:rgba(var(--acc-rgb),.15); }
+
+.sym-btn {
+  height:38px; padding:0 12px;
+  border:1.5px solid var(--border); border-radius:8px;
+  background:var(--toolbar-pill); cursor:pointer;
+  font-size:1.1rem; color:var(--text);
+  transition:background .1s;
+}
+.sym-btn:active { background:rgba(var(--acc-rgb),.15); }
+
+.lay-btn {
+  padding:12px 6px; border:1.5px solid var(--border); border-radius:10px;
+  background:var(--toolbar-pill); cursor:pointer;
+  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700; color:var(--text);
+  transition:background .12s, border-color .12s;
+}
+.lay-btn:active, .lay-btn-active { background:rgba(var(--acc-rgb),.12); border-color:var(--acc); color:var(--acc); }
+
+.icon-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; padding:8px 4px 6px;
+  border:1.5px solid var(--border); border-radius:10px;
+  background:var(--toolbar-pill); cursor:pointer;
+  transition:background .1s, border-color .1s;
+  min-height:64px; overflow:hidden;
+}
+.icon-btn:active { background:rgba(var(--acc-rgb),.15); border-color:var(--acc); }
+.icon-btn-label {
+  font-family:'Syne',sans-serif; font-size:.55rem; font-weight:700;
+  color:var(--sub); text-align:center; line-height:1.2;
+  pointer-events:none; max-width:54px; word-break:break-all;
+}
+#icon-packs::-webkit-scrollbar { display:none; }
+#icon-grid::-webkit-scrollbar { width:4px; }
+#icon-grid::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
 
 <!-- ═══ VIEW: QUADRO BRANCO ═══ -->
 <div id="view-whiteboard" class="view">
@@ -665,8 +985,8 @@ window.openSizeModal   = function() { saveRange(); _sendFlutter({ action:'modal'
 window.openColorModal  = function() { saveRange(); _sendFlutter({ action:'modal', type:'color',  current:curColor, presets:PRESET_COLORS }); };
 window.openBgColorModal= function() { saveRange(); _sendFlutter({ action:'modal', type:'bgColor',current:_curBgColor }); };
 window.openOpcoes      = function() { _sendFlutter({ action:'modal', type:'opcoes' }); };
-window.openInsertModal = function() { saveRange(); _sendFlutter({ action:'modal', type:'insert' }); };
-window.openLayoutModal = function() { _sendFlutter({ action:'modal', type:'layout' }); };
+window.openInsertModal = function() { openInsertPanel(); };
+window.openLayoutModal = function() { openLayoutPanel(); };
 window.openRenameDialog= function() { _sendFlutter({ action:'modal', type:'rename', current:window._docTitle||'' }); };
 window.openGemini      = function() {
   const sel = (window.getSelection()?.toString()||'').trim();
@@ -1438,6 +1758,528 @@ function _openSignaturePad() {
     document.getElementById('view-editor').classList.add('active');
   };
 })();
+
+// ════════════════════════════════════════════════
+// PAINEL DE INSERÇÃO — nativo
+// ════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════
+// ÍCONES — pacotes oficiais via CDN (web fonts / custom elements)
+// Ionicons 7, Material Symbols, Bootstrap Icons,
+// Phosphor, Boxicons, Remix Icon, Line Awesome
+// ════════════════════════════════════════════════
+
+const ICON_PACKS = [
+  {
+    id: 'ionicons',
+    label: 'Ionicons',
+    color: '#3880ff',
+    type: 'element',   // usa <ion-icon name="...">
+    icons: [
+      'home','star','heart','person','settings','search','add','close','arrow-back',
+      'arrow-forward','chevron-down','chevron-up','chevron-back','chevron-forward',
+      'menu','ellipsis-horizontal','ellipsis-vertical','share','share-social',
+      'copy','create','trash','save','cloud-upload','cloud-download','download',
+      'camera','image','images','videocam','mic','volume-high','volume-mute',
+      'play','pause','stop','skip-forward','skip-back','shuffle','repeat',
+      'mail','send','call','chatbubble','chatbubbles','notifications',
+      'calendar','time','alarm','stopwatch','timer','hourglass',
+      'location','map','navigate','compass','globe',
+      'wifi','bluetooth','battery-full','phone-portrait','tablet-portrait','laptop',
+      'lock','lock-open','key','shield','eye','eye-off','finger-print',
+      'checkmark','checkmark-circle','checkmark-done','close-circle','alert-circle',
+      'information-circle','help-circle','warning',
+      'star','star-half','star-outline','heart','heart-outline','thumbs-up','thumbs-down',
+      'bookmark','bookmark-outline','flag','flag-outline','ribbon',
+      'people','person-add','person-circle','contacts','business',
+      'bag','bag-add','bag-check','cart','card','cash','pricetag','gift',
+      'document','document-text','documents','clipboard','newspaper','book','library',
+      'code','code-slash','terminal','git-branch','git-merge','layers',
+      'color-palette','brush','pencil','cut','crop','resize',
+      'planet','rocket','flash','flashlight','bulb','flame','leaf','water','snow',
+      'musical-note','musical-notes','headset','radio','tv','film',
+      'football','basketball','baseball','bicycle','car','bus','airplane','boat','train',
+      'restaurant','cafe','beer','wine','pizza','fast-food',
+      'medkit','fitness','barbell','walk','run',
+      'accessibility','glasses','shirt','umbrella','bed','desktop',
+    ],
+  },
+  {
+    id: 'material',
+    label: 'Material',
+    color: '#4285f4',
+    type: 'ligature',  // usa <span class="material-symbols-outlined">nome</span>
+    cls: 'material-symbols-outlined',
+    icons: [
+      'home','star','favorite','person','settings','search','add','close',
+      'arrow_back','arrow_forward','expand_more','expand_less','menu',
+      'more_horiz','more_vert','share','content_copy','edit','delete','save',
+      'cloud_upload','cloud_download','download','upload','attach_file',
+      'camera_alt','image','photo_library','videocam','mic','volume_up','volume_off',
+      'play_arrow','pause','stop','skip_next','skip_previous','shuffle','repeat',
+      'mail','send','call','chat','chat_bubble','notifications','notification_add',
+      'calendar_today','access_time','alarm','timer','schedule',
+      'location_on','map','navigation','compass_calibration','public',
+      'wifi','bluetooth','battery_full','phone_android','tablet','laptop',
+      'lock','lock_open','key','security','shield','visibility','visibility_off','fingerprint',
+      'check','check_circle','done_all','cancel','error','info','help','warning',
+      'grade','heart_broken','bookmark','bookmark_border','flag','emoji_events','workspace_premium',
+      'group','person_add','account_circle','contacts','business','work',
+      'shopping_bag','add_shopping_cart','payment','sell','local_offer','card_giftcard',
+      'description','article','folder','folder_open','library_books','book','news',
+      'code','terminal','bug_report','data_object','integration_instructions','layers',
+      'palette','brush','draw','content_cut','crop','straighten','format_shapes',
+      'rocket_launch','flare','bolt','highlight','eco','water_drop','ac_unit',
+      'music_note','headphones','radio','tv','movie','live_tv',
+      'sports_soccer','sports_basketball','sports_esports','directions_bike','directions_car',
+      'restaurant','local_cafe','local_bar','local_pizza','fastfood',
+      'medical_services','fitness_center','self_improvement','accessibility_new',
+      'dark_mode','light_mode','wb_sunny','cloud','thunderstorm',
+      'translate','language','qr_code','barcode_scanner','link','open_in_new',
+      'tune','filter_list','sort','view_list','grid_view','dashboard',
+    ],
+  },
+  {
+    id: 'bootstrap',
+    label: 'Bootstrap',
+    color: '#7952b3',
+    type: 'class',     // usa <i class="bi bi-nome">
+    prefix: 'bi bi-',
+    icons: [
+      'house','house-fill','star','star-fill','heart','heart-fill','person','person-fill',
+      'gear','gear-fill','search','plus','plus-circle','x','x-circle','arrow-left',
+      'arrow-right','arrow-up','arrow-down','chevron-down','chevron-up','chevron-left','chevron-right',
+      'three-dots','three-dots-vertical','share','clipboard','clipboard-check','pencil','pencil-fill',
+      'trash','trash-fill','save','save-fill','cloud-upload','cloud-download','download','upload',
+      'camera','camera-fill','image','images','camera-video','mic','mic-fill','volume-up','volume-mute',
+      'play','play-fill','pause','pause-fill','stop','stop-fill','skip-forward','skip-backward',
+      'envelope','envelope-fill','send','send-fill','telephone','telephone-fill',
+      'chat','chat-fill','chat-dots','bell','bell-fill',
+      'calendar','calendar-fill','clock','clock-fill','alarm','hourglass',
+      'geo-alt','geo-alt-fill','map','compass','globe',
+      'wifi','bluetooth','battery-full','phone','tablet','laptop',
+      'lock','lock-fill','unlock','key','key-fill','shield','shield-fill','eye','eye-slash','fingerprint',
+      'check','check-circle','check-circle-fill','check2-all','x-circle-fill','exclamation-triangle',
+      'info-circle','info-circle-fill','question-circle','exclamation-circle',
+      'star-half','bookmark','bookmark-fill','flag','flag-fill','trophy','trophy-fill','award',
+      'people','people-fill','person-plus','person-circle','person-badge','briefcase',
+      'bag','bag-fill','cart','cart-fill','credit-card','credit-card-fill','cash','tag','gift',
+      'file-text','file-earmark-text','folder','folder-fill','journal','book','newspaper',
+      'code','code-slash','terminal','braces','git','stack','layers',
+      'palette','brush','pencil-square','scissors','crop','grid',
+      'rocket','lightning','lightbulb','lightbulb-fill','fire','leaf','droplet',
+      'music-note','headphones','radio','tv','film','collection',
+      'dribbble','github','twitter','instagram','facebook','linkedin','youtube','whatsapp',
+      'layout-text-window','layout-split','columns','table','list-ul','list-ol',
+      'sort-alpha-down','sort-numeric-down','filter','funnel','sliders',
+      'moon','sun','cloud','cloud-fill','wind','snow','thermometer',
+      'translate','link','link-45deg','box-arrow-up-right',
+    ],
+  },
+  {
+    id: 'phosphor',
+    label: 'Phosphor',
+    color: '#22c55e',
+    type: 'element',   // usa <ph-icon> custom elements
+    prefix: 'ph-',
+    icons: [
+      'house','star','heart','user','gear','magnifying-glass','plus','x','arrow-left',
+      'arrow-right','arrow-up','arrow-down','caret-down','caret-up','list',
+      'dots-three','dots-three-vertical','share-network','clipboard','pencil',
+      'trash','floppy-disk','cloud-arrow-up','cloud-arrow-down','download-simple',
+      'camera','image','images','video-camera','microphone','speaker-high','speaker-slash',
+      'play','pause','stop','skip-forward','skip-back','shuffle','repeat',
+      'envelope','paper-plane-tilt','phone','chat-circle','chat-circle-dots',
+      'bell','bell-ringing','calendar','clock','alarm','hourglass',
+      'map-pin','map-trifold','navigation-arrow','compass','globe',
+      'wifi-high','bluetooth','battery-full','device-mobile','device-tablet','laptop',
+      'lock','lock-open','key','shield','eye','eye-slash','fingerprint',
+      'check','check-circle','check-fat','x-circle','warning','info','question',
+      'star-half','bookmark-simple','flag','trophy','medal',
+      'users','user-plus','user-circle','address-book','buildings',
+      'shopping-bag','shopping-cart','credit-card','money','tag','gift',
+      'file-text','folder','folder-open','books','book','newspaper',
+      'code','terminal','bug','brackets-curly','git-branch','stack',
+      'palette','paint-brush','pencil-line','scissors','crop','grid-four',
+      'rocket','lightning','lightbulb','fire','leaf','drop',
+      'music-note','headphones','radio','television','film-strip',
+      'soccer-ball','basketball','game-controller','bicycle','car','airplane',
+      'fork-knife','coffee','martini','pizza',
+      'first-aid','barbell','person-simple-run',
+      'moon','sun','cloud','wind','snowflake','thermometer-simple',
+      'translate','link','arrow-square-out','qr-code',
+    ],
+  },
+  {
+    id: 'boxicons',
+    label: 'Boxicons',
+    color: '#e74c3c',
+    type: 'class',
+    prefix: 'bx bx-',
+    icons: [
+      'home','star','heart','user','cog','search','plus','x','arrow-back','arrow-right',
+      'chevron-down','chevron-up','chevron-left','chevron-right','menu','dots-horizontal','dots-vertical',
+      'share','copy','edit','trash','save','cloud-upload','cloud-download','download','upload',
+      'camera','image','images','video','microphone','volume-up','volume-mute',
+      'play','pause','stop','skip-next','skip-previous','shuffle','repeat',
+      'envelope','send','phone','chat','bell','notification',
+      'calendar','time','alarm','hourglass',
+      'map','compass','globe','current-location',
+      'wifi','bluetooth','battery','mobile','tablet','laptop',
+      'lock','lock-open','key','shield','show','hide',
+      'check','check-circle','error-circle','info-circle','help-circle',
+      'star-half','bookmark','flag','trophy','medal',
+      'group','user-plus','user-circle','briefcase',
+      'shopping-bag','cart','credit-card','money','purchase-tag','gift',
+      'file-text','folder','folder-open','book','library',
+      'code','terminal','bug','git-branch','layer-plus',
+      'palette','brush','pencil','cut','crop','grid-alt',
+      'rocket','zap','bulb','flame','leaf','droplet',
+      'music','headphone','radio','tv','film',
+      'link','link-external','qr',
+      'sun','moon','cloud','wind','snow',
+      'facebook','twitter','instagram','linkedin','github','youtube','whatsapp',
+    ],
+  },
+  {
+    id: 'remix',
+    label: 'Remix Icon',
+    color: '#f72585',
+    type: 'class',
+    prefix: 'ri-',
+    suffix: '-line',
+    icons: [
+      'home','star','heart','user','settings','search','add','close','arrow-left','arrow-right',
+      'arrow-up','arrow-down','arrow-drop-down','arrow-drop-up','menu','more',
+      'share','clipboard','edit','delete-bin','save','cloud-upload','cloud-download','download',
+      'camera','image','gallery','video','mic','volume-up','volume-mute',
+      'play','pause','stop','skip-forward','skip-back',
+      'mail','send','phone','chat1','notification','bell',
+      'calendar','time','alarm','timer','hourglass',
+      'map-pin','map','compass','global',
+      'wifi','bluetooth','battery','smartphone','tablet','computer',
+      'lock','lock-unlock','key','shield','eye','eye-off','fingerprint',
+      'check','checkbox-circle','close-circle','error-warning','information','question',
+      'star-half','bookmark','flag','trophy','medal','award',
+      'group','user-add','account-circle','contacts','building',
+      'shopping-bag','shopping-cart','bank-card','money','price-tag','gift',
+      'file-text','folder','folder-open','book','newspaper','article',
+      'code','terminal','bug','braces','git-branch','stack-overflow','layers',
+      'palette','brush','pencil','scissors','crop','layout-grid',
+      'rocket','flashlight','lightbulb','fire','leaf','drop',
+      'music','headphone','radio','tv','film',
+      'link','external-link','qr-code','barcode','scan',
+      'sun','moon','cloud','wind','snowy','celsius',
+      'facebook','twitter','instagram','linkedin','github','youtube','whatsapp',
+      'tools','wrench','hammer','plug','cpu','database','server',
+    ],
+  },
+];
+
+let _activePack = null;
+let _iconSize   = 24;
+let _allIconsCache = {}; // packId -> filtered list
+
+function _buildPackButtons() {
+  const container = document.getElementById('icon-packs');
+  if (!container || container.children.length > 0) return;
+  ICON_PACKS.forEach(pack => {
+    const btn = document.createElement('button');
+    btn.textContent  = pack.label;
+    btn.dataset.pack = pack.id;
+    btn.style.cssText = `
+      flex-shrink:0;height:28px;padding:0 14px;
+      border:1.5px solid var(--border);border-radius:999px;
+      background:var(--toolbar-pill);cursor:pointer;
+      font-family:'Syne',sans-serif;font-size:.68rem;font-weight:700;
+      color:var(--sub);white-space:nowrap;transition:all .12s;`;
+    btn.addEventListener('click', () => selectPack(pack.id));
+    container.appendChild(btn);
+  });
+}
+
+function selectPack(packId) {
+  _activePack = packId;
+  document.querySelectorAll('#icon-packs button').forEach(b => {
+    const on = b.dataset.pack === packId;
+    b.style.background   = on ? 'rgba(var(--acc-rgb),.12)' : 'var(--toolbar-pill)';
+    b.style.borderColor  = on ? 'var(--acc)'               : 'var(--border)';
+    b.style.color        = on ? 'var(--acc)'               : 'var(--sub)';
+  });
+  const q = document.getElementById('icon-search')?.value.trim() || '';
+  _renderPack(packId, q);
+}
+
+function filterIconPack(q) {
+  if (_activePack) _renderPack(_activePack, q);
+}
+
+function updateIconSize(val) {
+  _iconSize = parseInt(val) || 24;
+}
+
+function _renderPack(packId, filter) {
+  const pack   = ICON_PACKS.find(p => p.id === packId);
+  const grid   = document.getElementById('icon-grid');
+  const status = document.getElementById('icon-status');
+  if (!pack || !grid) return;
+
+  const q = filter.toLowerCase().trim();
+  const list = q ? pack.icons.filter(n => n.includes(q)) : pack.icons;
+
+  status.textContent = `${pack.label} · ${list.length} ícones`;
+
+  if (list.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:28px 0;font-family:Syne,sans-serif;font-size:.82rem;color:var(--sub);">Sem resultados</div>';
+    return;
+  }
+
+  grid.innerHTML = list.map(name => {
+    const preview = _iconPreviewHTML(pack, name, 24);
+    const display = name.replace(/-/g, ' ');
+    return `<button class="icon-btn" onclick="insertPackIcon('${packId}','${name}')" title="${name}">
+      ${preview}
+      <span class="icon-btn-label">${display.length > 9 ? display.slice(0,9)+'…' : display}</span>
+    </button>`;
+  }).join('');
+}
+
+function _iconPreviewHTML(pack, name, size) {
+  if (pack.type === 'element' && pack.id === 'ionicons') {
+    return `<ion-icon name="${name}" style="font-size:${size}px;pointer-events:none;"></ion-icon>`;
+  }
+  if (pack.type === 'ligature') {
+    return `<span class="${pack.cls}" style="font-size:${size}px;pointer-events:none;user-select:none;">${name}</span>`;
+  }
+  if (pack.type === 'element' && pack.id === 'phosphor') {
+    const tag = 'ph-' + name;
+    return `<${tag} size="${size}" style="pointer-events:none;"></${tag}>`;
+  }
+  if (pack.type === 'class') {
+    const cls = (pack.prefix || '') + name + (pack.suffix || '');
+    return `<i class="${cls}" style="font-size:${size}px;pointer-events:none;"></i>`;
+  }
+  return `<span style="font-size:${size}px;color:var(--sub);">◻</span>`;
+}
+
+function insertPackIcon(packId, name) {
+  const pack = ICON_PACKS.find(p => p.id === packId);
+  const ed   = getActiveEditor(); if (!ed) return;
+  const color = document.getElementById('icon-color')?.value || 'currentColor';
+  const size  = _iconSize;
+
+  ed.focus(); restoreRange();
+
+  let html = '';
+
+  if (pack.type === 'element' && pack.id === 'ionicons') {
+    html = `<ion-icon name="${name}"
+      style="font-size:${size}px;color:${color};vertical-align:middle;display:inline-flex;"></ion-icon>`;
+  } else if (pack.type === 'ligature') {
+    html = `<span class="${pack.cls}"
+      style="font-size:${size}px;color:${color};vertical-align:middle;
+             display:inline-block;user-select:none;line-height:1;">${name}</span>`;
+  } else if (pack.type === 'element' && pack.id === 'phosphor') {
+    const tag = 'ph-' + name;
+    html = `<${tag} size="${size}" color="${color}"
+      style="vertical-align:middle;display:inline-flex;"></${tag}>`;
+  } else if (pack.type === 'class') {
+    const cls = (pack.prefix || '') + name + (pack.suffix || '');
+    html = `<i class="${cls}"
+      style="font-size:${size}px;color:${color};vertical-align:middle;display:inline-block;"></i>`;
+  }
+
+  if (html) {
+    document.execCommand('insertHTML', false, html);
+    showToast(`Ícone ${name} inserido ✓`);
+  }
+}
+
+function searchIcons(val) { filterIconPack(val); }
+
+function insertSymbol(sym) {
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  document.execCommand('insertHTML', false, sym);
+  // Não fecha o painel para inserir múltiplos
+  showToast(sym + ' inserido');
+}
+
+// ─── Upload de imagem via input[file] ─────────
+function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const src = e.target.result;
+    const ed = getActiveEditor(); if (!ed) return;
+    ed.focus(); restoreRange();
+    _insertResizableImage(src, file.name.replace(/\.[^.]+$/, ''));
+    closeInsertPanel();
+    showToast('Imagem inserida ✓');
+  };
+  reader.readAsDataURL(file);
+  // Reset input para permitir o mesmo ficheiro outra vez
+  event.target.value = '';
+}
+
+// ─── Inserir imagem por URL ───────────────────
+function promptImageUrl() {
+  const url = prompt('URL da imagem:');
+  if (!url) return;
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  _insertResizableImageUrl(url, 'imagem');
+  closeInsertPanel();
+  showToast('Imagem inserida ✓');
+}
+
+// ─── Câmara (envia para Flutter ou usa WebRTC) ─
+function openCamera() {
+  // Tenta Flutter nativo primeiro
+  if (window.flutter_inappwebview) {
+    closeInsertPanel();
+    _sendFlutter({ action:'modal', type:'imageUpload', source:'camera' });
+    return;
+  }
+  // Fallback: file input com câmara
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
+  input.onchange = function(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const ed = getActiveEditor(); if (!ed) return;
+      ed.focus(); restoreRange();
+      _insertResizableImage(ev.target.result, 'foto');
+      closeInsertPanel(); showToast('Foto inserida ✓');
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+// ─── QR Code ─────────────────────────────────
+function insertQrFromPanel() {
+  const val = document.getElementById('qr-input')?.value.trim();
+  if (!val) { showToast('Insere o texto ou URL'); return; }
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  _insertQrCode(val);
+  document.getElementById('qr-input').value = '';
+  closeInsertPanel();
+}
+
+// ─── Tabela ───────────────────────────────────
+function insertTableFromPanel() {
+  const r = parseInt(document.getElementById('tbl-rows')?.value)||3;
+  const c = parseInt(document.getElementById('tbl-cols')?.value)||3;
+  const headerRow = Array.from({length:c},(_,i)=>`<th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho ${i+1}</th>`).join('');
+  const bodyRow   = Array.from({length:c},()=>`<td style="border:1px solid #ccc;padding:6px 10px;">Célula</td>`).join('');
+  const bodyRows  = Array.from({length:Math.max(1,r-1)},()=>`<tr>${bodyRow}</tr>`).join('');
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  document.execCommand('insertHTML', false,
+    `<table style="border-collapse:collapse;width:100%;margin:.5em 0;">
+      <thead><tr>${headerRow}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table><p><br></p>`);
+  closeInsertPanel(); showToast('Tabela inserida ✓');
+}
+
+// ─── Link ─────────────────────────────────────
+function insertLinkFromPanel() {
+  const text = document.getElementById('link-text')?.value.trim();
+  const url  = document.getElementById('link-url')?.value.trim();
+  if (!url) { showToast('Insere o URL'); return; }
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  document.execCommand('insertHTML', false,
+    `<a href="${url}" target="_blank">${text || url}</a>`);
+  if (document.getElementById('link-text')) document.getElementById('link-text').value = '';
+  if (document.getElementById('link-url'))  document.getElementById('link-url').value  = '';
+  closeInsertPanel(); showToast('Link inserido ✓');
+}
+
+// ─── Inserções rápidas ─────────────────────────
+function insertCode() {
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  document.execCommand('insertHTML', false,
+    '<pre style="background:rgba(0,0,0,.06);border-radius:8px;padding:12px 14px;font-family:\'Space Mono\',monospace;font-size:.82rem;margin:.5em 0;overflow-x:auto;"><code>// código aqui</code></pre><p><br></p>');
+  closeInsertPanel(); showToast('Bloco de código inserido');
+}
+function insertBlockquote() {
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  document.execCommand('formatBlock', false, 'blockquote');
+  closeInsertPanel();
+}
+function insertHr() {
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  document.execCommand('insertHorizontalRule', false, null);
+  closeInsertPanel();
+}
+function insertPageBreak() {
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); restoreRange();
+  document.execCommand('insertHTML', false, '<div style="page-break-after:always;height:0;border-top:1px dashed #ccc;margin:.5em 0;"></div>');
+  closeInsertPanel();
+}
+
+// ════════════════════════════════════════════════
+// PAINEL DE LAYOUT — nativo
+// ════════════════════════════════════════════════
+function openLayoutPanel() {
+  const backdrop = document.getElementById('layout-backdrop');
+  const panel    = document.getElementById('layout-panel');
+  backdrop.style.display = 'block';
+  panel.style.display    = 'block';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    panel.style.transform = 'translateY(0)';
+  }));
+}
+function closeLayoutPanel() {
+  const backdrop = document.getElementById('layout-backdrop');
+  const panel    = document.getElementById('layout-panel');
+  panel.style.transform = 'translateY(100%)';
+  setTimeout(() => { panel.style.display='none'; backdrop.style.display='none'; }, 300);
+}
+
+function applyFormat(fmt) {
+  const formats = { A4:{w:794,h:1123}, A5:{w:559,h:794}, Letter:{w:816,h:1056}, Legal:{w:816,h:1344} };
+  const f = formats[fmt]; if (!f) return;
+  document.querySelectorAll('.page-wrap').forEach(p => {
+    p.style.width = f.w+'px'; p.style.height = f.h+'px';
+  });
+  applyScale(); showToast('Formato ' + fmt + ' aplicado');
+}
+function applyMargin(m) {
+  const margins = { Estreitas:{v:48,h:48}, Normais:{v:94,h:94}, Largas:{v:120,h:120} };
+  const mg = margins[m]; if (!mg) return;
+  document.querySelectorAll('.page-wrap').forEach(p => {
+    p.style.padding = mg.v+'px '+mg.h+'px';
+  });
+  showToast('Margem ' + m.toLowerCase());
+  // Atualiza botões
+  document.querySelectorAll('#layout-panel .lay-btn').forEach(b => {
+    if (b.textContent.trim() === m) b.classList.add('lay-btn-active');
+    else b.classList.remove('lay-btn-active');
+  });
+}
+function applySpacing(val) {
+  document.querySelectorAll('.page-editor').forEach(p => { p.style.lineHeight = val; });
+  showToast('Espaçamento ' + val);
+}
+function applyPaperTheme(t) {
+  _whitePaperForced = t === 'white';
+  document.querySelectorAll('.page-wrap').forEach(p => {
+    p.style.background = _whitePaperForced ? '#ffffff' : '';
+    p.querySelector('.page-editor').style.color = _whitePaperForced ? '#111111' : '';
+  });
+  showToast(t === 'white' ? 'Papel branco activado' : 'Papel automático');
+}
 
 // ════════════════════════════════════════════════
 // BRIDGE BIDIRECIONAL (postMessage para iframe web)
