@@ -809,3 +809,4 @@ class _ThreeDotsIcon extends StatelessWidget {
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
   }
+}
