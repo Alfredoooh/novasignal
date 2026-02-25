@@ -9,6 +9,8 @@ import 'screens/templates_screen.dart';
 import 'screens/activity_screen.dart';
 import 'screens/agenda_screen.dart';
 import 'services/document_service.dart';
+import 'services/auth_service.dart';
+import 'screens/auth_screen.dart';
 import 'widgets/theme.dart';
 
 // ─── SVGs inline ───────────────────────────────────────────────────────────────
@@ -34,7 +36,8 @@ const _calendarSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt', null);
-  await DocumentService.instance.load();
+  await AuthService.instance.init();   // restaura sessão + verifica token
+  await DocumentService.instance.load(); // local + merge da nuvem se logado
   runApp(const AriaApp());
 }
 
@@ -144,8 +147,35 @@ class _AriaAppState extends State<AriaApp> {
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       theme: lightTheme,
       darkTheme: darkTheme,
-      home: const MainShell(),
+      home: const AuthGate(),
     );
+  }
+}
+
+// ─── AUTH GATE — decide mostrar AuthScreen ou MainShell ─────────────────────────
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _authed = false; // true = mostra MainShell
+
+  @override
+  void initState() {
+    super.initState();
+    // Se já está logado (sessão restaurada), vai directo ao shell
+    _authed = AuthService.instance.loggedIn;
+  }
+
+  void _onDone() => setState(() => _authed = true);
+
+  @override
+  Widget build(BuildContext context) {
+    if (_authed) return const MainShell();
+    return AuthScreen(onDone: _onDone);
   }
 }
 
@@ -226,6 +256,8 @@ class _MainShellState extends State<MainShell> {
             onTap: _openHistory,
             tooltip: 'Atividade',
           ),
+          // Account button
+          _AccountBtn(textPrimary: textPrimary),
           // Calendar button
           _AppBarIconBtn(
             svg: _calendarSvg,
@@ -444,6 +476,139 @@ class _AnimatedNavItemState extends State<_AnimatedNavItem>
 
 // ─── POPUP MENU TEMA ──────────────────────────────────────────────────────────
 
+// ─── Account button ────────────────────────────────────────────────────────────
+
+const _svgAccount = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12A6,6,0,1,0,6,6,6.006,6.006,0,0,0,12,12ZM12,2a4,4,0,1,1-4,4A4,4,0,0,1,12,2ZM12,14a9.01,9.01,0,0,0-9,9,1,1,0,0,0,2,0,7,7,0,0,1,14,0,1,1,0,0,0,2,0A9.01,9.01,0,0,0,12,14Z"/></svg>';
+
+class _AccountBtn extends StatelessWidget {
+  final Color textPrimary;
+  const _AccountBtn({super.key, required this.textPrimary});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = themeNotifier.isDark;
+    final acc    = accColor(isDark);
+    final auth   = AuthService.instance;
+    return GestureDetector(
+      onTap: () => _showSheet(context, auth, isDark, acc),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: auth.loggedIn
+            ? CircleAvatar(
+                radius: 16,
+                backgroundColor: acc.withOpacity(.15),
+                child: Text(
+                  (auth.user?.name ?? 'U')[0].toUpperCase(),
+                  style: TextStyle(color: acc, fontSize: 14, fontWeight: FontWeight.w700),
+                ))
+            : SvgPicture.string(_svgAccount, width: 22, height: 22,
+                colorFilter: ColorFilter.mode(textPrimary, BlendMode.srcIn)),
+      ),
+    );
+  }
+
+  void _showSheet(BuildContext context, AuthService auth, bool isDark, Color acc) {
+    final bg = isDark ? AppColors.darkSurface : Colors.white;
+    final tp = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final ts = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bg,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: auth.loggedIn
+              ? _LoggedSheet(auth: auth, tp: tp, ts: ts, acc: acc, isDark: isDark)
+              : _GuestSheet(acc: acc, tp: tp, ts: ts),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoggedSheet extends StatelessWidget {
+  final AuthService auth;
+  final Color tp, ts, acc;
+  final bool isDark;
+  const _LoggedSheet({required this.auth, required this.tp, required this.ts, required this.acc, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(color: ts.withOpacity(.3), borderRadius: BorderRadius.circular(2))),
+    CircleAvatar(radius: 30, backgroundColor: acc.withOpacity(.15),
+        child: Text((auth.user?.name ?? 'U')[0].toUpperCase(),
+            style: TextStyle(color: acc, fontSize: 26, fontWeight: FontWeight.w800))),
+    const SizedBox(height: 12),
+    Text(auth.user?.name ?? '', style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.w700, color: tp)),
+    const SizedBox(height: 4),
+    Text(auth.user?.phone ?? auth.user?.email ?? '',
+        style: GoogleFonts.roboto(fontSize: 13.5, color: ts)),
+    const SizedBox(height: 6),
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: acc.withOpacity(.1), borderRadius: BorderRadius.circular(999)),
+      child: Text('Plano \${auth.user?.plan ?? "free"}',
+          style: GoogleFonts.roboto(fontSize: 11.5, fontWeight: FontWeight.w700, color: acc)),
+    ),
+    const SizedBox(height: 28),
+    SizedBox(width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () async {
+          Navigator.pop(context);
+          await auth.logout();
+          if (context.mounted) Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AuthGate()), (_) => false);
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFDC2626),
+          side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: Text('Terminar sessão', style: GoogleFonts.roboto(fontWeight: FontWeight.w700)),
+      ),
+    ),
+  ]);
+}
+
+class _GuestSheet extends StatelessWidget {
+  final Color acc, tp, ts;
+  const _GuestSheet({required this.acc, required this.tp, required this.ts});
+
+  @override
+  Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(color: ts.withOpacity(.3), borderRadius: BorderRadius.circular(2))),
+    Text('Sem sessão iniciada', style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.w700, color: tp)),
+    const SizedBox(height: 8),
+    Text('Entra para guardar os teus documentos\ne histórico na nuvem.',
+        textAlign: TextAlign.center,
+        style: GoogleFonts.roboto(fontSize: 14, color: ts)),
+    const SizedBox(height: 28),
+    SizedBox(width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.pop(context);
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AuthScreen(onDone: () => Navigator.pop(context))));
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: acc,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: Text('Entrar / Criar conta',
+            style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w700)),
+      ),
+    ),
+  ]);
+}
+
+
 class _ThemePopupMenu extends StatefulWidget {
   final bool isDark;
   final Color textPrimary;
@@ -644,4 +809,3 @@ class _ThreeDotsIcon extends StatelessWidget {
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     );
   }
-}
