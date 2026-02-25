@@ -1,719 +1,421 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Aria · Documento</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Babylonica&family=Agbalumo&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Nunito:wght@400;700&family=Poppins:wght@400;700&family=Ubuntu:wght@400;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;700&family=Abril+Fatface&family=Pacifico&family=Dancing+Script:wght@400;700&family=Satisfy&family=Caveat:wght@400;700&family=Handlee&family=Lobster&family=Righteous&family=Quicksand:wght@400;700&family=Exo+2:wght@400;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&family=VT323&family=Press+Start+2P&family=Bangers&family=Fredoka:wght@400;700&family=Comfortaa:wght@400;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Italiana&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&family=Cardo:ital,wght@0,400;1,400&family=Inter:wght@400;700&family=DM+Sans:wght@400;700&family=Work+Sans:wght@400;700&family=Fira+Sans:wght@400;700&family=Nunito+Sans:wght@400;700&family=Source+Sans+3:wght@400;700&family=Jost:wght@400;700&family=Plus+Jakarta+Sans:wght@400;700&family=Outfit:wght@400;700&family=Figtree:wght@400;700&family=DM+Mono:wght@400;500&family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Inconsolata:wght@400;700&family=Anonymous+Pro:wght@400;700&family=Anton&family=Bebas+Neue&family=Black+Han+Sans&family=Permanent+Marker&family=Sacramento&family=Great+Vibes&family=Kaushan+Script&family=Parisienne&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ── Variáveis de tema ── */
+:root {
+  --acc:#e0185e; --acc-rgb:224,24,94; --acc-c:#fff;
+  --bg:#ffffff; --card:#ffffff; --border:#f0f0f0;
+  --text:#111; --sub:#8e8e93; --danger:#ff3b30;
+  --paper:#ffffff; --paper-text:#111;
+  --toolbar-bg:#ffffff; --toolbar-pill:#f2f2f7;
+}
+body[data-theme="dark"] {
+  --acc:#ff6b9d; --acc-rgb:255,107,157; --acc-c:#000;
+  --bg:#242424; --card:#363636; --border:#404040;
+  --text:#e8e8e8; --sub:#8e8e93; --danger:#ff453a;
+  --paper:#2e2e2e; --paper-text:#e0e0e0;
+  --toolbar-bg:#363636; --toolbar-pill:#404040;
+}
 
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Aria · Documento</title>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; }
 
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
-  <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core/css/ionic.bundle.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Babylonica&family=Agbalumo&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Nunito:wght@400;700&family=Poppins:wght@400;700&family=Ubuntu:wght@400;700&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Josefin+Sans:wght@400;700&family=Abril+Fatface&family=Pacifico&family=Dancing+Script:wght@400;700&family=Satisfy&family=Caveat:wght@400;700&family=Handlee&family=Lobster&family=Righteous&family=Quicksand:wght@400;700&family=Exo+2:wght@400;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&family=VT323&family=Press+Start+2P&family=Bangers&family=Fredoka:wght@400;700&family=Comfortaa:wght@400;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Italiana&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&family=Cardo:ital,wght@0,400;1,400&family=Inter:wght@400;700&family=DM+Sans:wght@400;700&family=Work+Sans:wght@400;700&family=Fira+Sans:wght@400;700&family=Nunito+Sans:wght@400;700&family=Source+Sans+3:wght@400;700&family=Jost:wght@400;700&family=Plus+Jakarta+Sans:wght@400;700&family=Outfit:wght@400;700&family=Figtree:wght@400;700&family=DM+Mono:wght@400;500&family=Fira+Code:wght@400;700&family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Inconsolata:wght@400;700&family=Anonymous+Pro:wght@400;700&family=Anton&family=Bebas+Neue&family=Black+Han+Sans&family=Permanent+Marker&family=Sacramento&family=Great+Vibes&family=Kaushan+Script&family=Parisienne&display=swap" rel="stylesheet"/>
+/* ── Transições de tema ── */
+body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
+  transition: background-color .3s ease, color .3s ease, border-color .3s ease;
+}
 
-  <style>
-    body[data-theme="dark"] {
-      --acc:#ff6b9d; --acc-rgb:255,107,157; --acc-c:#000;
-      --bg:#242424; --card:#363636; --border:#404040;
-      --text:#e8e8e8; --sub:#8e8e93; --danger:#ff453a;
-      --paper:#2e2e2e; --paper-text:#e0e0e0;
-      --toolbar-bg:#363636; --toolbar-pill:#404040;
-      --sheet:#242424; --sheet-txt:#e8e8e8;
-    }
-    :root, body[data-theme="light"] {
-      --acc:#e0185e; --acc-rgb:224,24,94; --acc-c:#fff;
-      --bg:#ffffff; --card:#ffffff; --border:#f0f0f0;
-      --text:#111; --sub:#8e8e93; --danger:#ff3b30;
-      --paper:#ffffff; --paper-text:#111;
-      --toolbar-bg:#ffffff; --toolbar-pill:#f2f2f7;
-      --sheet:#ffffff; --sheet-txt:#111111;
-    }
-    :root {
-      --ion-font-family:'Syne',sans-serif;
-      --ion-background-color:var(--bg);
-      --ion-text-color:var(--text);
-      --ion-color-primary:var(--acc);
-      --ion-color-primary-rgb:var(--acc-rgb);
-      --ion-color-primary-contrast:var(--acc-c);
-      --ion-toolbar-background:var(--card);
-    }
+/* ── Views ── */
+.view { position:fixed; inset:0; display:none; flex-direction:column; background:var(--bg); overflow:hidden; }
+.view.active { display:flex; }
+#view-editor { z-index:10; }
+#view-editor.slide-in  { animation:slideIn  .3s cubic-bezier(.4,0,.2,1) both; }
+#view-editor.slide-out { animation:slideOut .25s cubic-bezier(.4,0,.2,1) both; }
+@keyframes slideIn  { from{transform:translateX(100%)} to{transform:translateX(0)} }
+@keyframes slideOut { from{transform:translateX(0)} to{transform:translateX(100%)} }
+#view-whiteboard { z-index:15; }
 
-    *, *::before, *::after { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body, ion-app { height:100%; margin:0; }
-    .acc { color:var(--acc); }
+/* ── Header do editor ── */
+.ed-header {
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  padding: env(safe-area-inset-top, 44px) 12px 0;
+  flex-shrink:0;
+}
+.ed-topbar {
+  display:flex; align-items:center; height:52px; gap:4px;
+}
+.ed-title {
+  flex:1; font-family:'Syne',sans-serif; font-weight:700;
+  font-size:.95rem; color:var(--text); cursor:pointer;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  padding:0 6px;
+}
 
-    ion-toolbar { --background:var(--card); --border-color:transparent; }
-    ion-header  { border-bottom:1px solid var(--border); }
-    ion-header::after { display:none !important; }
-    ion-content { --background:var(--bg); }
-    .app-title  { font-family:'Syne',sans-serif; font-weight:800; font-size:1.05rem; }
+/* ── Botões da barra ── */
+.bar-btn {
+  width:36px; height:36px; border:none; background:transparent;
+  border-radius:50%; display:inline-flex; align-items:center;
+  justify-content:center; cursor:pointer; color:var(--sub);
+  transition:background .15s; padding:0; flex-shrink:0;
+}
+.bar-btn:active { background:var(--toolbar-pill); }
+.bar-btn svg { pointer-events:none; }
+.bar-btn-text {
+  height:36px; border:none; background:transparent;
+  border-radius:8px; padding:0 8px;
+  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:800;
+  color:var(--acc); cursor:pointer; white-space:nowrap; flex-shrink:0;
+}
+.bar-btn-text:active { background:var(--toolbar-pill); }
 
-    .bar-btn {
-      width:36px; height:36px; border:none; background:transparent;
-      border-radius:50%; display:inline-flex; align-items:center;
-      justify-content:center; cursor:pointer; color:var(--sub);
-      transition:background .15s; padding:0;
-    }
-    .bar-btn:active { background:var(--toolbar-pill); }
-    .bar-btn svg { pointer-events:none; }
+/* ── Progress bar ── */
+.progress-bar {
+  height:2px; background:var(--border); position:relative; overflow:hidden;
+}
+.progress-bar-fill {
+  position:absolute; top:0; left:-100%; width:100%; height:100%;
+  background:var(--acc); opacity:0; transition:opacity .3s;
+  animation:progressSlide 1.2s ease-in-out infinite;
+}
+.progress-bar-fill.on { opacity:1; }
+@keyframes progressSlide { 0%{left:-100%} 100%{left:100%} }
 
-    .fmt-bar {
-      background:var(--toolbar-bg); border-bottom:1px solid var(--border);
-      display:flex; align-items:center; height:48px; padding:0 10px;
-      overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
-      scrollbar-width:none; gap:2px;
-    }
-    .fmt-bar::-webkit-scrollbar { display:none; }
+/* ── Barra de formatação ── */
+.fmt-bar {
+  background:var(--toolbar-bg); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; height:48px; padding:0 10px;
+  overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none; gap:2px;
+}
+.fmt-bar::-webkit-scrollbar { display:none; }
+.tb-group {
+  display:flex; align-items:center; background:var(--toolbar-pill);
+  border-radius:10px; padding:3px; gap:1px; flex-shrink:0;
+}
+.tb-sep { width:1px; height:22px; background:var(--border); flex-shrink:0; margin:0 5px; }
+.fb {
+  width:32px; height:32px; border:none; background:transparent;
+  border-radius:7px; display:inline-flex; align-items:center;
+  justify-content:center; cursor:pointer; flex-shrink:0;
+  color:var(--sub); transition:background .1s, color .1s; padding:0; line-height:1;
+}
+.fb svg { pointer-events:none; fill:var(--sub); transition:fill .1s; }
+.fb:active, .fb.on { background:rgba(var(--acc-rgb),.15); color:var(--acc); }
+.fb.on svg { fill:var(--acc); }
+.tb-pill-btn {
+  height:34px; border:none; background:var(--toolbar-pill);
+  border-radius:10px; padding:0 22px 0 10px;
+  display:inline-flex; align-items:center;
+  cursor:pointer; flex-shrink:0; color:var(--text);
+  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700;
+  white-space:nowrap; position:relative;
+}
+.tb-pill-btn::after {
+  content:''; position:absolute; right:7px; top:50%; transform:translateY(-50%);
+  border-left:4px solid transparent; border-right:4px solid transparent;
+  border-top:5px solid var(--sub); pointer-events:none;
+}
+.tb-pill-btn:active { opacity:.7; }
+.tb-color-btn {
+  width:32px; height:32px; border:none; background:transparent;
+  border-radius:7px; display:inline-flex; align-items:center;
+  justify-content:center; cursor:pointer; flex-shrink:0; padding:0;
+}
+.tb-color-btn:active { background:rgba(var(--acc-rgb),.15); }
 
-    .tb-group {
-      display:flex; align-items:center; background:var(--toolbar-pill);
-      border-radius:10px; padding:3px; gap:1px; flex-shrink:0;
-    }
-    .tb-sep { width:1px; height:22px; background:var(--border); flex-shrink:0; margin:0 5px; }
+/* ── Área do documento ── */
+.doc-scroll {
+  flex:1; overflow-y:auto; overflow-x:auto;
+  background:var(--bg); padding:20px 0 80px;
+  -webkit-overflow-scrolling:touch;
+}
+.doc-pages { display:flex; flex-direction:column; align-items:center; gap:16px; }
 
-    .fb {
-      width:32px; height:32px; border:none; background:transparent;
-      border-radius:7px; display:inline-flex; align-items:center;
-      justify-content:center; cursor:pointer; flex-shrink:0;
-      color:var(--sub); transition:background .1s, color .1s; padding:0; line-height:1;
-    }
-    .fb svg { pointer-events:none; fill:var(--sub); transition:fill .1s; }
-    .fb svg.stroke-icon { fill:none; stroke:currentColor; transition:stroke .1s; color:var(--sub); }
-    .fb:active, .fb.on { background:rgba(var(--acc-rgb),.15); color:var(--acc); }
-    .fb.on svg { fill:var(--acc); }
-    .fb.on svg.stroke-icon { stroke:var(--acc); fill:none; color:var(--acc); }
+/* ── Página A4 ── */
+.page-wrap {
+  width:794px; height:1123px;
+  background:var(--paper);
+  box-shadow:0 1px 6px rgba(0,0,0,.2), 0 4px 20px rgba(0,0,0,.12);
+  position:relative; flex-shrink:0; padding:94px; overflow:hidden;
+  transform-origin:top center;
+}
+.page-editor {
+  width:100%; height:100%; outline:none; border:none; background:transparent;
+  font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:24px;
+  color:var(--paper-text); overflow:hidden; resize:none;
+  white-space:pre-wrap; word-break:break-word;
+}
+.page-editor:focus { outline:none; }
+.page-editor.empty::before { content:attr(data-ph); color:#bbb; font-style:italic; pointer-events:none; }
+.page-editor h1 { font-size:2em; font-family:'Syne',sans-serif; font-weight:800; margin:.4em 0 .2em; line-height:1.2; }
+.page-editor h2 { font-size:1.4em; font-family:'Syne',sans-serif; font-weight:700; margin:.4em 0 .2em; }
+.page-editor h3 { font-size:1.1em; font-family:'Syne',sans-serif; font-weight:600; margin:.4em 0 .15em; }
+.page-editor p  { margin:0 0 .4em; }
+.page-editor ul, .page-editor ol { padding-left:1.5em; margin:.3em 0; }
+.page-editor blockquote { border-left:3px solid var(--acc); margin:.5em 0; padding-left:.8em; color:#666; font-style:italic; }
+.page-num {
+  position:absolute; bottom:36px; left:0; right:0; text-align:center;
+  font-family:'Space Mono',monospace; font-size:9px; color:#bbb;
+  letter-spacing:.05em; pointer-events:none;
+}
+.doc-meta {
+  font-family:'Space Mono',monospace; font-size:.5rem;
+  color:#aaa; text-align:center; padding:4px 0 0;
+}
 
-    .tb-pill-btn {
-      height:34px; border:none; background:var(--toolbar-pill);
-      border-radius:10px; padding:0 22px 0 10px;
-      display:inline-flex; align-items:center;
-      cursor:pointer; flex-shrink:0; color:var(--text);
-      font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700;
-      white-space:nowrap; position:relative;
-    }
-    .tb-pill-btn::after {
-      content:''; position:absolute; right:7px; top:50%; transform:translateY(-50%);
-      border-left:4px solid transparent; border-right:4px solid transparent;
-      border-top:5px solid var(--sub); pointer-events:none;
-    }
-    .tb-pill-btn:active { opacity:.7; }
+/* ── Resizable elements ── */
+.resizable-element .el-controls { display:none; }
 
-    /* Botão cor da fonte */
-    .tb-color-btn {
-      width:32px; height:32px; border:none; background:transparent;
-      border-radius:7px; display:inline-flex; align-items:center;
-      justify-content:center; cursor:pointer; flex-shrink:0; padding:0;
-    }
-    .tb-color-btn:active { background:rgba(var(--acc-rgb),.15); }
-    .color-dot {
-      width:18px; height:18px; border-radius:50%;
-      border:2px solid rgba(0,0,0,.18); background:#111;
-      pointer-events:none;
-    }
+/* ── Whiteboard ── */
+.wb-header {
+  background:var(--card); border-bottom:1px solid var(--border);
+  padding: env(safe-area-inset-top, 44px) 12px 0;
+  flex-shrink:0;
+}
+.wb-topbar { display:flex; align-items:center; height:52px; gap:4px; }
+.wb-toolbar {
+  display:flex; align-items:center; gap:6px;
+  padding:8px 12px; background:var(--toolbar-bg);
+  border-bottom:1px solid var(--border); overflow-x:auto;
+  scrollbar-width:none; flex-shrink:0;
+}
+.wb-toolbar::-webkit-scrollbar { display:none; }
+.wb-canvas-wrap { flex:1; position:relative; overflow:hidden; background:#fff; touch-action:none; }
+body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
+#wb-canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+.wb-btn {
+  width:36px; height:36px; border:none; border-radius:10px;
+  background:var(--toolbar-pill); display:flex; align-items:center;
+  justify-content:center; cursor:pointer; flex-shrink:0;
+  color:var(--sub); font-size:16px; transition:background .1s;
+}
+.wb-btn.active { background:rgba(var(--acc-rgb),.2); color:var(--acc); }
+.wb-btn:active { opacity:.7; }
+.wb-color-swatch {
+  width:26px; height:26px; border-radius:50%; border:2px solid transparent;
+  cursor:pointer; flex-shrink:0; transition:transform .1s;
+}
+.wb-color-swatch.active { border-color:var(--acc); transform:scale(1.2); }
+.wb-size-btn {
+  height:32px; padding:0 12px; border:1px solid var(--border);
+  border-radius:8px; background:var(--toolbar-pill); color:var(--text);
+  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700;
+  cursor:pointer; flex-shrink:0;
+}
 
-    /* Modais e sheets — sem bordas arredondadas */
-    ion-modal        { --border-radius: 0 !important; }
-    ion-action-sheet { --border-radius: 0 !important; }
-
-    /* Modal genérico — inner wrapper */
-    .m-inner {
-      padding: 0 0 48px;
-      background: var(--card);
-    }
-    .m-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .m-title {
-      font-family:'Syne',sans-serif; font-weight:700; font-size:1rem;
-      color:var(--text);
-    }
-    .m-cancel {
-      font-family:'Syne',sans-serif; font-size:.85rem;
-      color:var(--sub); background:none; border:none; padding:4px 0; cursor:pointer;
-    }
-    .m-list { list-style:none; margin:0; padding:0; }
-    .m-item {
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 20px; border-bottom:1px solid var(--border);
-      cursor:pointer; gap:12px; min-height:56px;
-      color:var(--text);
-    }
-    .m-item:active { background:rgba(128,128,128,.08); }
-    .m-item-label { flex:1; color:var(--text); }
-    .m-item-check {
-      width:20px; height:20px; flex-shrink:0;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .m-item-check svg { display:none; }
-    .m-item.selected .m-item-check svg { display:block; }
-
-    /* Modal de cor */
-    .cm-inner { padding: 16px 20px 36px; }
-    .color-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr);
-      gap: 16px; margin: 0 0 20px;
-    }
-    .color-swatch {
-      width:100%; aspect-ratio:1; border-radius:50%;
-      border:3px solid transparent; cursor:pointer;
-      transition:transform .12s, border-color .12s;
-    }
-    .color-swatch:active { transform:scale(.84); }
-    .color-swatch.selected { border-color:var(--acc); }
-
-    /* Color picker */
-    .cp-canvas-wrap {
-      position:relative; width:100%;
-      overflow:hidden; cursor:crosshair; margin-bottom:14px;
-      touch-action:none; user-select:none;
-    }
-    #cp-canvas, .cp-canvas-wrap canvas { width:100%; height:auto; display:block; touch-action:none; }
-    .cp-cursor {
-      position:absolute; width:18px; height:18px;
-      border-radius:50%; border:2px solid #fff;
-      box-shadow:0 0 0 1.5px rgba(0,0,0,.4);
-      transform:translate(-50%,-50%); pointer-events:none;
-    }
-    .cp-slider-wrap {
-      width:100%; height:20px;
-      position:relative; cursor:pointer; margin-bottom:14px;
-      touch-action:none;
-    }
-    #cp-hue-slider {
-      background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);
-    }
-    .cp-slider-thumb {
-      position:absolute; top:50%; width:22px; height:22px;
-      border-radius:50%; border:2px solid #fff;
-      box-shadow:0 0 0 1.5px rgba(0,0,0,.4);
-      transform:translate(-50%,-50%); pointer-events:none;
-      background:#fff;
-    }
-    .cp-hex-row {
-      display:flex; align-items:center; gap:10px; margin-bottom:20px;
-    }
-    .cp-preview {
-      width:44px; height:44px; flex-shrink:0;
-      border:1.5px solid var(--border);
-    }
-    .cp-hex-input {
-      flex:1; height:44px;
-      border:1.5px solid var(--border);
-      padding:0 14px; font-family:'Space Mono',monospace; font-size:.85rem;
-      background:var(--toolbar-pill); color:var(--text); outline:none;
-    }
-    .cp-hex-input:focus { border-color:var(--acc); }
-
-    /* Documento */
-    .doc-scroll {
-      width:100%; height:100%; overflow-y:auto; overflow-x:auto;
-      background:var(--bg); padding:20px 0 80px; -webkit-overflow-scrolling:touch;
-    }
-    .doc-pages { display:flex; flex-direction:column; align-items:center; gap:16px; }
-    .page-wrap {
-      width:794px; height:1123px; background:var(--paper);
-      box-shadow:0 1px 6px rgba(0,0,0,.2), 0 4px 20px rgba(0,0,0,.12);
-      position:relative; flex-shrink:0; padding:94px; overflow:hidden;
-    }
-    .page-editor {
-      width:100%; height:100%; outline:none; border:none; background:transparent;
-      font-family:Georgia,'Times New Roman',serif; font-size:16px; line-height:24px;
-      color:var(--paper-text); overflow:hidden; resize:none;
-      white-space:pre-wrap; word-break:break-word;
-    }
-    .page-editor:focus { outline:none; }
-    .page-editor.empty::before { content:attr(data-ph); color:#bbb; font-style:italic; pointer-events:none; }
-    .page-editor h1 { font-size:2em; font-family:'Syne',sans-serif; font-weight:800; margin:.4em 0 .2em; line-height:1.2; }
-    .page-editor h2 { font-size:1.4em; font-family:'Syne',sans-serif; font-weight:700; margin:.4em 0 .2em; }
-    .page-editor h3 { font-size:1.1em; font-family:'Syne',sans-serif; font-weight:600; margin:.4em 0 .15em; }
-    .page-editor p  { margin:0 0 .4em; }
-    .page-editor ul,.page-editor ol { padding-left:1.5em; margin:.3em 0; }
-    .page-editor blockquote { border-left:3px solid var(--acc); margin:.5em 0; padding-left:.8em; color:#666; font-style:italic; }
-    .page-num {
-      position:absolute; bottom:36px; left:0; right:0; text-align:center;
-      font-family:'Space Mono',monospace; font-size:9px; color:#bbb;
-      letter-spacing:.05em; pointer-events:none;
-    }
-    .doc-meta {
-      font-family:'Space Mono',monospace; font-size:.5rem;
-      color:#aaa; text-align:center; padding:4px 0 0;
-    }
-
-    /* ── Views ── */
-    .view {
-      position:fixed; inset:0; display:none;
-      flex-direction:column; background:var(--bg); overflow:hidden;
-    }
-    .view.active { display:flex; }
-    #view-editor { z-index:10; }
-    #view-editor.slide-in  { animation:slideIn  .3s cubic-bezier(.4,0,.2,1) both; }
-    #view-editor.slide-out { animation:slideOut .25s cubic-bezier(.4,0,.2,1) both; }
-    @keyframes slideIn  { from{transform:translateX(100%)} to{transform:translateX(0)} }
-    @keyframes slideOut { from{transform:translateX(0)} to{transform:translateX(100%)} }
-
-    /* Header nativo sem Ionic */
-    .native-header {
-      background:var(--bg); border-bottom:1px solid var(--border);
-      padding: env(safe-area-inset-top,44px) 20px 14px;
-      display:flex; align-items:flex-end; flex-shrink:0; min-height:60px;
-      transition: background .3s ease;
-    }
-    .native-scroll {
-      flex:1; overflow-y:auto; overflow-x:hidden;
-      -webkit-overflow-scrolling:touch; padding-bottom:90px;
-    }
-
-    /* ── Tab bar ── */
-    .app-tabbar {
-      position:fixed; bottom:0; left:0; right:0; z-index:200;
-      display:flex; background:var(--bg); border-top:1px solid var(--border);
-      padding-bottom:env(safe-area-inset-bottom,0);
-      transition: background .3s ease;
-    }
-    .tab-btn {
-      flex:1; display:flex; flex-direction:column; align-items:center;
-      justify-content:center; gap:5px; padding:10px 0 14px;
-      border:none; background:transparent; cursor:pointer; color:var(--sub);
-      font-family:'Syne',sans-serif; font-size:.58rem; font-weight:800;
-      letter-spacing:.06em; text-transform:uppercase; transition:color .15s;
-    }
-    .tab-btn svg { fill:var(--sub); transition:fill .15s; display:block; }
-    .tab-btn.active { color:var(--acc); }
-    .tab-btn.active svg { fill:var(--acc); }
-    .tab-btn:active { opacity:.5; }
-
-    /* ── HOME ── */
-    .h-hero {
-      padding:32px 24px 28px;
-      border-bottom:1px solid var(--border);
-    }
-    .h-hero-pill {
-      display:inline-flex; align-items:center;
-      background:rgba(224,24,94,.1); color:var(--acc);
-      font-family:'Syne',sans-serif; font-size:.62rem; font-weight:800;
-      letter-spacing:.1em; text-transform:uppercase;
-      padding:4px 12px; border-radius:99px; margin-bottom:16px;
-    }
-    .h-hero-title {
-      font-family:'Syne',sans-serif; font-size:2.1rem; font-weight:800;
-      color:var(--text); margin:0 0 10px; line-height:1.1;
-    }
-    .h-hero-sub {
-      font-family:'Syne',sans-serif; font-size:.82rem;
-      color:var(--sub); margin:0; font-weight:500;
-    }
-    .h-sect-row { padding:22px 20px 8px; }
-    .h-sect-label {
-      font-family:'Syne',sans-serif; font-size:.6rem; font-weight:800;
-      letter-spacing:.14em; text-transform:uppercase; color:var(--sub);
-    }
-    .h-empty {
-      display:flex; flex-direction:column; align-items:center;
-      gap:14px; padding:32px 24px; text-align:center;
-    }
-    .h-empty-doc {
-      width:58px; height:58px; border-radius:16px;
-      background:rgba(224,24,94,.08);
-      display:flex; align-items:center; justify-content:center;
-    }
-    .h-empty-msg {
-      font-family:'Syne',sans-serif; font-size:.83rem;
-      color:var(--sub); margin:0; line-height:1.65;
-    }
-    .h-empty-msg b { color:var(--acc); font-weight:800; cursor:pointer; }
-
-    /* ── CRIAR ── */
-    .c-item {
-      display:flex; align-items:center; gap:16px; padding:18px 20px;
-      background:var(--bg); border:none; cursor:pointer; width:100%;
-      border-bottom:1px solid var(--border);
-      -webkit-tap-highlight-color:transparent; transition:background .1s;
-    }
-    .c-item:active { background:var(--card); }
-    .c-item--dim { opacity:.3; pointer-events:none; }
-    .c-item-icon {
-      width:46px; height:46px; border-radius:13px; flex-shrink:0;
-      display:flex; align-items:center; justify-content:center;
-    }
-    .c-item-icon--acc { background:rgba(224,24,94,.1); }
-    .c-item-icon--muted { background:var(--toolbar-pill); }
-    .c-item-info { flex:1; display:flex; flex-direction:column; gap:3px; text-align:left; }
-    .c-item-title { font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; color:var(--text); }
-    .c-item-sub { font-family:'Syne',sans-serif; font-size:.73rem; color:var(--sub); }
-
-    /* ── Doc title editor ── */
-    .doc-title-text {
-      font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; color:var(--text);
-    }
-  </style>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-  <!-- Transições de tema suaves globais -->
-  <style>
-    body, .view, .native-header, .app-tabbar, ion-toolbar, ion-content,
-    .fmt-bar, .doc-scroll, .m-inner, .m-header, .tb-pill-btn,
-    .tb-group, .fb, .bar-btn {
-      transition: background-color .3s ease, color .3s ease, border-color .3s ease;
-    }
-
-    /* ── Whiteboard ── */
-    #view-whiteboard { z-index: 15; }
-    .wb-canvas-wrap {
-      flex: 1; position: relative; overflow: hidden;
-      background: #fff; touch-action: none;
-    }
-    body[data-theme="dark"] .wb-canvas-wrap { background: #1a1a1a; }
-    #wb-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    .wb-toolbar {
-      display: flex; align-items: center; gap: 6px;
-      padding: 8px 12px; background: var(--toolbar-bg);
-      border-bottom: 1px solid var(--border); overflow-x: auto;
-      scrollbar-width: none; flex-shrink: 0;
-    }
-    .wb-toolbar::-webkit-scrollbar { display: none; }
-    .wb-btn {
-      width: 36px; height: 36px; border: none; border-radius: 10px;
-      background: var(--toolbar-pill); display: flex; align-items: center;
-      justify-content: center; cursor: pointer; flex-shrink: 0;
-      color: var(--sub); font-size: 16px; transition: background .1s;
-    }
-    .wb-btn.active { background: rgba(var(--acc-rgb),.2); color: var(--acc); }
-    .wb-btn:active { opacity: .7; }
-    .wb-color-swatch {
-      width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent;
-      cursor: pointer; flex-shrink: 0; transition: transform .1s;
-    }
-    .wb-color-swatch.active { border-color: var(--acc); transform: scale(1.2); }
-    .wb-size-btn {
-      height: 32px; padding: 0 12px; border: 1px solid var(--border);
-      border-radius: 8px; background: var(--toolbar-pill); color: var(--text);
-      font-family: 'Syne', sans-serif; font-size: .75rem; font-weight: 700;
-      cursor: pointer; flex-shrink: 0;
-    }
-
-    /* ── Resizable elements ── */
-    .resizable-element .el-controls { display: none; }
-  </style>
+/* ── Toast ── */
+.aria-toast {
+  position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+  left:50%; transform:translateX(-50%) translateY(20px);
+  background:rgba(30,30,30,.92); color:#fff;
+  font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700;
+  padding:10px 20px; border-radius:999px;
+  white-space:nowrap; z-index:9999;
+  opacity:0; transition:opacity .2s, transform .2s;
+  pointer-events:none;
+}
+.aria-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
 </head>
 <body data-theme="light">
-<ion-app>
-<!-- ═══════════════════════════════════════════
-       VIEW: EDITOR DE DOCUMENTOS
-  ════════════════════════════════════════════ -->
-  <div id="view-editor" class="view active">
-    <ion-header>
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <button class="bar-btn" onclick="goHome()">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
-              <path d="M.88,14.09,4.75,18a1,1,0,0,0,1.42,0h0a1,1,0,0,0,0-1.42L2.61,13H23a1,1,0,0,0,1-1h0a1,1,0,0,0-1-1H2.55L6.17,7.38A1,1,0,0,0,6.17,6h0A1,1,0,0,0,4.75,6L.88,9.85A3,3,0,0,0,.88,14.09Z"/>
-            </svg>
-          </button>
-        </ion-buttons>
-        <ion-title>
-          <span class="doc-title-text" id="doc-title-text" onclick="openRenameDialog()" style="cursor:pointer;" title="Clique para renomear">Sem título</span>
-        </ion-title>
-        <ion-buttons slot="end" style="gap:4px;padding-right:8px;">
-          <button class="bar-btn" onclick="window.saveDocument()" title="Guardar" style="color:var(--acc);font-family:'Syne',sans-serif;font-size:.75rem;font-weight:800;width:auto;padding:0 6px;">Guardar</button>
-          <button class="bar-btn" onclick="openGemini()">
-            <svg viewBox="0 0 28 28" width="22" height="22">
-              <defs>
-                <linearGradient id="g-ai" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%"   stop-color="#4285f4"/>
-                  <stop offset="45%"  stop-color="#9b72cb"/>
-                  <stop offset="75%"  stop-color="#ea4335"/>
-                  <stop offset="100%" stop-color="#fbbc04"/>
-                </linearGradient>
-              </defs>
-              <path d="M14 2C14 8.627 8.627 14 2 14C8.627 14 14 19.373 14 26C14 19.373 19.373 14 26 14C19.373 14 14 8.627 14 2Z" fill="url(#g-ai)"/>
-            </svg>
-          </button>
-          <button class="bar-btn" onclick="openOpcoes()">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
-              <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-4-10c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm11,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm-5.5,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Z"/>
-            </svg>
-          </button>
-        </ion-buttons>
-      </ion-toolbar>
 
-      <div class="fmt-bar">
-        <button class="tb-pill-btn" onclick="openStyleModal()"><span id="style-label">Corpo</span></button>
-        <div class="tb-sep"></div>
-        <button class="tb-pill-btn" onclick="openFontModal()" style="max-width:110px;">
-          <span id="font-label" style="overflow:hidden;text-overflow:ellipsis;max-width:80px;display:inline-block;">Georgia</span>
+<!-- ═══ VIEW: EDITOR ═══ -->
+<div id="view-editor" class="view active">
+
+  <div class="ed-header">
+    <div class="ed-topbar">
+      <button class="bar-btn" onclick="goHome()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
+          <path d="M.88,14.09,4.75,18a1,1,0,0,0,1.42,0h0a1,1,0,0,0,0-1.42L2.61,13H23a1,1,0,0,0,1-1h0a1,1,0,0,0-1-1H2.55L6.17,7.38A1,1,0,0,0,6.17,6h0A1,1,0,0,0,4.75,6L.88,9.85A3,3,0,0,0,.88,14.09Z"/>
+        </svg>
+      </button>
+      <span class="ed-title" id="doc-title-text" onclick="openRenameDialog()" title="Toque para renomear">Sem título</span>
+      <button class="bar-btn-text" onclick="window.saveDocument()">Guardar</button>
+      <button class="bar-btn" onclick="openGemini()">
+        <svg viewBox="0 0 28 28" width="22" height="22">
+          <defs>
+            <linearGradient id="g-ai" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%"   stop-color="#4285f4"/>
+              <stop offset="45%"  stop-color="#9b72cb"/>
+              <stop offset="75%"  stop-color="#ea4335"/>
+              <stop offset="100%" stop-color="#fbbc04"/>
+            </linearGradient>
+          </defs>
+          <path d="M14 2C14 8.627 8.627 14 2 14C8.627 14 14 19.373 14 26C14 19.373 19.373 14 26 14C19.373 14 14 8.627 14 2Z" fill="url(#g-ai)"/>
+        </svg>
+      </button>
+      <button class="bar-btn" onclick="openOpcoes()">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
+          <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-4-10c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm11,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm-5.5,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Barra de formatação -->
+    <div class="fmt-bar">
+      <button class="tb-pill-btn" onclick="openStyleModal()"><span id="style-label">Corpo</span></button>
+      <div class="tb-sep"></div>
+      <button class="tb-pill-btn" onclick="openFontModal()" style="max-width:110px;">
+        <span id="font-label" style="overflow:hidden;text-overflow:ellipsis;max-width:80px;display:inline-block;">Georgia</span>
+      </button>
+      <div class="tb-sep"></div>
+      <button class="tb-pill-btn" onclick="openSizeModal()" style="min-width:52px;padding:0 22px 0 10px;">
+        <span id="size-label">16</span>
+      </button>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="fb" id="btn-b" onclick="fmt('bold')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="M22,17a7,7,0,0,0-4.046-6.337A6.986,6.986,0,0,0,12,0H5A2,2,0,0,0,3,2V22a2,2,0,0,0,2,2H15A7.008,7.008,0,0,0,22,17ZM7,4h5a3,3,0,0,1,0,6H7Zm8,16H7V14h8a3,3,0,0,1,0,6Z"/></svg>
         </button>
-        <div class="tb-sep"></div>
-        <button class="tb-pill-btn" onclick="openSizeModal()" style="min-width:52px;padding:0 22px 0 10px;">
-          <span id="size-label">16</span>
+        <button class="fb" id="btn-i" onclick="fmt('italic')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="M20,0H7A1,1,0,0,0,7,2h5.354L9.627,22H4a1,1,0,0,0,0,2H17a1,1,0,0,0,0-2H11.646L14.373,2H20a1,1,0,0,0,0-2Z"/></svg>
         </button>
-        <div class="tb-sep"></div>
-
-        <div class="tb-group">
-          <button class="fb" id="btn-b" onclick="fmt('bold')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="M22,17a7,7,0,0,0-4.046-6.337A6.986,6.986,0,0,0,12,0H5A2,2,0,0,0,3,2V22a2,2,0,0,0,2,2H15A7.008,7.008,0,0,0,22,17ZM7,4h5a3,3,0,0,1,0,6H7Zm8,16H7V14h8a3,3,0,0,1,0,6Z"/></svg>
-          </button>
-          <button class="fb" id="btn-i" onclick="fmt('italic')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="M20,0H7A1,1,0,0,0,7,2h5.354L9.627,22H4a1,1,0,0,0,0,2H17a1,1,0,0,0,0-2H11.646L14.373,2H20a1,1,0,0,0,0-2Z"/></svg>
-          </button>
-          <button class="fb" id="btn-u" onclick="fmt('underline')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
-              <path d="M12,20a8.009,8.009,0,0,0,8-8V1a1,1,0,0,0-2,0V12A6,6,0,0,1,6,12V1A1,1,0,0,0,4,1V12A8.009,8.009,0,0,0,12,20Z"/>
-              <path d="M23,22H1a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
-            </svg>
-          </button>
-          <button class="fb" id="btn-s" onclick="fmt('strikeThrough')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="m24,12c0,.553-.448,1-1,1H1c-.552,0-1-.447-1-1s.448-1,1-1h4.081c-1.863-1.003-3.081-2.97-3.081-5.151C2,2.624,4.624,0,7.848,0h8.235c3.262,0,5.917,2.654,5.917,5.917v1.083c0,.553-.448,1-1,1s-1-.447-1-1v-1.083c0-2.16-1.757-3.917-3.917-3.917H7.848c-2.122,0-3.848,1.727-3.848,3.849,0,1.732,1.167,3.26,2.84,3.714l5.293,1.438h10.867c.552,0,1,.447,1,1Zm-3.943,3.11c-.495.244-.698.844-.454,1.34.259.524.396,1.113.396,1.701,0,2.122-1.726,3.849-3.848,3.849H7.917c-2.16,0-3.917-1.757-3.917-3.917v-1.083c0-.553-.448-1-1-1s-1,.447-1,1v1.083c0,3.263,2.654,5.917,5.917,5.917h8.235c3.225,0,5.848-2.624,5.848-5.849,0-.894-.208-1.788-.604-2.588-.245-.494-.844-.699-1.339-.453Z"/></svg>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <div class="tb-group">
-          <button class="fb" id="btn-jl" onclick="fmtAlign('justifyLeft')">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="1" y="6" width="10" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="1" y="13" width="8" height="1.5" rx=".75"/></svg>
-          </button>
-          <button class="fb" id="btn-jc" onclick="fmtAlign('justifyCenter')">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="3" y="6" width="10" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="4" y="13" width="8" height="1.5" rx=".75"/></svg>
-          </button>
-          <button class="fb" id="btn-jr" onclick="fmtAlign('justifyRight')">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="5" y="6" width="10" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="7" y="13" width="8" height="1.5" rx=".75"/></svg>
-          </button>
-          <button class="fb" id="btn-jf" onclick="fmtAlign('justifyFull')">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="1" y="6" width="14" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="1" y="13" width="14" height="1.5" rx=".75"/></svg>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <div class="tb-group">
-          <button class="fb" id="btn-ul" onclick="fmt('insertUnorderedList')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
-              <path d="M7,6H23a1,1,0,0,0,0-2H7A1,1,0,0,0,7,6Z"/>
-              <path d="M23,11H7a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
-              <path d="M23,18H7a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
-              <circle cx="2" cy="5" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="19" r="2"/>
-            </svg>
-          </button>
-          <button class="fb" id="btn-ol" onclick="fmt('insertOrderedList')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" class="stroke-icon" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M11 6h9"/><path d="M11 12h9"/><path d="M12 18h8"/>
-              <path d="M4 16a2 2 0 1 1 4 0c0 .591-.5 1-1 1.5l-3 2.5h4"/>
-              <path d="M6 10v-6l-2 2"/>
-            </svg>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <div class="tb-group">
-          <button class="tb-color-btn" onclick="openColorModal()" title="Cor da letra">
-            <div class="color-dot" id="color-dot"></div>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <div class="tb-group">
-          <button class="fb" onclick="fmt('undo')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
-              <path d="m24,13.5v7c0,.829-.672,1.5-1.5,1.5s-1.5-.671-1.5-1.5v-7c0-1.378-1.121-2.5-2.5-2.5H3.901l4.634,4.414c.6.571.622,1.521.051,2.121-.295.31-.69.465-1.086.465-.372,0-.744-.137-1.035-.414L1.345,12.707c-.876-.875-1.345-2.004-1.345-3.207s.469-2.333,1.318-3.182L6.465,1.414c.601-.571,1.549-.549,2.121.051.571.6.549,1.549-.051,2.121l-4.633,4.414h14.598c3.032,0,5.5,2.467,5.5,5.5Z"/>
-            </svg>
-          </button>
-          <button class="fb" onclick="fmt('redo')">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
-              <path d="m24,9.5c0,1.203-.468,2.333-1.319,3.182l-5.146,4.904c-.291.276-.663.414-1.035.414-.396,0-.791-.156-1.086-.465-.571-.601-.548-1.55.051-2.121l4.633-4.414H5.5c-1.378,0-2.5,1.122-2.5,2.5v7c0,.828-.671,1.5-1.5,1.5s-1.5-.672-1.5-1.5v-7c0-3.033,2.467-5.5,5.5-5.5h14.599l-4.634-4.414c-.6-.571-.623-1.521-.051-2.121.571-.601,1.52-.623,2.121-.051l5.121,4.879c.876.875,1.344,2.004,1.344,3.207Z"/>
-            </svg>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <!-- Sobrescrito / Subscrito -->
-        <div class="tb-group">
-          <button class="fb" id="btn-sup" onclick="fmt('superscript')" title="Sobrescrito">
-            <ion-icon name="arrow-up-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
-          </button>
-          <button class="fb" id="btn-sub" onclick="fmt('subscript')" title="Subscrito">
-            <ion-icon name="arrow-down-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <!-- Recuo -->
-        <div class="tb-group">
-          <button class="fb" onclick="fmt('outdent')" title="Diminuir recuo">
-            <ion-icon name="arrow-back-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
-          </button>
-          <button class="fb" onclick="fmt('indent')" title="Aumentar recuo">
-            <ion-icon name="arrow-forward-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <!-- Limpar formatação -->
-        <div class="tb-group">
-          <button class="fb" onclick="fmt('removeFormat')" title="Limpar formatação">
-            <ion-icon name="close-circle-outline" style="font-size:15px;pointer-events:none;"></ion-icon>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <!-- Cor de fundo do texto -->
-        <div class="tb-group">
-          <button class="tb-color-btn" onclick="openBgColorModal()" title="Cor de fundo">
-            <div id="bg-color-dot" style="width:18px;height:18px;border-radius:3px;background:#ffff00;border:2px solid rgba(0,0,0,.18);pointer-events:none;"></div>
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-
-        <div class="tb-sep"></div>
-        <button class="tb-pill-btn" onclick="openInsertModal()">Inserir</button>
-        <div class="tb-sep"></div>
-        <button class="tb-pill-btn" onclick="openLayoutModal()">Layout</button>
+        <button class="fb" id="btn-u" onclick="fmt('underline')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+            <path d="M12,20a8.009,8.009,0,0,0,8-8V1a1,1,0,0,0-2,0V12A6,6,0,0,1,6,12V1A1,1,0,0,0,4,1V12A8.009,8.009,0,0,0,12,20Z"/>
+            <path d="M23,22H1a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
+          </svg>
+        </button>
+        <button class="fb" id="btn-s" onclick="fmt('strikeThrough')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="m24,12c0,.553-.448,1-1,1H1c-.552,0-1-.447-1-1s.448-1,1-1h4.081c-1.863-1.003-3.081-2.97-3.081-5.151C2,2.624,4.624,0,7.848,0h8.235c3.262,0,5.917,2.654,5.917,5.917v1.083c0,.553-.448,1-1,1s-1-.447-1-1v-1.083c0-2.16-1.757-3.917-3.917-3.917H7.848c-2.122,0-3.848,1.727-3.848,3.849,0,1.732,1.167,3.26,2.84,3.714l5.293,1.438h10.867c.552,0,1,.447,1,1Zm-3.943,3.11c-.495.244-.698.844-.454,1.34.259.524.396,1.113.396,1.701,0,2.122-1.726,3.849-3.848,3.849H7.917c-2.16,0-3.917-1.757-3.917-3.917v-1.083c0-.553-.448-1-1-1s-1,.447-1,1v1.083c0,3.263,2.654,5.917,5.917,5.917h8.235c3.225,0,5.848-2.624,5.848-5.849,0-.894-.208-1.788-.604-2.588-.245-.494-.844-.699-1.339-.453Z"/></svg>
+        </button>
       </div>
-
-      <ion-progress-bar id="prog" value="0"
-        style="opacity:0;transition:opacity .3s;--background:var(--border);--progress-background:var(--acc);height:2px;">
-      </ion-progress-bar>
-    </ion-header>
-
-    <ion-content scroll-y="false" fullscreen="false">
-      <div class="doc-scroll">
-        <div class="doc-pages" id="doc-pages"></div>
-        <div class="doc-meta" id="doc-meta">0 palavras</div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="fb" id="btn-jl" onclick="fmtAlign('justifyLeft')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="1" y="6" width="10" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="1" y="13" width="8" height="1.5" rx=".75"/></svg>
+        </button>
+        <button class="fb" id="btn-jc" onclick="fmtAlign('justifyCenter')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="3" y="6" width="10" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="4" y="13" width="8" height="1.5" rx=".75"/></svg>
+        </button>
+        <button class="fb" id="btn-jr" onclick="fmtAlign('justifyRight')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="5" y="6" width="10" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="7" y="13" width="8" height="1.5" rx=".75"/></svg>
+        </button>
+        <button class="fb" id="btn-jf" onclick="fmtAlign('justifyFull')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2.5" width="14" height="1.5" rx=".75"/><rect x="1" y="6" width="14" height="1.5" rx=".75"/><rect x="1" y="9.5" width="14" height="1.5" rx=".75"/><rect x="1" y="13" width="14" height="1.5" rx=".75"/></svg>
+        </button>
       </div>
-    </ion-content>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="fb" id="btn-ul" onclick="fmt('insertUnorderedList')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+            <path d="M7,6H23a1,1,0,0,0,0-2H7A1,1,0,0,0,7,6Z"/>
+            <path d="M23,11H7a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
+            <path d="M23,18H7a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
+            <circle cx="2" cy="5" r="2"/><circle cx="2" cy="12" r="2"/><circle cx="2" cy="19" r="2"/>
+          </svg>
+        </button>
+        <button class="fb" id="btn-ol" onclick="fmt('insertOrderedList')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16">
+            <path d="M7,6H23a1,1,0,0,0,0-2H7A1,1,0,0,0,7,6Z"/>
+            <path d="M23,11H7a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
+            <path d="M23,18H7a1,1,0,0,0,0,2H23a1,1,0,0,0,0-2Z"/>
+            <path d="M2,8H1V3.5A1.5,1.5,0,0,0,0,3v0A1,1,0,0,0,0,5H1V8H0a1,1,0,0,0,0,2H3A1,1,0,0,0,3,8Z"/>
+            <path d="M3,18H.5a.5.5,0,0,1,0-1H2a2,2,0,0,0,0-4H0a1,1,0,0,0,0,2H2a0,0,0,0,1,0,0H.5a2.5,2.5,0,0,0,0,5H3a1,1,0,0,0,0-2Z"/>
+          </svg>
+        </button>
+        <button class="fb" id="btn-sup" onclick="fmt('superscript')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"><path d="m21.307,7.32l2.427-3.292c.165-.224.187-.521.057-.766-.13-.245-.386-.398-.66-.398-.149,0-1.131,0-1.131,0v-.864c0-.552-.447-1-1-1s-1,.448-1,1v.864h-1.131c-.274,0-.53.153-.66.398-.13.245-.108.542.057.766l2.041,2.769v.523h-1.307c-.553,0-1,.448-1,1s.447,1,1,1h4.307c.553,0,1-.448,1-1s-.447-1-1-1h-1Zm-16.807,3.68l4.586-6.099c.193-.256.225-.598.082-.885-.143-.288-.435-.466-.756-.466h-8.412c-.553,0-1,.448-1,1s.447,1,1,1h6.168l-4.586,6.099c-.193.256-.225.598-.082.885.143.288.435.466.756.466h8.745c.553,0,1-.448,1-1s-.447-1-1-1h-6.501Zm7.5,5.55h-11c-.553,0-1,.448-1,1s.447,1,1,1h11c.553,0,1-.448,1-1s-.447-1-1-1Z"/></svg>
+        </button>
+        <button class="fb" id="btn-sub" onclick="fmt('subscript')">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"><path d="m21.307,20.32l2.427-3.292c.165-.224.187-.521.057-.766-.13-.245-.386-.398-.66-.398-.149,0-1.131,0-1.131,0v-.864c0-.552-.447-1-1-1s-1,.448-1,1v.864h-1.131c-.274,0-.53.153-.66.398-.13.245-.108.542.057.766l2.041,2.769v.523h-1.307c-.553,0-1,.448-1,1s.447,1,1,1h4.307c.553,0,1-.448,1-1s-.447-1-1-1h-1Zm-16.807-2.32l4.586-6.099c.193-.256.225-.598.082-.885-.143-.288-.435-.466-.756-.466h-8.412c-.553,0-1,.448-1,1s.447,1,1,1h6.168l-4.586,6.099c-.193.256-.225.598-.082.885.143.288.435.466.756.466h8.745c.553,0,1-.448,1-1s-.447-1-1-1h-6.501Zm7.5-11.55h-11c-.553,0-1,.448-1,1s.447,1,1,1h11c.553,0,1-.448,1-1s-.447-1-1-1Z"/></svg>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="tb-color-btn" onclick="openColorModal()" title="Cor do texto">
+          <div id="color-dot" style="width:18px;height:18px;border-radius:50%;background:#111;border:2px solid rgba(0,0,0,.18);pointer-events:none;"></div>
+        </button>
+        <button class="tb-color-btn" onclick="openBgColorModal()" title="Cor de fundo">
+          <div id="bg-color-dot" style="width:18px;height:18px;border-radius:3px;background:#ffff00;border:2px solid rgba(0,0,0,.18);pointer-events:none;"></div>
+        </button>
+      </div>
+      <div class="tb-sep"></div>
+      <button class="tb-pill-btn" onclick="openInsertModal()">Inserir</button>
+      <div class="tb-sep"></div>
+      <button class="tb-pill-btn" onclick="openLayoutModal()">Layout</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar"><div class="progress-bar-fill" id="prog-fill"></div></div>
   </div>
-  <!-- ═══ VIEW: QUADRO BRANCO ═══ -->
-  <div id="view-whiteboard" class="view">
-    <!-- Header -->
-    <div class="native-header" style="padding-top:env(safe-area-inset-top,44px);">
-      <button class="bar-btn" onclick="closeWhiteboard()" style="margin-right:8px;">
+
+  <!-- Área de scroll do documento -->
+  <div class="doc-scroll" id="doc-scroll">
+    <div class="doc-pages" id="doc-pages"></div>
+    <div class="doc-meta" id="doc-meta">0 palavras</div>
+  </div>
+</div>
+
+<!-- ═══ VIEW: QUADRO BRANCO ═══ -->
+<div id="view-whiteboard" class="view">
+  <div class="wb-header">
+    <div class="wb-topbar">
+      <button class="bar-btn" onclick="closeWhiteboard()" style="margin-right:4px;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
           <path d="M.88,14.09,4.75,18a1,1,0,0,0,1.42,0h0a1,1,0,0,0,0-1.42L2.61,13H23a1,1,0,0,0,1-1h0a1,1,0,0,0-1-1H2.55L6.17,7.38A1,1,0,0,0,6.17,6h0A1,1,0,0,0,4.75,6L.88,9.85A3,3,0,0,0,.88,14.09Z"/>
         </svg>
       </button>
       <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--text);flex:1;">Quadro Branco</span>
-      <button class="bar-btn" onclick="wb_undo()" title="Desfazer">↩</button>
-      <button class="bar-btn" onclick="wb_redo()" title="Refazer">↪</button>
-      <button class="bar-btn" onclick="wb_clear()" title="Limpar" style="color:var(--danger);">🗑</button>
-      <button class="bar-btn" onclick="wb_export()" title="Exportar" style="color:var(--acc);font-family:'Syne',sans-serif;font-size:.75rem;font-weight:800;width:auto;padding:0 6px;">Exportar</button>
-    </div>
-    <!-- Toolbar -->
-    <div class="wb-toolbar">
-      <!-- Ferramentas -->
-      <button class="wb-btn active" id="wb-tool-pen"    onclick="wb_setTool('pen')"    title="Caneta">✏️</button>
-      <button class="wb-btn"        id="wb-tool-marker"  onclick="wb_setTool('marker')" title="Marcador">🖊</button>
-      <button class="wb-btn"        id="wb-tool-eraser"  onclick="wb_setTool('eraser')" title="Borracha">🧹</button>
-      <button class="wb-btn"        id="wb-tool-line"    onclick="wb_setTool('line')"   title="Linha">━</button>
-      <button class="wb-btn"        id="wb-tool-rect"    onclick="wb_setTool('rect')"   title="Retângulo">▭</button>
-      <button class="wb-btn"        id="wb-tool-circle"  onclick="wb_setTool('circle')" title="Círculo">○</button>
-      <button class="wb-btn"        id="wb-tool-text"    onclick="wb_setTool('text')"   title="Texto">T</button>
-      <button class="wb-btn"        id="wb-tool-select"  onclick="wb_setTool('select')" title="Selecionar">⬚</button>
-      <!-- Separador -->
-      <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;"></div>
-      <!-- Cores -->
-      <div class="wb-color-swatch active" style="background:#111111;" onclick="wb_setColor('#111111')" title="Preto"></div>
-      <div class="wb-color-swatch" style="background:#e0185e;" onclick="wb_setColor('#e0185e')" title="Rosa"></div>
-      <div class="wb-color-swatch" style="background:#0a84ff;" onclick="wb_setColor('#0a84ff')" title="Azul"></div>
-      <div class="wb-color-swatch" style="background:#30d158;" onclick="wb_setColor('#30d158')" title="Verde"></div>
-      <div class="wb-color-swatch" style="background:#ff9f0a;" onclick="wb_setColor('#ff9f0a')" title="Laranja"></div>
-      <div class="wb-color-swatch" style="background:#ff453a;" onclick="wb_setColor('#ff453a')" title="Vermelho"></div>
-      <div class="wb-color-swatch" style="background:#bf5af2;" onclick="wb_setColor('#bf5af2')" title="Roxo"></div>
-      <div class="wb-color-swatch" style="background:#ffffff;border:1px solid #ccc;" onclick="wb_setColor('#ffffff')" title="Branco"></div>
-      <!-- Espessura -->
-      <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;"></div>
-      <button class="wb-size-btn" onclick="wb_setSize(2)"  title="Fino">S</button>
-      <button class="wb-size-btn" onclick="wb_setSize(5)"  title="Médio">M</button>
-      <button class="wb-size-btn" onclick="wb_setSize(12)" title="Grosso">L</button>
-      <button class="wb-size-btn" onclick="wb_setSize(24)" title="Extra">XL</button>
-      <!-- Separador -->
-      <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;"></div>
-      <!-- Adicionar IA -->
-      <button class="wb-btn" onclick="wb_aiGenerate()" title="IA - Gerar conteúdo" style="width:auto;padding:0 10px;font-family:'Syne',sans-serif;font-size:.72rem;font-weight:800;color:var(--acc);">✦ IA</button>
-    </div>
-    <!-- Canvas -->
-    <div class="wb-canvas-wrap" id="wb-wrap">
-      <canvas id="wb-canvas"></canvas>
+      <button class="bar-btn" onclick="wb_undo()" title="Desfazer" style="font-size:18px;">↩</button>
+      <button class="bar-btn" onclick="wb_redo()" title="Refazer" style="font-size:18px;">↪</button>
+      <button class="bar-btn" onclick="wb_clear()" title="Limpar" style="color:var(--danger);font-size:16px;">🗑</button>
+      <button class="bar-btn-text" onclick="wb_export()">Exportar</button>
     </div>
   </div>
+  <div class="wb-toolbar">
+    <button class="wb-btn active" id="wb-tool-pen"    onclick="wb_setTool('pen')"    title="Caneta">✏️</button>
+    <button class="wb-btn"        id="wb-tool-marker"  onclick="wb_setTool('marker')" title="Marcador">🖊</button>
+    <button class="wb-btn"        id="wb-tool-eraser"  onclick="wb_setTool('eraser')" title="Borracha">🧹</button>
+    <button class="wb-btn"        id="wb-tool-line"    onclick="wb_setTool('line')"   title="Linha">━</button>
+    <button class="wb-btn"        id="wb-tool-rect"    onclick="wb_setTool('rect')"   title="Retângulo">▭</button>
+    <button class="wb-btn"        id="wb-tool-circle"  onclick="wb_setTool('circle')" title="Círculo">○</button>
+    <button class="wb-btn"        id="wb-tool-text"    onclick="wb_setTool('text')"   title="Texto">T</button>
+    <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;"></div>
+    <div class="wb-color-swatch active" style="background:#111111;" onclick="wb_setColor('#111111',this)"></div>
+    <div class="wb-color-swatch" style="background:#e0185e;" onclick="wb_setColor('#e0185e',this)"></div>
+    <div class="wb-color-swatch" style="background:#0a84ff;" onclick="wb_setColor('#0a84ff',this)"></div>
+    <div class="wb-color-swatch" style="background:#30d158;" onclick="wb_setColor('#30d158',this)"></div>
+    <div class="wb-color-swatch" style="background:#ff9f0a;" onclick="wb_setColor('#ff9f0a',this)"></div>
+    <div class="wb-color-swatch" style="background:#ff453a;" onclick="wb_setColor('#ff453a',this)"></div>
+    <div class="wb-color-swatch" style="background:#bf5af2;" onclick="wb_setColor('#bf5af2',this)"></div>
+    <div class="wb-color-swatch" style="background:#ffffff;border:1px solid #ccc;" onclick="wb_setColor('#ffffff',this)"></div>
+    <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;"></div>
+    <button class="wb-size-btn" onclick="wb_setSize(2)">S</button>
+    <button class="wb-size-btn" onclick="wb_setSize(5)">M</button>
+    <button class="wb-size-btn" onclick="wb_setSize(12)">L</button>
+    <button class="wb-size-btn" onclick="wb_setSize(24)">XL</button>
+    <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;"></div>
+    <button class="wb-btn" onclick="wb_aiGenerate()" style="width:auto;padding:0 10px;font-family:'Syne',sans-serif;font-size:.72rem;font-weight:800;color:var(--acc);">✦ IA</button>
+  </div>
+  <div class="wb-canvas-wrap" id="wb-wrap">
+    <canvas id="wb-canvas"></canvas>
+  </div>
+</div>
 
-</ion-app>
+<!-- Toast container -->
+<div class="aria-toast" id="aria-toast"></div>
 
-<script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js"></script>
-<script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.js"></script>
-<script type="module">
-  import { defineCustomElements } from 'https://cdn.jsdelivr.net/npm/@ionic/core/dist/ionic/ionic.esm.js';
-  defineCustomElements(window);
-</script>
 <script>
-// ── Patch action sheet background ──
-const _origCreate = document.createElement.bind(document);
-document.createElement = function(tag) {
-  const el = _origCreate(tag);
-  if (tag === 'ion-action-sheet') {
-    el.style.setProperty('--background',                  'var(--sheet)');
-    el.style.setProperty('--button-background',           'var(--sheet)');
-    el.style.setProperty('--button-background-activated', 'rgba(0,0,0,.06)');
-    el.style.setProperty('--button-background-hover',     'rgba(0,0,0,.03)');
-    el.style.setProperty('--button-color',                'var(--sheet-txt)');
-    el.style.setProperty('--color',                       'var(--sheet-txt)');
-    el.style.setProperty('--border-radius',               '0');
-  }
-  return el;
-};
-
-// ── Navegação ──
-let _currentView = 'home';
-
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + id).classList.add('active');
-  _currentView = id;
-  // tabs
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  const tab = document.getElementById('tab-' + id);
-  if (tab) tab.classList.add('active');
-}
-
-function goHome() {
-  // InAppWebView (nativo) — usa callHandler
-  if (window.flutter_inappwebview) {
-    window.flutter_inappwebview.callHandler('FlutterBridge', JSON.stringify({ action: 'back' }));
-  } else if (window.parent && window.parent !== window) {
-    // iframe web
-    window.parent.postMessage({ action: 'back' }, '*');
-  } else {
-    history.back();
-  }
-}
-
-function goCriar() { showView('criar'); }
-
-function openDocEditor() {
-  document.getElementById('doc-pages').innerHTML = '';
-  pages = []; activePg = 0;
-  // slide in do editor
-  const editor = document.getElementById('view-editor');
-  editor.classList.add('active','slide-in');
-  document.querySelectorAll('.view:not(#view-editor)').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  editor.addEventListener('animationend', () => {
-    editor.classList.remove('slide-in');
-  }, { once:true });
-  _currentView = 'criar'; // voltar para criar ao fechar
-  setTimeout(() => {
-    createPage(0); applyScale(); updateMeta();
-    pages[0]?.editor?.focus();
-  }, 320);
-}
-
-// ── Estado ──
+// ════════════════════════════════════════════════
+// CONSTANTES E ESTADO
+// ════════════════════════════════════════════════
 const PAGE_W    = 794;
 const PAGE_H    = 1123;
 const PAD       = 94;
 const CONTENT_H = PAGE_H - PAD * 2;
+const ARIA_WORKER = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
+let   ARIA_TOKEN  = '';
 
 let pages    = [];
 let activePg = 0;
@@ -721,7 +423,47 @@ let curStyle = 'p';
 let curFont  = 'Georgia';
 let curSize  = 16;
 let curColor = '#111111';
-let _selColor = '#111111';
+let _curBgColor = '#ffff00';
+let _isTemplateMode = false;
+
+window._docTitle = 'Sem título';
+window._docId    = null;
+let _currentView = 'editor';
+
+const SIZES = [10,11,12,13,14,16,18,20,24,28,32,36,48,60,72];
+
+const FONT_DEFS = [
+  {label:'Roboto',family:'Roboto',cat:'sans-serif'},{label:'Inter',family:'Inter',cat:'sans-serif'},
+  {label:'Open Sans',family:'Open Sans',cat:'sans-serif'},{label:'Lato',family:'Lato',cat:'sans-serif'},
+  {label:'Montserrat',family:'Montserrat',cat:'sans-serif'},{label:'Poppins',family:'Poppins',cat:'sans-serif'},
+  {label:'Oswald',family:'Oswald',cat:'sans-serif'},{label:'Raleway',family:'Raleway',cat:'sans-serif'},
+  {label:'Nunito',family:'Nunito',cat:'sans-serif'},{label:'Ubuntu',family:'Ubuntu',cat:'sans-serif'},
+  {label:'Work Sans',family:'Work Sans',cat:'sans-serif'},{label:'DM Sans',family:'DM Sans',cat:'sans-serif'},
+  {label:'Fira Sans',family:'Fira Sans',cat:'sans-serif'},{label:'Nunito Sans',family:'Nunito Sans',cat:'sans-serif'},
+  {label:'Plus Jakarta Sans',family:'Plus Jakarta Sans',cat:'sans-serif'},{label:'Outfit',family:'Outfit',cat:'sans-serif'},
+  {label:'Figtree',family:'Figtree',cat:'sans-serif'},{label:'Josefin Sans',family:'Josefin Sans',cat:'sans-serif'},
+  {label:'Quicksand',family:'Quicksand',cat:'sans-serif'},{label:'Exo 2',family:'Exo 2',cat:'sans-serif'},
+  {label:'Comfortaa',family:'Comfortaa',cat:'sans-serif'},{label:'Fredoka',family:'Fredoka',cat:'sans-serif'},
+  {label:'Georgia',family:'Georgia',cat:'serif'},{label:'Merriweather',family:'Merriweather',cat:'serif'},
+  {label:'Playfair Display',family:'Playfair Display',cat:'serif'},{label:'PT Serif',family:'PT Serif',cat:'serif'},
+  {label:'Libre Baskerville',family:'Libre Baskerville',cat:'serif'},{label:'EB Garamond',family:'EB Garamond',cat:'serif'},
+  {label:'Crimson Text',family:'Crimson Text',cat:'serif'},{label:'Noto Serif',family:'Noto Serif',cat:'serif'},
+  {label:'Cormorant Garamond',family:'Cormorant Garamond',cat:'serif'},{label:'Cinzel',family:'Cinzel',cat:'serif'},
+  {label:'Spectral',family:'Spectral',cat:'serif'},{label:'DM Serif Display',family:'DM Serif Display',cat:'serif'},
+  {label:'Space Mono',family:'Space Mono',cat:'mono'},{label:'Fira Code',family:'Fira Code',cat:'mono'},
+  {label:'JetBrains Mono',family:'JetBrains Mono',cat:'mono'},{label:'IBM Plex Mono',family:'IBM Plex Mono',cat:'mono'},
+  {label:'Inconsolata',family:'Inconsolata',cat:'mono'},{label:'DM Mono',family:'DM Mono',cat:'mono'},
+  {label:'VT323',family:'VT323',cat:'mono'},{label:'Press Start 2P',family:'Press Start 2P',cat:'mono'},
+  {label:'Syne',family:'Syne',cat:'display'},{label:'Abril Fatface',family:'Abril Fatface',cat:'display'},
+  {label:'Anton',family:'Anton',cat:'display'},{label:'Bebas Neue',family:'Bebas Neue',cat:'display'},
+  {label:'Bangers',family:'Bangers',cat:'display'},{label:'Orbitron',family:'Orbitron',cat:'display'},
+  {label:'Lobster',family:'Lobster',cat:'display'},{label:'Pacifico',family:'Pacifico',cat:'display'},
+  {label:'Dancing Script',family:'Dancing Script',cat:'script'},{label:'Caveat',family:'Caveat',cat:'script'},
+  {label:'Satisfy',family:'Satisfy',cat:'script'},{label:'Great Vibes',family:'Great Vibes',cat:'script'},
+  {label:'Sacramento',family:'Sacramento',cat:'script'},{label:'Parisienne',family:'Parisienne',cat:'script'},
+  {label:'Permanent Marker',family:'Permanent Marker',cat:'script'},{label:'Handlee',family:'Handlee',cat:'script'},
+  {label:'Babylonica',family:'Babylonica',cat:'script'},
+];
 
 const PRESET_COLORS = [
   '#111111','#ffffff','#e0185e','#ff6b9d','#ff453a',
@@ -730,106 +472,74 @@ const PRESET_COLORS = [
   '#8e8e93','#636366','#3a3a3c','#2c2c2e','#1c1c1e',
 ];
 
-// Cada entrada: [nomeExibição, famíliaCSS, fallback]
-// famíliaCSS = nome exacto do Google Fonts (para carregar e para font-family CSS)
-// fontes sistema (Arial, Georgia, etc.) usam o nome directamente sem carregar
-const FONT_DEFS = [
-  // ── Sans-serif ──
-  { label:'Roboto',           family:'Roboto',             cat:'sans-serif' },
-  { label:'Inter',            family:'Inter',              cat:'sans-serif' },
-  { label:'Open Sans',        family:'Open Sans',          cat:'sans-serif' },
-  { label:'Lato',             family:'Lato',               cat:'sans-serif' },
-  { label:'Montserrat',       family:'Montserrat',         cat:'sans-serif' },
-  { label:'Poppins',          family:'Poppins',            cat:'sans-serif' },
-  { label:'Oswald',           family:'Oswald',             cat:'sans-serif' },
-  { label:'Raleway',          family:'Raleway',            cat:'sans-serif' },
-  { label:'Nunito',           family:'Nunito',             cat:'sans-serif' },
-  { label:'Ubuntu',           family:'Ubuntu',             cat:'sans-serif' },
-  { label:'Work Sans',        family:'Work Sans',          cat:'sans-serif' },
-  { label:'DM Sans',          family:'DM Sans',            cat:'sans-serif' },
-  { label:'Fira Sans',        family:'Fira Sans',          cat:'sans-serif' },
-  { label:'Nunito Sans',      family:'Nunito Sans',        cat:'sans-serif' },
-  { label:'Source Sans 3',    family:'Source Sans 3',      cat:'sans-serif' },
-  { label:'Jost',             family:'Jost',               cat:'sans-serif' },
-  { label:'Plus Jakarta Sans',family:'Plus Jakarta Sans',  cat:'sans-serif' },
-  { label:'Outfit',           family:'Outfit',             cat:'sans-serif' },
-  { label:'Figtree',          family:'Figtree',            cat:'sans-serif' },
-  { label:'Josefin Sans',     family:'Josefin Sans',       cat:'sans-serif' },
-  { label:'Quicksand',        family:'Quicksand',          cat:'sans-serif' },
-  { label:'Exo 2',            family:'Exo 2',              cat:'sans-serif' },
-  { label:'Comfortaa',        family:'Comfortaa',          cat:'sans-serif' },
-  { label:'Fredoka',          family:'Fredoka',            cat:'sans-serif' },
-  { label:'Righteous',        family:'Righteous',          cat:'sans-serif' },
-  // ── Serif ──
-  { label:'Georgia',          family:'Georgia',            cat:'serif' },
-  { label:'Merriweather',     family:'Merriweather',       cat:'serif' },
-  { label:'Playfair Display', family:'Playfair Display',   cat:'serif' },
-  { label:'PT Serif',         family:'PT Serif',           cat:'serif' },
-  { label:'Libre Baskerville',family:'Libre Baskerville',  cat:'serif' },
-  { label:'EB Garamond',      family:'EB Garamond',        cat:'serif' },
-  { label:'Crimson Text',     family:'Crimson Text',       cat:'serif' },
-  { label:'Noto Serif',       family:'Noto Serif',         cat:'serif' },
-  { label:'Source Serif 4',   family:'Source Serif 4',     cat:'serif' },
-  { label:'Cormorant Garamond',family:'Cormorant Garamond',cat:'serif' },
-  { label:'Spectral',         family:'Spectral',           cat:'serif' },
-  { label:'Cinzel',           family:'Cinzel',             cat:'serif' },
-  { label:'Italiana',         family:'Italiana',           cat:'serif' },
-  { label:'Bodoni Moda',      family:'Bodoni Moda',        cat:'serif' },
-  { label:'DM Serif Display', family:'DM Serif Display',   cat:'serif' },
-  { label:'Cardo',            family:'Cardo',              cat:'serif' },
-  // ── Mono ──
-  { label:'Space Mono',       family:'Space Mono',         cat:'mono' },
-  { label:'Fira Code',        family:'Fira Code',          cat:'mono' },
-  { label:'JetBrains Mono',   family:'JetBrains Mono',     cat:'mono' },
-  { label:'IBM Plex Mono',    family:'IBM Plex Mono',      cat:'mono' },
-  { label:'Inconsolata',      family:'Inconsolata',        cat:'mono' },
-  { label:'DM Mono',          family:'DM Mono',            cat:'mono' },
-  { label:'Anonymous Pro',    family:'Anonymous Pro',      cat:'mono' },
-  { label:'Share Tech Mono',  family:'Share Tech Mono',    cat:'mono' },
-  { label:'VT323',            family:'VT323',              cat:'mono' },
-  { label:'Press Start 2P',   family:'Press Start 2P',     cat:'mono' },
-  // ── Display ──
-  { label:'Syne',             family:'Syne',               cat:'display' },
-  { label:'Abril Fatface',    family:'Abril Fatface',      cat:'display' },
-  { label:'Anton',            family:'Anton',              cat:'display' },
-  { label:'Bebas Neue',       family:'Bebas Neue',         cat:'display' },
-  { label:'Bangers',          family:'Bangers',            cat:'display' },
-  { label:'Orbitron',         family:'Orbitron',           cat:'display' },
-  { label:'Lobster',          family:'Lobster',            cat:'display' },
-  { label:'Pacifico',         family:'Pacifico',           cat:'display' },
-  { label:'Righteous',        family:'Righteous',          cat:'display' },
-  // ── Manuscrita ──
-  { label:'Dancing Script',   family:'Dancing Script',     cat:'script' },
-  { label:'Caveat',           family:'Caveat',             cat:'script' },
-  { label:'Satisfy',          family:'Satisfy',            cat:'script' },
-  { label:'Sacramento',       family:'Sacramento',         cat:'script' },
-  { label:'Great Vibes',      family:'Great Vibes',        cat:'script' },
-  { label:'Kaushan Script',   family:'Kaushan Script',     cat:'script' },
-  { label:'Parisienne',       family:'Parisienne',         cat:'script' },
-  { label:'Permanent Marker', family:'Permanent Marker',   cat:'script' },
-  { label:'Handlee',          family:'Handlee',            cat:'script' },
-  { label:'Babylonica',       family:'Babylonica',         cat:'script' },
-  { label:'Agbalumo',         family:'Agbalumo',           cat:'script' },
-];
-// Array simples de nomes para compatibilidade
-const FONTS = FONT_DEFS.map(f => f.family);
+// ════════════════════════════════════════════════
+// NAVIGAÇÃO E VIEWS
+// ════════════════════════════════════════════════
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('view-' + id);
+  if (el) el.classList.add('active');
+  _currentView = id;
+}
 
-const SIZES = [10,11,12,13,14,16,18,20,24,28,32,36,48,60,72];
+function goHome() {
+  if (window.flutter_inappwebview) {
+    window.flutter_inappwebview.callHandler('FlutterBridge', JSON.stringify({ action:'back' }));
+  } else if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ action:'back' }, '*');
+  } else {
+    history.back();
+  }
+}
 
-// ── Escala A4 ──
-function getScale() { return (window.innerWidth - 24) / PAGE_W; }
+function openDocEditor() {
+  document.getElementById('doc-pages').innerHTML = '';
+  pages = []; activePg = 0;
+  const editorEl = document.getElementById('view-editor');
+  editorEl.classList.add('active','slide-in');
+  document.querySelectorAll('.view:not(#view-editor)').forEach(v => v.classList.remove('active'));
+  editorEl.addEventListener('animationend', () => editorEl.classList.remove('slide-in'), { once:true });
+  setTimeout(() => { createPage(0); applyScale(); updateMeta(); pages[0]?.editor?.focus(); }, 320);
+}
+
+// ════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('aria-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ════════════════════════════════════════════════
+// PROGRESS BAR
+// ════════════════════════════════════════════════
+function setProgress(on) {
+  document.getElementById('prog-fill').classList.toggle('on', on);
+}
+
+// ════════════════════════════════════════════════
+// ESCALA DO PAPEL A4
+// ════════════════════════════════════════════════
+function getScale() {
+  return Math.min(1, (window.innerWidth - 24) / PAGE_W);
+}
 function applyScale() {
   const s = getScale();
   document.querySelectorAll('.page-wrap').forEach(p => {
-    p.style.transformOrigin = 'top center';
-    p.style.transform       = `scale(${s})`;
-    p.style.marginBottom    = `${(PAGE_H * s) - PAGE_H}px`;
+    p.style.transform    = `scale(${s})`;
+    p.style.marginBottom = `${(PAGE_H * s) - PAGE_H}px`;
   });
-  document.getElementById('doc-pages').style.gap = `${16 / s}px`;
+  document.getElementById('doc-pages').style.gap = `${Math.round(16 / s)}px`;
 }
 window.addEventListener('resize', applyScale);
 
-// ── Páginas ──
+// ════════════════════════════════════════════════
+// PÁGINAS
+// ════════════════════════════════════════════════
 function createPage(idx) {
   const wrap = document.createElement('div');
   wrap.className = 'page-wrap';
@@ -847,16 +557,16 @@ function createPage(idx) {
   const num = document.createElement('div');
   num.className = 'page-num';
   num.textContent = String(idx + 1);
-  wrap.appendChild(ed); wrap.appendChild(num);
+  wrap.appendChild(ed);
+  wrap.appendChild(num);
   document.getElementById('doc-pages').appendChild(wrap);
   const s = getScale();
-  wrap.style.transformOrigin = 'top center';
-  wrap.style.transform       = `scale(${s})`;
-  wrap.style.marginBottom    = `${(PAGE_H * s) - PAGE_H}px`;
+  wrap.style.transform    = `scale(${s})`;
+  wrap.style.marginBottom = `${(PAGE_H * s) - PAGE_H}px`;
   pages.push({ wrap, editor: ed });
   return ed;
 }
-// ── Overflow ──
+
 let _raf = false;
 function onInput(idx) {
   updateMeta(); updateStates();
@@ -897,11 +607,17 @@ function renumber() {
 function updateMeta() {
   const t = pages.map(p => p.editor.innerText).join(' ').trim();
   const w = t ? t.split(/\s+/).filter(Boolean).length : 0;
-  document.getElementById('doc-meta').textContent =
-    `${w} palavra${w!==1?'s':''} · ${t.length} car. · ${pages.length} pág.`;
+  document.getElementById('doc-meta').textContent = `${w} palavra${w!==1?'s':''} · ${t.length} car. · ${pages.length} pág.`;
 }
-function getActiveEditor() { return pages[activePg]?.editor || pages[0].editor; }
-function fmt(cmd) { getActiveEditor().focus(); document.execCommand(cmd, false, null); updateStates(); }
+function getActiveEditor() { return pages[activePg]?.editor || pages[0]?.editor; }
+
+// ════════════════════════════════════════════════
+// FORMATAÇÃO
+// ════════════════════════════════════════════════
+function fmt(cmd) {
+  const ed = getActiveEditor(); if (!ed) return;
+  ed.focus(); document.execCommand(cmd, false, null); updateStates();
+}
 function fmtAlign(cmd) {
   fmt(cmd);
   ['btn-jl','btn-jc','btn-jr','btn-jf'].forEach(id => document.getElementById(id)?.classList.remove('on'));
@@ -918,19 +634,18 @@ function onKey(e) {
   if (e.key==='Tab') { e.preventDefault(); document.execCommand('insertHTML',false,'\u00a0\u00a0\u00a0\u00a0'); }
 }
 
-// ── Progress / Toast ──
-function setProgress(on) {
-  const p = document.getElementById('prog');
-  p.style.opacity = on?'1':'0'; p.setAttribute('value', on?'0.5':'0');
-}
-async function showToast(msg) {
-  const t = document.createElement('ion-toast');
-  t.message=msg; t.duration=2000; t.position='bottom';
-  document.body.appendChild(t); await t.present();
-  t.addEventListener('didDismiss', ()=>t.remove());
+// ════════════════════════════════════════════════
+// FLUTTER BRIDGE
+// ════════════════════════════════════════════════
+function _sendFlutter(obj) {
+  const msg = JSON.stringify(obj);
+  if (window.flutter_inappwebview) {
+    window.flutter_inappwebview.callHandler('FlutterBridge', msg);
+  } else if (window.parent && window.parent !== window) {
+    window.parent.postMessage(obj, '*');
+  }
 }
 
-// ── Range ──
 let _range = null;
 function saveRange() {
   const s = window.getSelection();
@@ -941,397 +656,32 @@ function restoreRange() {
   const s = window.getSelection(); s.removeAllRanges(); s.addRange(_range); _range = null;
 }
 
-// ── Action sheet helper ──
-async function showSheet(header, buttons) {
-  const sheet = document.createElement('ion-action-sheet');
-  sheet.header  = header;
-  sheet.buttons = [...buttons, { text:'Cancelar', role:'cancel' }];
-  document.body.appendChild(sheet);
-  await sheet.present();
-  sheet.addEventListener('didDismiss', () => sheet.remove());
-}
-
-// ── ESTILO ──
-window.openStyleModal = function() {
-  saveRange();
-  _sendFlutter({ action:'modal', type:'style', current: curStyle });
-};
-
-// ── FONTE ──
-window.openFontModal = function() {
-  saveRange();
-  _sendFlutter({ action:'modal', type:'font', current: curFont, fonts: FONT_DEFS.map(f=>({label:f.label,family:f.family,cat:f.cat})) });
-};
-
-// ── TAMANHO ──
-window.openSizeModal = function() {
-  saveRange();
-  _sendFlutter({ action:'modal', type:'size', current: curSize, sizes: SIZES });
-};
-
-// ── COR DA FONTE ──
-let _colorModal = null;
-let _pickerModal = null;
-
-function hslToHex(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l);const f=n=>{const k=(n+h/30)%12;const c=l-a*Math.max(-1,Math.min(k-3,9-k,1));return Math.round(255*c).toString(16).padStart(2,'0')};return'#'+f(0)+f(8)+f(4)}
-function hexToHsl(hex){let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;if(max===min){h=s=0}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);switch(max){case r:h=((g-b)/d+(g<b?6:0))/6;break;case g:h=((b-r)/d+2)/6;break;case b:h=((r-g)/d+4)/6;break}}return[Math.round(h*360),Math.round(s*100),Math.round(l*100)]}
-
-window.openColorModal = function() {
-  saveRange();
-  _sendFlutter({ action:'modal', type:'color', current: curColor, presets: PRESET_COLORS });
-};
-window.closeColorModal = function() {};
-
-window.openOpcoes = function() {
-  _sendFlutter({ action:'modal', type:'opcoes' });
-};
-
-let _whitePaperForced = false;
-function toggleWhitePaper() {
-  _whitePaperForced = !_whitePaperForced;
-  document.querySelectorAll('.page-wrap').forEach(p => {
-    p.style.background = _whitePaperForced ? '#ffffff' : '';
-    p.querySelector('.page-editor').style.color = _whitePaperForced ? '#111111' : '';
-  });
-  showToast(_whitePaperForced ? 'Papel branco ativado' : 'Papel voltou ao tema');
-}
-
-async function exportPDF() {
-  showToast('A gerar PDF…');
-  setProgress(true);
-
-  // Aguardar bibliotecas carregarem
-  let attempts = 0;
-  while ((typeof window.jspdf === 'undefined') && attempts < 20) {
-    await new Promise(r => setTimeout(r, 200));
-    attempts++;
-  }
-
-  if (typeof window.jspdf === 'undefined') {
-    setProgress(false);
-    showToast('Biblioteca PDF não carregou. A usar fallback HTML…');
-    // Fallback: envia HTML para o Flutter converter
-    const html = _buildFullHtmlExport();
-    _sendFlutter({ action: 'exportPDF_html', html, title: window._docTitle || 'documento' });
-    return;
-  }
-
-  try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit: 'px', format: [794, 1123], orientation: 'portrait', hotfixes: ['px_scaling'] });
-
-    // Modo template: captura iframe
-    if (_isTemplateMode) {
-      const iframe = document.getElementById('template-iframe');
-      if (iframe) {
-        const wrap = iframe.parentElement;
-        const origTransform = wrap.style.transform;
-        wrap.style.transform = 'none';
-        
-        const canvas = await html2canvas(iframe.contentDocument.body, {
-          scale: 2, useCORS: true, logging: false,
-          backgroundColor: '#ffffff',
-          allowTaint: true,
-        });
-        wrap.style.transform = origTransform;
-        
-        const w = canvas.width / 2;
-        const h = canvas.height / 2;
-        const pdfH = (h / w) * 794;
-        const pdfDoc = new jsPDF({ unit: 'px', format: [794, pdfH], orientation: 'portrait' });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pdfDoc.addImage(imgData, 'JPEG', 0, 0, 794, pdfH);
-        const base64 = pdfDoc.output('datauristring').split(',')[1];
-        setProgress(false);
-        _sendFlutter({ action: 'exportPDF', base64, title: window._docTitle || 'documento' });
-        showToast('PDF gerado!');
-        return;
-      }
-    }
-
-    // Modo normal: uma página de cada vez
-    for (let i = 0; i < pages.length; i++) {
-      const wrap = pages[i].wrap;
-      const origTransform = wrap.style.transform;
-      const origMargin    = wrap.style.marginBottom;
-      const origW         = wrap.style.width;
-      const origH         = wrap.style.height;
-
-      wrap.style.transform    = 'none';
-      wrap.style.marginBottom = '0';
-      wrap.style.width        = '794px';
-      wrap.style.height       = '1123px';
-
-      const origBg = wrap.style.background;
-      wrap.style.background = '#ffffff';
-      const ed = pages[i].editor;
-      const origColor = ed.style.color;
-      ed.style.color = '#111111';
-
-      const canvas = await html2canvas(wrap, {
-        scale: 2, useCORS: true, logging: false,
-        backgroundColor: '#ffffff',
-        width: 794, height: 1123,
-        windowWidth: 794, windowHeight: 1123,
-      });
-
-      wrap.style.transform    = origTransform;
-      wrap.style.marginBottom = origMargin;
-      wrap.style.width        = origW;
-      wrap.style.height       = origH;
-      wrap.style.background   = origBg;
-      ed.style.color          = origColor;
-
-      if (i > 0) pdf.addPage([794, 1123], 'portrait');
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      pdf.addImage(imgData, 'JPEG', 0, 0, 794, 1123);
-    }
-
-    applyScale();
-    const base64 = pdf.output('datauristring').split(',')[1];
-    setProgress(false);
-    _sendFlutter({ action: 'exportPDF', base64, title: window._docTitle || 'documento' });
-    showToast('PDF gerado! ✓');
-  } catch(err) {
-    setProgress(false);
-    applyScale();
-    console.error('exportPDF error:', err);
-    // Fallback HTML
-    const html = _buildFullHtmlExport();
-    _sendFlutter({ action: 'exportPDF_html', html, title: window._docTitle || 'documento' });
-    showToast('PDF gerado via fallback');
-  }
-}
-
-function _buildFullHtmlExport() {
-  if (_isTemplateMode) {
-    const iframe = document.getElementById('template-iframe');
-    if (iframe) {
-      try { return iframe.contentDocument.documentElement.outerHTML; } catch(e) {}
-    }
-    return pages.map(p => p.editor.innerHTML).join('');
-  }
-  const body = pages.map(p => `<div class="page" style="page-break-after:always;padding:94px;width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Georgia,serif;line-height:1.65;">${p.editor.innerHTML}</div>`).join('');
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${window._docTitle}</title><style>body{margin:0;background:#fff;}@media print{.page{page-break-after:always;}}</style></head><body>${body}</body></html>`;
-}
-
-function exportTXT() {
-  const b = new Blob([pages.map(p=>p.editor.innerText).join('\n\n--- Página ---\n\n')], {type:'text/plain'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='documento.txt'; a.click();
-  showToast('TXT exportado!');
-}
-async function sharePDF(){ if(navigator.share)try{await navigator.share({title:'Documento Aria'});}catch(e){}else showToast('Partilha não suportada'); }
-function addPageManual(){ createPage(pages.length); applyScale(); }
-function clearAll(){ document.getElementById('doc-pages').innerHTML=''; pages=[]; activePg=0; createPage(0); applyScale(); updateMeta(); showToast('Documento limpo'); }
-
-// ── Renomear título ──
-window.openRenameDialog = function() {
-  _sendFlutter({ action:'modal', type:'rename', current: window._docTitle || '' });
-};
-
-// ── Modal Inserir ──
-window.openInsertModal = function() {
-  saveRange();
-  _sendFlutter({ action:'modal', type:'insert' });
-};
-
-function insertTable() {
-  getActiveEditor().focus(); restoreRange();
-  const html = `<table style="border-collapse:collapse;width:100%;margin:.5em 0;">
-    <thead><tr>
-      <th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho 1</th>
-      <th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho 2</th>
-      <th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho 3</th>
-    </tr></thead>
-    <tbody>
-      <tr><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td></tr>
-      <tr><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td><td style="border:1px solid #ccc;padding:6px 10px;">Célula</td></tr>
-    </tbody>
-  </table><p><br></p>`;
-  document.execCommand('insertHTML', false, html);
-}
-
-function insertCode() {
-  getActiveEditor().focus(); restoreRange();
-  document.execCommand('insertHTML', false, '<pre style="background:rgba(0,0,0,.06);border-radius:8px;padding:12px 14px;font-family:\'Space Mono\',monospace;font-size:.82rem;margin:.5em 0;overflow-x:auto;"><code>// código aqui</code></pre><p><br></p>');
-}
-
-function insertLink() {
-  const url = prompt('URL do link:');
-  if (url) {
-    getActiveEditor().focus(); restoreRange();
-    document.execCommand('createLink', false, url);
-    getActiveEditor().querySelectorAll('a').forEach(a => { a.target='_blank'; });
-  }
-}
-
-// ── Modal Layout ──
-window.openLayoutModal = function() {
-  _sendFlutter({ action:'modal', type:'layout' });
-};
-
-// ── IA ──
-window.openGemini = function() {
+// ════════════════════════════════════════════════
+// MODAIS (delegados ao Flutter)
+// ════════════════════════════════════════════════
+window.openStyleModal  = function() { saveRange(); _sendFlutter({ action:'modal', type:'style',  current:curStyle }); };
+window.openFontModal   = function() { saveRange(); _sendFlutter({ action:'modal', type:'font',   current:curFont, fonts:FONT_DEFS }); };
+window.openSizeModal   = function() { saveRange(); _sendFlutter({ action:'modal', type:'size',   current:curSize, sizes:SIZES }); };
+window.openColorModal  = function() { saveRange(); _sendFlutter({ action:'modal', type:'color',  current:curColor, presets:PRESET_COLORS }); };
+window.openBgColorModal= function() { saveRange(); _sendFlutter({ action:'modal', type:'bgColor',current:_curBgColor }); };
+window.openOpcoes      = function() { _sendFlutter({ action:'modal', type:'opcoes' }); };
+window.openInsertModal = function() { saveRange(); _sendFlutter({ action:'modal', type:'insert' }); };
+window.openLayoutModal = function() { _sendFlutter({ action:'modal', type:'layout' }); };
+window.openRenameDialog= function() { _sendFlutter({ action:'modal', type:'rename', current:window._docTitle||'' }); };
+window.openGemini      = function() {
   const sel = (window.getSelection()?.toString()||'').trim();
   saveRange();
   _sendFlutter({ action:'modal', type:'gemini', selectedText: sel.slice(0,200) });
 };
-async function aiRun(action) {
-  const ed = getActiveEditor();
-  const sel = window.getSelection();
-  const selectedText = sel ? sel.toString().trim() : '';
-  const contextText = selectedText || ed.innerText.slice(0, 500);
+window.openFindReplace = function() { _sendFlutter({ action:'modal', type:'findReplace' }); };
 
-  if (!contextText && !['Criar lista com pontos','Explicar conceito'].includes(action)) {
-    showToast('Seleciona texto primeiro'); return;
-  }
-
-  setProgress(true);
-  showToast('IA a processar…');
-
-  // Prompts por ação
-  const prompts = {
-    'Melhorar escrita':    `Melhora a escrita do seguinte texto, mantendo o significado e o tom. Retorna APENAS o texto melhorado sem explicações:
-
-${contextText}`,
-    'Resumir':             `Resume o seguinte texto de forma concisa. Retorna APENAS o resumo:
-
-${contextText}`,
-    'Continuar texto':     `Continua o seguinte texto de forma natural e coerente. Retorna APENAS a continuação:
-
-${contextText}`,
-    'Encurtar texto':      `Encurta o seguinte texto mantendo as ideias principais. Retorna APENAS o texto encurtado:
-
-${contextText}`,
-    'Expandir texto':      `Expande o seguinte texto com mais detalhes e exemplos. Retorna APENAS o texto expandido:
-
-${contextText}`,
-    'Traduzir para inglês':  `Traduz para inglês. Retorna APENAS a tradução:
-
-${contextText}`,
-    'Traduzir para espanhol':'Traduz para espanhol. Retorna APENAS a tradução:
-
-${contextText}`,
-    'Traduzir para francês': `Traduz para francês. Retorna APENAS a tradução:
-
-${contextText}`,
-    'Corrigir gramática':  `Corrige a gramática e ortografia. Retorna APENAS o texto corrigido:
-
-${contextText}`,
-    'Tom formal':          `Reescreve com tom formal e profissional. Retorna APENAS o texto:
-
-${contextText}`,
-    'Tom casual':          `Reescreve com tom casual e descontraído. Retorna APENAS o texto:
-
-${contextText}`,
-    'Tom persuasivo':      `Reescreve de forma persuasiva e convincente. Retorna APENAS o texto:
-
-${contextText}`,
-    'Criar lista com pontos': `Cria uma lista de pontos sobre: ${contextText || 'o tema do documento'}. Retorna em HTML com <ul><li>...</li></ul>`,
-    'Explicar conceito':   `Explica de forma clara e simples o conceito de: ${contextText || 'o tema do documento'}. Retorna APENAS a explicação.`,
-  };
-
-  const prompt = prompts[action] || `Aplica "${action}" ao texto:
-
-${contextText}`;
-
-  try {
-    // Chama a API Anthropic via Flutter bridge
-    _sendFlutter({ action: 'aiRequest', prompt, aiAction: action, selectedText });
-  } catch(e) {
-    setProgress(false);
-    showToast('Erro na IA: ' + e.message);
-  }
-}
-
-// Recebe resposta da IA e aplica no editor
-window._aiResponse = function(data) {
-  setProgress(false);
-  if (!data || !data.text) { showToast('IA: sem resposta'); return; }
-  
-  const ed = getActiveEditor();
-  ed.focus();
-  restoreRange();
-
-  const sel = window.getSelection();
-  if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-    // Substituir texto selecionado
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    const frag = document.createDocumentFragment();
-    const div = document.createElement('div');
-    div.innerHTML = data.text.trim().startsWith('<') ? data.text : data.text.replace(/
-/g, '<br>');
-    while (div.firstChild) frag.appendChild(div.firstChild);
-    range.insertNode(frag);
-  } else {
-    // Inserir na posição do cursor
-    document.execCommand('insertHTML', false, 
-      data.text.trim().startsWith('<') ? data.text : '<p>' + data.text.replace(/
-
-/g, '</p><p>').replace(/
-/g, '<br>') + '</p>'
-    );
-  }
-  updateMeta();
-  showToast('IA: texto aplicado ✓');
-};
-
-// ── Cor de fundo do texto ──
-let _curBgColor = '#ffff00';
-window.openBgColorModal = function() {
-  saveRange();
-  _sendFlutter({ action:'modal', type:'bgColor', current: _curBgColor });
-};
-
-// ── Duplicar página ──
-function duplicatePage() {
-  if (!pages[activePg]) return;
-  const html = pages[activePg].editor.innerHTML;
-  createPage(pages.length);
-  pages[pages.length - 1].editor.innerHTML = html;
-  applyScale(); updateMeta(); showToast('Página duplicada');
-}
-
-// ── Estatísticas ──
-function showDocStats() {
-  const text = pages.map(p => p.editor.innerText).join(' ').trim();
-  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
-  const chars = text.length;
-  const charsNoSp = text.replace(/\s/g,'').length;
-  const sentences = (text.match(/[.!?]+/g)||[]).length;
-  const readMin = Math.max(1, Math.round(words/200));
-  _sendFlutter({ action:'modal', type:'stats', words, chars, charsNoSp, sentences, pages: pages.length, readMin });
-}
-
-// ── Localizar e substituir ──
-window.openFindReplace = function() {
-  _sendFlutter({ action:'modal', type:'findReplace' });
-};
-</script>
-
-<script>
-// ── Flutter Bridge (InAppWebView + iframe web) ──
-window._docTitle = 'Sem título';
-window._docId = null;
-
-// Envia mensagem para o Flutter — suporta InAppWebView e iframe web
-function _sendFlutter(obj) {
-  const msg = JSON.stringify(obj);
-  if (window.flutter_inappwebview) {
-    // InAppWebView — callHandler
-    window.flutter_inappwebview.callHandler('FlutterBridge', msg);
-  } else if (window.parent && window.parent !== window) {
-    // iframe / Flutter Web
-    window.parent.postMessage(obj, '*');
-  }
-}
-
-// ── Recebe resultado de modal nativo Flutter e aplica no editor ──
+// ════════════════════════════════════════════════
+// RESPOSTA DE MODAL DO FLUTTER
+// ════════════════════════════════════════════════
 window._modalResult = function(data) {
   const type = data.type;
-  getActiveEditor().focus();
-  restoreRange();
+  const ed = getActiveEditor();
+  if (ed) { ed.focus(); restoreRange(); }
 
   if (type === 'style') {
     const labels = { h1:'Título', h2:'Subtítulo', h3:'Secção', p:'Corpo', blockquote:'Citação' };
@@ -1351,7 +701,7 @@ window._modalResult = function(data) {
     const el = document.getElementById('size-label');
     if (el) el.textContent = String(data.size);
     document.execCommand('fontSize', false, '7');
-    getActiveEditor().querySelectorAll('font[size="7"]').forEach(e => {
+    if (ed) ed.querySelectorAll('font[size="7"]').forEach(e => {
       e.removeAttribute('size'); e.style.fontSize = data.size + 'px';
     });
 
@@ -1369,67 +719,56 @@ window._modalResult = function(data) {
 
   } else if (type === 'link') {
     if (data.url) {
-      if (data.text) {
-        document.execCommand('insertHTML', false, `<a href="${data.url}" target="_blank">${data.text || data.url}</a>`);
-      } else {
-        document.execCommand('createLink', false, data.url);
-        getActiveEditor().querySelectorAll('a').forEach(a => { a.target='_blank'; });
-      }
+      if (data.text) document.execCommand('insertHTML', false, `<a href="${data.url}" target="_blank">${data.text||data.url}</a>`);
+      else { document.execCommand('createLink', false, data.url); if(ed) ed.querySelectorAll('a').forEach(a => a.target='_blank'); }
     }
 
   } else if (type === 'image') {
-    if (data.url) {
-      _insertResizableImageUrl(data.url, data.alt || 'imagem');
-    }
-
-  } else if (type === 'table') {
-    const r = parseInt(data.rows) || 3;
-    const c = parseInt(data.cols) || 3;
-    const headerRow = Array.from({length:c}, (_,i)=>`<th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho ${i+1}</th>`).join('');
-    const bodyRow  = Array.from({length:c}, ()=>`<td style="border:1px solid #ccc;padding:6px 10px;">Célula</td>`).join('');
-    const bodyRows = Array.from({length:r-1}, ()=>`<tr>${bodyRow}</tr>`).join('');
-    document.execCommand('insertHTML', false, `<table style="border-collapse:collapse;width:100%;margin:.5em 0;"><thead><tr>${headerRow}</tr></thead><tbody>${bodyRows}</tbody></table><p><br></p>`);
-
-  } else if (type === 'insert') {
-    if (data.action === 'hr')          document.execCommand('insertHorizontalRule',false,null);
-    else if (data.action === 'blockquote') document.execCommand('formatBlock',false,'blockquote');
-    else if (data.action === 'code')   insertCode();
-    else if (data.action === 'ul')     fmt('insertUnorderedList');
-    else if (data.action === 'ol')     fmt('insertOrderedList');
-    else if (data.action === 'pageBreak') document.execCommand('insertHTML',false,'<div style="page-break-after:always;height:0;"></div>');
-    else if (data.action === 'table')  _sendFlutter({ action:'modal', type:'table' });
-    else if (data.action === 'link')   _sendFlutter({ action:'modal', type:'link', text:(window.getSelection()?.toString()||'') });
-    else if (data.action === 'image')        _sendFlutter({ action:'modal', type:'image' });
-    else if (data.action === 'imageUpload')  _sendFlutter({ action:'modal', type:'imageUpload' });
-    else if (data.action === 'qrcode')       _sendFlutter({ action:'modal', type:'qrcode' });
-    else if (data.action === 'sticker')      _sendFlutter({ action:'modal', type:'sticker' });
-    else if (data.action === 'signature')    _openSignaturePad();
+    if (data.url) _insertResizableImageUrl(data.url, data.alt || 'imagem');
 
   } else if (type === 'imageUpload') {
-    // Flutter enviou imagem em base64
-    if (data.base64 && data.mime) {
-      const src = `data:${data.mime};base64,${data.base64}`;
-      _insertResizableImage(src, data.alt || 'imagem');
-    }
+    if (data.base64 && data.mime) _insertResizableImage(`data:${data.mime};base64,${data.base64}`, data.alt||'imagem');
 
   } else if (type === 'qrcode') {
     if (data.content) _insertQrCode(data.content);
 
   } else if (type === 'sticker') {
-    if (data.icon) _insertSticker(data.icon, data.color || '#e0185e');
+    if (data.icon) _insertSticker(data.icon, data.color||'#e0185e');
+
+  } else if (type === 'table') {
+    const r = parseInt(data.rows)||3, c = parseInt(data.cols)||3;
+    const headerRow = Array.from({length:c},(_,i)=>`<th style="border:1px solid #ccc;padding:6px 10px;background:rgba(0,0,0,.05);">Cabeçalho ${i+1}</th>`).join('');
+    const bodyRow   = Array.from({length:c},()=>`<td style="border:1px solid #ccc;padding:6px 10px;">Célula</td>`).join('');
+    const bodyRows  = Array.from({length:Math.max(1,r-1)},()=>`<tr>${bodyRow}</tr>`).join('');
+    document.execCommand('insertHTML', false, `<table style="border-collapse:collapse;width:100%;margin:.5em 0;"><thead><tr>${headerRow}</tr></thead><tbody>${bodyRows}</tbody></table><p><br></p>`);
+
+  } else if (type === 'insert') {
+    if      (data.action==='hr')          document.execCommand('insertHorizontalRule',false,null);
+    else if (data.action==='blockquote')  document.execCommand('formatBlock',false,'blockquote');
+    else if (data.action==='code')        document.execCommand('insertHTML',false,'<pre style="background:rgba(0,0,0,.06);border-radius:8px;padding:12px 14px;font-family:\'Space Mono\',monospace;font-size:.82rem;margin:.5em 0;overflow-x:auto;"><code>// código aqui</code></pre><p><br></p>');
+    else if (data.action==='ul')          fmt('insertUnorderedList');
+    else if (data.action==='ol')          fmt('insertOrderedList');
+    else if (data.action==='pageBreak')   document.execCommand('insertHTML',false,'<div style="page-break-after:always;height:0;"></div>');
+    else if (data.action==='table')       _sendFlutter({ action:'modal', type:'table' });
+    else if (data.action==='link')        _sendFlutter({ action:'modal', type:'link', text:(window.getSelection()?.toString()||'') });
+    else if (data.action==='image')       _sendFlutter({ action:'modal', type:'image' });
+    else if (data.action==='imageUpload') _sendFlutter({ action:'modal', type:'imageUpload' });
+    else if (data.action==='qrcode')      _sendFlutter({ action:'modal', type:'qrcode' });
+    else if (data.action==='sticker')     _sendFlutter({ action:'modal', type:'sticker' });
+    else if (data.action==='signature')   _openSignaturePad();
 
   } else if (type === 'opcoes') {
-    if (data.action === 'exportPDF')       exportPDF();
-    else if (data.action === 'exportTXT')  exportTXT();
-    else if (data.action === 'sharePDF')   sharePDF();
-    else if (data.action === 'stats')      showDocStats();
-    else if (data.action === 'findReplace')window.openFindReplace();
-    else if (data.action === 'print')      window.print();
-    else if (data.action === 'duplicate')  duplicatePage();
-    else if (data.action === 'newPage')    addPageManual();
-    else if (data.action === 'whitePaper') toggleWhitePaper();
-    else if (data.action === 'clearAll')   clearAll();
-    else if (data.action === 'whiteboard') window.openWhiteboard();
+    if      (data.action==='exportPDF')    exportPDF();
+    else if (data.action==='exportTXT')    exportTXT();
+    else if (data.action==='sharePDF')     sharePDF();
+    else if (data.action==='stats')        showDocStats();
+    else if (data.action==='findReplace')  window.openFindReplace();
+    else if (data.action==='print')        window.print();
+    else if (data.action==='duplicate')    duplicatePage();
+    else if (data.action==='newPage')      addPageManual();
+    else if (data.action==='whitePaper')   toggleWhitePaper();
+    else if (data.action==='clearAll')     clearAll();
+    else if (data.action==='whiteboard')   window.openWhiteboard();
 
   } else if (type === 'gemini') {
     if (data.action) aiRun(data.action);
@@ -1445,15 +784,13 @@ window._modalResult = function(data) {
       const m = margins[data.margin];
       if (m) document.querySelectorAll('.page-editor').forEach(p=>{ p.parentElement.style.padding=m.v+'px '+m.h+'px'; });
     }
-    if (data.spacing) {
-      document.querySelectorAll('.page-editor').forEach(p=>{ p.style.lineHeight=data.spacing; });
-    }
+    if (data.spacing) document.querySelectorAll('.page-editor').forEach(p=>{ p.style.lineHeight=data.spacing; });
 
   } else if (type === 'findReplace') {
-    if (data.action === 'replace' && data.find) {
-      const re = new RegExp(data.find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+    if (data.action==='replace' && data.find) {
+      const re = new RegExp(data.find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
       let n = 0;
-      pages.forEach(p=>{ p.editor.innerHTML = p.editor.innerHTML.replace(re, ()=>{ n++; return data.replaceWith||''; }); });
+      pages.forEach(p=>{ p.editor.innerHTML = p.editor.innerHTML.replace(re,()=>{n++;return data.replaceWith||'';}); });
       updateMeta();
       showToast(`${n} substituição(ões) efectuada(s)`);
     }
@@ -1467,113 +804,43 @@ window._modalResult = function(data) {
   }
 };
 
-// ── Alterar tema (chamado pelo Flutter quando o utilizador muda tema) ──
+// ════════════════════════════════════════════════
+// TEMA
+// ════════════════════════════════════════════════
 window.setTheme = function(isDark) {
   document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  // Forçar repaint do ion-content se necessário
-  const content = document.querySelector('ion-content');
-  if (content) {
-    content.style.setProperty('--background', 'var(--bg)');
-  }
 };
 
-// ── Carregar DOCX via mammoth.js (base64) ──
-window.loadDocxBase64 = function(b64Str) {
-  try {
-    // Converter base64 para ArrayBuffer
-    const binaryStr  = atob(b64Str);
-    const bytes      = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-    const buffer = bytes.buffer;
-
-    mammoth.convertToHtml({ arrayBuffer: buffer })
-      .then(result => {
-        const html = result.value || '<p>Documento vazio</p>';
-        document.getElementById('doc-pages').innerHTML = '';
-        pages = []; activePg = 0;
-        createPage(0); applyScale(); updateMeta();
-
-        // Dividir HTML por páginas de forma heurística
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        const children = Array.from(div.children);
-
-        let pageIdx = 0;
-        let charCount = 0;
-        const CHARS_PER_PAGE = 1800;
-
-        children.forEach(child => {
-          if (pageIdx >= pages.length) createPage(pageIdx);
-          pages[pageIdx].editor.appendChild(child.cloneNode(true));
-          charCount += (child.textContent || '').length;
-          if (charCount >= CHARS_PER_PAGE) {
-            pageIdx++;
-            charCount = 0;
-            createPage(pageIdx);
-            applyScale();
-          }
-        });
-
-        updateMeta();
-        showToast('DOCX carregado!');
-      })
-      .catch(err => {
-        showToast('Erro ao converter DOCX');
-        console.error(err);
-      });
-  } catch(e) {
-    showToast('Erro ao carregar DOCX');
-    console.error(e);
-  }
-};
-
-// Guardar documento → envia para Flutter
+// ════════════════════════════════════════════════
+// GUARDAR / CARREGAR
+// ════════════════════════════════════════════════
 window.saveDocument = function() {
-  const html = pages.map(p => p.editor.innerHTML).join('<!-- PAGE_BREAK -->');
-  const text = pages.map(p => p.editor.innerText).join('\n\n').trim();
+  const html  = pages.map(p => p.editor.innerHTML).join('<!-- PAGE_BREAK -->');
+  const text  = pages.map(p => p.editor.innerText).join('\n\n').trim();
   const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
-  const data = JSON.stringify({ html, text, words, title: window._docTitle });
-  _sendFlutter({
-    action: 'save',
-    id: window._docId,
-    title: window._docTitle,
-    data: data,
-  });
+  _sendFlutter({ action:'save', id:window._docId, title:window._docTitle, data:JSON.stringify({html,text,words,title:window._docTitle}) });
+};
+window.getDocumentContent = function() {
+  const html  = pages.map(p => p.editor.innerHTML).join('<!-- PAGE_BREAK -->');
+  const text  = pages.map(p => p.editor.innerText).join('\n\n').trim();
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  return JSON.stringify({ html, text, words, title:window._docTitle });
 };
 
-// ── Extrair body de HTML completo ──────────────────────────────
-function _extractBodyHtml(raw) {
-  if (!raw || typeof raw !== 'string') return '';
-  const trimmed = raw.trim();
-  return trimmed; // Retorna o HTML completo para preservar estilos
-}
-
-// Verifica se o HTML é um template completo (com DOCTYPE/html/style)
-function _isFullHtmlTemplate(raw) {
-  if (!raw || typeof raw !== 'string') return false;
-  const t = raw.trim();
-  return /^<!DOCTYPE|^<html/i.test(t) || (/<style[\s\S]*?>[\s\S]*?<\/style>/i.test(t) && /<body/i.test(t));
-}
-
-// Extrai apenas o body para edição normal
 function _extractBodyOnly(raw) {
   if (!raw || typeof raw !== 'string') return '';
-  const trimmed = raw.trim();
-  if (/^<!DOCTYPE|^<html/i.test(trimmed)) {
-    const m = trimmed.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const t = raw.trim();
+  if (/^<!DOCTYPE|^<html/i.test(t)) {
+    const m = t.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     if (m) return m[1].trim();
-    const idx = trimmed.toLowerCase().indexOf('<body');
-    if (idx >= 0) {
-      const after = trimmed.slice(trimmed.indexOf('>', idx) + 1);
-      const end = after.toLowerCase().lastIndexOf('</body>');
-      return end >= 0 ? after.slice(0, end).trim() : after.trim();
-    }
   }
-  return trimmed;
+  return t;
 }
-
-// ── Dividir HTML em páginas por PAGE_BREAK ─────────────────────
-let _isTemplateMode = false; // true quando exibe template HTML completo
+function _isFullHtmlTemplate(raw) {
+  if (!raw) return false;
+  const t = raw.trim();
+  return /^<!DOCTYPE|^<html/i.test(t) || (/<style[\s\S]*?<\/style>/i.test(t) && /<body/i.test(t));
+}
 
 function _splitIntoPages(rawHtml, id, title, isNew) {
   document.getElementById('doc-pages').innerHTML = '';
@@ -1590,22 +857,17 @@ function _splitIntoPages(rawHtml, id, title, isNew) {
     return;
   }
 
-  // ── Modo template: HTML completo com estilos próprios ──────────
   if (_isFullHtmlTemplate(rawHtml) && !rawHtml.includes('<!-- PAGE_BREAK -->')) {
     _isTemplateMode = true;
     _renderTemplateHtml(rawHtml);
     return;
   }
 
-  // ── Modo normal: edição por páginas ────────────────────────────
   _isTemplateMode = false;
   const bodyHtml = _extractBodyOnly(rawHtml);
   const parts = bodyHtml.split('<!-- PAGE_BREAK -->').filter(p => p.trim());
 
-  if (parts.length === 0) {
-    createPage(0); applyScale(); updateMeta();
-    return;
-  }
+  if (parts.length === 0) { createPage(0); applyScale(); updateMeta(); return; }
 
   parts.forEach((part, i) => {
     createPage(i);
@@ -1615,25 +877,17 @@ function _splitIntoPages(rawHtml, id, title, isNew) {
     }
   });
 
-  applyScale();
-  updateMeta();
+  if (!isNew) pages.forEach(p => { p.editor.classList.remove('empty'); p.editor.setAttribute('data-ph',''); });
 
-  // Sem placeholder em docs existentes
-  if (!isNew) {
-    pages.forEach(p => {
-      p.editor.classList.remove('empty');
-      p.editor.setAttribute('data-ph', '');
-    });
-  }
+  applyScale(); updateMeta();
+  if (isNew) setTimeout(() => pages[0]?.editor?.focus(), 300);
 }
 
-// ── Renderiza template HTML completo em iframe isolado ──────────
 function _renderTemplateHtml(html) {
   const docPages = document.getElementById('doc-pages');
   docPages.innerHTML = '';
   pages = []; activePg = 0;
 
-  // Container do iframe com aspeto de papel A4
   const wrap = document.createElement('div');
   wrap.className = 'page-wrap template-iframe-wrap';
   wrap.style.cssText = 'height:auto;min-height:1123px;overflow:visible;padding:0;';
@@ -1641,28 +895,22 @@ function _renderTemplateHtml(html) {
   const iframe = document.createElement('iframe');
   iframe.id = 'template-iframe';
   iframe.style.cssText = 'width:794px;border:none;display:block;background:#fff;';
-  iframe.setAttribute('scrolling', 'no');
+  iframe.setAttribute('scrolling','no');
   wrap.appendChild(iframe);
   docPages.appendChild(wrap);
 
-  // Escreve HTML no iframe
   const doc = iframe.contentDocument || iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
+  doc.open(); doc.write(html); doc.close();
 
-  // Ajusta altura do iframe ao conteúdo
   function resizeIframe() {
     try {
       const h = doc.body ? Math.max(doc.body.scrollHeight, 1123) : 1123;
       iframe.style.height = h + 'px';
-      wrap.style.height = h + 'px';
+      wrap.style.height   = h + 'px';
     } catch(e) {}
   }
-  setTimeout(resizeIframe, 200);
-  setTimeout(resizeIframe, 600);
+  setTimeout(resizeIframe, 200); setTimeout(resizeIframe, 600);
 
-  // Cria uma página "virtual" para guardar/exportar
   const fakeEd = document.createElement('div');
   fakeEd.className = 'page-editor';
   fakeEd.innerHTML = html;
@@ -1670,23 +918,15 @@ function _renderTemplateHtml(html) {
   wrap.appendChild(fakeEd);
   pages.push({ wrap, editor: fakeEd });
 
-  // Aplica escala
   const s = getScale();
-  wrap.style.transformOrigin = 'top center';
-  wrap.style.transform = `scale(${s})`;
+  wrap.style.transform    = `scale(${s})`;
   wrap.style.marginBottom = `${(1123 * s) - 1123}px`;
 
-  updateMeta();
-  showToast('Template carregado ✓');
+  updateMeta(); showToast('Template carregado ✓');
 }
 
-// ── loadContent — chamado pelo Flutter (nova API) ─────────────
-// Assinatura: loadContent(html, title, id, isNew)
 window.loadContent = function(rawHtml, title, id, isNew) {
-  // Usar setTimeout para não bloquear thread UI ao carregar templates grandes
   setTimeout(() => {
-    const bodyHtml = _extractBodyHtml(rawHtml);
-    // Extrair estilos do HTML e injectá-los no head sem bloquear
     if (rawHtml && /<!DOCTYPE|<html/i.test(rawHtml.trim())) {
       const styleMatches = rawHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
       styleMatches.forEach(styleBlock => {
@@ -1694,188 +934,336 @@ window.loadContent = function(rawHtml, title, id, isNew) {
         if (existing) existing.remove();
         const styleEl = document.createElement('style');
         styleEl.id = 'tpl-styles';
-        styleEl.textContent = styleBlock.replace(/<\/?style[^>]*>/gi, '');
+        styleEl.textContent = styleBlock.replace(/<\/?style[^>]*>/gi,'');
         document.head.appendChild(styleEl);
       });
     }
-    _splitIntoPages(bodyHtml, id, title, isNew);
+    _splitIntoPages(rawHtml, id, title, isNew);
   }, 10);
 };
-
-// ── loadDocument — chamado internamente / iframe web ──────────
-// Assinatura original: loadDocument(id, title, htmlContent)
 window.loadDocument = function(id, title, htmlContent) {
-  const bodyHtml = _extractBodyHtml(htmlContent);
-  _splitIntoPages(bodyHtml, id, title, !htmlContent || !htmlContent.trim());
+  _splitIntoPages(htmlContent, id, title, !htmlContent || !htmlContent.trim());
 };
-
-// Actualizar título — chamado pelo Flutter
 window.setDocTitle = function(t) {
   window._docTitle = t;
   const el = document.getElementById('doc-title-text');
   if (el) el.textContent = t;
 };
 
-// Obter conteúdo — para uso interno
-window.getDocumentContent = function() {
-  const html = pages.map(p => p.editor.innerHTML).join('<!-- PAGE_BREAK -->');
-  const text = pages.map(p => p.editor.innerText).join('\n\n').trim();
-  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
-  return JSON.stringify({ html, text, words, title: window._docTitle });
+// ════════════════════════════════════════════════
+// DOCX
+// ════════════════════════════════════════════════
+window.loadDocxBase64 = function(b64Str) {
+  try {
+    const binaryStr = atob(b64Str);
+    const bytes     = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    mammoth.convertToHtml({ arrayBuffer: bytes.buffer })
+      .then(result => {
+        const html = result.value || '<p>Documento vazio</p>';
+        document.getElementById('doc-pages').innerHTML = '';
+        pages = []; activePg = 0;
+        createPage(0); applyScale();
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const children = Array.from(div.children);
+        let pageIdx = 0, charCount = 0;
+        const CHARS_PER_PAGE = 1800;
+        children.forEach(child => {
+          if (pageIdx >= pages.length) createPage(pageIdx);
+          pages[pageIdx].editor.appendChild(child.cloneNode(true));
+          charCount += (child.textContent||'').length;
+          if (charCount >= CHARS_PER_PAGE) { pageIdx++; charCount=0; createPage(pageIdx); applyScale(); }
+        });
+        updateMeta(); showToast('DOCX carregado!');
+      })
+      .catch(err => { showToast('Erro ao converter DOCX'); console.error(err); });
+  } catch(e) { showToast('Erro ao carregar DOCX'); console.error(e); }
 };
 
-// Bridge bidirecional Web ↔ iframe
-window.addEventListener('message', function(e) {
-  const d = e.data;
-  if (!d || typeof d !== 'object') return;
-  if (d.action === 'load') {
-    window.loadDocument(d.id, d.title, d.html || '');
-  } else if (d.action === 'setTitle') {
-    window.setDocTitle(d.title);
-  } else if (d.action === 'requestSave') {
-    window.saveDocument();
+// ════════════════════════════════════════════════
+// EXPORTAR PDF
+// ════════════════════════════════════════════════
+async function exportPDF() {
+  showToast('A gerar PDF…'); setProgress(true);
+  let attempts = 0;
+  while (typeof window.jspdf === 'undefined' && attempts < 20) {
+    await new Promise(r => setTimeout(r, 200)); attempts++;
   }
-});
-
-// Avisa parent que está pronto (iframe web)
-window.addEventListener('load', function() {
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage({ action: 'editorReady' }, '*');
+  if (typeof window.jspdf === 'undefined') {
+    setProgress(false);
+    _sendFlutter({ action:'exportPDF_html', html:_buildFullHtmlExport(), title:window._docTitle||'documento' });
+    return;
   }
-  // Cria primeira página se ainda não existir
-  if (pages.length === 0) { createPage(0); applyScale(); updateMeta(); }
-  // Processar DOCX pendente (injectado antes do mammoth carregar)
-  if (window._pendingDocx) {
-    setTimeout(() => {
-      if (typeof window.loadDocxBase64 === 'function') {
-        window.loadDocxBase64(window._pendingDocx);
-        window._pendingDocx = null;
+  try {
+    const { jsPDF } = window.jspdf;
+    if (_isTemplateMode) {
+      const iframe = document.getElementById('template-iframe');
+      if (iframe) {
+        const wrap = iframe.parentElement;
+        const origT = wrap.style.transform; wrap.style.transform = 'none';
+        const canvas = await html2canvas(iframe.contentDocument.body, { scale:2, useCORS:true, logging:false, backgroundColor:'#fff', allowTaint:true });
+        wrap.style.transform = origT;
+        const w = canvas.width/2, h = canvas.height/2;
+        const pdfH = (h/w)*794;
+        const pdfDoc = new jsPDF({ unit:'px', format:[794,pdfH], orientation:'portrait' });
+        pdfDoc.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',0,0,794,pdfH);
+        setProgress(false);
+        _sendFlutter({ action:'exportPDF', base64:pdfDoc.output('datauristring').split(',')[1], title:window._docTitle||'documento' });
+        showToast('PDF gerado!'); return;
       }
-    }, 500);
+    }
+    const pdf = new jsPDF({ unit:'px', format:[794,1123], orientation:'portrait', hotfixes:['px_scaling'] });
+    for (let i = 0; i < pages.length; i++) {
+      const wrap = pages[i].wrap;
+      const origT = wrap.style.transform, origM = wrap.style.marginBottom;
+      wrap.style.transform = 'none'; wrap.style.marginBottom = '0';
+      wrap.style.background = '#fff';
+      pages[i].editor.style.color = '#111';
+      const canvas = await html2canvas(wrap, { scale:2, useCORS:true, logging:false, backgroundColor:'#fff', width:794, height:1123 });
+      wrap.style.transform = origT; wrap.style.marginBottom = origM;
+      wrap.style.background = ''; pages[i].editor.style.color = '';
+      if (i > 0) pdf.addPage([794,1123],'portrait');
+      pdf.addImage(canvas.toDataURL('image/jpeg',.92),'JPEG',0,0,794,1123);
+    }
+    applyScale(); setProgress(false);
+    _sendFlutter({ action:'exportPDF', base64:pdf.output('datauristring').split(',')[1], title:window._docTitle||'documento' });
+    showToast('PDF gerado! ✓');
+  } catch(err) {
+    setProgress(false); applyScale(); console.error(err);
+    _sendFlutter({ action:'exportPDF_html', html:_buildFullHtmlExport(), title:window._docTitle||'documento' });
+    showToast('PDF via fallback');
   }
-});
+}
+function _buildFullHtmlExport() {
+  if (_isTemplateMode) {
+    const iframe = document.getElementById('template-iframe');
+    if (iframe) try { return iframe.contentDocument.documentElement.outerHTML; } catch(e) {}
+    return pages.map(p => p.editor.innerHTML).join('');
+  }
+  const body = pages.map(p => `<div class="page" style="page-break-after:always;padding:94px;width:794px;min-height:1123px;box-sizing:border-box;background:#fff;font-family:Georgia,serif;line-height:1.65;">${p.editor.innerHTML}</div>`).join('');
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${window._docTitle}</title><style>body{margin:0;background:#fff;}@media print{.page{page-break-after:always;}}</style></head><body>${body}</body></html>`;
+}
+function exportTXT() {
+  const b = new Blob([pages.map(p=>p.editor.innerText).join('\n\n--- Página ---\n\n')],{type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='documento.txt'; a.click();
+  showToast('TXT exportado!');
+}
+async function sharePDF() { if(navigator.share) try{await navigator.share({title:'Documento Aria'});}catch(e){} else showToast('Partilha não suportada'); }
+function addPageManual() { createPage(pages.length); applyScale(); }
+function clearAll() { document.getElementById('doc-pages').innerHTML=''; pages=[]; activePg=0; createPage(0); applyScale(); updateMeta(); showToast('Documento limpo'); }
+function duplicatePage() {
+  if (!pages[activePg]) return;
+  const html = pages[activePg].editor.innerHTML;
+  createPage(pages.length);
+  pages[pages.length-1].editor.innerHTML = html;
+  applyScale(); updateMeta(); showToast('Página duplicada');
+}
+let _whitePaperForced = false;
+function toggleWhitePaper() {
+  _whitePaperForced = !_whitePaperForced;
+  document.querySelectorAll('.page-wrap').forEach(p => {
+    p.style.background = _whitePaperForced ? '#ffffff' : '';
+    p.querySelector('.page-editor').style.color = _whitePaperForced ? '#111111' : '';
+  });
+  showToast(_whitePaperForced ? 'Papel branco ativado' : 'Papel voltou ao tema');
+}
+function showDocStats() {
+  const text = pages.map(p=>p.editor.innerText).join(' ').trim();
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  _sendFlutter({ action:'modal', type:'stats', words, chars:text.length, charsNoSp:text.replace(/\s/g,'').length, sentences:(text.match(/[.!?]+/g)||[]).length, pages:pages.length, readMin:Math.max(1,Math.round(words/200)) });
+}
 
-// ═══════════════════════════════════════════════════════
-// ── IMAGEM REDIMENSIONÁVEL ──────────────────────────────
-// ═══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// IA — Aria Worker
+// ════════════════════════════════════════════════
+window.ariaSearch = async function(query) {
+  setProgress(true); showToast('A pesquisar…');
+  try {
+    const headers = { 'Content-Type':'application/json' };
+    if (ARIA_TOKEN) headers['Authorization'] = 'Bearer ' + ARIA_TOKEN;
+    const resp = await fetch(ARIA_WORKER + '/ask', { method:'POST', headers, body:JSON.stringify({ query, mode:'search' }) });
+    if (resp.ok) {
+      const d = await resp.json();
+      if (d.answer) {
+        setProgress(false);
+        const html = d.answer.replace(/\n/g,'<br>').replace(/^#{1,3} (.+)$/gm,'<strong>$1</strong>');
+        document.execCommand('insertHTML', false, '<p>' + html + '</p>');
+        showToast('Pesquisa concluída ✓'); return;
+      }
+    }
+  } catch(e) { console.warn('ariaSearch error:', e); }
+  setProgress(false); showToast('Erro na pesquisa');
+};
+window.ariaLogin = async function(email, password) {
+  const r = await fetch(ARIA_WORKER + '/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
+  const d = await r.json();
+  if (d.token) ARIA_TOKEN = d.token;
+  return d;
+};
+window.ariaRegister = async function(name, email, password) {
+  const r = await fetch(ARIA_WORKER + '/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,email,password}) });
+  const d = await r.json();
+  if (d.token) ARIA_TOKEN = d.token;
+  return d;
+};
+window.setAriaToken = function(token) { ARIA_TOKEN = token; };
+
+async function aiRun(action) {
+  if (action === '🔍 Pesquisar na internet') {
+    const sel = window.getSelection()?.toString().trim();
+    const ed  = getActiveEditor();
+    const ctx = sel || (ed ? ed.innerText.slice(0,300) : '');
+    if (!ctx) { showToast('Escreve ou seleciona o tema a pesquisar'); return; }
+    window.ariaSearch(ctx); return;
+  }
+  const ed = getActiveEditor();
+  const selectedText = window.getSelection()?.toString().trim() || '';
+  const contextText  = selectedText || (ed ? ed.innerText.slice(0,500) : '');
+  if (!contextText && !['Criar lista com pontos','Explicar conceito'].includes(action)) {
+    showToast('Seleciona texto primeiro'); return;
+  }
+  setProgress(true); showToast('IA a processar…');
+  const prompts = {
+    'Melhorar escrita':    `Melhora a escrita do seguinte texto, mantendo o significado e o tom. Retorna APENAS o texto melhorado:\n\n${contextText}`,
+    'Resumir':             `Resume o seguinte texto de forma concisa. Retorna APENAS o resumo:\n\n${contextText}`,
+    'Continuar texto':     `Continua o seguinte texto de forma natural. Retorna APENAS a continuação:\n\n${contextText}`,
+    'Encurtar texto':      `Encurta o seguinte texto mantendo as ideias principais. Retorna APENAS o texto:\n\n${contextText}`,
+    'Expandir texto':      `Expande com mais detalhes. Retorna APENAS o texto:\n\n${contextText}`,
+    'Traduzir para inglês':  `Traduz para inglês. Retorna APENAS a tradução:\n\n${contextText}`,
+    'Traduzir para espanhol':`Traduz para espanhol. Retorna APENAS a tradução:\n\n${contextText}`,
+    'Traduzir para francês': `Traduz para francês. Retorna APENAS a tradução:\n\n${contextText}`,
+    'Corrigir gramática':  `Corrige gramática e ortografia. Retorna APENAS o texto corrigido:\n\n${contextText}`,
+    'Tom formal':          `Reescreve com tom formal. Retorna APENAS o texto:\n\n${contextText}`,
+    'Tom casual':          `Reescreve com tom casual. Retorna APENAS o texto:\n\n${contextText}`,
+    'Tom persuasivo':      `Reescreve de forma persuasiva. Retorna APENAS o texto:\n\n${contextText}`,
+    'Criar lista com pontos': `Cria uma lista de pontos sobre: ${contextText||'o tema do documento'}. Retorna em HTML com <ul><li>...</li></ul>`,
+    'Explicar conceito':   `Explica de forma clara: ${contextText||'o tema do documento'}. Retorna APENAS a explicação.`,
+  };
+  const prompt = prompts[action] || `Aplica "${action}" ao texto:\n\n${contextText}`;
+  try {
+    const headers = { 'Content-Type':'application/json' };
+    if (ARIA_TOKEN) headers['Authorization'] = 'Bearer ' + ARIA_TOKEN;
+    const resp = await fetch(ARIA_WORKER + '/generate', { method:'POST', headers, body:JSON.stringify({ prompt, system:'Responde APENAS com o texto solicitado, sem explicações. Em português.' }) });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.text) { window._aiResponse({ text:data.text }); return; }
+    }
+  } catch(_) {}
+  _sendFlutter({ action:'aiRequest', prompt, aiAction:action, selectedText });
+}
+window._aiResponse = function(data) {
+  setProgress(false);
+  if (!data || !data.text) { showToast('IA: sem resposta'); return; }
+  const ed = getActiveEditor();
+  if (ed) ed.focus();
+  restoreRange();
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const div = document.createElement('div');
+    div.innerHTML = data.text.trim().startsWith('<') ? data.text : data.text.replace(/\n/g,'<br>');
+    const frag = document.createDocumentFragment();
+    while (div.firstChild) frag.appendChild(div.firstChild);
+    range.insertNode(frag);
+  } else {
+    document.execCommand('insertHTML', false,
+      data.text.trim().startsWith('<') ? data.text :
+      '<p>' + data.text.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>') + '</p>');
+  }
+  updateMeta(); showToast('IA: texto aplicado ✓');
+};
+
+// ════════════════════════════════════════════════
+// IMAGEM REDIMENSIONÁVEL
+// ════════════════════════════════════════════════
 function _insertResizableImage(src, alt) {
   const id = 'img_' + Date.now();
-  const html = `
+  document.execCommand('insertHTML', false, `
     <div class="resizable-element" id="${id}" contenteditable="false"
       style="display:inline-block;position:relative;user-select:none;margin:8px 0;max-width:100%;">
       <img src="${src}" alt="${alt}"
         style="width:300px;max-width:100%;display:block;border:2px solid transparent;cursor:pointer;"
-        onclick="selectElement('${id}')"
-        draggable="false"/>
-      <div class="el-controls" style="display:none;position:absolute;bottom:-32px;left:0;right:0;
-        background:var(--acc);border-radius:6px;padding:4px;display:none;gap:4px;align-items:center;z-index:100;">
-        <button onclick="resizeEl('${id}',-50)" style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;" title="Diminuir">−</button>
-        <button onclick="resizeEl('${id}',50)"  style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;" title="Aumentar">+</button>
-        <button onclick="deleteEl('${id}')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:12px;" title="Apagar">🗑</button>
+        onclick="selectElement('${id}')" draggable="false"/>
+      <div class="el-controls" style="display:none;position:absolute;bottom:-32px;left:0;
+        background:var(--acc);border-radius:6px;padding:4px;gap:4px;align-items:center;z-index:100;">
+        <button onclick="resizeEl('${id}',-50)" style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">−</button>
+        <button onclick="resizeEl('${id}',50)"  style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">+</button>
+        <button onclick="deleteEl('${id}')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:12px;">🗑</button>
       </div>
-    </div><p><br></p>`;
-  document.execCommand('insertHTML', false, html);
+    </div><p><br></p>`);
 }
-
-function _insertResizableImageUrl(src, alt) {
-  _insertResizableImage(src, alt);
-}
-
+function _insertResizableImageUrl(src, alt) { _insertResizableImage(src, alt); }
 function selectElement(id) {
   document.querySelectorAll('.resizable-element').forEach(el => {
     const ctrl = el.querySelector('.el-controls');
     const img  = el.querySelector('img,svg,.sticker-icon');
-    if (ctrl) ctrl.style.display = 'none';
-    if (img)  img.style.border = '2px solid transparent';
+    if (ctrl) ctrl.style.display='none';
+    if (img)  img.style.border='2px solid transparent';
   });
-  const el = document.getElementById(id);
-  if (!el) return;
+  const el = document.getElementById(id); if (!el) return;
   const ctrl = el.querySelector('.el-controls');
   const img  = el.querySelector('img,svg,.sticker-icon');
-  if (ctrl) ctrl.style.display = 'flex';
-  if (img)  img.style.border = '2px solid var(--acc)';
+  if (ctrl) ctrl.style.display='flex';
+  if (img)  img.style.border='2px solid var(--acc)';
 }
-
 function resizeEl(id, delta) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const img = el.querySelector('img,.sticker-icon');
-  if (!img) return;
-  const cur = img.offsetWidth || 100;
-  const newW = Math.max(40, Math.min(700, cur + delta));
-  img.style.width = newW + 'px';
+  const el = document.getElementById(id); if (!el) return;
+  const img = el.querySelector('img,.sticker-icon'); if (!img) return;
+  img.style.width = Math.max(40, Math.min(700, (img.offsetWidth||100) + delta)) + 'px';
 }
-
-function deleteEl(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-}
-
-// Fechar controles ao clicar fora
+function deleteEl(id) { const el = document.getElementById(id); if (el) el.remove(); }
 document.addEventListener('click', e => {
   if (!e.target.closest('.resizable-element')) {
     document.querySelectorAll('.resizable-element').forEach(el => {
       const ctrl = el.querySelector('.el-controls');
       const img  = el.querySelector('img,.sticker-icon');
-      if (ctrl) ctrl.style.display = 'none';
-      if (img)  img.style.border = '2px solid transparent';
+      if (ctrl) ctrl.style.display='none';
+      if (img)  img.style.border='2px solid transparent';
     });
   }
 });
 
-// ═══════════════════════════════════════════════════════
-// ── QR CODE ────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// QR CODE
+// ════════════════════════════════════════════════
 function _insertQrCode(text) {
-  // Usa Google Charts API para gerar QR (funciona offline via CDN)
-  const encoded = encodeURIComponent(text);
-  const size = 200;
-  const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&format=png&margin=10`;
+  const src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}&format=png&margin=10`;
   _insertResizableImage(src, 'QR Code: ' + text);
   showToast('QR Code inserido ✓');
 }
 
-// ═══════════════════════════════════════════════════════
-// ── STICKERS / ÍCONES ──────────────────────────────────
-// ═══════════════════════════════════════════════════════
-const STICKER_PACKS = {
-  'Emojis': ['⭐','🌟','💡','🔥','✅','❌','📌','💎','🎯','🚀','💪','🌈','❤️','🎉','📊','📈','💰','🏆','✨','🌙','☀️','⚡','🎨','📝','🔑','💬','📣','🌍','🎵','🎁'],
-  'Negócios': ['📊','📈','📉','💹','💼','📋','📁','🗂️','📌','📍','✅','☑️','🔔','📧','📞','💻','🖥️','📱','🖨️','🖇️'],
-  'Sinais': ['⚠️','🚫','✅','❌','ℹ️','❓','❗','💯','🔒','🔓','🔇','📵','🔴','🟡','🟢','🔵','⬛','⬜','🟥','🟧'],
-  'Natureza': ['🌱','🌿','🍃','🌸','🌺','🌻','🌴','🌊','⛰️','🌋','🌅','🌄','☁️','⛅','🌙','⭐','🌟','💫','🌈','☀️'],
-};
-
+// ════════════════════════════════════════════════
+// STICKERS
+// ════════════════════════════════════════════════
 function _insertSticker(emoji, color) {
   const id = 'stk_' + Date.now();
-  const html = `
+  document.execCommand('insertHTML', false, `
     <span class="resizable-element sticker-wrap" id="${id}" contenteditable="false"
       style="display:inline-block;position:relative;margin:4px;user-select:none;">
       <span class="sticker-icon" onclick="selectElement('${id}')"
         style="font-size:48px;line-height:1;display:inline-block;cursor:pointer;border:2px solid transparent;border-radius:8px;padding:4px;">
         ${emoji}
       </span>
-      <div class="el-controls" style="display:none;position:absolute;bottom:-32px;left:0;right:0;
+      <div class="el-controls" style="display:none;position:absolute;bottom:-32px;left:0;
         background:var(--acc);border-radius:6px;padding:4px;gap:4px;align-items:center;z-index:100;">
         <button onclick="resizeEl('${id}',-12)" style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">−</button>
         <button onclick="resizeEl('${id}',12)"  style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">+</button>
         <button onclick="deleteEl('${id}')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:12px;">🗑</button>
       </div>
-    </span>`;
-  document.execCommand('insertHTML', false, html);
+    </span>`);
 }
 
-// ═══════════════════════════════════════════════════════
-// ── ASSINATURA (canvas) ─────────────────────────────────
-// ═══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// ASSINATURA
+// ════════════════════════════════════════════════
 function _openSignaturePad() {
   const existing = document.getElementById('sig-modal');
   if (existing) existing.remove();
-
   const modal = document.createElement('div');
   modal.id = 'sig-modal';
-  modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;
-    display:flex;align-items:flex-end;justify-content:center;`;
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
   modal.innerHTML = `
     <div style="background:var(--card);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:500px;">
       <div style="text-align:center;margin-bottom:12px;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--text);">Desenha a assinatura</div>
@@ -1888,19 +1276,14 @@ function _openSignaturePad() {
       </div>
     </div>`;
   document.body.appendChild(modal);
-
   const canvas = document.getElementById('sig-canvas');
   const ctx = canvas.getContext('2d');
-  ctx.strokeStyle = '#111';
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   let drawing = false, lx = 0, ly = 0;
-
   function getPos(e) {
     const r = canvas.getBoundingClientRect();
     const src = e.touches ? e.touches[0] : e;
-    return { x: (src.clientX - r.left) * (canvas.width / r.width), y: (src.clientY - r.top) * (canvas.height / r.height) };
+    return { x:(src.clientX-r.left)*(canvas.width/r.width), y:(src.clientY-r.top)*(canvas.height/r.height) };
   }
   canvas.addEventListener('mousedown',  e => { drawing=true; const p=getPos(e); lx=p.x; ly=p.y; });
   canvas.addEventListener('mousemove',  e => { if(!drawing) return; const p=getPos(e); ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke(); lx=p.x; ly=p.y; });
@@ -1908,204 +1291,185 @@ function _openSignaturePad() {
   canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing=true; const p=getPos(e); lx=p.x; ly=p.y; }, {passive:false});
   canvas.addEventListener('touchmove',  e => { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke(); lx=p.x; ly=p.y; }, {passive:false});
   canvas.addEventListener('touchend',   () => drawing=false);
-
-  window.clearSig  = () => { ctx.clearRect(0,0,canvas.width,canvas.height); };
+  window.clearSig  = () => ctx.clearRect(0,0,canvas.width,canvas.height);
   window.cancelSig = () => modal.remove();
-  window.saveSig   = () => {
-    const src = canvas.toDataURL('image/png');
-    modal.remove();
-    _insertResizableImage(src, 'Assinatura');
-    showToast('Assinatura inserida ✓');
-  };
+  window.saveSig   = () => { const src = canvas.toDataURL('image/png'); modal.remove(); _insertResizableImage(src,'Assinatura'); showToast('Assinatura inserida ✓'); };
 }
 
-
-// ═══════════════════════════════════════════════════════
-// ── WHITEBOARD ─────────────────────────────────────────
-// ═══════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// WHITEBOARD
+// ════════════════════════════════════════════════
 (function() {
   let canvas, ctx, wrap;
   let tool = 'pen', color = '#111111', size = 3;
   let drawing = false, startX = 0, startY = 0;
-  let history = [], redoStack = [];
+  let wbHistory = [], redoStack = [];
   let snapshot = null;
-  let textMode = false;
 
   window.wb_init = function() {
-    wrap  = document.getElementById('wb-wrap');
-    canvas= document.getElementById('wb-canvas');
+    wrap   = document.getElementById('wb-wrap');
+    canvas = document.getElementById('wb-canvas');
     if (!canvas || !wrap) return;
-    ctx   = canvas.getContext('2d');
+    ctx = canvas.getContext('2d');
     _resize();
     window.addEventListener('resize', _resize);
-
-    // Events
     canvas.addEventListener('mousedown',  _start, {passive:false});
     canvas.addEventListener('mousemove',  _move,  {passive:false});
     canvas.addEventListener('mouseup',    _end);
     canvas.addEventListener('mouseleave', _end);
     canvas.addEventListener('touchstart', e => { e.preventDefault(); _start(_toMouse(e)); }, {passive:false});
     canvas.addEventListener('touchmove',  e => { e.preventDefault(); _move(_toMouse(e));  }, {passive:false});
-    canvas.addEventListener('touchend',   e => _end());
+    canvas.addEventListener('touchend',   () => _end());
   };
-
   function _resize() {
     if (!canvas || !wrap) return;
     const w = wrap.clientWidth, h = wrap.clientHeight;
-    const img = ctx ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
+    const img = ctx ? ctx.getImageData(0,0,canvas.width,canvas.height) : null;
     canvas.width = w; canvas.height = h;
     if (img) ctx.putImageData(img, 0, 0);
   }
-
   function _toMouse(e) {
     const t = e.touches[0];
-    return { clientX: t.clientX, clientY: t.clientY, type: e.type.replace('touch','mouse') };
+    return { clientX:t.clientX, clientY:t.clientY };
   }
-
   function _pos(e) {
     const r = canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    return { x:e.clientX-r.left, y:e.clientY-r.top };
   }
-
   function _saveHistory() {
-    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    if (history.length > 50) history.shift();
+    wbHistory.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    if (wbHistory.length > 50) wbHistory.shift();
     redoStack = [];
   }
-
   function _start(e) {
     if (tool === 'text') { _addText(e); return; }
     drawing = true;
     const p = _pos(e);
     startX = p.x; startY = p.y;
     _saveHistory();
-    snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
+    snapshot = ctx.getImageData(0,0,canvas.width,canvas.height);
     ctx.beginPath();
-    ctx.strokeStyle = tool === 'eraser' ? (document.body.dataset.theme === 'dark' ? '#1a1a1a' : '#ffffff') : color;
-    ctx.lineWidth   = tool === 'eraser' ? size * 3 : (tool === 'marker' ? size * 2 : size);
-    ctx.lineCap     = 'round';
-    ctx.lineJoin    = 'round';
-    ctx.globalAlpha = tool === 'marker' ? 0.4 : 1;
+    ctx.strokeStyle = tool==='eraser' ? (document.body.dataset.theme==='dark'?'#1a1a1a':'#ffffff') : color;
+    ctx.lineWidth   = tool==='eraser' ? size*3 : (tool==='marker' ? size*2 : size);
+    ctx.lineCap     = 'round'; ctx.lineJoin = 'round';
+    ctx.globalAlpha = tool==='marker' ? 0.4 : 1;
     ctx.moveTo(startX, startY);
   }
-
   function _move(e) {
     if (!drawing) return;
     const p = _pos(e);
-
-    if (tool === 'pen' || tool === 'eraser' || tool === 'marker') {
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
+    if (tool==='pen'||tool==='eraser'||tool==='marker') {
+      ctx.lineTo(p.x,p.y); ctx.stroke();
     } else {
-      // Formas: restaurar snapshot e redesenhar
-      ctx.putImageData(snapshot, 0, 0);
+      ctx.putImageData(snapshot,0,0);
       ctx.beginPath();
-      ctx.strokeStyle = color;
-      ctx.fillStyle   = color + '22';
-      ctx.lineWidth   = size;
-      ctx.globalAlpha = 1;
-      if (tool === 'line') {
-        ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke();
-      } else if (tool === 'rect') {
-        ctx.strokeRect(startX, startY, p.x - startX, p.y - startY);
-        ctx.fillRect(startX, startY, p.x - startX, p.y - startY);
-      } else if (tool === 'circle') {
-        const rx = Math.abs(p.x - startX) / 2, ry = Math.abs(p.y - startY) / 2;
-        const cx = startX + (p.x - startX) / 2, cy = startY + (p.y - startY) / 2;
-        ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
-        ctx.stroke(); ctx.fill();
+      ctx.strokeStyle = color; ctx.fillStyle = color+'22';
+      ctx.lineWidth = size; ctx.globalAlpha = 1;
+      if      (tool==='line')   { ctx.moveTo(startX,startY); ctx.lineTo(p.x,p.y); ctx.stroke(); }
+      else if (tool==='rect')   { ctx.strokeRect(startX,startY,p.x-startX,p.y-startY); ctx.fillRect(startX,startY,p.x-startX,p.y-startY); }
+      else if (tool==='circle') {
+        const rx=Math.abs(p.x-startX)/2, ry=Math.abs(p.y-startY)/2;
+        const cx=startX+(p.x-startX)/2, cy=startY+(p.y-startY)/2;
+        ctx.ellipse(cx,cy,rx,ry,0,0,2*Math.PI); ctx.stroke(); ctx.fill();
       }
     }
   }
-
   function _end() {
     if (!drawing) return;
-    drawing = false;
-    ctx.globalAlpha = 1;
-    ctx.closePath();
+    drawing = false; ctx.globalAlpha = 1; ctx.closePath();
   }
-
   function _addText(e) {
     const p = _pos(e);
     const input = document.createElement('input');
-    input.style.cssText = `
-      position:fixed;left:${e.clientX}px;top:${e.clientY}px;
-      font-size:${size * 4 + 12}px;color:${color};background:transparent;
-      border:none;outline:1px dashed ${color};font-family:'Syne',sans-serif;
-      z-index:9999;min-width:80px;`;
-    document.body.appendChild(input);
-    input.focus();
+    input.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;font-size:${size*4+12}px;color:${color};background:transparent;border:none;outline:1px dashed ${color};font-family:'Syne',sans-serif;z-index:9999;min-width:80px;`;
+    document.body.appendChild(input); input.focus();
     input.addEventListener('blur', () => {
       if (input.value.trim()) {
         _saveHistory();
-        ctx.font = `${size * 4 + 12}px Syne, sans-serif`;
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 1;
+        ctx.font = `${size*4+12}px Syne,sans-serif`;
+        ctx.fillStyle = color; ctx.globalAlpha = 1;
         ctx.fillText(input.value, p.x, p.y);
       }
       input.remove();
     });
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+    input.addEventListener('keydown', e => { if (e.key==='Enter') input.blur(); });
   }
-
   window.wb_setTool = function(t) {
     tool = t;
     document.querySelectorAll('[id^="wb-tool-"]').forEach(b => b.classList.remove('active'));
-    const btn = document.getElementById('wb-tool-' + t);
+    const btn = document.getElementById('wb-tool-'+t);
     if (btn) btn.classList.add('active');
   };
-
-  window.wb_setColor = function(c) {
+  window.wb_setColor = function(c, el) {
     color = c;
     document.querySelectorAll('.wb-color-swatch').forEach(s => s.classList.remove('active'));
-    event.target.classList.add('active');
+    if (el) el.classList.add('active');
   };
-
-  window.wb_setSize = function(s) { size = s; };
-
+  window.wb_setSize  = function(s) { size = s; };
   window.wb_undo = function() {
-    if (!history.length) return;
-    redoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    ctx.putImageData(history.pop(), 0, 0);
+    if (!wbHistory.length) return;
+    redoStack.push(ctx.getImageData(0,0,canvas.width,canvas.height));
+    ctx.putImageData(wbHistory.pop(), 0, 0);
   };
-
   window.wb_redo = function() {
     if (!redoStack.length) return;
-    history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    wbHistory.push(ctx.getImageData(0,0,canvas.width,canvas.height));
     ctx.putImageData(redoStack.pop(), 0, 0);
   };
-
   window.wb_clear = function() {
     _saveHistory();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
   };
-
   window.wb_export = function() {
-    const dataUrl = canvas.toDataURL('image/png');
-    const b64 = dataUrl.split(',')[1];
-    _sendFlutter({ action: 'exportPDF', base64: b64, title: 'quadro-branco', isImage: true });
+    const b64 = canvas.toDataURL('image/png').split(',')[1];
+    _sendFlutter({ action:'exportPDF', base64:b64, title:'quadro-branco', isImage:true });
     showToast('Quadro exportado ✓');
   };
-
   window.wb_aiGenerate = function() {
-    _sendFlutter({ action: 'modal', type: 'gemini', selectedText: 'Cria um esquema visual ou diagrama para: ' });
+    _sendFlutter({ action:'modal', type:'gemini', selectedText:'Cria um esquema visual ou diagrama para: ' });
   };
-
-  // Inicializar quando a view ficar visível
   window.openWhiteboard = function() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-whiteboard').classList.add('active');
     setTimeout(wb_init, 100);
   };
-
   window.closeWhiteboard = function() {
     document.getElementById('view-whiteboard').classList.remove('active');
-    // Volta ao editor
     document.getElementById('view-editor').classList.add('active');
   };
 })();
 
+// ════════════════════════════════════════════════
+// BRIDGE BIDIRECIONAL (postMessage para iframe web)
+// ════════════════════════════════════════════════
+window.addEventListener('message', function(e) {
+  const d = e.data; if (!d || typeof d !== 'object') return;
+  if      (d.action==='load')         window.loadDocument(d.id, d.title, d.html||'');
+  else if (d.action==='setTitle')     window.setDocTitle(d.title);
+  else if (d.action==='requestSave')  window.saveDocument();
+});
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+window.addEventListener('load', function() {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ action:'editorReady' }, '*');
+  }
+  if (pages.length === 0) {
+    createPage(0);
+    applyScale();
+    updateMeta();
+  }
+  if (window._pendingDocx) {
+    setTimeout(() => {
+      if (typeof window.loadDocxBase64 === 'function') {
+        window.loadDocxBase64(window._pendingDocx);
+        window._pendingDocx = null;
+      }
+    }, 500);
+  }
+});
 </script>
 </body>
 </html>
