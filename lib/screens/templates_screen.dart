@@ -60,10 +60,10 @@ header{text-align:center;border-bottom:2px solid #2d2d2d;padding-bottom:18px;mar
 <blockquote><strong>Insight chave:</strong> Crescimento de 12% na receita em relação ao trimestre anterior, impulsionado pela expansão do portfólio de serviços.</blockquote>
 <h2>1. Resultados Financeiros</h2>
 <ul>
-<li><strong>Receita total:</strong> R$ ___________</li>
-<li><strong>Lucro bruto:</strong> R$ ___________</li>
+<li><strong>Receita total:</strong> R\$ ___________</li>
+<li><strong>Lucro bruto:</strong> R\$ ___________</li>
 <li><strong>Margem líquida:</strong> ___%</li>
-<li><strong>Custo operacional:</strong> R$ ___________</li>
+<li><strong>Custo operacional:</strong> R\$ ___________</li>
 </ul>
 <h2>2. KPIs Operacionais</h2>
 <table>
@@ -154,10 +154,10 @@ tr:nth-child(even) td{background:#f8f8f8}
 <h2>Investimento</h2>
 <table>
 <tr><th>Serviço / Item</th><th>Qtd.</th><th>Valor Unit.</th><th>Total</th></tr>
-<tr><td>Fase 1 — Diagnóstico</td><td>1</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Fase 2 — Implementação</td><td>1</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Fase 3 — Suporte</td><td>1</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td><strong>Total</strong></td><td></td><td></td><td><strong>R$ ___________</strong></td></tr>
+<tr><td>Fase 1 — Diagnóstico</td><td>1</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Fase 2 — Implementação</td><td>1</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Fase 3 — Suporte</td><td>1</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td><strong>Total</strong></td><td></td><td></td><td><strong>R\$ ___________</strong></td></tr>
 </table>
 <h2>Condições Comerciais</h2>
 <ul>
@@ -290,7 +290,7 @@ td{padding:8px 12px;border-bottom:1px solid #e8e8e8}
 <h2>3. Análise de Mercado</h2>
 <h3>3.1 Público-Alvo</h3><p>Descrição detalhada do cliente ideal — demográfico, comportamental, necessidades.</p>
 <h3>3.2 Tamanho do Mercado</h3>
-<ul><li>TAM (Mercado total): R$ ___________</li><li>SAM (Mercado disponível): R$ ___________</li><li>SOM (Mercado alcançável): R$ ___________</li></ul>
+<ul><li>TAM (Mercado total): R\$ ___________</li><li>SAM (Mercado disponível): R\$ ___________</li><li>SOM (Mercado alcançável): R\$ ___________</li></ul>
 <h2>4. Análise SWOT</h2>
 <div class="swot">
 <div class="swot-cell"><h4>Forças</h4><ul><li>___________</li><li>___________</li></ul></div>
@@ -303,9 +303,9 @@ td{padding:8px 12px;border-bottom:1px solid #e8e8e8}
 <h2>5. Plano Financeiro</h2>
 <table>
 <tr><th>Item</th><th>Ano 1</th><th>Ano 2</th><th>Ano 3</th></tr>
-<tr><td>Receita</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Custo Operacional</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Lucro Líquido</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
+<tr><td>Receita</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Custo Operacional</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Lucro Líquido</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
 </table>
 <h2>6. Plano de Ação</h2>
 <table>
@@ -844,34 +844,34 @@ p{font-size:.88em;margin-bottom:8px}
 <h1>Orçamento Mensal</h1>
 <div class="period">Mês: ___________ &nbsp;·&nbsp; Responsável: ___________</div>
 <div class="summary">
-<div class="sum-box"><span class="sum-label">Receita Total</span><div class="sum-val positive">R$ ___</div></div>
-<div class="sum-box"><span class="sum-label">Despesas Totais</span><div class="sum-val negative">R$ ___</div></div>
-<div class="sum-box"><span class="sum-label">Saldo</span><div class="sum-val">R$ ___</div></div>
+<div class="sum-box"><span class="sum-label">Receita Total</span><div class="sum-val positive">R\$ ___</div></div>
+<div class="sum-box"><span class="sum-label">Despesas Totais</span><div class="sum-val negative">R\$ ___</div></div>
+<div class="sum-box"><span class="sum-label">Saldo</span><div class="sum-val">R\$ ___</div></div>
 </div>
 <h2>Receitas</h2>
 <table>
 <tr><th>Fonte</th><th>Valor Previsto</th><th>Valor Real</th></tr>
-<tr><td>Salário</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Freelance</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Outros</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Total</td><td>R$ ___</td><td>R$ ___</td></tr>
+<tr><td>Salário</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Freelance</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Outros</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Total</td><td>R\$ ___</td><td>R\$ ___</td></tr>
 </table>
 <h2>Despesas Fixas</h2>
 <table>
 <tr><th>Categoria</th><th>Previsto</th><th>Real</th><th>Dif.</th></tr>
-<tr><td>Habitação / Renda</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Alimentação</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Transporte</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Saúde</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Educação</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
-<tr><td>Total</td><td>R$ ___</td><td>R$ ___</td><td>R$ ___</td></tr>
+<tr><td>Habitação / Renda</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Alimentação</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Transporte</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Saúde</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Educação</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
+<tr><td>Total</td><td>R\$ ___</td><td>R\$ ___</td><td>R\$ ___</td></tr>
 </table>
 <h2>Poupança &amp; Metas</h2>
 <table>
 <tr><th>Meta</th><th>Valor alvo</th><th>Acumulado</th><th>Prazo</th></tr>
-<tr><td>Fundo de emergência</td><td>R$ ___</td><td>R$ ___</td><td>___</td></tr>
-<tr><td>Viagem / Lazer</td><td>R$ ___</td><td>R$ ___</td><td>___</td></tr>
-<tr><td>Investimento</td><td>R$ ___</td><td>R$ ___</td><td>___</td></tr>
+<tr><td>Fundo de emergência</td><td>R\$ ___</td><td>R\$ ___</td><td>___</td></tr>
+<tr><td>Viagem / Lazer</td><td>R\$ ___</td><td>R\$ ___</td><td>___</td></tr>
+<tr><td>Investimento</td><td>R\$ ___</td><td>R\$ ___</td><td>___</td></tr>
 </table>
 </div>
 </body></html>''',
@@ -1045,9 +1045,8 @@ body{font-family:'Segoe UI',sans-serif;line-height:1.5;color:#1a1a1a;background:
 <div class="sb-meta">Página 1 / ___</div>
 </div>
 <div class="sb-grid">
-${List.generate(6, (i) => '''
 <div class="frame">
-<div class="frame-number">Cena ${i + 1}</div>
+<div class="frame-number">Cena 1</div>
 <div class="frame-visual">[Esboço visual]</div>
 <div class="frame-body">
 <div class="frame-label">Câmera</div><div class="frame-text">___________</div>
@@ -1055,7 +1054,57 @@ ${List.generate(6, (i) => '''
 <div class="frame-label">Diálogo / SFX</div><div class="frame-text">___________</div>
 <div class="frame-label">Duração</div><div class="frame-text">___ seg</div>
 </div>
-</div>''').join('\n')}
+</div>
+<div class="frame">
+<div class="frame-number">Cena 2</div>
+<div class="frame-visual">[Esboço visual]</div>
+<div class="frame-body">
+<div class="frame-label">Câmera</div><div class="frame-text">___________</div>
+<div class="frame-label">Acção</div><div class="frame-text">___________</div>
+<div class="frame-label">Diálogo / SFX</div><div class="frame-text">___________</div>
+<div class="frame-label">Duração</div><div class="frame-text">___ seg</div>
+</div>
+</div>
+<div class="frame">
+<div class="frame-number">Cena 3</div>
+<div class="frame-visual">[Esboço visual]</div>
+<div class="frame-body">
+<div class="frame-label">Câmera</div><div class="frame-text">___________</div>
+<div class="frame-label">Acção</div><div class="frame-text">___________</div>
+<div class="frame-label">Diálogo / SFX</div><div class="frame-text">___________</div>
+<div class="frame-label">Duração</div><div class="frame-text">___ seg</div>
+</div>
+</div>
+<div class="frame">
+<div class="frame-number">Cena 4</div>
+<div class="frame-visual">[Esboço visual]</div>
+<div class="frame-body">
+<div class="frame-label">Câmera</div><div class="frame-text">___________</div>
+<div class="frame-label">Acção</div><div class="frame-text">___________</div>
+<div class="frame-label">Diálogo / SFX</div><div class="frame-text">___________</div>
+<div class="frame-label">Duração</div><div class="frame-text">___ seg</div>
+</div>
+</div>
+<div class="frame">
+<div class="frame-number">Cena 5</div>
+<div class="frame-visual">[Esboço visual]</div>
+<div class="frame-body">
+<div class="frame-label">Câmera</div><div class="frame-text">___________</div>
+<div class="frame-label">Acção</div><div class="frame-text">___________</div>
+<div class="frame-label">Diálogo / SFX</div><div class="frame-text">___________</div>
+<div class="frame-label">Duração</div><div class="frame-text">___ seg</div>
+</div>
+</div>
+<div class="frame">
+<div class="frame-number">Cena 6</div>
+<div class="frame-visual">[Esboço visual]</div>
+<div class="frame-body">
+<div class="frame-label">Câmera</div><div class="frame-text">___________</div>
+<div class="frame-label">Acção</div><div class="frame-text">___________</div>
+<div class="frame-label">Diálogo / SFX</div><div class="frame-text">___________</div>
+<div class="frame-label">Duração</div><div class="frame-text">___ seg</div>
+</div>
+</div>
 </div>
 </div>
 </body></html>''',
@@ -1104,7 +1153,7 @@ td{padding:7px 10px;border-bottom:1px solid #eee}
 <div class="info-grid">
 <div class="info-box"><div class="label">Data de Início</div><div class="val">___________</div></div>
 <div class="info-box"><div class="label">Data de Fim</div><div class="val">___________</div></div>
-<div class="info-box"><div class="label">Orçamento</div><div class="val">R$ ___________</div></div>
+<div class="info-box"><div class="label">Orçamento</div><div class="val">R\$ ___________</div></div>
 </div>
 <h2>Objetivo do Projeto</h2>
 <p>Descrição clara e mensurável do que este projeto pretende alcançar, com critérios de sucesso bem definidos.</p>
@@ -1330,7 +1379,7 @@ ol{margin:0 0 10px 20px}li{margin-bottom:6px;font-size:.88em}
 </div>
 <div class="clause">
 <h3>Cláusula 3.ª — Remuneração</h3>
-<p>O Cliente pagará ao Prestador o valor de R$ ___________ (___________ reais), nas seguintes condições de pagamento: ___________.</p>
+<p>O Cliente pagará ao Prestador o valor de R\$ ___________ (___________ reais), nas seguintes condições de pagamento: ___________.</p>
 </div>
 <div class="clause">
 <h3>Cláusula 4.ª — Obrigações do Prestador</h3>
