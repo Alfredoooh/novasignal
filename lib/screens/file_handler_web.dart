@@ -60,13 +60,17 @@ Future<void> pickAndOpenFile(BuildContext context, VoidCallback? onDone) async {
     reader.readAsArrayBuffer(htmlFile);
     await reader.onLoad.first;
     final bytes = Uint8List.fromList((reader.result as List<int>));
+    // Cria um blob URL temporário — funciona como path no web
+    final blob    = html.Blob([bytes], 'application/pdf');
+    final blobUrl = html.Url.createObjectUrlFromBlob(blob);
 
     if (!context.mounted) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PdfViewerScreen(pdfBytes: bytes, title: name),
+        builder: (_) => PdfViewerScreen(path: blobUrl, title: name),
       ),
     );
+    html.Url.revokeObjectUrl(blobUrl);
   }
 }
