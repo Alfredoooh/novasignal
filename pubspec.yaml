@@ -39,12 +39,10 @@ flutter:
     - assets/editor/editor.html
     - assets/splash_logo.png
     - assets/splash_text.svg
-    - assets/flash_icon.png
-    - assets/shop_icon.png
-    - assets/fire_icon.png
-    - assets/like_animation.gif
-    - assets/empty_store.png
-    - assets/error_state.png
+    - assets/icons/ic_documento.png
+    - assets/icons/ic_apresentacao.png
+    - assets/icons/ic_cv.png
+    - assets/icons/ic_nota.png
 
 # Configuração do Splash Screen
 flutter_native_splash:
