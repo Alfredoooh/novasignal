@@ -11,7 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../widgets/theme.dart';
 import 'editor_screen.dart';
 
-// ── Design tokens (mirror agenda_screen) ─────────────
+// ── Design tokens ─────────────────────────────────────
 const _kPill  = 999.0;
 const _kCard  = 18.0;
 const _kModal = 20.0;
@@ -65,7 +65,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     );
   }
 
-  // ── Injecta JS para passar resultado do modal nativo ──
   Future<void> _injectModalResult(Map<String, dynamic> data) async {
     final js = jsonEncode(data);
     await _wvc?.evaluateJavascript(
@@ -77,17 +76,14 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   // MODAIS NATIVOS FLUTTER
   // ═════════════════════════════════════════════════════
 
-  // ── Link ─────────────────────────────────────────────
   Future<void> _showLinkModal(String? selectedText) async {
     final isDark = themeNotifier.isDark;
     final urlCtrl  = TextEditingController();
     final textCtrl = TextEditingController(text: selectedText ?? '');
     final acc = accColor(isDark);
-
     final result = await _openSheet<Map<String,String>>((_) =>
       _SimpleFormSheet(
-        title: 'Inserir Link',
-        isDark: isDark, acc: acc,
+        title: 'Inserir Link', isDark: isDark, acc: acc,
         fields: [
           _FieldDef(ctrl: urlCtrl,  label: 'URL', hint: 'https://exemplo.com', icon: Icons.link_rounded, keyboard: TextInputType.url),
           _FieldDef(ctrl: textCtrl, label: 'Texto (opcional)', hint: selectedText?.isNotEmpty==true ? selectedText! : 'Texto do link', icon: Icons.text_fields_rounded),
@@ -100,21 +96,17 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
         },
       ),
     );
-
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Image ─────────────────────────────────────────────
   Future<void> _showImageModal() async {
     final isDark = themeNotifier.isDark;
     final urlCtrl = TextEditingController();
     final altCtrl = TextEditingController();
     final acc = accColor(isDark);
-
     final result = await _openSheet<Map<String,String>>((_) =>
       _SimpleFormSheet(
-        title: 'Inserir Imagem',
-        isDark: isDark, acc: acc,
+        title: 'Inserir Imagem', isDark: isDark, acc: acc,
         fields: [
           _FieldDef(ctrl: urlCtrl, label: 'URL da imagem', hint: 'https://exemplo.com/imagem.jpg', icon: Icons.image_outlined, keyboard: TextInputType.url),
           _FieldDef(ctrl: altCtrl, label: 'Descrição (alt)', hint: 'Descrição da imagem', icon: Icons.description_outlined),
@@ -127,24 +119,18 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
         },
       ),
     );
-
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Table ─────────────────────────────────────────────
   Future<void> _showTableModal() async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
-    int rows = 3, cols = 3;
-
     final result = await _openSheet<Map<String,String>>((_) =>
-      _TablePickerSheet(isDark: isDark, acc: acc, initialRows: rows, initialCols: cols),
+      _TablePickerSheet(isDark: isDark, acc: acc),
     );
-
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Style ─────────────────────────────────────────────
   Future<void> _showStyleModal(String current) async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
@@ -167,7 +153,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Font ──────────────────────────────────────────────
   Future<void> _showFontModal(String current, List<Map> fonts) async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
@@ -184,7 +169,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Size ──────────────────────────────────────────────
   Future<void> _showSizeModal(int current, List<int> sizes) async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
@@ -200,21 +184,15 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Color ─────────────────────────────────────────────
   Future<void> _showColorModal(String current, List<String> presets) async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
     final result = await _openSheet<Map<String,String>>((_) =>
-      _ColorPickerSheet(
-        title: 'Cor da letra', isDark: isDark, acc: acc,
-        current: current, presets: presets,
-        resultType: 'color',
-      ),
+      _ColorPickerSheet(title: 'Cor da letra', isDark: isDark, acc: acc, current: current, presets: presets, resultType: 'color'),
     );
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── BgColor ───────────────────────────────────────────
   Future<void> _showBgColorModal(String current) async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
@@ -222,37 +200,32 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       '#ffd700','#98f5c8','#87ceeb','#ffb347','#da70d6',
       '#ffffff','#e0e0e0','#bdbdbd','#757575','#000000','transparent'];
     final result = await _openSheet<Map<String,String>>((_) =>
-      _ColorPickerSheet(
-        title: 'Cor de fundo do texto', isDark: isDark, acc: acc,
-        current: current, presets: presets,
-        resultType: 'bgColor',
-      ),
+      _ColorPickerSheet(title: 'Cor de fundo do texto', isDark: isDark, acc: acc, current: current, presets: presets, resultType: 'bgColor'),
     );
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Opcoes ────────────────────────────────────────────
   Future<void> _showOpcoesModal() async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
     final actions = [
-      {'action':'exportPDF',   'label':'Baixar como PDF',         'danger':false},
-      {'action':'exportTXT',   'label':'Baixar como TXT',         'danger':false},
-      {'action':'sharePDF',    'label':'Partilhar PDF',           'danger':false},
-      {'action':'stats',       'label':'Estatísticas',            'danger':false},
-      {'action':'findReplace', 'label':'Localizar e substituir',  'danger':false},
-      {'action':'print',       'label':'Imprimir',                'danger':false},
-      {'action':'duplicate',   'label':'Duplicar página',         'danger':false},
-      {'action':'newPage',     'label':'Nova página',             'danger':false},
-      {'action':'whitePaper',  'label':'Papel branco',            'danger':false},
-      {'action':'clearAll',    'label':'Limpar tudo',             'danger':true },
+      {'action':'exportPDF',   'label':'Guardar como PDF'},
+      {'action':'exportTXT',   'label':'Guardar como TXT'},
+      {'action':'sharePDF',    'label':'Partilhar PDF'},
+      {'action':'stats',       'label':'Estatísticas'},
+      {'action':'findReplace', 'label':'Localizar e substituir'},
+      {'action':'print',       'label':'Imprimir'},
+      {'action':'duplicate',   'label':'Duplicar página'},
+      {'action':'newPage',     'label':'Nova página'},
+      {'action':'whitePaper',  'label':'Papel branco'},
+      {'action':'clearAll',    'label':'Limpar tudo', 'danger': true},
     ];
     final result = await _openSheet<Map<String,String>>((_) =>
       _ListPickerSheet(
         title: 'Opções', isDark: isDark, acc: acc,
         items: actions.map((a) => _ListItem(
-          label: a['label'] as String, selected: false,
-          danger: a['danger'] as bool,
+          label: a['label'] as String,
+          danger: (a['danger'] as bool?) ?? false,
         )).toList(),
         onSelect: (i) => {'type':'opcoes','action':actions[i]['action'] as String},
       ),
@@ -265,22 +238,72 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
     final actions = [
-      'Melhorar escrita','Resumir','Continuar texto','Encurtar texto',
-      'Expandir texto','Traduzir para inglês','Traduzir para espanhol',
-      'Traduzir para francês','Corrigir gramática','Tom formal','Tom casual',
-      'Tom persuasivo','Criar lista com pontos','Explicar conceito',
+      'Escrever algo',           // abre modal de escrita livre
+      'Melhorar escrita',
+      'Resumir',
+      'Continuar texto',
+      'Encurtar texto',
+      'Expandir texto',
+      'Traduzir para inglês',
+      'Traduzir para espanhol',
+      'Traduzir para francês',
+      'Corrigir gramática',
+      'Tom formal',
+      'Tom casual',
+      'Tom persuasivo',
+      'Criar lista com pontos',
+      'Explicar conceito',
+      'Pesquisar na internet',
     ];
     final title = selectedText.isNotEmpty
         ? '"${selectedText.length > 40 ? "${selectedText.substring(0,40)}…" : selectedText}"'
         : 'Pedir à IA';
+
     final result = await _openSheet<Map<String,String>>((_) =>
       _ListPickerSheet(
         title: title, isDark: isDark, acc: acc,
-        items: actions.map((a) => _ListItem(label: a, selected: false)).toList(),
+        items: actions.map((a) => _ListItem(
+          label: a,
+          selected: false,
+          // Destaca "Escrever algo"
+          isAccent: a == 'Escrever algo',
+        )).toList(),
         onSelect: (i) => {'type':'gemini','action':actions[i]},
       ),
     );
-    if (result != null) await _injectModalResult(result);
+
+    if (result != null) {
+      if (result['action'] == 'Escrever algo') {
+        // Abre modal de escrita livre
+        await _showAiWriteModal();
+      } else {
+        await _injectModalResult(result);
+      }
+    }
+  }
+
+  // ── Modal de escrita livre para IA (90% altura) ───────
+  Future<void> _showAiWriteModal() async {
+    final isDark = themeNotifier.isDark;
+    final acc    = accColor(isDark);
+    final ctrl   = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (_) => _AiWriteSheet(isDark: isDark, acc: acc, ctrl: ctrl),
+    ).then((result) async {
+      // result é enviado pelo sheet via Navigator.pop(context, texto)
+    });
+
+    // Não usamos return value do sheet — o sheet chama _handleAiWrite directamente
+    // via callback
+    final text = ctrl.text.trim();
+    if (text.isEmpty) return;
+    await _handleAiWrite(text);
   }
 
   // ── Insert ────────────────────────────────────────────
@@ -288,30 +311,29 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
     final items = [
-      {'action':'table',     'icon':'⊞', 'label':'Tabela'},
-      {'action':'hr',        'icon':'─', 'label':'Linha horizontal'},
-      {'action':'blockquote','icon':'❝', 'label':'Citação'},
-      {'action':'code',      'icon':'<>','label':'Código'},
-      {'action':'link',      'icon':'🔗','label':'Link'},
-      {'action':'ul',        'icon':'•', 'label':'Lista com marcas'},
-      {'action':'ol',        'icon':'1.','label':'Lista numerada'},
-      {'action':'pageBreak', 'icon':'⬛','label':'Quebra de página'},
-      {'action':'image',     'icon':'🖼', 'label':'Imagem'},
+      {'action':'table',      'label':'Tabela'},
+      {'action':'hr',         'label':'Linha horizontal'},
+      {'action':'blockquote', 'label':'Citação'},
+      {'action':'code',       'label':'Bloco de código'},
+      {'action':'link',       'label':'Link'},
+      {'action':'ul',         'label':'Lista com marcas'},
+      {'action':'ol',         'label':'Lista numerada'},
+      {'action':'pageBreak',  'label':'Quebra de página'},
+      {'action':'image',      'label':'Imagem por URL'},
+      {'action':'imageUpload','label':'Imagem da galeria'},
+      {'action':'qrcode',     'label':'QR Code'},
+      {'action':'signature',  'label':'Assinatura'},
     ];
     final result = await _openSheet<Map<String,String>>((_) =>
       _ListPickerSheet(
         title: 'Inserir elemento', isDark: isDark, acc: acc,
-        items: items.map((it) => _ListItem(
-          label: it['label'] as String, selected: false,
-          leading: it['icon'] as String,
-        )).toList(),
+        items: items.map((it) => _ListItem(label: it['label'] as String)).toList(),
         onSelect: (i) => {'type':'insert','action':items[i]['action'] as String},
       ),
     );
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Layout ────────────────────────────────────────────
   Future<void> _showLayoutModal() async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
@@ -321,15 +343,13 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Rename ────────────────────────────────────────────
   Future<void> _showRenameModal(String current) async {
     final isDark = themeNotifier.isDark;
     final ctrl = TextEditingController(text: current);
     final acc = accColor(isDark);
     final result = await _openSheet<Map<String,String>>((_) =>
       _SimpleFormSheet(
-        title: 'Renomear documento',
-        isDark: isDark, acc: acc,
+        title: 'Renomear documento', isDark: isDark, acc: acc,
         fields: [_FieldDef(ctrl: ctrl, label: 'Nome', hint: 'Nome do documento', icon: Icons.drive_file_rename_outline_rounded)],
         confirmLabel: 'Guardar',
         onConfirm: () {
@@ -342,7 +362,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Stats ─────────────────────────────────────────────
   Future<void> _showStatsModal(Map<String,dynamic> d) async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
@@ -357,187 +376,79 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     await _openSheet<void>((_) =>
       _ListPickerSheet(
         title: 'Estatísticas', isDark: isDark, acc: acc,
-        items: items.map((s) => _ListItem(label: s, selected: false, tappable: false)).toList(),
+        items: items.map((s) => _ListItem(label: s, tappable: false)).toList(),
         onSelect: (_) => null,
       ),
     );
   }
 
-  // ── FindReplace ───────────────────────────────────────
   Future<void> _showFindReplaceModal() async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
     final findCtrl    = TextEditingController();
     final replaceCtrl = TextEditingController();
-
     final result = await _openSheet<Map<String,String>>((_) =>
       _FindReplaceSheet(isDark: isDark, acc: acc, findCtrl: findCtrl, replaceCtrl: replaceCtrl),
     );
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Image Upload ─────────────────────────────────────
   Future<void> _showImageUploadModal() async {
     final isDark = themeNotifier.isDark;
     final acc = accColor(isDark);
-    
     final picker = ImagePicker();
     final result = await _openSheet<Map<String,String>>((_) => _ListPickerSheet(
-      title: 'Inserir imagem',
-      isDark: isDark, acc: acc,
-      items: [
-        const _ListItem(label: 'Câmera', selected: false, leading: '📷'),
-        const _ListItem(label: 'Galeria', selected: false, leading: '🖼'),
+      title: 'Inserir imagem', isDark: isDark, acc: acc,
+      items: const [
+        _ListItem(label: 'Câmera'),
+        _ListItem(label: 'Galeria'),
       ],
       onSelect: (i) => {'src': i == 0 ? 'camera' : 'gallery'},
     ));
-
     if (result == null) return;
     final src = result['src'] ?? 'gallery';
-    
     XFile? file;
     try {
-      if (src == 'camera') {
-        file = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-      } else {
-        file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-      }
+      file = await picker.pickImage(
+        source: src == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        imageQuality: 85,
+      );
     } catch (e) {
       _showSnack('Não foi possível aceder à imagem.', isError: true);
       return;
     }
-
     if (file == null) return;
-    
     try {
       final bytes = await file.readAsBytes();
       final b64 = base64Encode(bytes);
       final mime = file.mimeType ?? 'image/jpeg';
-      await _injectModalResult({'type': 'imageUpload', 'base64': b64, 'mime': mime, 'alt': file.name});
+      await _injectModalResult({'type':'imageUpload','base64':b64,'mime':mime,'alt':file.name});
     } catch (e) {
       _showSnack('Erro ao processar imagem.', isError: true);
     }
   }
 
-  // ── QR Code ───────────────────────────────────────────
   Future<void> _showQrCodeModal() async {
     final isDark = themeNotifier.isDark;
     final ctrl = TextEditingController();
     final acc = accColor(isDark);
-    
     final result = await _openSheet<Map<String,String>>((_) =>
       _SimpleFormSheet(
-        title: 'Criar QR Code',
-        isDark: isDark, acc: acc,
+        title: 'Criar QR Code', isDark: isDark, acc: acc,
         fields: [
-          _FieldDef(ctrl: ctrl, label: 'Conteúdo do QR Code', hint: 'URL, texto, email, telefone…', icon: Icons.qr_code_rounded, keyboard: TextInputType.text),
+          _FieldDef(ctrl: ctrl, label: 'Conteúdo do QR Code', hint: 'URL, texto, email, telefone…', icon: Icons.qr_code_rounded),
         ],
         confirmLabel: 'Inserir QR Code',
         onConfirm: () {
           final v = ctrl.text.trim();
           if (v.isEmpty) return null;
-          return {'type': 'qrcode', 'content': v};
+          return {'type':'qrcode','content':v};
         },
       ),
     );
-    
     if (result != null) await _injectModalResult(result);
   }
 
-  // ── Stickers ──────────────────────────────────────────
-  Future<void> _showStickerModal() async {
-    final isDark = themeNotifier.isDark;
-    final acc = accColor(isDark);
-    final bg  = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final tp  = isDark ? Colors.white : Colors.black;
-    final div = isDark ? AppColors.darkDivider : AppColors.divider;
-
-    // Packs de stickers
-    final packs = {
-      'Emoções & Símbolos': ['⭐','🌟','💡','🔥','✅','❌','📌','💎','🎯','🚀','💪','🌈','❤️','🎉','📊','📈','💰','🏆','✨','🌙','☀️','⚡','🎨','📝','🔑','💬','📣','🌍','🎵','🎁'],
-      'Negócios':           ['📊','📈','📉','💹','💼','📋','📁','🗂️','📌','📍','✅','☑️','🔔','📧','📞','💻','🖥️','📱','🖨️','🖇️'],
-      'Sinais':             ['⚠️','🚫','✅','❌','ℹ️','❓','❗','💯','🔒','🔓','🔴','🟡','🟢','🔵','⬛','⬜'],
-      'Natureza':           ['🌱','🌿','🍃','🌸','🌺','🌻','🌴','🌊','⛰️','🌋','🌅','☁️','⛅','🌙','⭐','🌟','💫','🌈','☀️'],
-    };
-    
-    String? selectedIcon;
-    String currentPack = packs.keys.first;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setState) => Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
-          decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal))),
-          child: Column(children: [
-            // Handle
-            Padding(padding: const EdgeInsets.fromLTRB(0,12,0,0),
-              child: Center(child: Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
-            Padding(padding: const EdgeInsets.fromLTRB(20,14,20,10),
-              child: Text('Stickers & Ícones', style: GoogleFonts.roboto(color: tp, fontSize: 17, fontWeight: FontWeight.w800))),
-            Container(height: 0.5, color: div),
-            // Pack tabs
-            SizedBox(height: 44,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(12,8,12,0),
-                scrollDirection: Axis.horizontal,
-                children: packs.keys.map((pack) {
-                  final sel = pack == currentPack;
-                  return GestureDetector(
-                    onTap: () => setState(() => currentPack = pack),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: sel ? acc : Colors.transparent,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: sel ? acc : div),
-                      ),
-                      child: Text(pack, style: GoogleFonts.roboto(color: sel ? Colors.white : tp, fontSize: 12, fontWeight: FontWeight.w700)),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            // Grid de emojis
-            Expanded(child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
-              itemCount: packs[currentPack]!.length,
-              itemBuilder: (_, i) {
-                final icon = packs[currentPack]![i];
-                final sel = icon == selectedIcon;
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _injectModalResult({'type': 'sticker', 'icon': icon, 'color': '#e0185e'});
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 100),
-                    decoration: BoxDecoration(
-                      color: sel ? acc.withOpacity(.15) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: sel ? acc : Colors.transparent),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(icon, style: const TextStyle(fontSize: 28)),
-                  ),
-                );
-              },
-            )),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  // ── Generic sheet helper ──────────────────────────────
   Future<T?> _openSheet<T>(Widget Function(BuildContext) builder) =>
     showModalBottomSheet<T>(
       context: context,
@@ -549,43 +460,49 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     );
 
   // ═════════════════════════════════════════════════════
-  // AI REQUEST — chama Anthropic API
+  // IA — Aria Worker
   // ═════════════════════════════════════════════════════
-  // Token de sessão do Aria Worker
   static String _ariaToken = '';
 
-  Future<void> _handleAiRequest(Map<String, dynamic> data) async {
-    final prompt   = data['prompt']   as String? ?? '';
-    final aiAction = data['aiAction'] as String? ?? '';
-    if (prompt.isEmpty) return;
+  // ── Escrita livre — IA produz HTML estruturado ────────
+  Future<void> _handleAiWrite(String userPrompt) async {
+    // Mostra progresso no WebView
+    await _wvc?.evaluateJavascript(
+      source: 'if(typeof window.setProgress==="function") window.setProgress(true);',
+    );
+
+    const system = '''
+És um assistente de escrita profissional em português.
+O utilizador vai pedir-te para criar conteúdo.
+Responde APENAS com HTML limpo, semântico e bem estruturado.
+Regras obrigatórias:
+- Sem DOCTYPE, sem html/head/body tags
+- Usa apenas: h1, h2, h3, p, ul, ol, li, table, thead, tbody, tr, th, td, blockquote, strong, em, code, pre, br, hr
+- Estilos inline APENAS quando estritamente necessário (ex: cores)
+- Sem classes CSS externas
+- Conteúdo organizado: título, subtítulos, parágrafos, listas quando aplicável
+- Português correcto e profissional
+- Sem comentários HTML, sem explicações, APENAS o HTML solicitado
+''';
 
     try {
-      // Pesquisas → /ask (Groq compound GA, tempo real)
-      // Geração   → /generate (Gemini 1.5 Flash, grátis)
-      final isSearch = aiAction.contains('Pesquis') || aiAction.contains('internet');
-      final endpoint = isSearch ? '$_kWorkerUrl/ask' : '$_kWorkerUrl/generate';
-
-      final headers = <String, String>{'Content-Type': 'application/json'};
+      final headers = <String,String>{'Content-Type':'application/json'};
       if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer $_ariaToken';
 
-      final body = isSearch
-          ? jsonEncode({'query': prompt, 'mode': 'search'})
-          : jsonEncode({
-              'prompt': prompt,
-              'system': 'És um assistente de escrita profissional. Respondes APENAS com o texto solicitado, sem explicações extras. Em português.',
-            });
+      final body = jsonEncode({
+        'prompt': userPrompt,
+        'system': system,
+        'short': false,
+      });
 
-      final client  = HttpClient();
-      final request = await client.postUrl(Uri.parse(endpoint));
-      headers.forEach((k, v) => request.headers.set(k, v));
+      final client   = HttpClient();
+      final request  = await client.postUrl(Uri.parse('$_kWorkerUrl/generate'));
+      headers.forEach((k,v) => request.headers.set(k,v));
       request.write(body);
-
       final response     = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
-      final decoded      = jsonDecode(responseBody) as Map<String, dynamic>;
-
-      // /ask → { answer } | /generate → { text }
-      final aiText = (decoded['answer'] ?? decoded['text']) as String?;
+      final decoded      = jsonDecode(responseBody) as Map<String,dynamic>;
+      final aiText       = (decoded['answer'] ?? decoded['text']) as String?;
 
       if (aiText != null && aiText.isNotEmpty) {
         final js = jsonEncode({'text': aiText});
@@ -597,17 +514,59 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
         await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
       }
     } catch (e) {
-      debugPrint('AI request error (worker): $e');
+      debugPrint('AI write error: $e');
       _showSnack('Erro na IA. Verifica a ligação.', isError: true);
       await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
     }
   }
 
-  // ── Definir token do Worker (chamado após login/registo) ────────
+  Future<void> _handleAiRequest(Map<String,dynamic> data) async {
+    final prompt   = data['prompt']   as String? ?? '';
+    final aiAction = data['aiAction'] as String? ?? '';
+    if (prompt.isEmpty) return;
+
+    try {
+      final isSearch  = aiAction.contains('Pesquis') || aiAction.contains('internet');
+      final endpoint  = isSearch ? '$_kWorkerUrl/ask' : '$_kWorkerUrl/generate';
+      final headers   = <String,String>{'Content-Type':'application/json'};
+      if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer $_ariaToken';
+
+      final body = isSearch
+          ? jsonEncode({'query': prompt, 'mode': 'search'})
+          : jsonEncode({
+              'prompt': prompt,
+              'system': 'És um assistente de escrita profissional. Respondes APENAS com o texto solicitado, sem explicações extras. Em português.',
+            });
+
+      final client   = HttpClient();
+      final request  = await client.postUrl(Uri.parse(endpoint));
+      headers.forEach((k,v) => request.headers.set(k,v));
+      request.write(body);
+      final response     = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+      final decoded      = jsonDecode(responseBody) as Map<String,dynamic>;
+      final aiText       = (decoded['answer'] ?? decoded['text']) as String?;
+
+      if (aiText != null && aiText.isNotEmpty) {
+        final js = jsonEncode({'text': aiText});
+        await _wvc?.evaluateJavascript(
+          source: 'if(typeof window._aiResponse==="function") window._aiResponse($js);',
+        );
+      } else {
+        _showSnack('IA não devolveu resposta.', isError: true);
+        await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
+      }
+    } catch (e) {
+      debugPrint('AI request error: $e');
+      _showSnack('Erro na IA. Verifica a ligação.', isError: true);
+      await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
+    }
+  }
+
   void setAriaToken(String token) {
     _ariaToken = token;
     _wvc?.evaluateJavascript(
-      source: 'if(typeof window.setAriaToken==="function") window.setAriaToken("${token.replaceAll('"', '\"')}");',
+      source: 'if(typeof window.setAriaToken==="function") window.setAriaToken("${token.replaceAll('"', '\\"')}");',
     );
   }
 
@@ -619,22 +578,15 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       final base64Str = data['base64'] as String? ?? '';
       final title     = (data['title'] as String?)?.isNotEmpty == true
           ? data['title'] as String : 'documento';
-
       if (base64Str.isEmpty) {
-        _showSnack('Erro ao gerar PDF. Tente novamente.', isError: true);
-        return;
+        _showSnack('Erro ao gerar PDF.', isError: true); return;
       }
-
-      final bytes = base64Decode(base64Str);
-      final dir   = await getTemporaryDirectory();
+      final bytes    = base64Decode(base64Str);
+      final dir      = await getTemporaryDirectory();
       final safeName = title.replaceAll(RegExp(r'[^\w\s\-]'), '_').trim();
-      final file  = File('${dir.path}/$safeName.pdf');
+      final file     = File('${dir.path}/$safeName.pdf');
       await file.writeAsBytes(bytes);
-
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/pdf')],
-        subject: title,
-      );
+      await Share.shareXFiles([XFile(file.path, mimeType: 'application/pdf')], subject: title);
     } catch (e) {
       debugPrint('PDF export error: $e');
       _showSnack('Erro ao exportar PDF.', isError: true);
@@ -644,13 +596,12 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   // ═════════════════════════════════════════════════════
   // INJECT DOCUMENT
   // ═════════════════════════════════════════════════════
-  // ── Passa HTML ao WebView via base64 (evita problemas com escaping) ──
   Future<void> _injectHtmlBase64(
     InAppWebViewController ctrl,
     String html, String title, String? id, bool isNew,
   ) async {
-    final b64 = base64Encode(utf8.encode(html));
-    final te  = _escapeJs(title);
+    final b64  = base64Encode(utf8.encode(html));
+    final te   = _escapeJs(title);
     final idJs = id != null ? '"$id"' : 'null';
     await ctrl.evaluateJavascript(source: '''
       (function() {
@@ -666,9 +617,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   }
 
   void _inject() async {
-    final ctrl = _wvc;
-    if (ctrl == null) return;
-
+    final ctrl = _wvc; if (ctrl == null) return;
     final doc      = widget.controller.document;
     final impHtml  = widget.controller.importHtml;
     final impTitle = widget.controller.importTitle;
@@ -678,21 +627,13 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       final te = _escapeJs(impTitle ?? 'Sem título');
       await ctrl.evaluateJavascript(source: '''
         window._docId = null;
-        if (typeof window.loadContent === "function") {
-          window.loadContent("", "$te", null, true);
-        }
-        if (typeof window.loadDocxBase64 === "function") {
-          window.loadDocxBase64("$impDocx");
-        }
+        if (typeof window.loadContent === "function") window.loadContent("", "$te", null, true);
+        if (typeof window.loadDocxBase64 === "function") window.loadDocxBase64("$impDocx");
       ''');
     } else if (impHtml != null && impHtml.isNotEmpty) {
       await _injectHtmlBase64(ctrl, impHtml, impTitle ?? 'Sem título', null, false);
     } else if (doc == null) {
-      await ctrl.evaluateJavascript(source: '''
-        if (typeof window.loadContent === "function") {
-          window.loadContent("", "", null, true);
-        }
-      ''');
+      await ctrl.evaluateJavascript(source: 'if (typeof window.loadContent === "function") window.loadContent("", "", null, true);');
     } else {
       final isEmpty = doc.htmlContent.trim().isEmpty;
       await _injectHtmlBase64(ctrl, doc.htmlContent, doc.title, doc.id, isEmpty);
@@ -720,10 +661,12 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   }
 
   // ═════════════════════════════════════════════════════
+  // BUILD
+  // ═════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     final isDark = themeNotifier.isDark;
-    final bg = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE8E8E8);
+    final bg     = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE8E8E8);
 
     return Stack(children: [
       InAppWebView(
@@ -732,7 +675,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
 
         onWebViewCreated: (ctrl) {
           _wvc = ctrl;
-
           ctrl.addJavaScriptHandler(
             handlerName: 'FlutterBridge',
             callback: (args) async {
@@ -740,59 +682,39 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
                 final raw = args.isNotEmpty ? args[0] : null;
                 if (raw == null) return;
                 final msg = raw is String ? raw : jsonEncode(raw);
-                final d = jsonDecode(msg) as Map<String, dynamic>;
+                final d   = jsonDecode(msg) as Map<String,dynamic>;
 
                 switch (d['action']) {
-                  // ── Guardar ──────────────────────────
                   case 'save':
                     widget.controller.setSaving(true);
                     await widget.controller.handleSaveMessage(d);
                     break;
-
-                  // ── Voltar ───────────────────────────
                   case 'back':
                     widget.controller.handleBack();
                     break;
-
-                  // ── Export PDF ───────────────────────
                   case 'exportPDF':
                     await _handleExportPdf(d);
                     break;
-
-                  // ── Export PDF fallback (HTML) ────────
                   case 'exportPDF_html':
-                    // Fallback: share raw HTML as a text file if pdf2 fails
-                    final html = d['html'] as String? ?? '';
+                    final html  = d['html'] as String? ?? '';
                     final title = (d['title'] as String? ?? 'documento').replaceAll(RegExp(r'[^\w\s\-]'), '_').trim();
                     if (html.isNotEmpty) {
-                      final dir = await getTemporaryDirectory();
+                      final dir  = await getTemporaryDirectory();
                       final file = File('${dir.path}/$title.html');
                       await file.writeAsString(html);
                       await Share.shareXFiles([XFile(file.path)], subject: title);
                     }
                     break;
-
-                  // ── IA Request (chama Anthropic API) ──
                   case 'aiRequest':
                     await _handleAiRequest(d);
                     break;
-
-                  // ── Modais nativos ───────────────────
                   case 'modal':
                     final type = d['type'] as String? ?? '';
                     switch (type) {
-                      case 'link':
-                        await _showLinkModal(d['text'] as String?);
-                        break;
-                      case 'image':
-                        await _showImageModal();
-                        break;
-                      case 'table':
-                        await _showTableModal();
-                        break;
-                      case 'style':
-                        await _showStyleModal(d['current'] as String? ?? 'p');
-                        break;
+                      case 'link':        await _showLinkModal(d['text'] as String?); break;
+                      case 'image':       await _showImageModal(); break;
+                      case 'table':       await _showTableModal(); break;
+                      case 'style':       await _showStyleModal(d['current'] as String? ?? 'p'); break;
                       case 'font':
                         final fonts = (d['fonts'] as List?)?.cast<Map>() ?? [];
                         await _showFontModal(d['current'] as String? ?? '', fonts);
@@ -805,39 +727,16 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
                         final presets = (d['presets'] as List?)?.cast<String>() ?? [];
                         await _showColorModal(d['current'] as String? ?? '#111111', presets);
                         break;
-                      case 'bgColor':
-                        await _showBgColorModal(d['current'] as String? ?? '#ffff00');
-                        break;
-                      case 'opcoes':
-                        await _showOpcoesModal();
-                        break;
-                      case 'gemini':
-                        await _showGeminiModal(d['selectedText'] as String? ?? '');
-                        break;
-                      case 'insert':
-                        await _showInsertModal();
-                        break;
-                      case 'layout':
-                        await _showLayoutModal();
-                        break;
-                      case 'rename':
-                        await _showRenameModal(d['current'] as String? ?? '');
-                        break;
-                      case 'stats':
-                        await _showStatsModal(d);
-                        break;
-                      case 'findReplace':
-                        await _showFindReplaceModal();
-                        break;
-                      case 'imageUpload':
-                        await _showImageUploadModal();
-                        break;
-                      case 'qrcode':
-                        await _showQrCodeModal();
-                        break;
-                      case 'sticker':
-                        await _showStickerModal();
-                        break;
+                      case 'bgColor':     await _showBgColorModal(d['current'] as String? ?? '#ffff00'); break;
+                      case 'opcoes':      await _showOpcoesModal(); break;
+                      case 'gemini':      await _showGeminiModal(d['selectedText'] as String? ?? ''); break;
+                      case 'insert':      await _showInsertModal(); break;
+                      case 'layout':      await _showLayoutModal(); break;
+                      case 'rename':      await _showRenameModal(d['current'] as String? ?? ''); break;
+                      case 'stats':       await _showStatsModal(d); break;
+                      case 'findReplace': await _showFindReplaceModal(); break;
+                      case 'imageUpload': await _showImageUploadModal(); break;
+                      case 'qrcode':      await _showQrCodeModal(); break;
                     }
                     break;
                 }
@@ -854,7 +753,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
           await ctrl.evaluateJavascript(
             source: 'if(typeof window.setTheme==="function") window.setTheme(${isDark ? 'true' : 'false'});',
           );
-          // Injeta token do Aria Worker se disponível
           if (_ariaToken.isNotEmpty) {
             final safeToken = _ariaToken.replaceAll('"', '\\"');
             await ctrl.evaluateJavascript(
@@ -864,18 +762,23 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
           _inject();
         },
 
-        onConsoleMessage: (ctrl, msg) {
-          debugPrint('[WebView] ${msg.message}');
-        },
+        onConsoleMessage: (ctrl, msg) => debugPrint('[WebView] ${msg.message}'),
       ),
 
+      // ── Loader com GIF ─────────────────────────────────
       if (_loading)
         Container(
           color: bg,
           child: Center(
-            child: CircularProgressIndicator(
-              color: isDark ? AppColors.accDark : AppColors.acc,
-              strokeWidth: 2,
+            child: Image.asset(
+              'assets/animations/loading.gif',
+              width: 80,
+              height: 80,
+              // Fallback: se o GIF não existir mostra o indicator
+              errorBuilder: (_, __, ___) => CircularProgressIndicator(
+                color: isDark ? AppColors.accDark : AppColors.acc,
+                strokeWidth: 2,
+              ),
             ),
           ),
         ),
@@ -884,7 +787,124 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
 }
 
 // ═══════════════════════════════════════════════════════
-// ── SHEETS / MODAIS NATIVOS ─────────────────────────────
+// MODAL DE ESCRITA LIVRE PARA IA — 90% altura
+// ═══════════════════════════════════════════════════════
+
+class _AiWriteSheet extends StatefulWidget {
+  final bool isDark;
+  final Color acc;
+  final TextEditingController ctrl;
+  const _AiWriteSheet({required this.isDark, required this.acc, required this.ctrl});
+  @override
+  State<_AiWriteSheet> createState() => _AiWriteSheetState();
+}
+
+class _AiWriteSheetState extends State<_AiWriteSheet> {
+  bool _sending = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg  = widget.isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final tp  = widget.isDark ? Colors.white : Colors.black;
+    final ts  = widget.isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
+    final div = widget.isDark ? AppColors.darkDivider : AppColors.divider;
+    final acc = widget.acc;
+    final h   = MediaQuery.of(context).size.height * 0.90;
+
+    return Container(
+      height: h,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal)),
+      ),
+      child: Column(children: [
+        // Handle
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+          child: Center(child: Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill)),
+          )),
+        ),
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+          child: Row(children: [
+            Expanded(child: Text(
+              'Pedir à IA',
+              style: GoogleFonts.syne(color: tp, fontSize: 20, fontWeight: FontWeight.w800),
+            )),
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Icon(Icons.close_rounded, color: ts, size: 22),
+            ),
+          ]),
+        ),
+        Container(height: 0.5, color: div),
+        // Input — ocupa todo o espaço disponível
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 16),
+            child: TextField(
+              controller: widget.ctrl,
+              autofocus: true,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              style: GoogleFonts.roboto(color: tp, fontSize: 15, height: 1.6),
+              decoration: InputDecoration(
+                hintText: 'Escreve aqui o que queres que a IA crie…\n\nEx: "Cria um relatório sobre energias renováveis com introdução, desenvolvimento e conclusão"\n\nEx: "Escreve uma carta formal de candidatura a emprego"',
+                hintStyle: GoogleFonts.roboto(color: ts.withOpacity(0.6), fontSize: 14, height: 1.6),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ),
+        // Botão enviar
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, 0, 20, MediaQuery.of(context).padding.bottom + 16),
+          child: GestureDetector(
+            onTap: _sending ? null : () {
+              final text = widget.ctrl.text.trim();
+              if (text.isEmpty) return;
+              setState(() => _sending = true);
+              Navigator.pop(context, text);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: _sending ? acc.withOpacity(0.5) : acc,
+                borderRadius: BorderRadius.circular(_kPill),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_sending) ...[
+                    SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Text(
+                    _sending ? 'A gerar…' : 'Gerar com IA',
+                    style: GoogleFonts.syne(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS / MODAIS NATIVOS
 // ═══════════════════════════════════════════════════════
 
 class _FieldDef {
@@ -895,7 +915,6 @@ class _FieldDef {
   const _FieldDef({required this.ctrl, required this.label, required this.hint, this.icon, this.keyboard = TextInputType.text});
 }
 
-// ── Generic form sheet ────────────────────────────────
 class _SimpleFormSheet extends StatelessWidget {
   final String title, confirmLabel;
   final bool isDark;
@@ -919,22 +938,14 @@ class _SimpleFormSheet extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(0, 0, 0, MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal)),
-        ),
+        decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal))),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // Handle
           Padding(padding: const EdgeInsets.fromLTRB(0,12,0,0),
             child: Center(child: Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
-          // Header
+              decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
           Padding(padding: const EdgeInsets.fromLTRB(20,16,20,16),
-            child: Row(children: [
-              Expanded(child: Text(title, style: GoogleFonts.roboto(color: tp, fontSize: 18, fontWeight: FontWeight.w800))),
-            ])),
+            child: Text(title, style: GoogleFonts.roboto(color: tp, fontSize: 18, fontWeight: FontWeight.w800))),
           Container(height: 0.5, color: div),
-          // Fields
           Padding(
             padding: const EdgeInsets.fromLTRB(20,16,20,0),
             child: Column(children: fields.map((f) => Padding(
@@ -942,7 +953,6 @@ class _SimpleFormSheet extends StatelessWidget {
               child: _tf(f, tp, ts, div, acc, isDark),
             )).toList()),
           ),
-          // Confirm btn
           Padding(
             padding: const EdgeInsets.fromLTRB(20,8,20,24),
             child: GestureDetector(
@@ -955,7 +965,7 @@ class _SimpleFormSheet extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(color: acc, borderRadius: BorderRadius.circular(_kPill)),
                 child: Text(confirmLabel, textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                  style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
               ),
             ),
           ),
@@ -984,26 +994,15 @@ class _SimpleFormSheet extends StatelessWidget {
     );
 }
 
-// ── Table picker sheet ────────────────────────────────
+// ── Table picker ──────────────────────────────────────
 class _TablePickerSheet extends StatefulWidget {
-  final bool isDark;
-  final Color acc;
-  final int initialRows, initialCols;
-  const _TablePickerSheet({required this.isDark, required this.acc, this.initialRows = 3, this.initialCols = 3});
-  @override
-  State<_TablePickerSheet> createState() => _TablePickerSheetState();
+  final bool isDark; final Color acc;
+  const _TablePickerSheet({required this.isDark, required this.acc});
+  @override State<_TablePickerSheet> createState() => _TablePickerSheetState();
 }
 
 class _TablePickerSheetState extends State<_TablePickerSheet> {
-  int rows = 3, cols = 3;
-  int _hoverRow = 0, _hoverCol = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    rows = widget.initialRows; cols = widget.initialCols;
-    _hoverRow = rows; _hoverCol = cols;
-  }
+  int _r = 3, _c = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -1015,45 +1014,33 @@ class _TablePickerSheetState extends State<_TablePickerSheet> {
     const maxR = 8, maxC = 8;
 
     return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal)),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        // Handle
         Padding(padding: const EdgeInsets.fromLTRB(0,12,0,0),
           child: Center(child: Container(width: 40, height: 4,
-              decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
-        // Title
+            decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
         Padding(padding: const EdgeInsets.fromLTRB(20,16,20,6),
           child: Row(children: [
             Expanded(child: Text('Inserir Tabela', style: GoogleFonts.roboto(color: tp, fontSize: 18, fontWeight: FontWeight.w800))),
-            Text('${_hoverRow}×${_hoverCol}', style: GoogleFonts.roboto(color: acc, fontSize: 16, fontWeight: FontWeight.w800)),
+            Text('${_r}×${_c}', style: GoogleFonts.roboto(color: acc, fontSize: 16, fontWeight: FontWeight.w800)),
           ])),
         Padding(padding: const EdgeInsets.only(bottom: 12),
-          child: Text('Toca para selecionar o tamanho', style: GoogleFonts.roboto(color: ts, fontSize: 12))),
+          child: Text('Toca para selecionar', style: GoogleFonts.roboto(color: ts, fontSize: 12))),
         Container(height: 0.5, color: div),
-
-        // Grid picker
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(children: List.generate(maxR, (r) =>
             Row(mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(maxC, (c) {
-                final isActive = r < _hoverRow && c < _hoverCol;
+                final active = r < _r && c < _c;
                 return GestureDetector(
-                  onTap: () => setState(() { rows = r+1; cols = c+1; _hoverRow = r+1; _hoverCol = c+1; }),
-                  onPanUpdate: (d) {
-                    final rr = ((d.globalPosition.dy - 20 - MediaQuery.of(context).padding.top - 120) / 40).ceil().clamp(1, maxR);
-                    final cc = ((d.globalPosition.dx - 20) / 40).ceil().clamp(1, maxC);
-                    setState(() { _hoverRow = rr; _hoverCol = cc; });
-                  },
+                  onTap: () => setState(() { _r = r+1; _c = c+1; }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 80),
                     width: 36, height: 36, margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: isActive ? acc.withOpacity(.15) : Colors.transparent,
-                      border: Border.all(color: isActive ? acc : div, width: isActive ? 1.5 : 1),
+                      color: active ? acc.withOpacity(.15) : Colors.transparent,
+                      border: Border.all(color: active ? acc : div, width: active ? 1.5 : 1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
@@ -1062,20 +1049,16 @@ class _TablePickerSheetState extends State<_TablePickerSheet> {
             ),
           )),
         ),
-
-        // Confirm
         Padding(
           padding: const EdgeInsets.fromLTRB(20,0,20,24),
           child: GestureDetector(
-            onTap: () => Navigator.pop(context, <String,String>{
-              'type':'table', 'rows':'$_hoverRow', 'cols':'$_hoverCol',
-            }),
+            onTap: () => Navigator.pop(context, <String,String>{'type':'table','rows':'$_r','cols':'$_c'}),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(color: acc, borderRadius: BorderRadius.circular(_kPill)),
-              child: Text('Inserir tabela $_hoverRow×$_hoverCol', textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+              child: Text('Inserir tabela $_r×$_c', textAlign: TextAlign.center,
+                style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
             ),
           ),
         ),
@@ -1084,29 +1067,24 @@ class _TablePickerSheetState extends State<_TablePickerSheet> {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// ── LIST PICKER SHEET (estilo, fonte, tamanho, opções, IA, inserir) ──
-// ═══════════════════════════════════════════════════════
-
+// ── List item ─────────────────────────────────────────
 class _ListItem {
   final String label;
-  final bool selected;
-  final bool danger;
-  final bool tappable;
-  final String? leading;
+  final bool selected, danger, tappable, isAccent;
   final String? fontFamily;
   final double? fontSize;
   const _ListItem({
     required this.label,
-    this.selected = false,
-    this.danger = false,
-    this.tappable = true,
-    this.leading,
+    this.selected  = false,
+    this.danger    = false,
+    this.tappable  = true,
+    this.isAccent  = false,
     this.fontFamily,
     this.fontSize,
   });
 }
 
+// ── List picker sheet ─────────────────────────────────
 class _ListPickerSheet extends StatelessWidget {
   final String title;
   final bool isDark;
@@ -1128,22 +1106,14 @@ class _ListPickerSheet extends StatelessWidget {
 
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal)),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        // Handle
         Padding(padding: const EdgeInsets.fromLTRB(0,12,0,0),
           child: Center(child: Container(width: 40, height: 4,
-              decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
-        // Header
+            decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
         Padding(padding: const EdgeInsets.fromLTRB(20,14,20,10),
-          child: Row(children: [
-            Expanded(child: Text(title, style: GoogleFonts.roboto(color: tp, fontSize: 17, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
-          ])),
+          child: Text(title, style: GoogleFonts.roboto(color: tp, fontSize: 17, fontWeight: FontWeight.w800), maxLines: 2, overflow: TextOverflow.ellipsis)),
         Container(height: 0.5, color: div),
-        // Items
         Flexible(child: ListView.separated(
           shrinkWrap: true,
           padding: const EdgeInsets.only(bottom: 24),
@@ -1151,6 +1121,9 @@ class _ListPickerSheet extends StatelessWidget {
           separatorBuilder: (_, __) => Container(height: 0.5, margin: const EdgeInsets.symmetric(horizontal: 20), color: div),
           itemBuilder: (ctx, i) {
             final item = items[i];
+            final textColor = item.danger ? const Color(0xFFDC2626)
+                : item.isAccent ? acc
+                : tp;
             return GestureDetector(
               onTap: item.tappable ? () {
                 final r = onSelect(i);
@@ -1158,36 +1131,19 @@ class _ListPickerSheet extends StatelessWidget {
               } : null,
               child: Container(
                 color: Colors.transparent,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                 child: Row(children: [
-                  if (item.leading != null) ...[
-                    Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(item.leading!, style: const TextStyle(fontSize: 14)),
-                    ),
-                    const SizedBox(width: 14),
-                  ],
                   Expanded(child: Text(item.label,
                     style: item.fontFamily != null
-                      ? TextStyle(
-                          color: item.danger ? const Color(0xFFDC2626) : tp,
-                          fontSize: item.fontSize ?? 15,
-                          fontWeight: item.selected ? FontWeight.w700 : FontWeight.w400,
-                          fontFamily: item.fontFamily,
-                        )
-                      : GoogleFonts.roboto(
-                          color: item.danger ? const Color(0xFFDC2626) : tp,
-                          fontSize: item.fontSize ?? 15,
-                          fontWeight: item.selected ? FontWeight.w700 : FontWeight.w400,
-                        ),
+                      ? TextStyle(color: textColor, fontSize: item.fontSize ?? 15,
+                          fontWeight: item.selected ? FontWeight.w700 : FontWeight.w400, fontFamily: item.fontFamily)
+                      : GoogleFonts.roboto(color: textColor, fontSize: item.fontSize ?? 15,
+                          fontWeight: (item.selected || item.isAccent) ? FontWeight.w700 : FontWeight.w400),
                   )),
                   if (item.selected)
-                    Icon(Icons.check_rounded, color: acc, size: 18),
+                    Icon(Icons.check_rounded, color: acc, size: 18)
+                  else if (item.isAccent)
+                    Icon(Icons.arrow_forward_ios_rounded, color: acc, size: 14),
                 ]),
               ),
             );
@@ -1198,27 +1154,19 @@ class _ListPickerSheet extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// ── COLOR PICKER SHEET ──────────────────────────────────
-// ═══════════════════════════════════════════════════════
-
+// ── Color picker ──────────────────────────────────────
 class _ColorPickerSheet extends StatefulWidget {
   final String title, current, resultType;
   final bool isDark;
   final Color acc;
   final List<String> presets;
-  const _ColorPickerSheet({
-    required this.title, required this.isDark, required this.acc,
-    required this.current, required this.presets, required this.resultType,
-  });
+  const _ColorPickerSheet({required this.title, required this.isDark, required this.acc, required this.current, required this.presets, required this.resultType});
   @override State<_ColorPickerSheet> createState() => _ColorPickerSheetState();
 }
 
 class _ColorPickerSheetState extends State<_ColorPickerSheet> {
   late String _selected;
-
-  @override
-  void initState() { super.initState(); _selected = widget.current; }
+  @override void initState() { super.initState(); _selected = widget.current; }
 
   Color _parseHex(String hex) {
     if (hex == 'transparent') return Colors.transparent;
@@ -1234,27 +1182,20 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
     final acc = widget.acc;
 
     return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal)),
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Padding(padding: const EdgeInsets.fromLTRB(0,12,0,0),
           child: Center(child: Container(width: 40, height: 4,
-              decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
+            decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill))))),
         Padding(padding: const EdgeInsets.fromLTRB(20,14,20,14),
-          child: Row(children: [
-            Expanded(child: Text(widget.title, style: GoogleFonts.roboto(color: tp, fontSize: 18, fontWeight: FontWeight.w800))),
-          ])),
+          child: Text(widget.title, style: GoogleFonts.roboto(color: tp, fontSize: 18, fontWeight: FontWeight.w800))),
         Container(height: 0.5, color: div),
         Padding(
           padding: const EdgeInsets.all(20),
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5, crossAxisSpacing: 12, mainAxisSpacing: 12,
-            ),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, crossAxisSpacing: 12, mainAxisSpacing: 12),
             itemCount: widget.presets.length,
             itemBuilder: (ctx, i) {
               final c = widget.presets[i];
@@ -1285,15 +1226,13 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20,0,20,24),
           child: GestureDetector(
-            onTap: () => Navigator.pop(context, <String,String>{
-              'type': widget.resultType, 'color': _selected,
-            }),
+            onTap: () => Navigator.pop(context, <String,String>{'type': widget.resultType, 'color': _selected}),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(color: acc, borderRadius: BorderRadius.circular(_kPill)),
               child: Text('Aplicar', textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
             ),
           ),
         ),
@@ -1302,10 +1241,7 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// ── LAYOUT SHEET ────────────────────────────────────────
-// ═══════════════════════════════════════════════════════
-
+// ── Layout sheet ──────────────────────────────────────
 class _LayoutSheet extends StatefulWidget {
   final bool isDark; final Color acc;
   const _LayoutSheet({required this.isDark, required this.acc});
@@ -1313,9 +1249,7 @@ class _LayoutSheet extends StatefulWidget {
 }
 
 class _LayoutSheetState extends State<_LayoutSheet> {
-  String _format = 'A4';
-  String _margin = 'Normais';
-  String _spacing = 'Simples';
+  String _format = 'A4', _margin = 'Normais', _spacing = 'Simples';
 
   @override
   Widget build(BuildContext context) {
@@ -1325,12 +1259,11 @@ class _LayoutSheetState extends State<_LayoutSheet> {
     final div = widget.isDark ? AppColors.darkDivider : AppColors.divider;
     final acc = widget.acc;
 
-    Widget section(String title) => Padding(
+    Widget section(String t) => Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 16),
-      child: Text(title.toUpperCase(), style: GoogleFonts.roboto(color: ts, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
-    );
+      child: Text(t.toUpperCase(), style: GoogleFonts.roboto(color: ts, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.2)));
 
-    Widget chips<T>(List<String> opts, String current, ValueChanged<String> onTap) =>
+    Widget chips(List<String> opts, String current, ValueChanged<String> onTap) =>
       Wrap(spacing: 8, children: opts.map((o) {
         final sel = o == current;
         return GestureDetector(
@@ -1368,17 +1301,16 @@ class _LayoutSheetState extends State<_LayoutSheet> {
             onTap: () {
               final spacingMap = {'Simples':'1.4','1,5 linhas':'1.65','Duplo':'2.0'};
               Navigator.pop(context, <String,String>{
-                'type':'layout',
-                'format': _format,
-                'margin': _margin,
+                'type':'layout', 'format': _format, 'margin': _margin,
                 'spacing': spacingMap[_spacing] ?? '1.4',
               });
             },
             child: Container(
-              width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 16),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(color: acc, borderRadius: BorderRadius.circular(_kPill)),
               child: Text('Aplicar', textAlign: TextAlign.center,
-                  style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
             ),
           ),
           const SizedBox(height: 8),
@@ -1388,13 +1320,9 @@ class _LayoutSheetState extends State<_LayoutSheet> {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// ── FIND & REPLACE SHEET ─────────────────────────────────
-// ═══════════════════════════════════════════════════════
-
+// ── Find & Replace ────────────────────────────────────
 class _FindReplaceSheet extends StatelessWidget {
-  final bool isDark;
-  final Color acc;
+  final bool isDark; final Color acc;
   final TextEditingController findCtrl, replaceCtrl;
   const _FindReplaceSheet({required this.isDark, required this.acc, required this.findCtrl, required this.replaceCtrl});
 
@@ -1428,7 +1356,7 @@ class _FindReplaceSheet extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 decoration: BoxDecoration(border: Border.all(color: div), borderRadius: BorderRadius.circular(_kPill)),
                 child: Text('Contar', textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(color: tp, fontWeight: FontWeight.w700, fontSize: 14)),
+                  style: GoogleFonts.roboto(color: tp, fontWeight: FontWeight.w700, fontSize: 14)),
               ),
             )),
             const SizedBox(width: 10),
@@ -1441,7 +1369,7 @@ class _FindReplaceSheet extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 decoration: BoxDecoration(color: acc, borderRadius: BorderRadius.circular(_kPill)),
                 child: Text('Substituir tudo', textAlign: TextAlign.center,
-                    style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                  style: GoogleFonts.roboto(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
               ),
             )),
           ])),
@@ -1450,7 +1378,7 @@ class _FindReplaceSheet extends StatelessWidget {
     );
   }
 
-  Widget _tf(TextEditingController c, String label, String hint, Color tp, Color ts, Color div, Color accColor, bool dark) =>
+  Widget _tf(TextEditingController c, String label, String hint, Color tp, Color ts, Color div, Color acc, bool dark) =>
     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label.toUpperCase(), style: GoogleFonts.roboto(color: ts, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.1)),
       const SizedBox(height: 6),
@@ -1462,7 +1390,7 @@ class _FindReplaceSheet extends StatelessWidget {
           hintStyle: GoogleFonts.roboto(color: ts.withOpacity(.6), fontSize: 13),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_kCard), borderSide: BorderSide(color: div)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_kCard), borderSide: BorderSide(color: accColor, width: 1.5)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_kCard), borderSide: BorderSide(color: acc, width: 1.5)),
           filled: true,
           fillColor: dark ? AppColors.darkBackground : const Color(0xFFF9FAFB),
         ),
