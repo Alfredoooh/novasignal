@@ -46,6 +46,7 @@ flutter:
     - assets/images/background1.png
     - assets/animations/loading.gif
     - assets/icons/folder.png
+    - assets/videos/editor_intro.mp4
 
  
 
