@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:video_player/video_player.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -33,6 +34,8 @@ class _NativeEditorView extends StatefulWidget {
 class _NativeEditorViewState extends State<_NativeEditorView> {
   InAppWebViewController? _wvc;
   bool _loading = true;
+  bool _webReady = false;  // WebView carregou, aguarda botão
+  VideoPlayerController? _videoCtrl;
 
   final _settings = InAppWebViewSettings(
     javaScriptEnabled: true,
@@ -50,11 +53,22 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   void initState() {
     super.initState();
     themeNotifier.addListener(_onThemeChanged);
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    final ctrl = VideoPlayerController.asset('assets/videos/editor_intro.mp4');
+    await ctrl.initialize();
+    ctrl.setLooping(true);
+    ctrl.setVolume(0);
+    ctrl.play();
+    if (mounted) setState(() => _videoCtrl = ctrl);
   }
 
   @override
   void dispose() {
     themeNotifier.removeListener(_onThemeChanged);
+    _videoCtrl?.dispose();
     super.dispose();
   }
 
@@ -748,7 +762,7 @@ Regras obrigatórias:
         },
 
         onLoadStop: (ctrl, url) async {
-          if (mounted) setState(() => _loading = false);
+          if (mounted) setState(() => _webReady = true);
           final isDark = themeNotifier.isDark;
           await ctrl.evaluateJavascript(
             source: 'if(typeof window.setTheme==="function") window.setTheme(${isDark ? 'true' : 'false'});',
@@ -765,22 +779,15 @@ Regras obrigatórias:
         onConsoleMessage: (ctrl, msg) => debugPrint('[WebView] ${msg.message}'),
       ),
 
-      // ── Loader com GIF ─────────────────────────────────
+      // ── Loader com vídeo MP4 ─────────────────────────────
       if (_loading)
-        Container(
-          color: bg,
-          child: Center(
-            child: Image.asset(
-              'assets/animations/loading.gif',
-              width: 80,
-              height: 80,
-              // Fallback: se o GIF não existir mostra o indicator
-              errorBuilder: (_, __, ___) => CircularProgressIndicator(
-                color: isDark ? AppColors.accDark : AppColors.acc,
-                strokeWidth: 2,
-              ),
-            ),
-          ),
+        _EditorLoaderScreen(
+          videoCtrl: _videoCtrl,
+          webReady: _webReady,
+          onOpen: () {
+            setState(() => _loading = false);
+            _videoCtrl?.pause();
+          },
         ),
     ]);
   }
@@ -1396,4 +1403,80 @@ class _FindReplaceSheet extends StatelessWidget {
         ),
       ),
     ]);
+}
+
+// ═══════════════════════════════════════════════════════
+// LOADER COM VÍDEO MP4
+// ═══════════════════════════════════════════════════════
+
+class _EditorLoaderScreen extends StatelessWidget {
+  final VideoPlayerController? videoCtrl;
+  final bool webReady;
+  final VoidCallback onOpen;
+
+  const _EditorLoaderScreen({
+    required this.videoCtrl,
+    required this.webReady,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final acc = accColor(themeNotifier.isDark);
+
+    return Container(
+      color: const Color(0xFF111111),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // ── Vídeo centrado, tamanho original, bordas curvas ──
+            Expanded(
+              child: Center(
+                child: videoCtrl != null && videoCtrl!.value.isInitialized
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(36),
+                        child: SizedBox(
+                          width:  videoCtrl!.value.size.width,
+                          height: videoCtrl!.value.size.height,
+                          child: VideoPlayer(videoCtrl!),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
+
+            // ── Botão "Abrir editor" ──────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
+              child: AnimatedOpacity(
+                opacity: webReady ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+                child: GestureDetector(
+                  onTap: webReady ? onOpen : null,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Abrir editor',
+                      style: GoogleFonts.syne(
+                        color: const Color(0xFF111111),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
