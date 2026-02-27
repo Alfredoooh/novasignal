@@ -3,75 +3,317 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
-import '../widgets/theme.dart';
 
-// ── SVGs ─────────────────────────────────────────────────────────────────────
-const _svgLogo  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,2A10,10,0,1,0,22,12,10,10,0,0,0,12,2Zm0,18a8,8,0,1,1,8-8A8,8,0,0,1,12,20Zm3-8a3,3,0,1,1-3-3A3,3,0,0,1,15,12Z"/></svg>';
-const _svgEmail = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,1H5A5.006,5.006,0,0,0,0,6V18a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V6A5.006,5.006,0,0,0,19,1ZM5,3H19a3,3,0,0,1,2.78,1.887l-7.658,7.659a3.1,3.1,0,0,1-4.244,0L2.22,4.887A3,3,0,0,1,5,3ZM19,21H5a3,3,0,0,1-3-3V7.5L8.464,13.96a5.1,5.1,0,0,0,7.072,0L22,7.5V18A3,3,0,0,1,19,21Z"/></svg>';
-const _svgPhone = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22.7,17.39l-3.74-2.69a2,2,0,0,0-2.64.33L15.1,16.38a14.17,14.17,0,0,1-7.47-7.47l1.35-1.22a2,2,0,0,0,.33-2.64L6.61,1.3A2,2,0,0,0,4,.88L1.31,2.4A2,2,0,0,0,.24,4.43a20.21,20.21,0,0,0,19.33,19.33,2,2,0,0,0,2-1.07L23.12,20A2,2,0,0,0,22.7,17.39Z"/></svg>';
-const _svgLock  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,8H18V7A6,6,0,0,0,6,7V8H5a3,3,0,0,0-3,3v9a3,3,0,0,0,3,3H19a3,3,0,0,0,3-3V11A3,3,0,0,0,19,8ZM8,7a4,4,0,0,1,8,0V8H8Zm12,13a1,1,0,0,1-1,1H5a1,1,0,0,1-1-1V11a1,1,0,0,1,1-1H19a1,1,0,0,1,1,1Z"/></svg>';
-const _svgUser  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,12A6,6,0,1,0,6,6,6.006,6.006,0,0,0,12,12ZM12,2a4,4,0,1,1-4,4A4,4,0,0,1,12,2ZM12,14a9.01,9.01,0,0,0-9,9,1,1,0,0,0,2,0,7,7,0,0,1,14,0,1,1,0,0,0,2,0A9.01,9.01,0,0,0,12,14Z"/></svg>';
-const _svgEyeOn = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.271,9.419C21.72,6.893,18.192,2.655,12,2.655S2.28,6.893.729,9.419a4.908,4.908,0,0,0,0,5.162C2.28,17.107,5.808,21.345,12,21.345s9.72-4.238,11.271-6.764A4.908,4.908,0,0,0,23.271,9.419Zm-1.705,4.115C20.234,15.7,17.219,19.345,12,19.345S3.766,15.7,2.434,13.534a2.918,2.918,0,0,1,0-3.068C3.766,8.3,6.781,4.655,12,4.655s8.234,3.643,9.566,5.811A2.918,2.918,0,0,1,21.566,13.534ZM12,7a5,5,0,1,0,5,5A5.006,5.006,0,0,0,12,7Zm0,8a3,3,0,1,1,3-3A3,3,0,0,1,12,15Z"/></svg>';
-const _svgEyeOff= '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10.48,14.928A2.979,2.979,0,0,1,9,12a3,3,0,0,1,3-3,2.979,2.979,0,0,1,2.928,1.52ZM23.271,9.419a14.085,14.085,0,0,0-2.833-3.441l2.293-2.292L21.317,2.272,18.9,4.688A11.631,11.631,0,0,0,12,2.655C5.808,2.655,2.28,6.893.729,9.419a4.908,4.908,0,0,0,0,5.162,14.1,14.1,0,0,0,2.832,3.44L1.269,20.313l1.414,1.414,2.422-2.421A11.657,11.657,0,0,0,12,21.345c6.192,0,9.72-4.238,11.271-6.764A4.908,4.908,0,0,0,23.271,9.419ZM2.434,13.534a2.918,2.918,0,0,1,0-3.068C3.766,8.3,6.781,4.655,12,4.655a9.658,9.658,0,0,1,5.346,1.6L15.885,7.71A4.986,4.986,0,0,0,8.71,14.885L6.669,16.926A12.054,12.054,0,0,1,2.434,13.534Zm17.132,0C18.234,15.7,15.219,19.345,12,19.345a9.678,9.678,0,0,1-5.347-1.6L8.115,16.29a4.986,4.986,0,0,0,7.175-7.175l2.041-2.041a12.057,12.057,0,0,1,4.235,3.392A2.918,2.918,0,0,1,21.566,13.534Z"/></svg>';
+// ── SVGs ──────────────────────────────────────────────────────────────────────
+const _svgEmail = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,1H5A5.006,5.006,0,0,0,0,6V18a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V6A5.006,5.006,0,0,0,19,1ZM5,3H19a3,3,0,0,1,2.78,1.887l-7.658,7.659a3.007,3.007,0,0,1-4.244,0L2.22,4.887A3,3,0,0,1,5,3ZM19,21H5a3,3,0,0,1-3-3V7.5L8.464,13.96a5.007,5.007,0,0,0,7.072,0L22,7.5V18A3,3,0,0,1,19,21Z"/></svg>''';
+const _svgPhone = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.981,7.023v-6a1,1,0,0,1,2,0v6A1,1,0,0,1,19.981,7.023Zm-3,1a1,1,0,0,0,1-1v-6a1,1,0,0,0-2,0v6A1,1,0,0,0,16.981,8.023Zm6.095,13.116-.912,1.05c-8.19,7.84-28.12-12.084-20.4-20.3l1.15-1A3.08,3.08,0,0,1,7.242.93c.031.03,1.882,2.437,1.882,2.437a3.1,3.1,0,0,1-.005,4.281L7.959,9.1a12.783,12.783,0,0,0,6.932,6.947l1.464-1.165a3.1,3.1,0,0,1,4.282-.007s2.407,1.853,2.438,1.884A3.1,3.1,0,0,1,23.076,21.139ZM21.7,18.216s-2.4-1.842-2.425-1.872a1.121,1.121,0,0,0-1.549,0c-.026.027-2.044,1.635-2.044,1.635a1,1,0,0,1-.979.151A15,15,0,0,1,5.88,9.318a1,1,0,0,1,.146-.995S7.633,6.306,7.661,6.279a1.1,1.1,0,0,0,0-1.55C7.629,4.7,5.788,2.306,5.788,2.306a1.1,1.1,0,0,0-1.51.038L3.127,3.349C-2.513,10.128,14.758,26.442,20.7,20.826l.912-1.05A1.122,1.122,0,0,0,21.7,18.216Z"/></svg>''';
+const _svgLock = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19,8.424V7A7,7,0,0,0,5,7V8.424A5,5,0,0,0,2,13v6a5.006,5.006,0,0,0,5,5H17a5.006,5.006,0,0,0,5-5V13A5,5,0,0,0,19,8.424ZM7,7A5,5,0,0,1,17,7V8H7ZM20,19a3,3,0,0,1-3,3H7a3,3,0,0,1-3-3V13a3,3,0,0,1,3-3H17a3,3,0,0,1,3,3Z"/><path d="M12,14a1,1,0,0,0-1,1v2a1,1,0,0,0,2,0V15A1,1,0,0,0,12,14Z"/></svg>''';
+const _svgEyeOn = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.271,9.419C21.72,6.893,18.192,2.655,12,2.655S2.28,6.893.729,9.419a4.908,4.908,0,0,0,0,5.162C2.28,17.107,5.808,21.345,12,21.345s9.72-4.238,11.271-6.764A4.908,4.908,0,0,0,23.271,9.419Zm-1.705,4.115C20.234,15.7,17.219,19.345,12,19.345S3.766,15.7,2.434,13.534a2.918,2.918,0,0,1,0-3.068C3.766,8.3,6.781,4.655,12,4.655s8.234,3.641,9.566,5.811A2.918,2.918,0,0,1,21.566,13.534Z"/><path d="M12,7a5,5,0,1,0,5,5A5.006,5.006,0,0,0,12,7Zm0,8a3,3,0,1,1,3-3A3,3,0,0,1,12,15Z"/></svg>''';
+const _svgEyeOff = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.271,9.419A15.866,15.866,0,0,0,19.9,5.51l2.8-2.8a1,1,0,0,0-1.414-1.414L18.241,4.345A12.054,12.054,0,0,0,12,2.655C5.809,2.655,2.281,6.893.729,9.419a4.908,4.908,0,0,0,0,5.162A15.866,15.866,0,0,0,4.1,18.49l-2.8,2.8a1,1,0,1,0,1.414,1.414l3.052-3.052A12.054,12.054,0,0,0,12,21.345c6.191,0,9.719-4.238,11.271-6.764A4.908,4.908,0,0,0,23.271,9.419ZM2.433,13.534a2.918,2.918,0,0,1,0-3.068C3.767,8.3,6.782,4.655,12,4.655A10.1,10.1,0,0,1,16.766,5.82L14.753,7.833a4.992,4.992,0,0,0-6.92,6.92l-2.31,2.31A13.723,13.723,0,0,1,2.433,13.534ZM15,12a3,3,0,0,1-3,3,2.951,2.951,0,0,1-1.285-.3L14.7,10.715A2.951,2.951,0,0,1,15,12ZM9,12a3,3,0,0,1,3-3,2.951,2.951,0,0,1,1.285.3L9.3,13.285A2.951,2.951,0,0,1,9,12Zm12.567,1.534C20.233,15.7,17.218,19.345,12,19.345A10.1,10.1,0,0,1,7.234,18.18l2.013-2.013a4.992,4.992,0,0,0,6.92-6.92l2.31-2.31a13.723,13.723,0,0,1,3.09,3.529A2.918,2.918,0,0,1,21.567,13.534Z"/></svg>''';
 
-Widget _svg(String d, Color c, {double s = 18}) => SvgPicture.string(
-    d, width: s, height: s, colorFilter: ColorFilter.mode(c, BlendMode.srcIn));
+Widget _svgIcon(String data, Color color, {double size = 18}) => SvgPicture.string(
+  data, width: size, height: size,
+  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+);
 
-// ════════════════════════════════════════════════════════════════
-// AUTH SCREEN
-// ════════════════════════════════════════════════════════════════
-class AuthScreen extends StatefulWidget {
-  final VoidCallback onDone; // chamado após login/registo ou "pular"
+// ── Cores fixas ───────────────────────────────────────────────────────────────
+const _btnLoginBg    = Color(0xFFD9D9D9);
+const _btnLoginText  = Color(0xFF3F3F3F);
+const _btnRegBg      = Color(0xFF545454);
+const _btnRegText    = Color(0xFFD9D9D9);
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUTH SCREEN — só fundo + dois botões
+// ════════════════════════════════════════════════════════════════════════════
+class AuthScreen extends StatelessWidget {
+  final VoidCallback onDone;
   const AuthScreen({super.key, required this.onDone});
 
-  @override
-  State<AuthScreen> createState() => _AuthScreenState();
-}
+  void _openLogin(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _LoginModal(onDone: onDone),
+    );
+  }
 
-class _AuthScreenState extends State<AuthScreen>
-    with SingleTickerProviderStateMixin {
-
-  // ── Modo ─────────────────────────────────────────────────────
-  bool _isLogin  = true;   // true = entrar | false = criar conta
-  bool _useEmail = true;   // true = email  | false = telemóvel
-  bool _showPw   = false;
-  bool _showPw2  = false;
-
-  final _formKey  = GlobalKey<FormState>();
-  final _cName    = TextEditingController();
-  final _cEmail   = TextEditingController();
-  final _cPhone   = TextEditingController();
-  final _cPw      = TextEditingController();
-  final _cPw2     = TextEditingController();
-  String? _errMsg;
-
-  late final AnimationController _aCtrl;
-  late final Animation<double>    _fade;
-
-  @override
-  void initState() {
-    super.initState();
-    _aCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
-    _fade  = CurvedAnimation(parent: _aCtrl, curve: Curves.easeOut);
-    _aCtrl.forward();
+  void _openRegister(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RegisterModal(onDone: onDone),
+    );
   }
 
   @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── Imagem de fundo ──────────────────────────────────
+          Image.asset(
+            'assets/images/background1.png',
+            fit: BoxFit.cover,
+          ),
+
+          // ── Gradiente sobre a imagem (escurece em baixo) ─────
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Color(0xE5000000)],
+                stops: [0.55, 1.0],
+              ),
+            ),
+          ),
+
+          // ── Botões na parte inferior ─────────────────────────
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Label acima dos botões
+                    Text(
+                      'Comece com um login',
+                      style: GoogleFonts.roboto(
+                        color: Colors.white.withOpacity(0.75),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Botão Login
+                    _MainButton(
+                      label: 'Fazer login com telemóvel ou email',
+                      bg: _btnLoginBg,
+                      textColor: _btnLoginText,
+                      onTap: () => _openLogin(context),
+                    ),
+                    const SizedBox(height: 12),
+                    // Botão Registar
+                    _MainButton(
+                      label: 'Cadastrar',
+                      bg: _btnRegBg,
+                      textColor: _btnRegText,
+                      onTap: () => _openRegister(context),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Botão principal da tela inicial ──────────────────────────────────────────
+class _MainButton extends StatelessWidget {
+  final String label;
+  final Color bg, textColor;
+  final VoidCallback onTap;
+  const _MainButton({
+    required this.label, required this.bg,
+    required this.textColor, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.roboto(
+          color: textColor,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MODAL DE LOGIN
+// ════════════════════════════════════════════════════════════════════════════
+class _LoginModal extends StatefulWidget {
+  final VoidCallback onDone;
+  const _LoginModal({required this.onDone});
+
+  @override
+  State<_LoginModal> createState() => _LoginModalState();
+}
+
+class _LoginModalState extends State<_LoginModal> {
+  bool _useEmail = true;
+  bool _showPw   = false;
+  String? _errMsg;
+
+  final _formKey = GlobalKey<FormState>();
+  final _cEmail  = TextEditingController();
+  final _cPhone  = TextEditingController();
+  final _cPw     = TextEditingController();
+
+  @override
   void dispose() {
-    _aCtrl.dispose();
+    _cEmail.dispose(); _cPhone.dispose(); _cPw.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _errMsg = null);
+    FocusScope.of(context).unfocus();
+
+    final auth = AuthService.instance;
+    final res = _useEmail
+        ? await auth.loginEmail(email: _cEmail.text, password: _cPw.text)
+        : await auth.loginPhone(phone: _cPhone.text, password: _cPw.text);
+
+    if (!mounted) return;
+    if (res.ok) { Navigator.pop(context); widget.onDone(); }
+    else        { setState(() => _errMsg = res.error); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(width: 40, height: 4,
+                  decoration: BoxDecoration(color: const Color(0xFFDDDDDD),
+                      borderRadius: BorderRadius.circular(99))),
+              const SizedBox(height: 28),
+
+              // Toggle email / telemóvel
+              _ToggleContactRow(
+                useEmail: _useEmail,
+                onChanged: (v) => setState(() { _useEmail = v; _errMsg = null; }),
+              ),
+              const SizedBox(height: 20),
+
+              // Campo email ou telemóvel
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: _useEmail
+                    ? _AuthField(
+                        key: const ValueKey('login_email'),
+                        ctrl: _cEmail, hint: 'Email',
+                        prefixSvg: _svgEmail,
+                        keyboard: TextInputType.emailAddress,
+                        validator: (v) =>
+                            (v == null || !v.contains('@')) ? 'Email inválido' : null,
+                      )
+                    : _AuthField(
+                        key: const ValueKey('login_phone'),
+                        ctrl: _cPhone, hint: 'Número de telemóvel',
+                        prefixSvg: _svgPhone,
+                        keyboard: TextInputType.phone,
+                        formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))],
+                        validator: (v) =>
+                            (v == null || v.replaceAll(RegExp(r'\D'), '').length < 9)
+                                ? 'Número inválido' : null,
+                      ),
+              ),
+              const SizedBox(height: 14),
+
+              // Campo password
+              _AuthField(
+                ctrl: _cPw, hint: 'Palavra-passe',
+                prefixSvg: _svgLock,
+                obscure: !_showPw,
+                suffix: _EyeToggle(
+                  show: _showPw,
+                  onTap: () => setState(() => _showPw = !_showPw),
+                ),
+                validator: (v) =>
+                    (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null,
+              ),
+
+              // Erro
+              if (_errMsg != null) ...[
+                const SizedBox(height: 12),
+                _ErrorRow(msg: _errMsg!),
+              ],
+
+              const SizedBox(height: 24),
+
+              // Botão entrar
+              _ModalButton(
+                label: 'Entrar',
+                loading: AuthService.instance.loading,
+                onTap: _submit,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MODAL DE REGISTO — 90% da altura
+// ════════════════════════════════════════════════════════════════════════════
+class _RegisterModal extends StatefulWidget {
+  final VoidCallback onDone;
+  const _RegisterModal({required this.onDone});
+
+  @override
+  State<_RegisterModal> createState() => _RegisterModalState();
+}
+
+class _RegisterModalState extends State<_RegisterModal> {
+  bool _useEmail = true;
+  bool _showPw   = false;
+  bool _showPw2  = false;
+  String? _errMsg;
+
+  final _formKey = GlobalKey<FormState>();
+  final _cName   = TextEditingController();
+  final _cEmail  = TextEditingController();
+  final _cPhone  = TextEditingController();
+  final _cPw     = TextEditingController();
+  final _cPw2    = TextEditingController();
+
+  @override
+  void dispose() {
     for (final c in [_cName, _cEmail, _cPhone, _cPw, _cPw2]) c.dispose();
     super.dispose();
   }
 
-  void _switchMode(bool toLogin) {
-    setState(() { _isLogin = toLogin; _errMsg = null; });
-    _aCtrl.forward(from: 0);
-  }
-
-  // ── Submit ───────────────────────────────────────────────────
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (!_isLogin && _cPw.text != _cPw2.text) {
+    if (_cPw.text != _cPw2.text) {
       setState(() => _errMsg = 'As palavras-passe não coincidem.');
       return;
     }
@@ -79,238 +321,123 @@ class _AuthScreenState extends State<AuthScreen>
     FocusScope.of(context).unfocus();
 
     final auth = AuthService.instance;
-    AuthResult res;
-
-    if (_isLogin) {
-      res = _useEmail
-          ? await auth.loginEmail(email: _cEmail.text, password: _cPw.text)
-          : await auth.loginPhone(phone: _cPhone.text, password: _cPw.text);
-    } else {
-      res = _useEmail
-          ? await auth.registerEmail(name: _cName.text, email: _cEmail.text, password: _cPw.text)
-          : await auth.registerPhone(name: _cName.text, phone: _cPhone.text, password: _cPw.text);
-    }
+    final res = _useEmail
+        ? await auth.registerEmail(name: _cName.text, email: _cEmail.text, password: _cPw.text)
+        : await auth.registerPhone(name: _cName.text, phone: _cPhone.text, password: _cPw.text);
 
     if (!mounted) return;
-    if (res.ok) { widget.onDone(); }
+    if (res.ok) { Navigator.pop(context); widget.onDone(); }
     else        { setState(() => _errMsg = res.error); }
   }
 
-  // ── Build ─────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final isDark = themeNotifier.isDark;
-    final bg   = isDark ? AppColors.darkBackground    : AppColors.background;
-    final card = isDark ? AppColors.darkSurface        : Colors.white;
-    final tp   = isDark ? AppColors.darkTextPrimary    : AppColors.textPrimary;
-    final ts   = isDark ? AppColors.darkTextSecondary  : AppColors.textSecondary;
-    final div  = isDark ? AppColors.darkDivider        : AppColors.divider;
-    final acc  = accColor(isDark);
+    final screenH = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      backgroundColor: bg,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fade,
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        height: screenH * 0.9,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+        child: Form(
+          key: _formKey,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 56),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(width: 40, height: 4,
+                    decoration: BoxDecoration(color: const Color(0xFFDDDDDD),
+                        borderRadius: BorderRadius.circular(99))),
+                const SizedBox(height: 28),
 
-                  // ── Brand ──────────────────────────────────
-                  Center(child: Column(children: [
-                    // Logotipo
-                    Container(
-                      width: 76, height: 76,
-                      decoration: BoxDecoration(
-                        color: acc.withOpacity(.1),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: acc.withOpacity(.28), width: 1.5),
-                      ),
-                      child: Center(
-                        child: Text('✦',
-                          style: TextStyle(fontSize: 34, color: acc, height: 1)),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text('Aria', style: GoogleFonts.syne(
-                      fontSize: 40, fontWeight: FontWeight.w800,
-                      color: tp, height: 1,
-                    )),
-                    const SizedBox(height: 8),
-                    Text(
-                      _isLogin ? 'Bem-vindo de volta' : 'Cria a tua conta gratuita',
-                      style: GoogleFonts.roboto(fontSize: 14.5, color: ts),
-                    ),
-                  ])),
+                // Toggle email / telemóvel
+                _ToggleContactRow(
+                  useEmail: _useEmail,
+                  onChanged: (v) => setState(() { _useEmail = v; _errMsg = null; }),
+                ),
+                const SizedBox(height: 20),
 
-                  const SizedBox(height: 40),
+                // Nome
+                _AuthField(
+                  ctrl: _cName, hint: 'Nome completo',
+                  prefixSvg: _svgPhone, // usa o de pessoa se tiveres, senão qualquer
+                  validator: (v) =>
+                      (v == null || v.trim().length < 2) ? 'Insere o teu nome' : null,
+                ),
+                const SizedBox(height: 14),
 
-                  // ── Tabs Entrar / Criar conta ───────────────
-                  _TabRow(
-                    isLogin: _isLogin,
-                    acc: acc,
-                    tp: tp,
-                    isDark: isDark,
-                    onSwitch: _switchMode,
+                // Email ou telemóvel
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _useEmail
+                      ? _AuthField(
+                          key: const ValueKey('reg_email'),
+                          ctrl: _cEmail, hint: 'Email',
+                          prefixSvg: _svgEmail,
+                          keyboard: TextInputType.emailAddress,
+                          validator: (v) =>
+                              (v == null || !v.contains('@')) ? 'Email inválido' : null,
+                        )
+                      : _AuthField(
+                          key: const ValueKey('reg_phone'),
+                          ctrl: _cPhone, hint: 'Número de telemóvel',
+                          prefixSvg: _svgPhone,
+                          keyboard: TextInputType.phone,
+                          formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))],
+                          validator: (v) =>
+                              (v == null || v.replaceAll(RegExp(r'\D'), '').length < 9)
+                                  ? 'Número inválido' : null,
+                        ),
+                ),
+                const SizedBox(height: 14),
+
+                // Password
+                _AuthField(
+                  ctrl: _cPw, hint: 'Palavra-passe',
+                  prefixSvg: _svgLock,
+                  obscure: !_showPw,
+                  suffix: _EyeToggle(
+                    show: _showPw,
+                    onTap: () => setState(() => _showPw = !_showPw),
                   ),
+                  validator: (v) =>
+                      (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null,
+                ),
+                const SizedBox(height: 14),
 
-                  const SizedBox(height: 28),
-
-                  // ── Toggle Email / Telemóvel ────────────────
-                  _ContactToggle(
-                    useEmail: _useEmail,
-                    acc: acc, div: div, ts: ts,
-                    onTap: (v) => setState(() { _useEmail = v; _errMsg = null; }),
+                // Confirmar password
+                _AuthField(
+                  ctrl: _cPw2, hint: 'Confirmar palavra-passe',
+                  prefixSvg: _svgLock,
+                  obscure: !_showPw2,
+                  suffix: _EyeToggle(
+                    show: _showPw2,
+                    onTap: () => setState(() => _showPw2 = !_showPw2),
                   ),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Confirma a palavra-passe' : null,
+                ),
 
-                  const SizedBox(height: 22),
-
-                  // ── Nome (só registo) ──────────────────────
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                    child: !_isLogin
-                        ? Column(children: [
-                            _Field(
-                              ctrl: _cName, label: 'Nome completo',
-                              hint: 'Alfredo Jonas', prefixSvg: _svgUser,
-                              tp: tp, ts: ts, div: div, acc: acc, isDark: isDark,
-                              validator: (v) =>
-                                  (v == null || v.trim().length < 2) ? 'Insere o teu nome' : null,
-                            ),
-                            const SizedBox(height: 14),
-                          ])
-                        : const SizedBox.shrink(),
-                  ),
-
-                  // ── Email ou Telemóvel ─────────────────────
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: SlideTransition(
-                        position: Tween(
-                          begin: const Offset(.04, 0), end: Offset.zero,
-                        ).animate(anim),
-                        child: child,
-                      ),
-                    ),
-                    child: _useEmail
-                        ? _Field(
-                            key: const ValueKey('email'),
-                            ctrl: _cEmail, label: 'Email',
-                            hint: 'email@exemplo.com', prefixSvg: _svgEmail,
-                            tp: tp, ts: ts, div: div, acc: acc, isDark: isDark,
-                            keyboard: TextInputType.emailAddress,
-                            validator: (v) =>
-                                (v == null || !v.contains('@')) ? 'Email inválido' : null,
-                          )
-                        : _Field(
-                            key: const ValueKey('phone'),
-                            ctrl: _cPhone, label: 'Telemóvel',
-                            hint: '+244 9XX XXX XXX', prefixSvg: _svgPhone,
-                            tp: tp, ts: ts, div: div, acc: acc, isDark: isDark,
-                            keyboard: TextInputType.phone,
-                            formatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]')),
-                            ],
-                            validator: (v) =>
-                                (v == null || v.replaceAll(RegExp(r'\D'), '').length < 9)
-                                    ? 'Número inválido (mín. 9 dígitos)'
-                                    : null,
-                          ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // ── Password ───────────────────────────────
-                  _Field(
-                    ctrl: _cPw, label: 'Palavra-passe',
-                    hint: '••••••••', prefixSvg: _svgLock,
-                    tp: tp, ts: ts, div: div, acc: acc, isDark: isDark,
-                    obscure: !_showPw,
-                    suffix: _EyeBtn(
-                      show: _showPw, ts: ts,
-                      onTap: () => setState(() => _showPw = !_showPw),
-                    ),
-                    validator: (v) =>
-                        (v == null || v.length < 6) ? 'Mínimo 6 caracteres' : null,
-                  ),
-
-                  // ── Confirmar password (só registo) ────────
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                    child: !_isLogin
-                        ? Column(children: [
-                            const SizedBox(height: 14),
-                            _Field(
-                              ctrl: _cPw2, label: 'Confirmar palavra-passe',
-                              hint: '••••••••', prefixSvg: _svgLock,
-                              tp: tp, ts: ts, div: div, acc: acc, isDark: isDark,
-                              obscure: !_showPw2,
-                              suffix: _EyeBtn(
-                                show: _showPw2, ts: ts,
-                                onTap: () => setState(() => _showPw2 = !_showPw2),
-                              ),
-                              validator: (v) =>
-                                  (v == null || v.isEmpty) ? 'Confirma a palavra-passe' : null,
-                            ),
-                          ])
-                        : const SizedBox.shrink(),
-                  ),
-
-                  // ── Erro ───────────────────────────────────
-                  if (_errMsg != null) ...[
-                    const SizedBox(height: 14),
-                    _ErrorBox(msg: _errMsg!),
-                  ],
-
-                  const SizedBox(height: 28),
-
-                  // ── Botão ──────────────────────────────────
-                  _SubmitBtn(
-                    label: _isLogin ? 'Entrar' : 'Criar conta',
-                    acc: acc,
-                    loading: AuthService.instance.loading,
-                    onTap: _submit,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ── Link toggle ────────────────────────────
-                  GestureDetector(
-                    onTap: () => _switchMode(!_isLogin),
-                    child: Center(
-                      child: RichText(text: TextSpan(
-                        style: GoogleFonts.roboto(fontSize: 13.5, color: ts),
-                        children: [
-                          TextSpan(text: _isLogin ? 'Não tens conta? ' : 'Já tens conta? '),
-                          TextSpan(
-                            text: _isLogin ? 'Criar conta' : 'Entrar',
-                            style: GoogleFonts.roboto(color: acc, fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      )),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // ── Continuar sem conta ────────────────────
-                  TextButton(
-                    onPressed: widget.onDone,
-                    style: TextButton.styleFrom(foregroundColor: ts),
-                    child: Text('Continuar sem conta →',
-                        style: GoogleFonts.roboto(fontSize: 13, color: ts)),
-                  ),
+                // Erro
+                if (_errMsg != null) ...[
+                  const SizedBox(height: 12),
+                  _ErrorRow(msg: _errMsg!),
                 ],
-              ),
+
+                const SizedBox(height: 28),
+
+                // Botão criar conta
+                _ModalButton(
+                  label: 'Criar conta',
+                  loading: AuthService.instance.loading,
+                  onTap: _submit,
+                ),
+              ],
             ),
           ),
         ),
@@ -319,129 +446,78 @@ class _AuthScreenState extends State<AuthScreen>
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-// WIDGETS INTERNOS
-// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// WIDGETS REUTILIZÁVEIS
+// ════════════════════════════════════════════════════════════════════════════
 
-// ── Tab row (Entrar / Criar conta) ───────────────────────────────
-class _TabRow extends StatelessWidget {
-  final bool isLogin, isDark;
-  final Color acc, tp;
-  final void Function(bool) onSwitch;
-  const _TabRow({required this.isLogin, required this.isDark,
-      required this.acc, required this.tp, required this.onSwitch});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    padding: const EdgeInsets.all(4),
-    child: Row(children: [
-      _Tab(label: 'Entrar',       active: isLogin,  acc: acc, tp: tp, isDark: isDark, onTap: () => onSwitch(true)),
-      _Tab(label: 'Criar conta',  active: !isLogin, acc: acc, tp: tp, isDark: isDark, onTap: () => onSwitch(false)),
-    ]),
-  );
-}
-
-class _Tab extends StatelessWidget {
-  final String label;
-  final bool active, isDark;
-  final Color acc, tp;
-  final VoidCallback onTap;
-  const _Tab({required this.label, required this.active, required this.isDark,
-      required this.acc, required this.tp, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: active ? (isDark ? const Color(0xFF2C2C2E) : Colors.white) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: active
-              ? [BoxShadow(color: Colors.black.withOpacity(.07), blurRadius: 8, offset: const Offset(0, 2))]
-              : null,
-        ),
-        alignment: Alignment.center,
-        child: Text(label, style: GoogleFonts.roboto(
-          fontSize: 14,
-          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          color: active ? (isDark ? Colors.white : tp) : const Color(0xFF8E8E93),
-        )),
-      ),
-    ),
-  );
-}
-
-// ── Toggle Email / Telemóvel ─────────────────────────────────────
-class _ContactToggle extends StatelessWidget {
+// ── Toggle Email / Telemóvel ─────────────────────────────────────────────────
+class _ToggleContactRow extends StatelessWidget {
   final bool useEmail;
-  final Color acc, div, ts;
-  final void Function(bool) onTap;
-  const _ContactToggle({required this.useEmail, required this.acc,
-      required this.div, required this.ts, required this.onTap});
+  final void Function(bool) onChanged;
+  const _ToggleContactRow({required this.useEmail, required this.onChanged});
 
   @override
   Widget build(BuildContext context) => Row(children: [
-    _Chip(label: 'Email',      svg: _svgEmail, active: useEmail,   acc: acc, div: div, ts: ts, onTap: () => onTap(true)),
+    _ToggleChip(
+      label: 'Email', svg: _svgEmail,
+      active: useEmail, onTap: () => onChanged(true),
+    ),
     const SizedBox(width: 10),
-    _Chip(label: 'Telemóvel',  svg: _svgPhone, active: !useEmail,  acc: acc, div: div, ts: ts, onTap: () => onTap(false)),
+    _ToggleChip(
+      label: 'Telemóvel', svg: _svgPhone,
+      active: !useEmail, onTap: () => onChanged(false),
+    ),
   ]);
 }
 
-class _Chip extends StatelessWidget {
+class _ToggleChip extends StatelessWidget {
   final String label, svg;
   final bool active;
-  final Color acc, div, ts;
   final VoidCallback onTap;
-  const _Chip({required this.label, required this.svg, required this.active,
-      required this.acc, required this.div, required this.ts, required this.onTap});
+  const _ToggleChip({required this.label, required this.svg,
+      required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: active ? acc.withOpacity(.1) : Colors.transparent,
+        color: active ? const Color(0xFF545454).withOpacity(.08) : Colors.transparent,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: active ? acc : div, width: active ? 1.5 : 1),
+        border: Border.all(
+          color: active ? const Color(0xFF545454) : const Color(0xFFDDDDDD),
+          width: active ? 1.5 : 1,
+        ),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        SvgPicture.string(svg, width: 15, height: 15,
-            colorFilter: ColorFilter.mode(active ? acc : ts, BlendMode.srcIn)),
+        _svgIcon(svg, active ? const Color(0xFF545454) : const Color(0xFF999999), size: 15),
         const SizedBox(width: 7),
         Text(label, style: GoogleFonts.roboto(
           fontSize: 13.5, fontWeight: FontWeight.w600,
-          color: active ? acc : ts,
+          color: active ? const Color(0xFF545454) : const Color(0xFF999999),
         )),
       ]),
     ),
   );
 }
 
-// ── Campo de texto de autenticação ───────────────────────────────
-class _Field extends StatelessWidget {
+// ── Campo de texto ───────────────────────────────────────────────────────────
+class _AuthField extends StatelessWidget {
   final TextEditingController ctrl;
-  final String label, hint, prefixSvg;
-  final bool obscure, isDark;
-  final Color acc, div, tp, ts;
+  final String hint, prefixSvg;
+  final bool obscure;
   final TextInputType keyboard;
   final List<TextInputFormatter> formatters;
   final String? Function(String?)? validator;
   final Widget? suffix;
 
-  const _Field({
+  const _AuthField({
     super.key,
-    required this.ctrl, required this.label, required this.hint,
-    required this.prefixSvg, required this.tp, required this.ts,
-    required this.div, required this.acc, required this.isDark,
+    required this.ctrl,
+    required this.hint,
+    required this.prefixSvg,
     this.obscure = false,
     this.keyboard = TextInputType.text,
     this.formatters = const [],
@@ -450,44 +526,34 @@ class _Field extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final fill = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9FAFB);
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label.toUpperCase(), style: GoogleFonts.roboto(
-        fontSize: 10.5, fontWeight: FontWeight.w700,
-        letterSpacing: .9, color: ts,
-      )),
-      const SizedBox(height: 8),
-      TextFormField(
-        controller: ctrl,
-        obscureText: obscure,
-        keyboardType: keyboard,
-        inputFormatters: formatters,
-        validator: validator,
-        style: GoogleFonts.roboto(color: tp, fontSize: 15),
-        cursorColor: acc,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.roboto(color: ts.withOpacity(.5), fontSize: 14),
-          filled: true, fillColor: fill,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          prefixIcon: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 10, 0),
-            child: SvgPicture.string(prefixSvg, width: 18, height: 18,
-                colorFilter: ColorFilter.mode(ts, BlendMode.srcIn)),
-          ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          suffixIcon: suffix,
-          border:        _border(div),
-          enabledBorder: _border(div),
-          focusedBorder: _border(acc, w: 1.5),
-          errorBorder:   _border(const Color(0xFFDC2626), w: 1.5),
-          focusedErrorBorder: _border(const Color(0xFFDC2626), w: 1.5),
-          errorStyle: GoogleFonts.roboto(fontSize: 12, color: const Color(0xFFDC2626)),
-        ),
+  Widget build(BuildContext context) => TextFormField(
+    controller: ctrl,
+    obscureText: obscure,
+    keyboardType: keyboard,
+    inputFormatters: formatters,
+    validator: validator,
+    style: GoogleFonts.roboto(color: const Color(0xFF1A1A1A), fontSize: 15),
+    cursorColor: const Color(0xFF545454),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.roboto(color: const Color(0xFFAAAAAA), fontSize: 14),
+      filled: true,
+      fillColor: const Color(0xFFF7F7F7),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      prefixIcon: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 10, 0),
+        child: _svgIcon(prefixSvg, const Color(0xFF999999)),
       ),
-    ]);
-  }
+      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+      suffixIcon: suffix,
+      border:             _border(const Color(0xFFE0E0E0)),
+      enabledBorder:      _border(const Color(0xFFE0E0E0)),
+      focusedBorder:      _border(const Color(0xFF545454), w: 1.5),
+      errorBorder:        _border(const Color(0xFFDC2626), w: 1.5),
+      focusedErrorBorder: _border(const Color(0xFFDC2626), w: 1.5),
+      errorStyle: GoogleFonts.roboto(fontSize: 12, color: const Color(0xFFDC2626)),
+    ),
+  );
 
   OutlineInputBorder _border(Color c, {double w = 1}) => OutlineInputBorder(
     borderRadius: BorderRadius.circular(14),
@@ -495,65 +561,62 @@ class _Field extends StatelessWidget {
   );
 }
 
-// ── Botão olho (mostrar/ocultar password) ────────────────────────
-class _EyeBtn extends StatelessWidget {
+// ── Botão olho ───────────────────────────────────────────────────────────────
+class _EyeToggle extends StatelessWidget {
   final bool show;
-  final Color ts;
   final VoidCallback onTap;
-  const _EyeBtn({required this.show, required this.ts, required this.onTap});
+  const _EyeToggle({required this.show, required this.onTap});
+
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: Padding(
       padding: const EdgeInsets.all(13),
-      child: _svg(show ? _svgEyeOff : _svgEyeOn, ts, s: 18),
+      child: _svgIcon(show ? _svgEyeOff : _svgEyeOn, const Color(0xFF999999)),
     ),
   );
 }
 
-// ── Caixa de erro ────────────────────────────────────────────────
-class _ErrorBox extends StatelessWidget {
+// ── Linha de erro ────────────────────────────────────────────────────────────
+class _ErrorRow extends StatelessWidget {
   final String msg;
-  const _ErrorBox({required this.msg});
+  const _ErrorRow({required this.msg});
+
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     decoration: BoxDecoration(
-      color: const Color(0xFFDC2626).withOpacity(.08),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFDC2626).withOpacity(.3)),
+      color: const Color(0xFFDC2626).withOpacity(.07),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFDC2626).withOpacity(.25)),
     ),
     child: Row(children: [
-      const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 18),
-      const SizedBox(width: 10),
+      const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 17),
+      const SizedBox(width: 8),
       Expanded(child: Text(msg, style: GoogleFonts.roboto(
-        fontSize: 13.5, color: const Color(0xFFDC2626), fontWeight: FontWeight.w500,
+        fontSize: 13, color: const Color(0xFFDC2626), fontWeight: FontWeight.w500,
       ))),
     ]),
   );
 }
 
-// ── Botão de submissão ───────────────────────────────────────────
-class _SubmitBtn extends StatelessWidget {
+// ── Botão principal do modal ─────────────────────────────────────────────────
+class _ModalButton extends StatelessWidget {
   final String label;
   final bool loading;
-  final Color acc;
   final VoidCallback onTap;
-  const _SubmitBtn({required this.label, required this.loading,
-      required this.acc, required this.onTap});
+  const _ModalButton({required this.label, required this.loading, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: loading ? null : onTap,
     child: AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      height: 54,
+      height: 52,
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: loading ? acc.withOpacity(.7) : acc,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(color: acc.withOpacity(.32), blurRadius: 20, offset: const Offset(0, 8)),
-        ],
+        color: loading ? const Color(0xFF545454).withOpacity(.6) : const Color(0xFF545454),
+        borderRadius: BorderRadius.circular(14),
       ),
       alignment: Alignment.center,
       child: loading
