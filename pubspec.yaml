@@ -1,4 +1,3 @@
-
 name: novasignal
 description: Aplicativo de trading Deriv em Flutter com WebView
 publish_to: 'none'
@@ -13,6 +12,7 @@ dependencies:
   
   flutter_inappwebview: ^6.0.0
   flutter_svg: ^2.0.10+1
+  video_player: any
   animations: ^2.0.11
   image_picker: any
   google_fonts: ^6.2.1
