@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -34,6 +35,7 @@ class _NativeEditorView extends StatefulWidget {
 class _NativeEditorViewState extends State<_NativeEditorView> {
   InAppWebViewController? _wvc;
   bool _loading = true;
+  String _selectedModel = 'google/gemini-2.0-flash-exp:free'; // modelo padrão
   bool _webReady = false;  // WebView carregou, aguarda botão
   VideoPlayerController? _videoCtrl;
 
@@ -308,16 +310,18 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black54,
-      builder: (_) => _AiWriteSheet(isDark: isDark, acc: acc, ctrl: ctrl),
-    ).then((result) async {
-      // result é enviado pelo sheet via Navigator.pop(context, texto)
-    });
+      builder: (_) => _AiWriteSheet(
+        isDark: isDark,
+        acc: acc,
+        ctrl: ctrl,
+        initialModel: _selectedModel,
+        onModelChanged: (m) => _selectedModel = m,
+      ),
+    );
 
-    // Não usamos return value do sheet — o sheet chama _handleAiWrite directamente
-    // via callback
     final text = ctrl.text.trim();
     if (text.isEmpty) return;
-    await _handleAiWrite(text);
+    await _handleAiWrite(text, model: _selectedModel);
   }
 
   // ── Insert ────────────────────────────────────────────
@@ -478,39 +482,26 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   // ═════════════════════════════════════════════════════
   static String _ariaToken = '';
 
-  // ── Escrita livre — IA produz HTML estruturado ────────
-  Future<void> _handleAiWrite(String userPrompt) async {
-    // Mostra progresso no WebView
+  // ── Escrita livre — sem orientações, faz exactamente o que o utilizador pede ──
+  Future<void> _handleAiWrite(String userPrompt, {String? model}) async {
     await _wvc?.evaluateJavascript(
       source: 'if(typeof window.setProgress==="function") window.setProgress(true);',
     );
-
-    const system = '''
-És um assistente de escrita profissional em português.
-O utilizador vai pedir-te para criar conteúdo.
-Responde APENAS com HTML limpo, semântico e bem estruturado.
-Regras obrigatórias:
-- Sem DOCTYPE, sem html/head/body tags
-- Usa apenas: h1, h2, h3, p, ul, ol, li, table, thead, tbody, tr, th, td, blockquote, strong, em, code, pre, br, hr
-- Estilos inline APENAS quando estritamente necessário (ex: cores)
-- Sem classes CSS externas
-- Conteúdo organizado: título, subtítulos, parágrafos, listas quando aplicável
-- Português correcto e profissional
-- Sem comentários HTML, sem explicações, APENAS o HTML solicitado
-''';
-
     try {
       final headers = <String,String>{'Content-Type':'application/json'};
-      if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer $_ariaToken';
+      if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer \$_ariaToken';
 
       final body = jsonEncode({
         'prompt': userPrompt,
-        'system': system,
-        'short': false,
+        'model': model ?? _selectedModel,
+        'max_tokens': 100000,
+        'temperature': 2.0,
+        'max_input_tokens': 100000,
+        // Sem system prompt — a IA faz exactamente o que o utilizador pedir
       });
 
       final client   = HttpClient();
-      final request  = await client.postUrl(Uri.parse('$_kWorkerUrl/generate'));
+      final request  = await client.postUrl(Uri.parse('\$_kWorkerUrl/generate'));
       headers.forEach((k,v) => request.headers.set(k,v));
       request.write(body);
       final response     = await request.close();
@@ -521,14 +512,14 @@ Regras obrigatórias:
       if (aiText != null && aiText.isNotEmpty) {
         final js = jsonEncode({'text': aiText});
         await _wvc?.evaluateJavascript(
-          source: 'if(typeof window._aiResponse==="function") window._aiResponse($js);',
+          source: 'if(typeof window._aiResponse==="function") window._aiResponse(\$js);',
         );
       } else {
         _showSnack('IA não devolveu resposta.', isError: true);
         await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
       }
     } catch (e) {
-      debugPrint('AI write error: $e');
+      debugPrint('AI write error: \$e');
       _showSnack('Erro na IA. Verifica a ligação.', isError: true);
       await _wvc?.evaluateJavascript(source: 'if(typeof window.setProgress==="function") window.setProgress(false);');
     }
@@ -794,6 +785,48 @@ Regras obrigatórias:
 }
 
 // ═══════════════════════════════════════════════════════
+// MODELS DISPONÍVEIS
+// ═══════════════════════════════════════════════════════
+
+class _AiModel {
+  final String id, label, iconUrl;
+  const _AiModel({required this.id, required this.label, required this.iconUrl});
+}
+
+const _kModels = [
+  _AiModel(
+    id: 'google/gemini-2.0-flash-exp:free',
+    label: 'Gemini 2.0',
+    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg',
+  ),
+  _AiModel(
+    id: 'google/gemini-2.5-pro-exp-03-25:free',
+    label: 'Gemini 2.5 Pro',
+    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg',
+  ),
+  _AiModel(
+    id: 'openai/gpt-4o',
+    label: 'GPT-4o',
+    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg',
+  ),
+  _AiModel(
+    id: 'openai/gpt-4o-mini',
+    label: 'GPT-4o Mini',
+    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg',
+  ),
+  _AiModel(
+    id: 'anthropic/claude-3.5-sonnet',
+    label: 'Claude 3.5',
+    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/anthropic.svg',
+  ),
+  _AiModel(
+    id: 'meta-llama/llama-3.3-70b-instruct:free',
+    label: 'Llama 3.3',
+    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/meta.svg',
+  ),
+];
+
+// ═══════════════════════════════════════════════════════
 // MODAL DE ESCRITA LIVRE PARA IA — 90% altura
 // ═══════════════════════════════════════════════════════
 
@@ -801,13 +834,30 @@ class _AiWriteSheet extends StatefulWidget {
   final bool isDark;
   final Color acc;
   final TextEditingController ctrl;
-  const _AiWriteSheet({required this.isDark, required this.acc, required this.ctrl});
+  final String initialModel;
+  final ValueChanged<String> onModelChanged;
+
+  const _AiWriteSheet({
+    required this.isDark,
+    required this.acc,
+    required this.ctrl,
+    required this.initialModel,
+    required this.onModelChanged,
+  });
+
   @override
   State<_AiWriteSheet> createState() => _AiWriteSheetState();
 }
 
 class _AiWriteSheetState extends State<_AiWriteSheet> {
   bool _sending = false;
+  late String _model;
+
+  @override
+  void initState() {
+    super.initState();
+    _model = widget.initialModel;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -835,7 +885,7 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
         ),
         // Header
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Row(children: [
             Expanded(child: Text(
               'Pedir à IA',
@@ -847,8 +897,63 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
             ),
           ]),
         ),
-        Container(height: 0.5, color: div),
-        // Input — ocupa todo o espaço disponível
+
+        // ── Selector de modelo ──────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
+          child: SizedBox(
+            height: 42,
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: _kModels.length,
+              itemBuilder: (_, i) {
+                final m   = _kModels[i];
+                final sel = m.id == _model;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _model = m.id);
+                    widget.onModelChanged(m.id);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 140),
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: sel ? acc.withOpacity(.12) : Colors.transparent,
+                      border: Border.all(color: sel ? acc : div, width: sel ? 1.5 : 1),
+                      borderRadius: BorderRadius.circular(_kPill),
+                    ),
+                    child: Row(children: [
+                      SvgPicture.network(
+                        m.iconUrl,
+                        width: 16, height: 16,
+                        colorFilter: ColorFilter.mode(
+                          sel ? acc : ts,
+                          BlendMode.srcIn,
+                        ),
+                        placeholderBuilder: (_) => SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 1.5, color: ts),
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(m.label, style: GoogleFonts.roboto(
+                        color: sel ? acc : ts,
+                        fontSize: 12,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                      )),
+                    ]),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+
+        Container(height: 0.5, color: div, margin: const EdgeInsets.only(top: 12)),
+
+        // Input
         Expanded(
           child: Padding(
             padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 16),
@@ -860,15 +965,16 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
               textAlignVertical: TextAlignVertical.top,
               style: GoogleFonts.roboto(color: tp, fontSize: 15, height: 1.6),
               decoration: InputDecoration(
-                hintText: 'Escreve aqui o que queres que a IA crie…\n\nEx: "Cria um relatório sobre energias renováveis com introdução, desenvolvimento e conclusão"\n\nEx: "Escreve uma carta formal de candidatura a emprego"',
-                hintStyle: GoogleFonts.roboto(color: ts.withOpacity(0.6), fontSize: 14, height: 1.6),
+                hintText: 'Escreve aqui o que queres…',
+                hintStyle: GoogleFonts.roboto(color: ts.withOpacity(0.5), fontSize: 14, height: 1.6),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
             ),
           ),
         ),
-        // Botão enviar
+
+        // Botão gerar
         Padding(
           padding: EdgeInsets.fromLTRB(20, 0, 20, MediaQuery.of(context).padding.bottom + 16),
           child: GestureDetector(
@@ -890,10 +996,8 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (_sending) ...[
-                    SizedBox(
-                      width: 16, height: 16,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    ),
+                    SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
                     const SizedBox(width: 10),
                   ],
                   Text(
