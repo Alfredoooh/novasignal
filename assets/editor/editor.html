@@ -191,7 +191,6 @@ body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
 }
 
 /* ── Resizable elements ── */
-.resizable-element .el-controls { display:none; }
 
 /* ── Whiteboard ── */
 .wb-header {
@@ -244,7 +243,9 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 .aria-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
 /* ── Canva-like selection ── */
-.sel-wrap { cursor:move; }
+.sel-wrap { cursor:move; touch-action:none; }
+.sel-wrap * { pointer-events:none; }
+.sel-wrap.sel-active { outline:none; }
 .sel-wrap:hover > img, .sel-wrap:hover > svg { opacity:.98; }
 #sel-overlay { pointer-events:none; }
 #sel-overlay > *:not(.sel-handle) { pointer-events:none; }
@@ -966,7 +967,23 @@ function updateStates() {
   });
 }
 function onKey(e) {
-  if (e.key==='Tab') { e.preventDefault(); document.execCommand('insertHTML',false,'\u00a0\u00a0\u00a0\u00a0'); }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    document.execCommand('insertHTML', false, '\u00a0\u00a0\u00a0\u00a0');
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+    e.preventDefault();
+    // Select content across ALL pages without breaking them
+    const pages = document.querySelectorAll('.page');
+    if (!pages.length) return;
+    const range = document.createRange();
+    range.setStart(pages[0], 0);
+    const last = pages[pages.length - 1];
+    range.setEnd(last, last.childNodes.length);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
 }
 
 // ════════════════════════════════════════════════
@@ -1098,7 +1115,6 @@ window._modalResult = function(data) {
     else if (data.action==='sharePDF')     sharePDF();
     else if (data.action==='stats')        showDocStats();
     else if (data.action==='findReplace')  window.openFindReplace();
-    else if (data.action==='print')        window.print();
     else if (data.action==='duplicate')    duplicatePage();
     else if (data.action==='newPage')      addPageManual();
     else if (data.action==='whitePaper')   toggleWhitePaper();
@@ -1528,305 +1544,356 @@ _selOverlay.style.cssText = `
 `;
 document.body.appendChild(_selOverlay);
 
-// ── Toolbar de contexto ──
+// ════════════════════════════════════════════════
+// SISTEMA DE SELECÇÃO CANVA-LIKE — corrigido
+// ════════════════════════════════════════════════
+
+const ACC_SEL = '#FA6559';
+
+// ── Overlay + handles ──
+const _selOverlay = document.createElement('div');
+_selOverlay.id = 'sel-overlay';
+_selOverlay.style.cssText = `
+  display:none;position:fixed;z-index:9990;pointer-events:none;
+  transform-origin:center;
+`;
+document.body.appendChild(_selOverlay);
+
+// ── Floating toolbar ──
 const _selToolbar = document.createElement('div');
 _selToolbar.id = 'sel-toolbar';
 _selToolbar.style.cssText = `
   display:none;position:fixed;z-index:10000;
-  background:#fff;border-radius:100px;padding:6px 12px;
-  box-shadow:0 4px 20px rgba(0,0,0,.18);
-  display:none;align-items:center;gap:12px;pointer-events:all;
+  background:#fff;border-radius:100px;padding:5px 10px;
+  box-shadow:0 4px 20px rgba(0,0,0,.22);
+  align-items:center;gap:8px;pointer-events:all;
 `;
 document.body.appendChild(_selToolbar);
 
-let _selTarget = null;
-let _selDrag = null;
-let _selResize = null;
-let _selStart = {};
+// ── State ──
+let _selWrap   = null;  // o wrapper .sel-wrap activo
+let _selTarget = null;  // img/table/hr dentro do wrapper
+let _selType   = null;  // 'img' | 'table' | 'hr'
+let _drag      = null;  // { startX, startY, origLeft, origTop }
+let _resize    = null;  // { pos, startX, startY, origW, origH, cx, cy }
 
-const ACC = '#6366f1';
+// ── Cursors por handle ──
+const CURSORS = {
+  tl:'nwse-resize', tc:'ns-resize', tr:'nesw-resize',
+  ml:'ew-resize',                    mr:'ew-resize',
+  bl:'nesw-resize', bc:'ns-resize', br:'nwse-resize',
+  rotate:'grab'
+};
 
-function _getHandles() {
-  return Array.from(_selOverlay.querySelectorAll('.sel-handle'));
-}
-
-function _buildOverlay() {
-  _selOverlay.innerHTML = '';
-  // Border
-  const border = document.createElement('div');
-  border.style.cssText = `
-    position:absolute;inset:0;border:2px solid ${ACC};border-radius:3px;pointer-events:none;
+// ── Construir overlay com 8 handles + rotation ──
+function _buildHandles() {
+  _selOverlay.innerHTML = `
+    <div style="position:absolute;inset:-2px;border:2px solid ${ACC_SEL};border-radius:3px;pointer-events:none;box-sizing:border-box;"></div>
   `;
-  _selOverlay.appendChild(border);
-
-  // 8 handles: tl, tc, tr, ml, mr, bl, bc, br
-  const positions = [
+  const POS = [
     ['tl','0%','0%'],['tc','50%','0%'],['tr','100%','0%'],
-    ['ml','0%','50%'],                  ['mr','100%','50%'],
-    ['bl','0%','100%'],['bc','50%','100%'],['br','100%','100%']
+    ['ml','0%','50%'],               ['mr','100%','50%'],
+    ['bl','0%','100%'],['bc','50%','100%'],['br','100%','100%'],
   ];
-  positions.forEach(([pos, left, top]) => {
+  POS.forEach(([pos, left, top]) => {
+    const isCorner = ['tl','tr','bl','br'].includes(pos);
     const h = document.createElement('div');
-    h.className = 'sel-handle';
     h.dataset.pos = pos;
-    const isCorner = pos.length === 2 && !['tc','ml','mr','bc'].includes(pos);
     h.style.cssText = `
-      position:absolute;width:${isCorner?12:8}px;height:${isCorner?12:8}px;
-      background:#fff;border:2px solid ${ACC};border-radius:${isCorner?3:2}px;
-      transform:translate(-50%,-50%);left:${left};top:${top};
-      cursor:${_resizeCursor(pos)};pointer-events:all;touch-action:none;z-index:1;
+      position:absolute;width:${isCorner?11:8}px;height:${isCorner?11:8}px;
+      background:#fff;border:2px solid ${ACC_SEL};
+      border-radius:${isCorner?3:2}px;
+      transform:translate(-50%,-50%);
+      left:${left};top:${top};
+      cursor:${CURSORS[pos]};pointer-events:all;touch-action:none;z-index:1;
+      box-shadow:0 1px 3px rgba(0,0,0,.25);
     `;
+    h.addEventListener('pointerdown', _onHandleDown);
     _selOverlay.appendChild(h);
   });
-
-  // Rotation handle — abaixo do elemento
+  // Linha + botão rotate
+  const line = document.createElement('div');
+  line.style.cssText = `position:absolute;width:1.5px;height:14px;background:${ACC_SEL};left:50%;top:100%;transform:translateX(-50%);pointer-events:none;`;
+  _selOverlay.appendChild(line);
   const rot = document.createElement('div');
-  rot.className = 'sel-handle sel-rotate';
   rot.dataset.pos = 'rotate';
   rot.style.cssText = `
-    position:absolute;width:20px;height:20px;
-    background:#fff;border:2px solid ${ACC};border-radius:50%;
-    transform:translateX(-50%);left:50%;top:calc(100% + 14px);
+    position:absolute;width:20px;height:20px;background:#fff;
+    border:2px solid ${ACC_SEL};border-radius:50%;
+    left:50%;top:calc(100% + 14px);transform:translateX(-50%);
     cursor:grab;pointer-events:all;touch-action:none;
     display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.25);
   `;
-  rot.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${ACC}" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+  rot.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${ACC_SEL}" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+  rot.addEventListener('pointerdown', _onHandleDown);
   _selOverlay.appendChild(rot);
-
-  // Move handle - linha vertical entre rot e elemento
-  const line = document.createElement('div');
-  line.style.cssText = `
-    position:absolute;width:1.5px;height:14px;background:${ACC};
-    left:50%;top:100%;transform:translateX(-50%);pointer-events:none;
-  `;
-  _selOverlay.appendChild(line);
 }
 
-function _resizeCursor(pos) {
-  const map = {tl:'nwse-resize',tr:'nesw-resize',bl:'nesw-resize',br:'nwse-resize',
-                tc:'ns-resize',bc:'ns-resize',ml:'ew-resize',mr:'ew-resize'};
-  return map[pos] || 'default';
-}
-
-function _updateOverlay() {
-  if (!_selTarget) { _selOverlay.style.display='none'; _selToolbar.style.display='none'; return; }
-  const r = _selTarget.getBoundingClientRect();
-  const rot = _selTarget._rotation || 0;
+// ── Actualizar posição do overlay ──
+function _syncOverlay() {
+  if (!_selWrap) { _selOverlay.style.display='none'; _selToolbar.style.display='none'; return; }
+  const r = _selWrap.getBoundingClientRect();
+  const rot = _selWrap._rotation || 0;
   _selOverlay.style.cssText += `
     display:block;
     left:${r.left}px;top:${r.top}px;
     width:${r.width}px;height:${r.height}px;
-    transform:rotate(${rot}deg);
-    transform-origin:center;
+    transform:rotate(${rot}deg);transform-origin:center;
   `;
   _selOverlay.style.display = 'block';
 
-  // Toolbar acima do elemento
+  // Toolbar acima
   _selToolbar.style.display = 'flex';
-  const tbW = _selToolbar.offsetWidth || 160;
-  _selToolbar.style.left = Math.max(8, r.left + r.width/2 - tbW/2) + 'px';
-  _selToolbar.style.top  = Math.max(8, r.top - 52) + 'px';
+  const tbW = _selToolbar.offsetWidth || 150;
+  const tbX = Math.max(8, Math.min(window.innerWidth - tbW - 8, r.left + r.width/2 - tbW/2));
+  const tbY = Math.max(8, r.top - 50);
+  _selToolbar.style.left = tbX + 'px';
+  _selToolbar.style.top  = tbY + 'px';
 }
 
-function _buildToolbar(type) {
+// ── Construir toolbar ──
+function _buildToolbar() {
   _selToolbar.innerHTML = '';
-  const mkBtn = (icon, title, fn) => {
+  const btn = (svg, title, color, fn) => {
     const b = document.createElement('button');
     b.title = title;
-    b.innerHTML = icon;
-    b.style.cssText = `background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:#333;`;
+    b.innerHTML = svg;
+    b.style.cssText = `background:none;border:none;cursor:pointer;padding:5px;display:flex;align-items:center;border-radius:6px;`;
+    b.onmouseenter = () => b.style.background='rgba(0,0,0,.06)';
+    b.onmouseleave = () => b.style.background='none';
     b.onclick = fn;
     return b;
   };
+  const sep = () => { const d=document.createElement('div'); d.style.cssText='width:1px;height:16px;background:#e5e5e5;'; return d; };
 
-  if (type === 'img') {
-    _selToolbar.appendChild(mkBtn(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`, 'Substituir', () => {
-      const inp = document.getElementById('img-file-input') || document.createElement('input');
-      inp.type='file'; inp.accept='image/*';
-      inp.onchange = e => {
-        const f=e.target.files[0]; if (!f) return;
-        const r=new FileReader();
-        r.onload = ev => { if (_selTarget) _selTarget.src = ev.target.result; _updateOverlay(); };
-        r.readAsDataURL(f);
-      };
-      inp.click();
-    }));
+  if (_selType === 'img') {
+    _selToolbar.appendChild(btn(
+      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>`,
+      'Substituir', '#333', () => {
+        const inp = document.createElement('input');
+        inp.type='file'; inp.accept='image/*';
+        inp.onchange = e => {
+          const f = e.target.files[0]; if (!f || !_selTarget) return;
+          const r = new FileReader();
+          r.onload = ev => { _selTarget.src = ev.target.result; setTimeout(_syncOverlay,50); };
+          r.readAsDataURL(f);
+        };
+        inp.click();
+      }
+    ));
+    _selToolbar.appendChild(sep());
   }
 
-  // Duplicate
-  _selToolbar.appendChild(mkBtn(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`, 'Duplicar', () => {
-    if (!_selTarget) return;
-    const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
-    const clone = wrap.cloneNode(true);
-    const newId = 'el_' + Date.now();
-    clone.id = newId;
-    _makeDraggable(clone);
-    wrap.parentElement.insertBefore(clone, wrap.nextSibling);
-    deselect();
-  }));
-
-  // Separator
-  const sep = document.createElement('div');
-  sep.style.cssText = 'width:1px;height:18px;background:#e0e0e0;';
-  _selToolbar.appendChild(sep);
-
-  // Delete
-  _selToolbar.appendChild(mkBtn(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`, 'Eliminar', () => {
-    if (!_selTarget) return;
-    const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
-    wrap.remove(); deselect();
-  }));
+  _selToolbar.appendChild(btn(
+    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+    'Duplicar', '#333', () => {
+      if (!_selWrap) return;
+      const clone = _selWrap.cloneNode(true);
+      clone.id = 'el_' + Date.now();
+      clone.style.top  = (parseFloat(_selWrap.style.top||0)  + 20) + 'px';
+      clone.style.left = (parseFloat(_selWrap.style.left||0) + 20) + 'px';
+      _selWrap.parentNode.insertBefore(clone, _selWrap.nextSibling);
+      _attachWrapEvents(clone);
+      deselect();
+    }
+  ));
+  _selToolbar.appendChild(sep());
+  _selToolbar.appendChild(btn(
+    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+    'Eliminar', '#dc2626', () => { if (_selWrap) { _selWrap.remove(); deselect(); } }
+  ));
 }
 
-function selectEl(target, type) {
+// ── Seleccionar elemento ──
+function selectEl(wrap, target, type) {
+  deselect();
+  _selWrap   = wrap;
   _selTarget = target;
-  _buildOverlay();
-  _buildToolbar(type || 'generic');
-  _updateOverlay();
-
-  // Handles — touch/mouse events
-  _selOverlay.querySelectorAll('.sel-handle').forEach(h => {
-    const onStart = e => {
-      e.preventDefault();
-      const touch = e.touches ? e.touches[0] : e;
-      const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
-      const r = _selTarget.getBoundingClientRect();
-      _selResize = {
-        pos: h.dataset.pos,
-        startX: touch.clientX, startY: touch.clientY,
-        startW: r.width, startH: r.height,
-        startLeft: parseFloat(wrap.style.left)||0,
-        startTop:  parseFloat(wrap.style.top)||0,
-        cx: r.left + r.width/2, cy: r.top + r.height/2,
-      };
-    };
-    h.addEventListener('mousedown', onStart, {passive:false});
-    h.addEventListener('touchstart', onStart, {passive:false});
-  });
+  _selType   = type;
+  _buildHandles();
+  _buildToolbar();
+  _syncOverlay();
 }
 
 function deselect() {
-  _selTarget = null; _selResize = null;
+  _selWrap = null; _selTarget = null; _selType = null;
+  _drag = null; _resize = null;
   _selOverlay.style.display = 'none';
   _selToolbar.style.display = 'none';
 }
 
-// ── Drag/Resize global handlers ──
-function _onMoveEvent(e) {
-  const touch = e.touches ? e.touches[0] : e;
-  const cx = touch.clientX, cy = touch.clientY;
+// ── Handle pointerdown ──
+function _onHandleDown(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const pos = e.currentTarget.dataset.pos;
+  const r   = _selWrap.getBoundingClientRect();
+  _resize = {
+    pos,
+    startX: e.clientX, startY: e.clientY,
+    origW:  _selWrap.offsetWidth,
+    origH:  _selWrap.offsetHeight,
+    origLeft: parseFloat(_selWrap.style.left)||0,
+    origTop:  parseFloat(_selWrap.style.top)||0,
+    cx: r.left + r.width/2,
+    cy: r.top  + r.height/2,
+  };
+  window.addEventListener('pointermove', _onPointerMove, {passive:false});
+  window.addEventListener('pointerup',   _onPointerUp,   {once:true});
+}
 
-  if (_selDrag) {
-    e.preventDefault();
-    const wrap = _selTarget?.closest('.sel-wrap') || _selTarget?.parentElement;
-    if (!wrap) return;
-    const dx = cx - _selDrag.startX, dy = cy - _selDrag.startY;
-    wrap.style.left = (_selDrag.startLeft + dx) + 'px';
-    wrap.style.top  = (_selDrag.startTop  + dy) + 'px';
-    _updateOverlay();
+// ── Wrap drag start ──
+function _onWrapDown(e) {
+  // Ignore se clicou num handle
+  if (e.target.dataset.pos) return;
+  e.preventDefault();
+  _drag = {
+    startX:   e.clientX,
+    startY:   e.clientY,
+    origLeft: parseFloat(_selWrap.style.left)||0,
+    origTop:  parseFloat(_selWrap.style.top)||0,
+  };
+  window.addEventListener('pointermove', _onPointerMove, {passive:false});
+  window.addEventListener('pointerup',   _onPointerUp,   {once:true});
+}
+
+// ── Pointer move ──
+function _onPointerMove(e) {
+  if (!_selWrap) return;
+  const dx = e.clientX - (_drag||_resize).startX;
+  const dy = e.clientY - (_drag||_resize).startY;
+
+  if (_drag) {
+    _selWrap.style.left = (_drag.origLeft + dx) + 'px';
+    _selWrap.style.top  = (_drag.origTop  + dy) + 'px';
+    _syncOverlay();
     return;
   }
 
-  if (_selResize && _selTarget) {
-    e.preventDefault();
-    const pos = _selResize.pos;
-    const dx = cx - _selResize.startX, dy = cy - _selResize.startY;
-    const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
+  if (_resize) {
+    const pos = _resize.pos;
 
     if (pos === 'rotate') {
-      const angle = Math.atan2(cy - _selResize.cy, cx - _selResize.cx) * 180 / Math.PI + 90;
-      _selTarget._rotation = Math.round(angle);
-      wrap.style.transform = `rotate(${_selTarget._rotation}deg)`;
-      _updateOverlay();
+      const angle = Math.atan2(e.clientY - _resize.cy, e.clientX - _resize.cx) * 180 / Math.PI + 90;
+      _selWrap._rotation = Math.round(angle);
+      _selWrap.style.transform = `rotate(${_selWrap._rotation}deg)`;
+      _syncOverlay();
       return;
     }
 
-    let newW = _selResize.startW, newH = _selResize.startH;
-    if (['tr','mr','br'].includes(pos)) newW = Math.max(40, _selResize.startW + dx);
-    if (['tl','ml','bl'].includes(pos)) newW = Math.max(40, _selResize.startW - dx);
-    if (['bl','bc','br'].includes(pos)) newH = Math.max(40, _selResize.startH + dy);
-    if (['tl','tc','tr'].includes(pos)) newH = Math.max(40, _selResize.startH - dy);
+    let W = _resize.origW, H = _resize.origH;
+    let L = _resize.origLeft, T = _resize.origTop;
 
-    // Proporcional nos cantos
+    // Right edge
+    if (['tr','mr','br'].includes(pos)) W = Math.max(40, _resize.origW + dx);
+    // Left edge — move + resize
+    if (['tl','ml','bl'].includes(pos)) { W = Math.max(40, _resize.origW - dx); L = _resize.origLeft + (_resize.origW - W); }
+    // Bottom edge
+    if (['bl','bc','br'].includes(pos)) H = Math.max(40, _resize.origH + dy);
+    // Top edge — move + resize
+    if (['tl','tc','tr'].includes(pos)) { H = Math.max(40, _resize.origH - dy); T = _resize.origTop + (_resize.origH - H); }
+
+    // Corners: proportional
     if (['tl','tr','bl','br'].includes(pos)) {
-      const ratio = _selResize.startH / _selResize.startW;
-      newH = newW * ratio;
+      const ratio = _resize.origH / _resize.origW;
+      H = W * ratio;
+      if (['tl','bl'].includes(pos)) T = _resize.origTop + (_resize.origH - H);
     }
 
-    _selTarget.style.width  = newW + 'px';
-    _selTarget.style.height = (['tl','tc','tr','bl','bc','br'].includes(pos) && pos!=='ml' && pos!=='mr') ? newH + 'px' : '';
-    _updateOverlay();
+    _selWrap.style.width  = W + 'px';
+    _selWrap.style.height = H + 'px';
+    _selWrap.style.left   = L + 'px';
+    _selWrap.style.top    = T + 'px';
+    // Propagate to inner element
+    if (_selTarget) {
+      _selTarget.style.width  = '100%';
+      _selTarget.style.height = '100%';
+    }
+    _syncOverlay();
   }
 }
 
-function _onEndEvent() { _selDrag = null; _selResize = null; }
+function _onPointerUp() {
+  _drag = null; _resize = null;
+  window.removeEventListener('pointermove', _onPointerMove);
+}
 
-document.addEventListener('mousemove', _onMoveEvent, {passive:false});
-document.addEventListener('touchmove', _onMoveEvent, {passive:false});
-document.addEventListener('mouseup', _onEndEvent);
-document.addEventListener('touchend', _onEndEvent);
-
-// Deselect on outside click
-document.addEventListener('click', e => {
-  if (!e.target.closest('#sel-overlay') && !e.target.closest('#sel-toolbar') && !e.target.closest('.sel-wrap')) {
+// ── Click outside → deselect ──
+document.addEventListener('pointerdown', e => {
+  if (!_selWrap) return;
+  if (!e.target.closest('#sel-overlay') &&
+      !e.target.closest('#sel-toolbar') &&
+      !e.target.closest('.sel-wrap')) {
     deselect();
   }
-});
+}, true);
 
-// ── Wrapper drag ──
-function _makeDraggable(wrap) {
-  const startDrag = e => {
-    if (e.target.closest('.sel-handle')) return;
-    e.preventDefault();
-    const touch = e.touches ? e.touches[0] : e;
-    const r = wrap.getBoundingClientRect();
-    _selDrag = {
-      startX: touch.clientX, startY: touch.clientY,
-      startLeft: parseFloat(wrap.style.left)||0,
-      startTop:  parseFloat(wrap.style.top)||0,
-    };
-  };
-  wrap.addEventListener('mousedown', startDrag, {passive:false});
-  wrap.addEventListener('touchstart', startDrag, {passive:false});
-}
-
-// ════════════════════════════════════════════════
-// IMAGEM REDIMENSIONÁVEL — substitui versão antiga
-// ════════════════════════════════════════════════
-function _insertResizableImage(src, alt) {
-  const id = 'img_' + Date.now();
-  // Cria wrapper absolutamente posicionável dentro do fluxo
-  const html = `
-    <div class="sel-wrap" id="${id}" contenteditable="false"
-      style="display:inline-block;position:relative;user-select:none;margin:8px 2px;vertical-align:top;">
-      <img src="${src}" alt="${alt||''}"
-        style="width:240px;max-width:100%;display:block;border-radius:4px;cursor:pointer;"
-        draggable="false"/>
-    </div><p><br></p>`;
-  document.execCommand('insertHTML', false, html);
-
-  // Attach events after insertion
-  requestAnimationFrame(() => {
-    const wrap = document.getElementById(id);
-    if (!wrap) return;
-    const img = wrap.querySelector('img');
-    _makeDraggable(wrap);
-    img.addEventListener('click', e => { e.stopPropagation(); selectEl(img, 'img'); });
-    img.addEventListener('touchend', e => { e.preventDefault(); selectEl(img, 'img'); });
+// ── Attach events to a wrap div ──
+function _attachWrapEvents(wrap) {
+  wrap.addEventListener('pointerdown', e => {
+    if (e.target.closest('#sel-overlay')) return;
+    const img   = wrap.querySelector('img');
+    const table = wrap.querySelector('table');
+    const hr    = wrap.querySelector('hr');
+    const type  = img ? 'img' : table ? 'table' : hr ? 'hr' : 'generic';
+    selectEl(wrap, img||table||hr||wrap, type);
+    _onWrapDown(e);
   });
 }
+
+
+// ════════════════════════════════════════════════
+// IMAGEM REDIMENSIONÁVEL
+// ════════════════════════════════════════════════
+function _insertResizableImage(src, alt) {
+  const id   = 'img_' + Date.now();
+  const wrap = document.createElement('div');
+  wrap.className       = 'sel-wrap';
+  wrap.id              = id;
+  wrap.contentEditable = 'false';
+  wrap.style.cssText   = `
+    display:inline-block;position:relative;
+    width:240px;height:auto;
+    cursor:move;user-select:none;
+    vertical-align:middle;
+  `;
+  const img = document.createElement('img');
+  img.src          = src;
+  img.alt          = alt || '';
+  img.draggable    = false;
+  img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;border-radius:3px;';
+  wrap.appendChild(img);
+  _attachWrapEvents(wrap);
+  // Insert at cursor
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.collapse(false);
+    range.insertNode(wrap);
+    range.setStartAfter(wrap);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    const ed = document.querySelector('.page');
+    if (ed) ed.appendChild(wrap);
+  }
+  // Immediately select it
+  setTimeout(() => selectEl(wrap, img, 'img'), 30);
+}
+
 function _insertResizableImageUrl(src, alt) { _insertResizableImage(src, alt); }
-// compat
 function selectElement(id) {
-  const el = document.getElementById(id); if (!el) return;
-  const img = el.querySelector('img,.sticker-icon') || el;
-  selectEl(img, 'img');
+  const wrap = document.getElementById(id); if (!wrap) return;
+  const img = wrap.querySelector('img');
+  selectEl(wrap, img || wrap, img ? 'img' : 'generic');
 }
 function resizeEl(id, delta) {
-  const el = document.getElementById(id); if (!el) return;
-  const img = el.querySelector('img,.sticker-icon'); if (!img) return;
-  img.style.width = Math.max(40, Math.min(700, (img.offsetWidth||200)+delta)) + 'px';
-  _updateOverlay();
+  const wrap = document.getElementById(id); if (!wrap) return;
+  const newW = Math.max(40, Math.min(700, (wrap.offsetWidth||200) + delta));
+  wrap.style.width = newW + 'px';
+  if (_selWrap === wrap) _syncOverlay();
 }
 function deleteEl(id) {
   const el = document.getElementById(id);
@@ -1837,8 +1904,8 @@ function deleteEl(id) {
 document.addEventListener('click', e => {
   const table = e.target.closest('table');
   const hr    = e.target.tagName === 'HR' ? e.target : null;
-  if (table) { selectEl(table, 'table'); e.stopPropagation(); }
-  else if (hr) { selectEl(hr, 'hr'); e.stopPropagation(); }
+  if (table) { const tw=table.closest('.sel-wrap')||table; selectEl(tw,table,'table'); e.stopPropagation(); }
+  else if (hr) { const hw=hr.closest('.sel-wrap')||hr; selectEl(hw,hr,'hr'); e.stopPropagation(); }
 });
 
 // ════════════════════════════════════════════════
@@ -1854,21 +1921,31 @@ function _insertQrCode(text) {
 // STICKERS
 // ════════════════════════════════════════════════
 function _insertSticker(emoji, color) {
-  const id = 'stk_' + Date.now();
-  document.execCommand('insertHTML', false, `
-    <span class="sel-wrap" id="${id}" contenteditable="false"
-      style="display:inline-block;position:relative;margin:4px;user-select:none;">
-      <span class="sticker-icon" onclick="selectElement('${id}')"
-        style="font-size:48px;line-height:1;display:inline-block;cursor:pointer;border:2px solid transparent;border-radius:8px;padding:4px;">
-        ${emoji}
-      </span>
-      <div class="el-controls" style="display:none;position:absolute;bottom:-32px;left:0;
-        background:var(--acc);border-radius:6px;padding:4px;gap:4px;align-items:center;z-index:100;">
-        <button onclick="resizeEl('${id}',-12)" style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">−</button>
-        <button onclick="resizeEl('${id}',12)"  style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">+</button>
-        <button onclick="deleteEl('${id}')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:12px;">🗑</button>
-      </div>
-    </span>`);
+  const id   = 'stk_' + Date.now();
+  const wrap = document.createElement('span');
+  wrap.className       = 'sel-wrap';
+  wrap.id              = id;
+  wrap.contentEditable = 'false';
+  wrap.style.cssText   = 'display:inline-block;position:relative;margin:4px;user-select:none;cursor:move;';
+  const icon = document.createElement('span');
+  icon.className = 'sticker-icon';
+  icon.style.cssText = 'font-size:48px;line-height:1;display:inline-block;border-radius:8px;padding:4px;pointer-events:none;';
+  icon.textContent = emoji;
+  wrap.appendChild(icon);
+  _attachWrapEvents(wrap);
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount) {
+    const range = sel.getRangeAt(0);
+    range.collapse(false);
+    range.insertNode(wrap);
+    range.setStartAfter(wrap);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } else {
+    document.querySelector('.page')?.appendChild(wrap);
+  }
+  setTimeout(() => selectEl(wrap, icon, 'sticker'), 30);
 }
 
 // ════════════════════════════════════════════════
