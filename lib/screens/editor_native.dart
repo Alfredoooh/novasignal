@@ -30,7 +30,7 @@ class _NativeEditorView extends StatefulWidget {
 }
 
 class _NativeEditorViewState extends State<_NativeEditorView> {
-  static   static String _ariaToken = '';
+  static String _ariaToken = '';
 
   InAppWebViewController? _wvc;
   bool _loading = true;
@@ -488,7 +488,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       });
 
       final client   = HttpClient();
-      final request  = await client.postUrl(Uri.parse('${_NativeEditorViewState._kWorkerUrl}/generate'));
+      final request  = await client.postUrl(Uri.parse('https://dawn-sun-590a.alfredopjonas.workers.dev/generate'));
       headers.forEach((k,v) => request.headers.set(k,v));
       request.write(body);
       final response     = await request.close();
@@ -519,7 +519,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
 
     try {
       final isSearch  = aiAction.contains('Pesquis') || aiAction.contains('internet');
-      final endpoint  = '${_NativeEditorViewState._kWorkerUrl}/chat';
+      final endpoint  = 'https://dawn-sun-590a.alfredopjonas.workers.dev/chat';
       final headers   = <String,String>{'Content-Type':'application/json'};
       if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer $_ariaToken';
 
@@ -944,7 +944,7 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
       });
 
       final client  = HttpClient();
-      final req     = await client.postUrl(Uri.parse('${_NativeEditorViewState._kWorkerUrl}/chat'));
+      final req     = await client.postUrl(Uri.parse('https://dawn-sun-590a.alfredopjonas.workers.dev/chat'));
       headers.forEach((k, v) => req.headers.set(k, v));
       req.write(body);
       final res     = await req.close();
