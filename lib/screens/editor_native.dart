@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:video_player/video_player.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -19,8 +18,6 @@ const _kCard  = 18.0;
 const _kModal = 20.0;
 
 // ── Aria Worker ───────────────────────────────────────
-const _kWorkerUrl = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
-
 Widget buildEditorView(BuildContext context, EditorController controller) =>
     _NativeEditorView(controller: controller);
 
@@ -33,12 +30,11 @@ class _NativeEditorView extends StatefulWidget {
 }
 
 class _NativeEditorViewState extends State<_NativeEditorView> {
+  static   static String _ariaToken = '';
+
   InAppWebViewController? _wvc;
   bool _loading = true;
-  String _selectedModel = 'google/gemini-2.0-flash-exp:free'; // modelo padrão
-  bool _webReady = false;  // WebView carregou, aguarda botão
-  VideoPlayerController? _videoCtrl;
-
+  String _selectedModel = 'google/gemini-2.0-flash-001'; // Gemini 2.0
   final _settings = InAppWebViewSettings(
     javaScriptEnabled: true,
     javaScriptCanOpenWindowsAutomatically: true,
@@ -55,22 +51,13 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   void initState() {
     super.initState();
     themeNotifier.addListener(_onThemeChanged);
-    _initVideo();
   }
 
-  Future<void> _initVideo() async {
-    final ctrl = VideoPlayerController.asset('assets/videos/editor_intro.mp4');
-    await ctrl.initialize();
-    ctrl.setLooping(true);
-    ctrl.setVolume(0);
-    ctrl.play();
-    if (mounted) setState(() => _videoCtrl = ctrl);
-  }
+
 
   @override
   void dispose() {
     themeNotifier.removeListener(_onThemeChanged);
-    _videoCtrl?.dispose();
     super.dispose();
   }
 
@@ -298,12 +285,8 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
     }
   }
 
-  // ── Modal de escrita livre para IA (90% altura) ───────
+  // ── Modal IA — chat com input na barra ──────────────────
   Future<void> _showAiWriteModal() async {
-    final isDark = themeNotifier.isDark;
-    final acc    = accColor(isDark);
-    final ctrl   = TextEditingController();
-
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -311,17 +294,24 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black54,
       builder: (_) => _AiWriteSheet(
-        isDark: isDark,
-        acc: acc,
-        ctrl: ctrl,
+        isDark: themeNotifier.isDark,
+        acc: accColor(themeNotifier.isDark),
         initialModel: _selectedModel,
-        onModelChanged: (m) => _selectedModel = m,
+        onModelChanged: (m) { if (mounted) setState(() => _selectedModel = m); },
+        onInsertToEditor: _insertAiContent,
       ),
     );
+  }
 
-    final text = ctrl.text.trim();
-    if (text.isEmpty) return;
-    await _handleAiWrite(text, model: _selectedModel);
+  /// Insere conteúdo da IA directamente no paper
+  Future<void> _insertAiContent(String content, bool isHtml) async {
+    await _wvc?.evaluateJavascript(
+      source: 'if(typeof window.setProgress==="function") window.setProgress(true);',
+    );
+    final js = jsonEncode({'text': content, 'type': isHtml ? 'html' : 'text'});
+    await _wvc?.evaluateJavascript(
+      source: 'if(typeof window._aiResponse==="function") window._aiResponse($js);',
+    );
   }
 
   // ── Insert ────────────────────────────────────────────
@@ -480,9 +470,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   // ═════════════════════════════════════════════════════
   // IA — Aria Worker
   // ═════════════════════════════════════════════════════
-  static String _ariaToken = '';
-
-  // ── Escrita livre — sem orientações, faz exactamente o que o utilizador pede ──
+   // ── Escrita livre — sem orientações, faz exactamente o que o utilizador pede ──
   Future<void> _handleAiWrite(String userPrompt, {String? model}) async {
     await _wvc?.evaluateJavascript(
       source: 'if(typeof window.setProgress==="function") window.setProgress(true);',
@@ -494,14 +482,13 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       final body = jsonEncode({
         'prompt': userPrompt,
         'model': model ?? _selectedModel,
-        'max_tokens': 100000,
-        'temperature': 2.0,
-        'max_input_tokens': 100000,
+        'max_tokens': 8192,
+        'temperature': 1.0,
         // Sem system prompt — a IA faz exactamente o que o utilizador pedir
       });
 
       final client   = HttpClient();
-      final request  = await client.postUrl(Uri.parse('\$_kWorkerUrl/generate'));
+      final request  = await client.postUrl(Uri.parse('${_NativeEditorViewState._kWorkerUrl}/generate'));
       headers.forEach((k,v) => request.headers.set(k,v));
       request.write(body);
       final response     = await request.close();
@@ -532,7 +519,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
 
     try {
       final isSearch  = aiAction.contains('Pesquis') || aiAction.contains('internet');
-      final endpoint  = isSearch ? '$_kWorkerUrl/ask' : '$_kWorkerUrl/generate';
+      final endpoint  = '${_NativeEditorViewState._kWorkerUrl}/chat';
       final headers   = <String,String>{'Content-Type':'application/json'};
       if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer $_ariaToken';
 
@@ -753,7 +740,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
         },
 
         onLoadStop: (ctrl, url) async {
-          if (mounted) setState(() => _webReady = true);
+          if (mounted) setState(() => _loading = false);
           final isDark = themeNotifier.isDark;
           await ctrl.evaluateJavascript(
             source: 'if(typeof window.setTheme==="function") window.setTheme(${isDark ? 'true' : 'false'});',
@@ -770,15 +757,49 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
         onConsoleMessage: (ctrl, msg) => debugPrint('[WebView] ${msg.message}'),
       ),
 
-      // ── Loader com vídeo MP4 ─────────────────────────────
+      // ── Loader — branco + spinner fino ──────────────────
       if (_loading)
-        _EditorLoaderScreen(
-          videoCtrl: _videoCtrl,
-          webReady: _webReady,
-          onOpen: () {
-            setState(() => _loading = false);
-            _videoCtrl?.pause();
-          },
+        const ColoredBox(
+          color: Colors.white,
+          child: Center(
+            child: SizedBox(
+              width: 24, height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFBBBBBB),
+              ),
+            ),
+          ),
+        ),
+
+      // ── FAB IA — gradient circular, sem sombra ──────────
+      if (!_loading)
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: GestureDetector(
+            onTap: _showAiWriteModal,
+            child: Container(
+              width: 52, height: 52,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFFF13223), Color(0xFFFA6559)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text('IA',
+                style: GoogleFonts.roboto(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .5,
+                ),
+              ),
+            ),
+          ),
         ),
     ]);
   }
@@ -795,7 +816,7 @@ class _AiModel {
 
 const _kModels = [
   _AiModel(
-    id: 'google/gemini-2.0-flash-exp:free',
+    id: 'google/gemini-2.0-flash-001',
     label: 'Gemini 2.0',
     iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg',
   ),
@@ -803,11 +824,6 @@ const _kModels = [
     id: 'google/gemini-2.5-pro-exp-03-25:free',
     label: 'Gemini 2.5 Pro',
     iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg',
-  ),
-  _AiModel(
-    id: 'openai/gpt-4o',
-    label: 'GPT-4o',
-    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg',
   ),
   _AiModel(
     id: 'openai/gpt-4o-mini',
@@ -819,30 +835,39 @@ const _kModels = [
     label: 'Claude 3.5',
     iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/anthropic.svg',
   ),
-  _AiModel(
-    id: 'meta-llama/llama-3.3-70b-instruct:free',
-    label: 'Llama 3.3',
-    iconUrl: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/meta.svg',
-  ),
 ];
 
 // ═══════════════════════════════════════════════════════
-// MODAL DE ESCRITA LIVRE PARA IA — 90% altura
+// CHAT — modelo de mensagem
+// ═══════════════════════════════════════════════════════
+
+enum _MsgRole { user, ai }
+
+class _Msg {
+  final _MsgRole role;
+  final String   text;
+  final bool     isHtml;
+  final bool     searched;
+  _Msg(this.role, this.text, {this.isHtml = false, this.searched = false});
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL DE IA — chat com input na barra inferior
 // ═══════════════════════════════════════════════════════
 
 class _AiWriteSheet extends StatefulWidget {
-  final bool isDark;
-  final Color acc;
-  final TextEditingController ctrl;
+  final bool   isDark;
+  final Color  acc;
   final String initialModel;
-  final ValueChanged<String> onModelChanged;
+  final ValueChanged<String>         onModelChanged;
+  final void Function(String, bool)  onInsertToEditor; // (content, isHtml)
 
   const _AiWriteSheet({
     required this.isDark,
     required this.acc,
-    required this.ctrl,
     required this.initialModel,
     required this.onModelChanged,
+    required this.onInsertToEditor,
   });
 
   @override
@@ -850,8 +875,22 @@ class _AiWriteSheet extends StatefulWidget {
 }
 
 class _AiWriteSheetState extends State<_AiWriteSheet> {
-  bool _sending = false;
-  late String _model;
+  final _inputCtrl  = TextEditingController();
+  final _scrollCtrl = ScrollController();
+  final _msgs       = <_Msg>[];
+  bool  _busy       = false;
+  bool  _showQuick  = false;
+  late  String _model;
+
+  static const _kQuick = [
+    'Corrigir gramática',
+    'Tornar mais formal',
+    'Tornar mais curto',
+    'Resumir em tópicos',
+    'Traduzir para inglês',
+    'Criar documento HTML com tabelas',
+    'Gerar relatório profissional em HTML',
+  ];
 
   @override
   void initState() {
@@ -860,156 +899,422 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
   }
 
   @override
+  void dispose() {
+    _inputCtrl.dispose();
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  void _scrollBottom() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (_scrollCtrl.hasClients) {
+      _scrollCtrl.animateTo(_scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+    }
+  });
+
+  Future<void> _send() async {
+    final prompt = _inputCtrl.text.trim();
+    if (prompt.isEmpty || _busy) return;
+
+    setState(() {
+      _msgs.add(_Msg(_MsgRole.user, prompt));
+      _busy = true;
+      _showQuick = false;
+    });
+    _inputCtrl.clear();
+    _scrollBottom();
+
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+        if (_NativeEditorViewState._ariaToken.isNotEmpty)
+          'Authorization': 'Bearer ${_NativeEditorViewState._ariaToken}',
+      };
+
+      final history = _msgs
+          .where((m) => m.role == _MsgRole.user)
+          .take(4)
+          .map((m) => {'role': 'user', 'content': m.text})
+          .toList();
+
+      final body = jsonEncode({
+        'prompt' : prompt,
+        'model'  : _model,
+        'history': history,
+      });
+
+      final client  = HttpClient();
+      final req     = await client.postUrl(Uri.parse('${_NativeEditorViewState._kWorkerUrl}/chat'));
+      headers.forEach((k, v) => req.headers.set(k, v));
+      req.write(body);
+      final res     = await req.close();
+      final raw     = await res.transform(utf8.decoder).join();
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+
+      if (decoded['error'] != null) throw Exception(decoded['error']);
+
+      final content  = (decoded['content'] ?? decoded['answer'] ?? decoded['text'] ?? '') as String;
+      final type     = (decoded['type'] ?? 'text') as String;
+      final searched = (decoded['searched'] ?? false) as bool;
+
+      setState(() {
+        _msgs.add(_Msg(_MsgRole.ai, content, isHtml: type == 'html', searched: searched));
+        _busy = false;
+      });
+      _scrollBottom();
+    } catch (e) {
+      setState(() {
+        _msgs.add(_Msg(_MsgRole.ai, 'Erro: $e'));
+        _busy = false;
+      });
+    }
+  }
+
+  // ── Cores ──────────────────────────────────────────────
+  Color get _bg  => widget.isDark ? const Color(0xFF1B1B1B) : const Color(0xFFF1F0F0);
+  Color get _tp  => widget.isDark ? const Color(0xFFFFE8E3) : Colors.black;
+  Color get _ts  => widget.isDark ? const Color(0xFF9E8E8A) : const Color(0xFF6B6B6B);
+  Color get _div => widget.isDark ? const Color(0xFF3A3030) : const Color(0xFFE0E0E0);
+  Color get _cardBg => widget.isDark ? const Color(0xFF2C2C2C) : Colors.white;
+
+  @override
   Widget build(BuildContext context) {
-    final bg  = widget.isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final tp  = widget.isDark ? Colors.white : Colors.black;
-    final ts  = widget.isDark ? const Color(0xFF8E8E93) : const Color(0xFF6B7280);
-    final div = widget.isDark ? AppColors.darkDivider : AppColors.divider;
-    final acc = widget.acc;
-    final h   = MediaQuery.of(context).size.height * 0.90;
+    final insets = MediaQuery.of(context).viewInsets.bottom;
+    final bot    = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      height: h,
+      height: MediaQuery.of(context).size.height * 0.92,
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(_kModal)),
+        color: _bg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(children: [
-        // Handle
+
+        // ── Handle ──────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+          padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
           child: Center(child: Container(
             width: 40, height: 4,
-            decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill)),
+            decoration: BoxDecoration(color: _div, borderRadius: BorderRadius.circular(99)),
           )),
         ),
-        // Header
+
+        // ── Header ──────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
           child: Row(children: [
-            Expanded(child: Text(
-              'Pedir à IA',
-              style: GoogleFonts.syne(color: tp, fontSize: 20, fontWeight: FontWeight.w800),
-            )),
+            Text('Aria', style: GoogleFonts.roboto(color: _tp, fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(width: 8),
+            if (_busy) SizedBox(width: 14, height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: widget.acc)),
+            const Spacer(),
+            // Botão "+" — atalhos rápidos
             GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Icon(Icons.close_rounded, color: ts, size: 22),
+              onTap: () => setState(() => _showQuick = !_showQuick),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _showQuick ? widget.acc.withOpacity(.15) : _div.withOpacity(.4),
+                  border: Border.all(color: _showQuick ? widget.acc : _div, width: 1.2),
+                ),
+                alignment: Alignment.center,
+                child: AnimatedRotation(
+                  turns: _showQuick ? 0.125 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(Icons.add_rounded,
+                    color: _showQuick ? widget.acc : _ts, size: 18),
+                ),
+              ),
             ),
           ]),
         ),
 
-        // ── Selector de modelo ──────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-          child: SizedBox(
-            height: 42,
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: _kModels.length,
-              itemBuilder: (_, i) {
-                final m   = _kModels[i];
-                final sel = m.id == _model;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _model = m.id);
-                    widget.onModelChanged(m.id);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 140),
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: sel ? acc.withOpacity(.12) : Colors.transparent,
-                      border: Border.all(color: sel ? acc : div, width: sel ? 1.5 : 1),
-                      borderRadius: BorderRadius.circular(_kPill),
-                    ),
-                    child: Row(children: [
-                      SvgPicture.network(
-                        m.iconUrl,
-                        width: 16, height: 16,
-                        colorFilter: ColorFilter.mode(
-                          sel ? acc : ts,
-                          BlendMode.srcIn,
-                        ),
-                        placeholderBuilder: (_) => SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 1.5, color: ts),
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      Text(m.label, style: GoogleFonts.roboto(
-                        color: sel ? acc : ts,
-                        fontSize: 12,
-                        fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                      )),
-                    ]),
+        // ── Atalhos rápidos ──────────────────────────────────
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200), curve: Curves.easeOut,
+          child: _showQuick ? Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 2),
+            child: Wrap(spacing: 6, runSpacing: 6, children: _kQuick.map((q) =>
+              GestureDetector(
+                onTap: () { _inputCtrl.text = q; setState(() => _showQuick = false); },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: _div),
+                    borderRadius: BorderRadius.circular(99),
+                    color: _tp.withOpacity(.04),
                   ),
-                );
-              },
-            ),
-          ),
+                  child: Text(q, style: GoogleFonts.roboto(color: _ts, fontSize: 11.5, fontWeight: FontWeight.w500)),
+                ),
+              )).toList()),
+          ) : const SizedBox.shrink(),
         ),
 
-        Container(height: 0.5, color: div, margin: const EdgeInsets.only(top: 12)),
-
-        // Input
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 16),
-            child: TextField(
-              controller: widget.ctrl,
-              autofocus: true,
-              maxLines: null,
-              expands: true,
-              textAlignVertical: TextAlignVertical.top,
-              style: GoogleFonts.roboto(color: tp, fontSize: 15, height: 1.6),
-              decoration: InputDecoration(
-                hintText: 'Escreve aqui o que queres…',
-                hintStyle: GoogleFonts.roboto(color: ts.withOpacity(0.5), fontSize: 14, height: 1.6),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-        ),
-
-        // Botão gerar
-        Padding(
-          padding: EdgeInsets.fromLTRB(20, 0, 20, MediaQuery.of(context).padding.bottom + 16),
-          child: GestureDetector(
-            onTap: _sending ? null : () {
-              final text = widget.ctrl.text.trim();
-              if (text.isEmpty) return;
-              setState(() => _sending = true);
-              Navigator.pop(context, text);
+        // ── Selector de modelo ───────────────────────────────
+        SizedBox(height: 36,
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
+            scrollDirection: Axis.horizontal,
+            itemCount: _kModels.length,
+            itemBuilder: (_, i) {
+              final m   = _kModels[i];
+              final sel = m.id == _model;
+              return GestureDetector(
+                onTap: () { setState(() => _model = m.id); widget.onModelChanged(m.id); },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 130),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: sel ? widget.acc.withOpacity(.10) : Colors.transparent,
+                    border: Border.all(color: sel ? widget.acc : _div, width: sel ? 1.5 : 1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    SvgPicture.network(m.iconUrl, width: 13, height: 13,
+                      colorFilter: ColorFilter.mode(sel ? widget.acc : _ts, BlendMode.srcIn),
+                      placeholderBuilder: (_) => SizedBox(width: 13, height: 13,
+                        child: CircularProgressIndicator(strokeWidth: 1, color: _ts))),
+                    const SizedBox(width: 5),
+                    Text(m.label, style: GoogleFonts.roboto(
+                      color: sel ? widget.acc : _ts, fontSize: 11,
+                      fontWeight: sel ? FontWeight.w700 : FontWeight.w500)),
+                  ]),
+                ),
+              );
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: _sending ? acc.withOpacity(0.5) : acc,
-                borderRadius: BorderRadius.circular(_kPill),
+          ),
+        ),
+
+        Container(height: 0.5, color: _div),
+
+        // ── Área de conversa ─────────────────────────────────
+        Expanded(
+          child: _msgs.isEmpty
+            ? Center(child: Text('Pergunta ou pede qualquer coisa…',
+                style: GoogleFonts.roboto(color: _ts.withOpacity(.5), fontSize: 13)))
+            : ListView.builder(
+                controller: _scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+                itemCount: _msgs.length,
+                itemBuilder: (_, i) => _buildMsg(_msgs[i]),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_sending) ...[
-                    SizedBox(width: 16, height: 16,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                    const SizedBox(width: 10),
-                  ],
-                  Text(
-                    _sending ? 'A gerar…' : 'Gerar com IA',
-                    style: GoogleFonts.syne(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+
+        // ── Input bar ────────────────────────────────────────
+        Container(
+          decoration: BoxDecoration(
+            color: _bg,
+            border: Border(top: BorderSide(color: _div, width: 0.5)),
+          ),
+          padding: EdgeInsets.fromLTRB(12, 8, 12, (insets > 0 ? insets : bot) + 10),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 40, maxHeight: 110),
+                decoration: BoxDecoration(
+                  color: _cardBg,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: _div),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                child: TextField(
+                  controller: _inputCtrl,
+                  maxLines: null,
+                  style: GoogleFonts.roboto(color: _tp, fontSize: 14, height: 1.45),
+                  decoration: InputDecoration(
+                    hintText: 'Escreve o teu pedido…',
+                    hintStyle: GoogleFonts.roboto(color: _ts.withOpacity(.5), fontSize: 14),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
-                ],
+                  onSubmitted: (_) => _send(),
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: 8),
+            // Botão enviar
+            GestureDetector(
+              onTap: _busy ? null : _send,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: _busy
+                    ? LinearGradient(colors: [_div, _div])
+                    : const LinearGradient(
+                        colors: [Color(0xFFF13223), Color(0xFFFA6559)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight),
+                ),
+                alignment: Alignment.center,
+                child: _busy
+                  ? const SizedBox(width: 18, height: 18,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
+              ),
+            ),
+          ]),
         ),
       ]),
+    );
+  }
+
+  // ── Render de mensagem ───────────────────────────────────
+  Widget _buildMsg(_Msg msg) {
+    if (msg.role == _MsgRole.user) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12, left: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFF13223), Color(0xFFFA6559)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(18), topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(18), bottomRight: Radius.circular(4)),
+          ),
+          child: Text(msg.text,
+            style: GoogleFonts.roboto(color: Colors.white, fontSize: 14, height: 1.5)),
+        ),
+      );
+    }
+
+    // ── Resposta da IA ──────────────────────────────────────
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14, right: 16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // Badge "pesquisado"
+        if (msg.searched) Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.travel_explore_rounded, color: widget.acc, size: 12),
+            const SizedBox(width: 4),
+            Text('Pesquisado na web',
+              style: GoogleFonts.roboto(color: widget.acc, fontSize: 10, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+
+        // Card da resposta
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(4), topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(18), bottomRight: Radius.circular(18)),
+            border: Border.all(color: _div.withOpacity(.5)),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+            // Preview HTML
+            if (msg.isHtml)
+              Container(
+                height: 180,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(3), topRight: Radius.circular(18)),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _HtmlSnippet(html: msg.text),
+              ),
+
+            if (msg.isHtml) Divider(height: 0.5, thickness: 0.5, color: _div.withOpacity(.4)),
+
+            // Texto da resposta (só para texto, para HTML mostra só preview)
+            if (!msg.isHtml)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+                child: Text(msg.text,
+                  style: GoogleFonts.roboto(color: _tp, fontSize: 14, height: 1.6)),
+              ),
+
+            // Botão "Passar para o projeto"
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
+              child: GestureDetector(
+                onTap: () {
+                  widget.onInsertToEditor(msg.text, msg.isHtml);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFF13223), Color(0xFFFA6559)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight),
+                    borderRadius: BorderRadius.all(Radius.circular(99)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.file_present_rounded, color: Colors.white, size: 14),
+                    const SizedBox(width: 6),
+                    Text('Passar para o projeto',
+                      style: GoogleFonts.roboto(
+                        color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Preview de HTML no chat ──────────────────────────────
+class _HtmlSnippet extends StatelessWidget {
+  final String html;
+  const _HtmlSnippet({required this.html});
+
+  @override
+  Widget build(BuildContext context) {
+    String clean(String s) => s
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .trim();
+
+    final lines = RegExp(
+      r'<(h[123]|p|li|blockquote)[^>]*>([\s\S]*?)<\/\1>',
+      caseSensitive: false,
+    ).allMatches(html).map((m) => (
+      tag: m.group(1)!.toLowerCase(),
+      text: clean(m.group(2) ?? ''),
+    )).where((l) => l.text.isNotEmpty).take(10).toList();
+
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: lines.map((l) {
+          final isH = l.tag.startsWith('h');
+          return Padding(
+            padding: EdgeInsets.only(bottom: isH ? 5 : 2),
+            child: Text(l.text,
+              maxLines: isH ? 1 : 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: l.tag == 'h1' ? 14 : l.tag == 'h2' ? 12.5 : 11,
+                fontWeight: isH ? FontWeight.w700 : FontWeight.w400,
+                height: 1.4,
+              )),
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -1507,80 +1812,4 @@ class _FindReplaceSheet extends StatelessWidget {
         ),
       ),
     ]);
-}
-
-// ═══════════════════════════════════════════════════════
-// LOADER COM VÍDEO MP4
-// ═══════════════════════════════════════════════════════
-
-class _EditorLoaderScreen extends StatelessWidget {
-  final VideoPlayerController? videoCtrl;
-  final bool webReady;
-  final VoidCallback onOpen;
-
-  const _EditorLoaderScreen({
-    required this.videoCtrl,
-    required this.webReady,
-    required this.onOpen,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final acc = accColor(themeNotifier.isDark);
-
-    return Container(
-      color: const Color(0xFF111111),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // ── Vídeo centrado, tamanho original, bordas curvas ──
-            Expanded(
-              child: Center(
-                child: videoCtrl != null && videoCtrl!.value.isInitialized
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(36),
-                        child: SizedBox(
-                          width:  videoCtrl!.value.size.width,
-                          height: videoCtrl!.value.size.height,
-                          child: VideoPlayer(videoCtrl!),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ),
-
-            // ── Botão "Abrir editor" ──────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
-              child: AnimatedOpacity(
-                opacity: webReady ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-                child: GestureDetector(
-                  onTap: webReady ? onOpen : null,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Abrir editor',
-                      style: GoogleFonts.syne(
-                        color: const Color(0xFF111111),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
