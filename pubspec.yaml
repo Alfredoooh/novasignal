@@ -41,13 +41,10 @@ flutter:
     - assets/splash_logo.png
     - assets/splash_text.svg
     - assets/icons/ic_documento.png
-    - assets/icons/ic_apresentacao.png
-    - assets/icons/ic_cv.png
     - assets/icons/ic_nota.png
     - assets/images/background1.png
-    - assets/animations/loading.gif
     - assets/icons/folder.png
-    - assets/videos/editor_intro.mp4
+    
 
  
 
