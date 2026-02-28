@@ -30,7 +30,7 @@ class _NativeEditorView extends StatefulWidget {
 }
 
 class _NativeEditorViewState extends State<_NativeEditorView> {
-  static String _ariaToken = '';
+  static   static String _ariaToken = '';
 
   InAppWebViewController? _wvc;
   bool _loading = true;
@@ -217,7 +217,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       {'action':'sharePDF',    'label':'Partilhar PDF'},
       {'action':'stats',       'label':'Estatísticas'},
       {'action':'findReplace', 'label':'Localizar e substituir'},
-      {'action':'print',       'label':'Imprimir'},
       {'action':'duplicate',   'label':'Duplicar página'},
       {'action':'newPage',     'label':'Nova página'},
       {'action':'whitePaper',  'label':'Papel branco'},
@@ -277,28 +276,36 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
 
     if (result != null) {
       if (result['action'] == 'Escrever algo') {
-        // Abre modal de escrita livre
-        await _showAiWriteModal();
+        await _showAiWriteModal(selectedText: selectedText);
       } else {
         await _injectModalResult(result);
       }
     }
   }
 
-  // ── Modal IA — chat com input na barra ──────────────────
-  Future<void> _showAiWriteModal() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
-      builder: (_) => _AiWriteSheet(
-        isDark: themeNotifier.isDark,
-        acc: accColor(themeNotifier.isDark),
-        initialModel: _selectedModel,
-        onModelChanged: (m) { if (mounted) setState(() => _selectedModel = m); },
-        onInsertToEditor: _insertAiContent,
+  // ── Tela de IA — full screen (abre com selectedText opcional) ──
+  Future<void> _showAiWriteModal({String selectedText = ''}) async {
+    await Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black.withOpacity(0.6),
+        pageBuilder: (_, __, ___) => _AiScreen(
+          isDark: themeNotifier.isDark,
+          acc: accColor(themeNotifier.isDark),
+          initialModel: _selectedModel,
+          selectedText: selectedText,
+          onModelChanged: (m) { if (mounted) setState(() => _selectedModel = m); },
+          onInsertToEditor: _insertAiContent,
+        ),
+        transitionsBuilder: (_, anim, __, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.04), end: Offset.zero,
+            ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+            child: child,
+          ),
+        ),
       ),
     );
   }
@@ -488,7 +495,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
       });
 
       final client   = HttpClient();
-      final request  = await client.postUrl(Uri.parse('https://dawn-sun-590a.alfredopjonas.workers.dev/generate'));
+      final request  = await client.postUrl(Uri.parse('${_NativeEditorViewState._kWorkerUrl}/generate'));
       headers.forEach((k,v) => request.headers.set(k,v));
       request.write(body);
       final response     = await request.close();
@@ -519,7 +526,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
 
     try {
       final isSearch  = aiAction.contains('Pesquis') || aiAction.contains('internet');
-      final endpoint  = 'https://dawn-sun-590a.alfredopjonas.workers.dev/chat';
+      final endpoint  = '${_NativeEditorViewState._kWorkerUrl}/chat';
       final headers   = <String,String>{'Content-Type':'application/json'};
       if (_ariaToken.isNotEmpty) headers['Authorization'] = 'Bearer $_ariaToken';
 
@@ -778,7 +785,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
           bottom: 20,
           right: 20,
           child: GestureDetector(
-            onTap: _showAiWriteModal,
+            onTap: () => _showAiWriteModal(),
             child: Container(
               width: 52, height: 52,
               decoration: const BoxDecoration(
@@ -855,26 +862,28 @@ class _Msg {
 // MODAL DE IA — chat com input na barra inferior
 // ═══════════════════════════════════════════════════════
 
-class _AiWriteSheet extends StatefulWidget {
+class _AiScreen extends StatefulWidget {
   final bool   isDark;
   final Color  acc;
   final String initialModel;
+  final String selectedText;
   final ValueChanged<String>         onModelChanged;
-  final void Function(String, bool)  onInsertToEditor; // (content, isHtml)
+  final void Function(String, bool)  onInsertToEditor;
 
-  const _AiWriteSheet({
+  const _AiScreen({
     required this.isDark,
     required this.acc,
     required this.initialModel,
+    required this.selectedText,
     required this.onModelChanged,
     required this.onInsertToEditor,
   });
 
   @override
-  State<_AiWriteSheet> createState() => _AiWriteSheetState();
+  State<_AiScreen> createState() => _AiScreenState();
 }
 
-class _AiWriteSheetState extends State<_AiWriteSheet> {
+class _AiScreenState extends State<_AiScreen> {
   final _inputCtrl  = TextEditingController();
   final _scrollCtrl = ScrollController();
   final _msgs       = <_Msg>[];
@@ -938,13 +947,14 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
           .toList();
 
       final body = jsonEncode({
-        'prompt' : prompt,
-        'model'  : _model,
-        'history': history,
+        'prompt'       : prompt,
+        'model'        : _model,
+        'history'      : history,
+        'selectedText' : widget.selectedText,
       });
 
       final client  = HttpClient();
-      final req     = await client.postUrl(Uri.parse('https://dawn-sun-590a.alfredopjonas.workers.dev/chat'));
+      final req     = await client.postUrl(Uri.parse('${_NativeEditorViewState._kWorkerUrl}/chat'));
       headers.forEach((k, v) => req.headers.set(k, v));
       req.write(body);
       final res     = await req.close();
@@ -982,30 +992,23 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
     final insets = MediaQuery.of(context).viewInsets.bottom;
     final bot    = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.92,
-      decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(children: [
+    return Scaffold(
+      backgroundColor: _bg,
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(child: Column(children: [
 
-        // ── Handle ──────────────────────────────────────────
+        // ── AppBar ──────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-          child: Center(child: Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(color: _div, borderRadius: BorderRadius.circular(99)),
-          )),
-        ),
-
-        // ── Header ──────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
           child: Row(children: [
-            Text('Aria', style: GoogleFonts.roboto(color: _tp, fontSize: 20, fontWeight: FontWeight.w900)),
+            // Botão fechar
+            IconButton(
+              icon: Icon(Icons.close_rounded, color: _ts, size: 22),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            Text('Aria', style: GoogleFonts.roboto(color: _tp, fontSize: 19, fontWeight: FontWeight.w900)),
             const SizedBox(width: 8),
-            if (_busy) SizedBox(width: 14, height: 14,
+            if (_busy) SizedBox(width: 13, height: 13,
               child: CircularProgressIndicator(strokeWidth: 2, color: widget.acc)),
             const Spacer(),
             // Botão "+" — atalhos rápidos
@@ -1030,6 +1033,29 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
             ),
           ]),
         ),
+
+        // ── Texto seleccionado (se houver) ──────────────────
+        if (widget.selectedText.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: widget.acc.withOpacity(.07),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: widget.acc.withOpacity(.2)),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.format_quote_rounded, color: widget.acc, size: 14),
+              const SizedBox(width: 6),
+              Expanded(child: Text(
+                widget.selectedText.length > 120
+                  ? '${widget.selectedText.substring(0, 120)}…'
+                  : widget.selectedText,
+                style: GoogleFonts.roboto(color: _ts, fontSize: 12.5, height: 1.4),
+                maxLines: 3, overflow: TextOverflow.ellipsis,
+              )),
+            ]),
+          ),
 
         // ── Atalhos rápidos ──────────────────────────────────
         AnimatedSize(
@@ -1160,7 +1186,7 @@ class _AiWriteSheetState extends State<_AiWriteSheet> {
             ),
           ]),
         ),
-      ]),
+      ])),
     );
   }
 
