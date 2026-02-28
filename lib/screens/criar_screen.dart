@@ -150,7 +150,7 @@ class _CriarScreenState extends State<CriarScreen> {
                   iconColor: const Color(0xFF6B7280),
                   title: 'Carregar ficheiro',
                   subtitle: 'PDF, DOCX, TXT e mais',
-                  onTap: () => _navigate(FileBrowserScreen(onFileOpened: widget.onDocCreated)),
+                  onTap: () => _navigate(FileBrowserScreen(onDocImported: widget.onDocCreated)),
                 ),
               ],
             ),
