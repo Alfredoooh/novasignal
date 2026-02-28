@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../widgets/theme.dart';
 import 'editor_screen.dart';
 import 'cv_editor_screen.dart';
 import 'nota_screen.dart';
-import 'pdf_viewer_screen.dart';
-import 'file_handler_stub.dart'
-    if (dart.library.html) 'file_handler_web.dart'
-    if (dart.library.io)   'file_handler_native.dart';
+import 'file_browser_screen.dart';
 
 // ──────────────────────────────────────────────────
-// SVGs fornecidos pelo utilizador
+// SVGs
 // ──────────────────────────────────────────────────
 
-// Documento (editar / criar novo)
 const _svgDocumento = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M18.656.93,6.464,13.122A4.966,4.966,0,0,0,5,16.657V18a1,1,0,0,0,1,1H7.343a4.966,4.966,0,0,0,3.535-1.464L23.07,5.344a3.125,3.125,0,0,0,0-4.414A3.194,3.194,0,0,0,18.656.93Zm3,3L9.464,16.122A3.02,3.02,0,0,1,7.343,17H7v-.343a3.02,3.02,0,0,1,.878-2.121L20.07,2.344a1.148,1.148,0,0,1,1.586,0A1.123,1.123,0,0,1,21.656,3.93Z"/>
@@ -22,28 +17,24 @@ const _svgDocumento = '''
 </svg>
 ''';
 
-// Apresentação
 const _svgApresentacao = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M23,16h-.28l-.86-2.582c-.682-2.045-2.588-3.418-4.743-3.418H6.883c-.3,0-.595,.028-.883,.079v-3.079c0-1.654,1.346-3,3-3h.172c.413,1.164,1.524,2,2.828,2h3c1.654,0,3-1.346,3-3s-1.346-3-3-3h-3c-1.304,0-2.415,.836-2.828,2h-.172c-2.757,0-5,2.243-5,5v3.914c-.851,.6-1.514,1.466-1.861,2.505l-.859,2.581h-.279c-.553,0-1,.448-1,1s.447,1,1,1h.975c.02,0,.039,0,.058,0H11v4h-3c-.553,0-1,.448-1,1s.447,1,1,1h8c.553,0,1-.448,1-1s-.447-1-1-1h-3v-4h10c.553,0,1-.448,1-1s-.447-1-1-1ZM12,2h3c.552,0,1,.449,1,1s-.448,1-1,1h-3c-.552,0-1-.449-1-1s.448-1,1-1ZM4.036,14.051c.41-1.227,1.554-2.051,2.847-2.051h10.234c1.293,0,2.437,.824,2.847,2.051l.649,1.949H3.387l.649-1.949Z"/>
 </svg>
 ''';
 
-// CV / Currículo
 const _svgCV = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m21,12h-9c-1.657,0-3,1.343-3,3v6c0,1.657,1.343,3,3,3h9c1.657,0,3-1.343,3-3v-6c0-1.657-1.343-3-3-3Zm-7.5,8.4c.411,0,.758-.276.866-.653.022-.079.068-.747.835-.747s.811.705.799.804c-.15,1.237-1.222,2.196-2.5,2.196-1.381,0-2.5-1.119-2.5-2.5v-3c0-1.381,1.119-2.5,2.5-2.5,1.281,0,2.354.963,2.5,2.204.011.097.002.796-.804.796s-.809-.674-.833-.755c-.11-.372-.456-.645-.863-.645-.496,0-.9.404-.9.9v3c0,.496.404.9.9.9Zm7.506.025c-.126.647-.583,1.575-1.628,1.575s-1.51-.97-1.618-1.531l-1.072-5.253c-.101-.496.278-.96.784-.96.38,0,.708.268.784.64l1.072,5.253c.013.065.031.117.05.159.02-.047.042-.109.057-.188l1.053-5.222c.075-.373.403-.642.784-.642.505,0,.884.463.784.958l-1.051,5.211Zm-7.006-14.425c0-3.309-2.691-6-6-6S2,2.691,2,6s2.691,6,6,6,6-2.691,6-6Zm-6,4c-2.206,0-4-1.794-4-4s1.794-4,4-4,4,1.794,4,4-1.794,4-4,4Zm-1.042,5.005c.158.529-.144,1.086-.673,1.243-2.523.751-4.285,3.116-4.285,5.752v1c0,.553-.448,1-1,1s-1-.447-1-1v-1c0-3.514,2.35-6.667,5.715-7.668.528-.156,1.086.143,1.244.673Z"/>
 </svg>
 ''';
 
-// Notas
 const _svgNota = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="m13,20c0,.553-.448,1-1,1h-7c-2.757,0-5-2.243-5-5v-8C0,5.243,2.243,3,5,3h7c.552,0,1,.447,1,1s-.448,1-1,1h-7c-1.654,0-3,1.346-3,3v8c0,1.654,1.346,3,3,3h7c.552,0,1,.447,1,1Zm-5-3c.552,0,1-.447,1-1v-7h2c.552,0,1-.447,1-1s-.448-1-1-1h-6c-.552,0-1,.447-1,1s.448,1,1,1h2v7c0,.553.448,1,1,1Zm10,5c-.551,0-1-.448-1-1V3c0-.552.449-1,1-1s1-.447,1-1-.448-1-1-1c-.768,0-1.469.29-2,.766-.531-.476-1.232-.766-2-.766-.552,0-1,.447-1,1s.448,1,1,1,1,.448,1,1v18c0,.552-.449,1-1,1s-1,.447-1,1,.448,1,1,1c.768,0,1.469-.29,2-.766.531.476,1.232.766,2,.766.552,0,1-.447,1-1s-.448-1-1-1Zm2.25-18.843c-.538-.137-1.08.185-1.218.72-.138.534.184,1.08.719,1.218,1.325.341,2.25,1.535,2.25,2.905v8c0,1.37-.925,2.564-2.25,2.905-.535.138-.856.684-.719,1.218.116.451.522.751.968.751.083,0,.167-.01.25-.031,2.208-.569,3.75-2.561,3.75-4.843v-8c0-2.282-1.542-4.273-3.75-4.843Z"/>
 </svg>
 ''';
 
-// Carregar ficheiro
 const _svgCarregar = '''
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 <path d="M12,24A12,12,0,1,0,0,12,12.013,12.013,0,0,0,12,24ZM12,2A10,10,0,1,1,2,12,10.011,10.011,0,0,1,12,2ZM6.293,10.879a1,1,0,0,0,1.414,0L11,7.587,11.007,18a1,1,0,0,0,2,0L13,7.586l3.293,3.293A1,1,0,1,0,17.731,9.49l-.024-.025L14.122,5.879a3,3,0,0,0-4.243,0h0L6.293,9.465A1,1,0,0,0,6.293,10.879Z"/>
@@ -56,8 +47,8 @@ const _chevronSvg = '''
 </svg>
 ''';
 
-Widget _svg(String d, Color c, {double s = 22}) => SvgPicture.string(
-    d, width: s, height: s, colorFilter: ColorFilter.mode(c, BlendMode.srcIn));
+Widget _svg(String d, Color c, {double s = 22}) =>
+    SvgPicture.string(d, width: s, height: s, colorFilter: ColorFilter.mode(c, BlendMode.srcIn));
 
 // ──────────────────────────────────────────────────
 class CriarScreen extends StatefulWidget {
@@ -68,9 +59,6 @@ class CriarScreen extends StatefulWidget {
 }
 
 class _CriarScreenState extends State<CriarScreen> {
-  // null = not loading; non-null = which item is loading
-  String? _loadingItem;
-
   @override
   void initState() {
     super.initState();
@@ -85,135 +73,88 @@ class _CriarScreenState extends State<CriarScreen> {
 
   void _onTheme() => setState(() {});
 
-  // ── Carregar ficheiro externo ──────────────────
-  Future<void> _carregar() async {
-    setState(() => _loadingItem = 'carregar');
-    try {
-      await pickAndOpenFile(context, widget.onDocCreated);
-    } finally {
-      if (mounted) setState(() => _loadingItem = null);
-    }
-  }
-
-  void _showUnsupported() {
-    final isDark   = themeNotifier.isDark;
-    final bg       = isDark ? AppColors.darkSurface : AppColors.surface;
-    final tp       = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
-    final ts       = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Formato não suportado',
-            style: GoogleFonts.syne(color: tp, fontWeight: FontWeight.w700, fontSize: 16)),
-        content: Text('Por agora só PDF, DOCX, TXT e MD são suportados.',
-            style: GoogleFonts.syne(color: ts, fontSize: 14)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK', style: GoogleFonts.syne(color: accColor(isDark), fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+  Future<void> _navigate(Widget screen) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
     );
+    widget.onDocCreated?.call();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark   = themeNotifier.isDark;
-    final bg       = isDark ? AppColors.darkBackground    : AppColors.background;
-    final textSec  = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final isDark  = themeNotifier.isDark;
+    final bg      = isDark ? AppColors.darkBackground    : AppColors.background;
+    final textSec = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
     return Scaffold(
       backgroundColor: bg,
-      body: Stack(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
-                child: Text('ESCOLHE UM TIPO',
-                  style: GoogleFonts.syne(
-                    color: textSec, fontSize: 11,
-                    fontWeight: FontWeight.w600, letterSpacing: 1.2)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
+            child: Text(
+              'ESCOLHE UM TIPO',
+              style: TextStyle(
+                color: textSec, fontSize: 11,
+                fontWeight: FontWeight.w600, letterSpacing: 1.2,
               ),
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _Item(
-                      svg: _svgDocumento, isDark: isDark,
-                      iconColor: const Color(0xFF1D4ED8),
-                      title: 'Documento',
-                      subtitle: 'Texto com formatação rica',
-                      onTap: () async {
-                        setState(() => _loadingItem = 'documento');
-                        await Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const EditorScreen()));
-                        if (mounted) setState(() => _loadingItem = null);
-                        widget.onDocCreated?.call();
-                      },
-                    ),
-                    _Item(
-                      svg: _svgApresentacao, isDark: isDark,
-                      iconColor: const Color(0xFFD24726),
-                      title: 'Apresentação',
-                      subtitle: 'Em breve',
-                      disabled: true,
-                    ),
-                    _Item(
-                      svg: _svgCV, isDark: isDark,
-                      iconColor: const Color(0xFF16A34A),
-                      title: 'Currículo / CV',
-                      subtitle: 'Editor visual',
-                      onTap: () async {
-                        setState(() => _loadingItem = 'cv');
-                        await Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const CvEditorScreen()));
-                        if (mounted) setState(() => _loadingItem = null);
-                        widget.onDocCreated?.call();
-                      },
-                    ),
-                    _Item(
-                      svg: _svgNota, isDark: isDark,
-                      iconColor: const Color(0xFFEA580C),
-                      title: 'Nota',
-                      subtitle: 'Anotações rápidas',
-                      onTap: () async {
-                        setState(() => _loadingItem = 'nota');
-                        await Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const NotaScreen()));
-                        if (mounted) setState(() => _loadingItem = null);
-                        widget.onDocCreated?.call();
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    // ── Separador "Importar" ──
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                      child: Text('IMPORTAR',
-                        style: GoogleFonts.syne(
-                          color: textSec, fontSize: 11,
-                          fontWeight: FontWeight.w600, letterSpacing: 1.2)),
-                    ),
-                    _Item(
-                      svg: _svgCarregar, isDark: isDark,
-                      iconColor: const Color(0xFF6B7280),
-                      title: 'Carregar ficheiro',
-                      subtitle: 'PDF, DOCX, TXT e mais',
-                      onTap: _carregar,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-          // ── Ecrã de carregamento — fundo branco + ícone da opção ──
-          if (_loadingItem != null)
-            _LoadingOverlay(item: _loadingItem!),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _Item(
+                  svg: _svgDocumento, isDark: isDark,
+                  iconColor: const Color(0xFF1D4ED8),
+                  title: 'Documento',
+                  subtitle: 'Texto com formatação rica',
+                  onTap: () => _navigate(const EditorScreen()),
+                ),
+                _Item(
+                  svg: _svgApresentacao, isDark: isDark,
+                  iconColor: const Color(0xFFD24726),
+                  title: 'Apresentação',
+                  subtitle: 'Em breve',
+                  disabled: true,
+                ),
+                _Item(
+                  svg: _svgCV, isDark: isDark,
+                  iconColor: const Color(0xFF16A34A),
+                  title: 'Currículo / CV',
+                  subtitle: 'Editor visual',
+                  onTap: () => _navigate(const CvEditorScreen()),
+                ),
+                _Item(
+                  svg: _svgNota, isDark: isDark,
+                  iconColor: const Color(0xFFEA580C),
+                  title: 'Nota',
+                  subtitle: 'Anotações rápidas',
+                  onTap: () => _navigate(const NotaScreen()),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                  child: Text(
+                    'IMPORTAR',
+                    style: TextStyle(
+                      color: textSec, fontSize: 11,
+                      fontWeight: FontWeight.w600, letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                _Item(
+                  svg: _svgCarregar, isDark: isDark,
+                  iconColor: const Color(0xFF6B7280),
+                  title: 'Carregar ficheiro',
+                  subtitle: 'PDF, DOCX, TXT e mais',
+                  onTap: () => _navigate(FileBrowserScreen(onFileOpened: widget.onDocCreated)),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -245,32 +186,31 @@ class _Item extends StatelessWidget {
     final bg          = isDark ? AppColors.darkBackground    : AppColors.background;
     final textPrimary = isDark ? AppColors.darkTextPrimary   : AppColors.textPrimary;
     final textSec     = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-
-    final containerColor = disabled
-        ? (isDark ? const Color(0xFF3A3A3A) : const Color(0xFFCBCBCB))
+    final color       = disabled
+        ? (isDark ? const Color(0xFF4A4A4A) : const Color(0xFFB0B0B0))
         : iconColor;
 
     return Opacity(
       opacity: disabled ? 0.45 : 1.0,
       child: InkWell(
         onTap: disabled ? null : onTap,
-        splashColor: iconColor.withOpacity(.08),
-        highlightColor: iconColor.withOpacity(.04),
+        splashColor: iconColor.withOpacity(.06),
+        highlightColor: iconColor.withOpacity(.03),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           color: bg,
           child: Row(children: [
-            // ── Círculo sólido com sombra + ícone branco ──
+            // ── Círculo sólido, sombra preta, ícone branco ──
             Container(
               width: 50, height: 50,
               decoration: BoxDecoration(
-                color: containerColor,
+                color: color,
                 shape: BoxShape.circle,
-                boxShadow: disabled ? null : [
+                boxShadow: disabled ? null : const [
                   BoxShadow(
-                    color: iconColor.withOpacity(.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: Color(0x33000000), // preto 20%
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
@@ -278,59 +218,22 @@ class _Item extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title,
-                style: GoogleFonts.syne(
-                  color: textPrimary, fontWeight: FontWeight.w700, fontSize: 15)),
+              Text(
+                title,
+                style: TextStyle(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
               const SizedBox(height: 3),
-              Text(subtitle,
-                style: GoogleFonts.syne(color: textSec, fontSize: 13)),
+              Text(
+                subtitle,
+                style: TextStyle(color: textSec, fontSize: 13),
+              ),
             ])),
             if (!disabled) _svg(_chevronSvg, textSec, s: 18),
           ]),
-        ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────
-// ECRÃ DE CARREGAMENTO — fundo branco + ícone centrado
-// ──────────────────────────────────────────────────
-class _LoadingOverlay extends StatelessWidget {
-  final String item;
-  const _LoadingOverlay({required this.item});
-
-  static const _data = {
-    'documento': (_svgDocumento, Color(0xFF1D4ED8)),
-    'cv':        (_svgCV,        Color(0xFF16A34A)),
-    'nota':      (_svgNota,      Color(0xFFEA580C)),
-    'carregar':  (_svgCarregar,  Color(0xFF6B7280)),
-    'apresentacao': (_svgApresentacao, Color(0xFFD24726)),
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final entry = _data[item];
-    final svg   = entry?.$1 ?? _svgDocumento;
-    final color = entry?.$2 ?? const Color(0xFF1D4ED8);
-
-    return Container(
-      color: Colors.white,
-      child: Center(
-        child: Container(
-          width: 80, height: 80,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(.35),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Center(child: _svg(svg, Colors.white, s: 36)),
         ),
       ),
     );
