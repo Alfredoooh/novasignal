@@ -2,25 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ─────────────────────────────────────────────────────────
-// CORES — compatível com todos os ecrãs sem alterações
+// CORES
 // ─────────────────────────────────────────────────────────
 class AppColors {
-  // ── Light ──────────────────────────────────────────────
-  static const background    = Color(0xFFF1F0F0); // fundo claro
-  static const surface       = Color(0xFFFFFFFF); // papel / cards
+  // ── Light — branco super puro ──────────────────────────
+  static const background    = Color(0xFFFFFFFF);
+  static const surface       = Color(0xFFFFFFFF);
   static const textPrimary   = Color(0xFF000000);
   static const textSecondary = Color(0xFF6B6B6B);
-  static const divider       = Color(0xFFE0E0E0);
+  static const divider       = Color(0xFFE5E5E5);
   static const navBg         = Color(0xFFFFFFFF);
   static const navUnselected = Color(0xFF8E8E8E);
   static const navSelected   = Color(0xFF000000);
   static const pillLight     = Colors.transparent;
   static const pillLightIcon = Color(0xFF000000);
 
+  // ── Search bar light ───────────────────────────────────
+  static const searchBg     = Color(0xFFFFFFFF);
+  static const searchBorder = Color(0xFFD9D9D9);
+
   // ── Dark ───────────────────────────────────────────────
-  static const darkBackground    = Color(0xFF1B1B1B); // fundo escuro
-  static const darkSurface       = Color(0xFF343434); // papel escuro — nunca mais escuro que darkBackground
-  static const darkTextPrimary   = Color(0xFFFFE8E3); // texto principal escuro
+  static const darkBackground    = Color(0xFF1B1B1B);
+  static const darkSurface       = Color(0xFF343434);
+  static const darkTextPrimary   = Color(0xFFFFE8E3);
   static const darkTextSecondary = Color(0xFF9E8E8A);
   static const darkDivider       = Color(0xFF3D3030);
   static const darkNavBg         = Color(0xFF1B1B1B);
@@ -29,16 +33,47 @@ class AppColors {
   static const pillDark          = Colors.transparent;
   static const pillDarkIcon      = Color(0xFFFFE8E3);
 
-  // ── Accent / Primary ───────────────────────────────────
-  // F13223 = vermelho forte (destaque, danger)
-  // FA6559 = coral suave (primária, botões)
-  static const acc     = Color(0xFFF13223); // light mode accent
-  static const accDark = Color(0xFFFA6559); // dark mode accent (mais suave)
-  static const primary = Color(0xFFFA6559); // cor primária global
-  static const danger  = Color(0xFFF13223); // erros
+  // ── Search bar dark ────────────────────────────────────
+  static const darkSearchBg     = Color(0xFF2A2020);
+  static const darkSearchBorder = Color(0xFF3D3030);
 
-  // Mantidos por retrocompatibilidade com outros ecrãs
+  // ── Accent ─────────────────────────────────────────────
+  static const acc     = Color(0xFFF13223);
+  static const accDark = Color(0xFFFA6559);
+  static const primary = Color(0xFFFA6559);
+  static const danger  = Color(0xFFF13223);
   static const darkPaper = Color(0xFF343434);
+}
+
+// ─────────────────────────────────────────────────────────
+// HELPERS DE SEARCH BAR — reutilizáveis em qualquer ecrã
+// ─────────────────────────────────────────────────────────
+Color searchBg(bool isDark)     => isDark ? AppColors.darkSearchBg     : AppColors.searchBg;
+Color searchBorder(bool isDark) => isDark ? AppColors.darkSearchBorder  : AppColors.searchBorder;
+
+InputDecoration searchDecoration({
+  required bool isDark,
+  String hint = 'Pesquisar…',
+  Widget? prefix,
+  Widget? suffix,
+}) {
+  final bg   = searchBg(isDark);
+  final brd  = searchBorder(isDark);
+  final hc   = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+  final side = BorderSide(color: brd, width: 1.0);
+  final r    = BorderRadius.circular(12);
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: TextStyle(color: hc, fontSize: 14),
+    prefixIcon: prefix,
+    suffixIcon: suffix,
+    filled: true,
+    fillColor: bg,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    border:        OutlineInputBorder(borderRadius: r, borderSide: side),
+    enabledBorder: OutlineInputBorder(borderRadius: r, borderSide: side),
+    focusedBorder: OutlineInputBorder(borderRadius: r, borderSide: BorderSide(color: brd, width: 1.5)),
+  );
 }
 
 // ─────────────────────────────────────────────────────────
@@ -53,12 +88,8 @@ class ThemeNotifier extends ChangeNotifier {
 
 final themeNotifier = ThemeNotifier();
 
-// ─────────────────────────────────────────────────────────
-// HELPER — cor accent consoante tema
-// ─────────────────────────────────────────────────────────
 Color accColor(bool isDark) => isDark ? AppColors.accDark : AppColors.acc;
 
-// Gradiente primário — usado no FAB, botões principais, balões
 const kPrimaryGradient = LinearGradient(
   colors: [Color(0xFFF13223), Color(0xFFFA6559)],
   begin: Alignment.topLeft,
