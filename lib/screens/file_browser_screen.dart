@@ -311,7 +311,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
               decoration: BoxDecoration(color: div, borderRadius: BorderRadius.circular(_kPill)))),
           Row(children: [
             Container(width: 52, height: 52, decoration: BoxDecoration(color: col.withOpacity(.12), shape: BoxShape.circle),
-                child: Center(child: _svgW(item.isDir ? _folderSvg : _fileSvg, col, s: 24))),
+                child: Center(child: item.isDir
+                    ? Image.asset('assets/icons/folder.png', width: 24, height: 24)
+                    : _svgW(_fileSvg, col, s: 24))),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(item.name, style: GoogleFonts.roboto(color: tp, fontSize: 15, fontWeight: FontWeight.w700),
@@ -553,7 +555,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(children: [
-              _svgW(_folderSvg, ts, s: 12),
+              Image.asset('assets/icons/folder.png', width: 12, height: 12),
               const SizedBox(width: 5),
               Expanded(child: Text(_relPath, style: GoogleFonts.roboto(color: ts, fontSize: 11),
                   maxLines: 1, overflow: TextOverflow.ellipsis)),
@@ -699,7 +701,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                         child: isSel ? const Icon(Icons.check_rounded, color: Colors.white, size: 20) : null)
                     : Container(key: const ValueKey('i'), width: 44, height: 44,
                         decoration: BoxDecoration(color: col.withOpacity(.1), shape: BoxShape.circle),
-                        child: Center(child: _svgW(item.isDir ? _folderSvg : _fileSvg, col, s: 22))),
+                        child: Center(child: item.isDir
+                    ? Image.asset('assets/icons/folder.png', width: 22, height: 22)
+                    : _svgW(_fileSvg, col, s: 22))),
               ),
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -761,7 +765,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               Container(width: 48, height: 48,
                 decoration: BoxDecoration(color: col.withOpacity(.1), shape: BoxShape.circle),
-                child: Center(child: _svgW(item.isDir ? _folderSvg : _fileSvg, col, s: 24))),
+                child: Center(child: item.isDir
+                    ? Image.asset('assets/icons/folder.png', width: 24, height: 24)
+                    : _svgW(_fileSvg, col, s: 24))),
               const SizedBox(height: 8),
               Padding(padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(item.name, style: GoogleFonts.roboto(color: tp, fontSize: 11, fontWeight: FontWeight.w600),
