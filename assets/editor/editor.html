@@ -4,8 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Aria · Documento</title>
-<!-- Fontes críticas — apenas Syne + Space Mono bloqueiam (usadas na UI) -->
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<!-- Fontes críticas — Roboto + Space Mono -->
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 
@@ -44,7 +44,7 @@ body[data-theme="dark"] {
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; }
+html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family:Roboto,sans-serif; }
 
 /* ── Transições de tema ── */
 body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
@@ -72,7 +72,7 @@ body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
   display:flex; align-items:center; height:52px; gap:4px;
 }
 .ed-title {
-  flex:1; font-family:'Syne',sans-serif; font-weight:700;
+  flex:1; font-family:Roboto,sans-serif; font-weight:700;
   font-size:.95rem; color:var(--text); cursor:pointer;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   padding:0 6px;
@@ -90,7 +90,7 @@ body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
 .bar-btn-text {
   height:36px; border:none; background:transparent;
   border-radius:8px; padding:0 8px;
-  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:800;
+  font-family:Roboto,sans-serif; font-size:.75rem; font-weight:800;
   color:var(--acc); cursor:pointer; white-space:nowrap; flex-shrink:0;
 }
 .bar-btn-text:active { background:var(--toolbar-pill); }
@@ -134,7 +134,7 @@ body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
   border-radius:10px; padding:0 22px 0 10px;
   display:inline-flex; align-items:center;
   cursor:pointer; flex-shrink:0; color:var(--text);
-  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700;
+  font-family:Roboto,sans-serif; font-size:.75rem; font-weight:700;
   white-space:nowrap; position:relative;
 }
 .tb-pill-btn::after {
@@ -174,9 +174,9 @@ body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
 }
 .page-editor:focus { outline:none; }
 .page-editor.empty::before { content:attr(data-ph); color:#bbb; font-style:italic; pointer-events:none; }
-.page-editor h1 { font-size:2em; font-family:'Syne',sans-serif; font-weight:800; margin:.4em 0 .2em; line-height:1.2; }
-.page-editor h2 { font-size:1.4em; font-family:'Syne',sans-serif; font-weight:700; margin:.4em 0 .2em; }
-.page-editor h3 { font-size:1.1em; font-family:'Syne',sans-serif; font-weight:600; margin:.4em 0 .15em; }
+.page-editor h1 { font-size:2em; font-family:Roboto,sans-serif; font-weight:800; margin:.4em 0 .2em; line-height:1.2; }
+.page-editor h2 { font-size:1.4em; font-family:Roboto,sans-serif; font-weight:700; margin:.4em 0 .2em; }
+.page-editor h3 { font-size:1.1em; font-family:Roboto,sans-serif; font-weight:600; margin:.4em 0 .15em; }
 .page-editor p  { margin:0 0 .4em; }
 .page-editor ul, .page-editor ol { padding-left:1.5em; margin:.3em 0; }
 .page-editor blockquote { border-left:3px solid var(--acc); margin:.5em 0; padding-left:.8em; color:#666; font-style:italic; }
@@ -226,7 +226,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 .wb-size-btn {
   height:32px; padding:0 12px; border:1px solid var(--border);
   border-radius:8px; background:var(--toolbar-pill); color:var(--text);
-  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700;
+  font-family:Roboto,sans-serif; font-size:.75rem; font-weight:700;
   cursor:pointer; flex-shrink:0;
 }
 
@@ -235,13 +235,22 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
   position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
   left:50%; transform:translateX(-50%) translateY(20px);
   background:rgba(30,30,30,.92); color:#fff;
-  font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700;
+  font-family:Roboto,sans-serif; font-size:.82rem; font-weight:700;
   padding:10px 20px; border-radius:999px;
   white-space:nowrap; z-index:9999;
   opacity:0; transition:opacity .2s, transform .2s;
   pointer-events:none;
 }
 .aria-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── Canva-like selection ── */
+.sel-wrap { cursor:move; }
+.sel-wrap:hover > img, .sel-wrap:hover > svg { opacity:.98; }
+#sel-overlay { pointer-events:none; }
+#sel-overlay > *:not(.sel-handle) { pointer-events:none; }
+.sel-handle { box-shadow:0 1px 4px rgba(0,0,0,.25); }
+#sel-toolbar { white-space:nowrap; }
+#sel-toolbar button:hover { background:rgba(0,0,0,.06)!important; border-radius:6px; }
 </style>
 </head>
 <body data-theme="light">
@@ -258,19 +267,6 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
       </button>
       <span class="ed-title" id="doc-title-text" onclick="openRenameDialog()" title="Toque para renomear">Sem título</span>
       <button class="bar-btn-text" onclick="window.saveDocument()">Guardar</button>
-      <button class="bar-btn" onclick="openGemini()">
-        <svg viewBox="0 0 28 28" width="22" height="22">
-          <defs>
-            <linearGradient id="g-ai" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%"   stop-color="#4285f4"/>
-              <stop offset="45%"  stop-color="#9b72cb"/>
-              <stop offset="75%"  stop-color="#ea4335"/>
-              <stop offset="100%" stop-color="#fbbc04"/>
-            </linearGradient>
-          </defs>
-          <path d="M14 2C14 8.627 8.627 14 2 14C8.627 14 14 19.373 14 26C14 19.373 19.373 14 26 14C19.373 14 14 8.627 14 2Z" fill="url(#g-ai)"/>
-        </svg>
-      </button>
       <button class="bar-btn" onclick="openOpcoes()">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
           <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-4-10c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm11,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm-5.5,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Z"/>
@@ -426,12 +422,12 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
     <div style="display:flex;gap:8px;align-items:center;">
       <input id="qr-input" type="text" placeholder="URL ou texto…"
         style="flex:1;height:42px;border:1.5px solid var(--border);border-radius:10px;
-               padding:0 14px;font-family:'Syne',sans-serif;font-size:.85rem;
+               padding:0 14px;font-family:Roboto,sans-serif;font-size:.85rem;
                background:var(--toolbar-pill);color:var(--text);outline:none;"/>
       <button onclick="insertQrFromPanel()"
         style="height:42px;padding:0 18px;border:none;border-radius:10px;
                background:var(--acc);color:var(--acc-c);
-               font-family:'Syne',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
+               font-family:Roboto,sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
         Inserir
       </button>
     </div>
@@ -452,7 +448,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
       <input id="icon-search" type="text" placeholder="Filtrar ícones do pacote…"
         oninput="filterIconPack(this.value)"
         style="flex:1;height:40px;border:1.5px solid var(--border);border-radius:10px;
-               padding:0 12px;font-family:'Syne',sans-serif;font-size:.82rem;
+               padding:0 12px;font-family:Roboto,sans-serif;font-size:.82rem;
                background:var(--toolbar-pill);color:var(--text);outline:none;"/>
       <input type="color" id="icon-color" value="#111111" title="Cor do ícone"
         style="width:36px;height:36px;border:1.5px solid var(--border);border-radius:8px;
@@ -460,7 +456,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
       <select id="icon-size" onchange="updateIconSize(this.value)"
         style="height:36px;border:1.5px solid var(--border);border-radius:8px;
                padding:0 8px;background:var(--toolbar-pill);color:var(--text);
-               font-family:'Syne',sans-serif;font-size:.78rem;outline:none;cursor:pointer;">
+               font-family:Roboto,sans-serif;font-size:.78rem;outline:none;cursor:pointer;">
         <option value="16">16px</option>
         <option value="24" selected>24px</option>
         <option value="32">32px</option>
@@ -477,7 +473,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 
     <!-- Info do pacote activo -->
     <div id="icon-status"
-      style="font-family:'Syne',sans-serif;font-size:.68rem;color:var(--sub);
+      style="font-family:Roboto,sans-serif;font-size:.68rem;color:var(--sub);
              padding:2px 0 8px;min-height:16px;"></div>
 
     <!-- Grelha de ícones -->
@@ -485,7 +481,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
       style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));
              gap:6px;max-height:44vh;overflow-y:auto;padding-bottom:16px;">
       <div style="grid-column:1/-1;text-align:center;padding:32px 0;
-           font-family:'Syne',sans-serif;font-size:.82rem;color:var(--sub);">
+           font-family:Roboto,sans-serif;font-size:.82rem;color:var(--sub);">
         Escolhe um pacote acima ↑
       </div>
     </div>
@@ -497,16 +493,16 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
       <input id="tbl-rows" type="number" value="3" min="1" max="20"
         style="width:72px;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 10px;
-               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.85rem;outline:none;"
+               background:var(--toolbar-pill);color:var(--text);font-family:Roboto,sans-serif;font-size:.85rem;outline:none;"
         placeholder="Lin"/>
       <span style="color:var(--sub);font-size:.8rem;">×</span>
       <input id="tbl-cols" type="number" value="3" min="1" max="10"
         style="width:72px;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 10px;
-               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.85rem;outline:none;"
+               background:var(--toolbar-pill);color:var(--text);font-family:Roboto,sans-serif;font-size:.85rem;outline:none;"
         placeholder="Col"/>
       <button onclick="insertTableFromPanel()"
         style="flex:1;height:38px;border:none;border-radius:8px;background:var(--acc);color:var(--acc-c);
-               font-family:'Syne',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
+               font-family:Roboto,sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
         Inserir tabela
       </button>
     </div>
@@ -529,15 +525,15 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
       <input id="link-text" type="text" placeholder="Texto do link"
         style="flex:1;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 12px;
-               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.82rem;outline:none;"/>
+               background:var(--toolbar-pill);color:var(--text);font-family:Roboto,sans-serif;font-size:.82rem;outline:none;"/>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <input id="link-url" type="url" placeholder="https://…"
         style="flex:1;height:38px;border:1.5px solid var(--border);border-radius:8px;padding:0 12px;
-               background:var(--toolbar-pill);color:var(--text);font-family:'Syne',sans-serif;font-size:.82rem;outline:none;"/>
+               background:var(--toolbar-pill);color:var(--text);font-family:Roboto,sans-serif;font-size:.82rem;outline:none;"/>
       <button onclick="insertLinkFromPanel()"
         style="height:38px;padding:0 16px;border:none;border-radius:8px;background:var(--acc);color:var(--acc-c);
-               font-family:'Syne',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
+               font-family:Roboto,sans-serif;font-weight:800;font-size:.8rem;cursor:pointer;">
         OK
       </button>
     </div>
@@ -600,7 +596,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 /* ── Insert panel estilos ── */
 .ins-tab {
   flex:1; border:none; background:transparent; padding:12px 4px;
-  font-family:'Syne',sans-serif; font-size:.72rem; font-weight:700;
+  font-family:Roboto,sans-serif; font-size:.72rem; font-weight:700;
   color:var(--sub); cursor:pointer; border-bottom:2px solid transparent;
   transition:color .15s, border-color .15s; white-space:nowrap;
 }
@@ -609,7 +605,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 .ins-tab-content.active-tab { display:block !important; }
 
 .ins-section-label {
-  font-family:'Syne',sans-serif; font-size:.6rem; font-weight:800;
+  font-family:Roboto,sans-serif; font-size:.6rem; font-weight:800;
   letter-spacing:.12em; text-transform:uppercase; color:var(--sub);
   margin-bottom:10px;
 }
@@ -618,7 +614,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
   gap:6px; padding:14px 12px;
   border:1.5px solid var(--border); border-radius:14px;
   background:var(--toolbar-pill); cursor:pointer; flex:1; min-width:80px;
-  font-family:'Syne',sans-serif; font-size:.72rem; font-weight:700; color:var(--text);
+  font-family:Roboto,sans-serif; font-size:.72rem; font-weight:700; color:var(--text);
   transition:background .12s, border-color .12s;
 }
 .ins-big-btn:active { background:rgba(var(--acc-rgb),.1); border-color:var(--acc); }
@@ -627,7 +623,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
   display:flex; align-items:center; gap:10px; padding:14px 16px;
   border:1.5px solid var(--border); border-radius:12px;
   background:var(--toolbar-pill); cursor:pointer;
-  font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700; color:var(--text);
+  font-family:Roboto,sans-serif; font-size:.82rem; font-weight:700; color:var(--text);
   transition:background .12s;
 }
 .ins-row-btn:active { background:rgba(var(--acc-rgb),.1); }
@@ -652,7 +648,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 .lay-btn {
   padding:12px 6px; border:1.5px solid var(--border); border-radius:10px;
   background:var(--toolbar-pill); cursor:pointer;
-  font-family:'Syne',sans-serif; font-size:.75rem; font-weight:700; color:var(--text);
+  font-family:Roboto,sans-serif; font-size:.75rem; font-weight:700; color:var(--text);
   transition:background .12s, border-color .12s;
 }
 .lay-btn:active, .lay-btn-active { background:rgba(var(--acc-rgb),.12); border-color:var(--acc); color:var(--acc); }
@@ -667,7 +663,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 }
 .icon-btn:active { background:rgba(var(--acc-rgb),.15); border-color:var(--acc); }
 .icon-btn-label {
-  font-family:'Syne',sans-serif; font-size:.55rem; font-weight:700;
+  font-family:Roboto,sans-serif; font-size:.55rem; font-weight:700;
   color:var(--sub); text-align:center; line-height:1.2;
   pointer-events:none; max-width:54px; word-break:break-all;
 }
@@ -685,7 +681,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
           <path d="M.88,14.09,4.75,18a1,1,0,0,0,1.42,0h0a1,1,0,0,0,0-1.42L2.61,13H23a1,1,0,0,0,1-1h0a1,1,0,0,0-1-1H2.55L6.17,7.38A1,1,0,0,0,6.17,6h0A1,1,0,0,0,4.75,6L.88,9.85A3,3,0,0,0,.88,14.09Z"/>
         </svg>
       </button>
-      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--text);flex:1;">Quadro Branco</span>
+      <span style="font-family:Roboto,sans-serif;font-weight:800;font-size:1rem;color:var(--text);flex:1;">Quadro Branco</span>
       <button class="bar-btn" onclick="wb_undo()" title="Desfazer" style="font-size:18px;">↩</button>
       <button class="bar-btn" onclick="wb_redo()" title="Refazer" style="font-size:18px;">↪</button>
       <button class="bar-btn" onclick="wb_clear()" title="Limpar" style="color:var(--danger);font-size:16px;">🗑</button>
@@ -715,7 +711,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
     <button class="wb-size-btn" onclick="wb_setSize(12)">L</button>
     <button class="wb-size-btn" onclick="wb_setSize(24)">XL</button>
     <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;"></div>
-    <button class="wb-btn" onclick="wb_aiGenerate()" style="width:auto;padding:0 10px;font-family:'Syne',sans-serif;font-size:.72rem;font-weight:800;color:var(--acc);">✦ IA</button>
+    <button class="wb-btn" onclick="wb_aiGenerate()" style="width:auto;padding:0 10px;font-family:Roboto,sans-serif;font-size:.72rem;font-weight:800;color:var(--acc);">✦ IA</button>
   </div>
   <div class="wb-canvas-wrap" id="wb-wrap">
     <canvas id="wb-canvas"></canvas>
@@ -773,7 +769,7 @@ const FONT_DEFS = [
   {label:'JetBrains Mono',family:'JetBrains Mono',cat:'mono'},{label:'IBM Plex Mono',family:'IBM Plex Mono',cat:'mono'},
   {label:'Inconsolata',family:'Inconsolata',cat:'mono'},{label:'DM Mono',family:'DM Mono',cat:'mono'},
   {label:'VT323',family:'VT323',cat:'mono'},{label:'Press Start 2P',family:'Press Start 2P',cat:'mono'},
-  {label:'Syne',family:'Syne',cat:'display'},{label:'Abril Fatface',family:'Abril Fatface',cat:'display'},
+  {label:'Roboto',family:'Roboto',cat:'sans-serif'},{label:'Abril Fatface',family:'Abril Fatface',cat:'display'},
   {label:'Anton',family:'Anton',cat:'display'},{label:'Bebas Neue',family:'Bebas Neue',cat:'display'},
   {label:'Bangers',family:'Bangers',cat:'display'},{label:'Orbitron',family:'Orbitron',cat:'display'},
   {label:'Lobster',family:'Lobster',cat:'display'},{label:'Pacifico',family:'Pacifico',cat:'display'},
@@ -1520,53 +1516,329 @@ window._aiResponse = function(data) {
 };
 
 // ════════════════════════════════════════════════
-// IMAGEM REDIMENSIONÁVEL
+// SISTEMA DE SELECÇÃO CANVA-LIKE
+// ════════════════════════════════════════════════
+
+// ── Overlay de selecção ──
+const _selOverlay = document.createElement('div');
+_selOverlay.id = 'sel-overlay';
+_selOverlay.style.cssText = `
+  display:none;position:fixed;pointer-events:none;z-index:9999;
+  box-sizing:border-box;
+`;
+document.body.appendChild(_selOverlay);
+
+// ── Toolbar de contexto ──
+const _selToolbar = document.createElement('div');
+_selToolbar.id = 'sel-toolbar';
+_selToolbar.style.cssText = `
+  display:none;position:fixed;z-index:10000;
+  background:#fff;border-radius:100px;padding:6px 12px;
+  box-shadow:0 4px 20px rgba(0,0,0,.18);
+  display:none;align-items:center;gap:12px;pointer-events:all;
+`;
+document.body.appendChild(_selToolbar);
+
+let _selTarget = null;
+let _selDrag = null;
+let _selResize = null;
+let _selStart = {};
+
+const ACC = '#6366f1';
+
+function _getHandles() {
+  return Array.from(_selOverlay.querySelectorAll('.sel-handle'));
+}
+
+function _buildOverlay() {
+  _selOverlay.innerHTML = '';
+  // Border
+  const border = document.createElement('div');
+  border.style.cssText = `
+    position:absolute;inset:0;border:2px solid ${ACC};border-radius:3px;pointer-events:none;
+  `;
+  _selOverlay.appendChild(border);
+
+  // 8 handles: tl, tc, tr, ml, mr, bl, bc, br
+  const positions = [
+    ['tl','0%','0%'],['tc','50%','0%'],['tr','100%','0%'],
+    ['ml','0%','50%'],                  ['mr','100%','50%'],
+    ['bl','0%','100%'],['bc','50%','100%'],['br','100%','100%']
+  ];
+  positions.forEach(([pos, left, top]) => {
+    const h = document.createElement('div');
+    h.className = 'sel-handle';
+    h.dataset.pos = pos;
+    const isCorner = pos.length === 2 && !['tc','ml','mr','bc'].includes(pos);
+    h.style.cssText = `
+      position:absolute;width:${isCorner?12:8}px;height:${isCorner?12:8}px;
+      background:#fff;border:2px solid ${ACC};border-radius:${isCorner?3:2}px;
+      transform:translate(-50%,-50%);left:${left};top:${top};
+      cursor:${_resizeCursor(pos)};pointer-events:all;touch-action:none;z-index:1;
+    `;
+    _selOverlay.appendChild(h);
+  });
+
+  // Rotation handle — abaixo do elemento
+  const rot = document.createElement('div');
+  rot.className = 'sel-handle sel-rotate';
+  rot.dataset.pos = 'rotate';
+  rot.style.cssText = `
+    position:absolute;width:20px;height:20px;
+    background:#fff;border:2px solid ${ACC};border-radius:50%;
+    transform:translateX(-50%);left:50%;top:calc(100% + 14px);
+    cursor:grab;pointer-events:all;touch-action:none;
+    display:flex;align-items:center;justify-content:center;
+  `;
+  rot.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${ACC}" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
+  _selOverlay.appendChild(rot);
+
+  // Move handle - linha vertical entre rot e elemento
+  const line = document.createElement('div');
+  line.style.cssText = `
+    position:absolute;width:1.5px;height:14px;background:${ACC};
+    left:50%;top:100%;transform:translateX(-50%);pointer-events:none;
+  `;
+  _selOverlay.appendChild(line);
+}
+
+function _resizeCursor(pos) {
+  const map = {tl:'nwse-resize',tr:'nesw-resize',bl:'nesw-resize',br:'nwse-resize',
+                tc:'ns-resize',bc:'ns-resize',ml:'ew-resize',mr:'ew-resize'};
+  return map[pos] || 'default';
+}
+
+function _updateOverlay() {
+  if (!_selTarget) { _selOverlay.style.display='none'; _selToolbar.style.display='none'; return; }
+  const r = _selTarget.getBoundingClientRect();
+  const rot = _selTarget._rotation || 0;
+  _selOverlay.style.cssText += `
+    display:block;
+    left:${r.left}px;top:${r.top}px;
+    width:${r.width}px;height:${r.height}px;
+    transform:rotate(${rot}deg);
+    transform-origin:center;
+  `;
+  _selOverlay.style.display = 'block';
+
+  // Toolbar acima do elemento
+  _selToolbar.style.display = 'flex';
+  const tbW = _selToolbar.offsetWidth || 160;
+  _selToolbar.style.left = Math.max(8, r.left + r.width/2 - tbW/2) + 'px';
+  _selToolbar.style.top  = Math.max(8, r.top - 52) + 'px';
+}
+
+function _buildToolbar(type) {
+  _selToolbar.innerHTML = '';
+  const mkBtn = (icon, title, fn) => {
+    const b = document.createElement('button');
+    b.title = title;
+    b.innerHTML = icon;
+    b.style.cssText = `background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;color:#333;`;
+    b.onclick = fn;
+    return b;
+  };
+
+  if (type === 'img') {
+    _selToolbar.appendChild(mkBtn(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`, 'Substituir', () => {
+      const inp = document.getElementById('img-file-input') || document.createElement('input');
+      inp.type='file'; inp.accept='image/*';
+      inp.onchange = e => {
+        const f=e.target.files[0]; if (!f) return;
+        const r=new FileReader();
+        r.onload = ev => { if (_selTarget) _selTarget.src = ev.target.result; _updateOverlay(); };
+        r.readAsDataURL(f);
+      };
+      inp.click();
+    }));
+  }
+
+  // Duplicate
+  _selToolbar.appendChild(mkBtn(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`, 'Duplicar', () => {
+    if (!_selTarget) return;
+    const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
+    const clone = wrap.cloneNode(true);
+    const newId = 'el_' + Date.now();
+    clone.id = newId;
+    _makeDraggable(clone);
+    wrap.parentElement.insertBefore(clone, wrap.nextSibling);
+    deselect();
+  }));
+
+  // Separator
+  const sep = document.createElement('div');
+  sep.style.cssText = 'width:1px;height:18px;background:#e0e0e0;';
+  _selToolbar.appendChild(sep);
+
+  // Delete
+  _selToolbar.appendChild(mkBtn(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`, 'Eliminar', () => {
+    if (!_selTarget) return;
+    const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
+    wrap.remove(); deselect();
+  }));
+}
+
+function selectEl(target, type) {
+  _selTarget = target;
+  _buildOverlay();
+  _buildToolbar(type || 'generic');
+  _updateOverlay();
+
+  // Handles — touch/mouse events
+  _selOverlay.querySelectorAll('.sel-handle').forEach(h => {
+    const onStart = e => {
+      e.preventDefault();
+      const touch = e.touches ? e.touches[0] : e;
+      const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
+      const r = _selTarget.getBoundingClientRect();
+      _selResize = {
+        pos: h.dataset.pos,
+        startX: touch.clientX, startY: touch.clientY,
+        startW: r.width, startH: r.height,
+        startLeft: parseFloat(wrap.style.left)||0,
+        startTop:  parseFloat(wrap.style.top)||0,
+        cx: r.left + r.width/2, cy: r.top + r.height/2,
+      };
+    };
+    h.addEventListener('mousedown', onStart, {passive:false});
+    h.addEventListener('touchstart', onStart, {passive:false});
+  });
+}
+
+function deselect() {
+  _selTarget = null; _selResize = null;
+  _selOverlay.style.display = 'none';
+  _selToolbar.style.display = 'none';
+}
+
+// ── Drag/Resize global handlers ──
+function _onMoveEvent(e) {
+  const touch = e.touches ? e.touches[0] : e;
+  const cx = touch.clientX, cy = touch.clientY;
+
+  if (_selDrag) {
+    e.preventDefault();
+    const wrap = _selTarget?.closest('.sel-wrap') || _selTarget?.parentElement;
+    if (!wrap) return;
+    const dx = cx - _selDrag.startX, dy = cy - _selDrag.startY;
+    wrap.style.left = (_selDrag.startLeft + dx) + 'px';
+    wrap.style.top  = (_selDrag.startTop  + dy) + 'px';
+    _updateOverlay();
+    return;
+  }
+
+  if (_selResize && _selTarget) {
+    e.preventDefault();
+    const pos = _selResize.pos;
+    const dx = cx - _selResize.startX, dy = cy - _selResize.startY;
+    const wrap = _selTarget.closest('.sel-wrap') || _selTarget.parentElement;
+
+    if (pos === 'rotate') {
+      const angle = Math.atan2(cy - _selResize.cy, cx - _selResize.cx) * 180 / Math.PI + 90;
+      _selTarget._rotation = Math.round(angle);
+      wrap.style.transform = `rotate(${_selTarget._rotation}deg)`;
+      _updateOverlay();
+      return;
+    }
+
+    let newW = _selResize.startW, newH = _selResize.startH;
+    if (['tr','mr','br'].includes(pos)) newW = Math.max(40, _selResize.startW + dx);
+    if (['tl','ml','bl'].includes(pos)) newW = Math.max(40, _selResize.startW - dx);
+    if (['bl','bc','br'].includes(pos)) newH = Math.max(40, _selResize.startH + dy);
+    if (['tl','tc','tr'].includes(pos)) newH = Math.max(40, _selResize.startH - dy);
+
+    // Proporcional nos cantos
+    if (['tl','tr','bl','br'].includes(pos)) {
+      const ratio = _selResize.startH / _selResize.startW;
+      newH = newW * ratio;
+    }
+
+    _selTarget.style.width  = newW + 'px';
+    _selTarget.style.height = (['tl','tc','tr','bl','bc','br'].includes(pos) && pos!=='ml' && pos!=='mr') ? newH + 'px' : '';
+    _updateOverlay();
+  }
+}
+
+function _onEndEvent() { _selDrag = null; _selResize = null; }
+
+document.addEventListener('mousemove', _onMoveEvent, {passive:false});
+document.addEventListener('touchmove', _onMoveEvent, {passive:false});
+document.addEventListener('mouseup', _onEndEvent);
+document.addEventListener('touchend', _onEndEvent);
+
+// Deselect on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('#sel-overlay') && !e.target.closest('#sel-toolbar') && !e.target.closest('.sel-wrap')) {
+    deselect();
+  }
+});
+
+// ── Wrapper drag ──
+function _makeDraggable(wrap) {
+  const startDrag = e => {
+    if (e.target.closest('.sel-handle')) return;
+    e.preventDefault();
+    const touch = e.touches ? e.touches[0] : e;
+    const r = wrap.getBoundingClientRect();
+    _selDrag = {
+      startX: touch.clientX, startY: touch.clientY,
+      startLeft: parseFloat(wrap.style.left)||0,
+      startTop:  parseFloat(wrap.style.top)||0,
+    };
+  };
+  wrap.addEventListener('mousedown', startDrag, {passive:false});
+  wrap.addEventListener('touchstart', startDrag, {passive:false});
+}
+
+// ════════════════════════════════════════════════
+// IMAGEM REDIMENSIONÁVEL — substitui versão antiga
 // ════════════════════════════════════════════════
 function _insertResizableImage(src, alt) {
   const id = 'img_' + Date.now();
-  document.execCommand('insertHTML', false, `
-    <div class="resizable-element" id="${id}" contenteditable="false"
-      style="display:inline-block;position:relative;user-select:none;margin:8px 0;max-width:100%;">
-      <img src="${src}" alt="${alt}"
-        style="width:300px;max-width:100%;display:block;border:2px solid transparent;cursor:pointer;"
-        onclick="selectElement('${id}')" draggable="false"/>
-      <div class="el-controls" style="display:none;position:absolute;bottom:-32px;left:0;
-        background:var(--acc);border-radius:6px;padding:4px;gap:4px;align-items:center;z-index:100;">
-        <button onclick="resizeEl('${id}',-50)" style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">−</button>
-        <button onclick="resizeEl('${id}',50)"  style="background:none;border:none;color:#fff;cursor:pointer;font-size:14px;">+</button>
-        <button onclick="deleteEl('${id}')" style="background:none;border:none;color:#fff;cursor:pointer;font-size:12px;">🗑</button>
-      </div>
-    </div><p><br></p>`);
+  // Cria wrapper absolutamente posicionável dentro do fluxo
+  const html = `
+    <div class="sel-wrap" id="${id}" contenteditable="false"
+      style="display:inline-block;position:relative;user-select:none;margin:8px 2px;vertical-align:top;">
+      <img src="${src}" alt="${alt||''}"
+        style="width:240px;max-width:100%;display:block;border-radius:4px;cursor:pointer;"
+        draggable="false"/>
+    </div><p><br></p>`;
+  document.execCommand('insertHTML', false, html);
+
+  // Attach events after insertion
+  requestAnimationFrame(() => {
+    const wrap = document.getElementById(id);
+    if (!wrap) return;
+    const img = wrap.querySelector('img');
+    _makeDraggable(wrap);
+    img.addEventListener('click', e => { e.stopPropagation(); selectEl(img, 'img'); });
+    img.addEventListener('touchend', e => { e.preventDefault(); selectEl(img, 'img'); });
+  });
 }
 function _insertResizableImageUrl(src, alt) { _insertResizableImage(src, alt); }
+// compat
 function selectElement(id) {
-  document.querySelectorAll('.resizable-element').forEach(el => {
-    const ctrl = el.querySelector('.el-controls');
-    const img  = el.querySelector('img,svg,.sticker-icon');
-    if (ctrl) ctrl.style.display='none';
-    if (img)  img.style.border='2px solid transparent';
-  });
   const el = document.getElementById(id); if (!el) return;
-  const ctrl = el.querySelector('.el-controls');
-  const img  = el.querySelector('img,svg,.sticker-icon');
-  if (ctrl) ctrl.style.display='flex';
-  if (img)  img.style.border='2px solid var(--acc)';
+  const img = el.querySelector('img,.sticker-icon') || el;
+  selectEl(img, 'img');
 }
 function resizeEl(id, delta) {
   const el = document.getElementById(id); if (!el) return;
   const img = el.querySelector('img,.sticker-icon'); if (!img) return;
-  img.style.width = Math.max(40, Math.min(700, (img.offsetWidth||100) + delta)) + 'px';
+  img.style.width = Math.max(40, Math.min(700, (img.offsetWidth||200)+delta)) + 'px';
+  _updateOverlay();
 }
-function deleteEl(id) { const el = document.getElementById(id); if (el) el.remove(); }
+function deleteEl(id) {
+  const el = document.getElementById(id);
+  if (el) { el.remove(); deselect(); }
+}
+
+// ── Tabelas e linhas — selecção básica ──
 document.addEventListener('click', e => {
-  if (!e.target.closest('.resizable-element')) {
-    document.querySelectorAll('.resizable-element').forEach(el => {
-      const ctrl = el.querySelector('.el-controls');
-      const img  = el.querySelector('img,.sticker-icon');
-      if (ctrl) ctrl.style.display='none';
-      if (img)  img.style.border='2px solid transparent';
-    });
-  }
+  const table = e.target.closest('table');
+  const hr    = e.target.tagName === 'HR' ? e.target : null;
+  if (table) { selectEl(table, 'table'); e.stopPropagation(); }
+  else if (hr) { selectEl(hr, 'hr'); e.stopPropagation(); }
 });
 
 // ════════════════════════════════════════════════
@@ -1584,7 +1856,7 @@ function _insertQrCode(text) {
 function _insertSticker(emoji, color) {
   const id = 'stk_' + Date.now();
   document.execCommand('insertHTML', false, `
-    <span class="resizable-element sticker-wrap" id="${id}" contenteditable="false"
+    <span class="sel-wrap" id="${id}" contenteditable="false"
       style="display:inline-block;position:relative;margin:4px;user-select:none;">
       <span class="sticker-icon" onclick="selectElement('${id}')"
         style="font-size:48px;line-height:1;display:inline-block;cursor:pointer;border:2px solid transparent;border-radius:8px;padding:4px;">
@@ -1610,13 +1882,13 @@ function _openSignaturePad() {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
   modal.innerHTML = `
     <div style="background:var(--card);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:500px;">
-      <div style="text-align:center;margin-bottom:12px;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--text);">Desenha a assinatura</div>
+      <div style="text-align:center;margin-bottom:12px;font-family:Roboto,sans-serif;font-weight:800;font-size:1rem;color:var(--text);">Desenha a assinatura</div>
       <canvas id="sig-canvas" width="400" height="160"
         style="width:100%;border:1.5px solid var(--border);border-radius:12px;touch-action:none;background:#fff;display:block;"></canvas>
       <div style="display:flex;gap:10px;margin-top:14px;">
-        <button onclick="clearSig()" style="flex:1;padding:14px;border:1.5px solid var(--border);border-radius:999px;background:none;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;">Limpar</button>
-        <button onclick="cancelSig()" style="flex:1;padding:14px;border:1.5px solid var(--border);border-radius:999px;background:none;color:var(--sub);font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;">Cancelar</button>
-        <button onclick="saveSig()" style="flex:2;padding:14px;border:none;border-radius:999px;background:var(--acc);color:#fff;font-family:'Syne',sans-serif;font-weight:800;cursor:pointer;">Inserir</button>
+        <button onclick="clearSig()" style="flex:1;padding:14px;border:1.5px solid var(--border);border-radius:999px;background:none;color:var(--text);font-family:Roboto,sans-serif;font-weight:700;cursor:pointer;">Limpar</button>
+        <button onclick="cancelSig()" style="flex:1;padding:14px;border:1.5px solid var(--border);border-radius:999px;background:none;color:var(--sub);font-family:Roboto,sans-serif;font-weight:700;cursor:pointer;">Cancelar</button>
+        <button onclick="saveSig()" style="flex:2;padding:14px;border:none;border-radius:999px;background:var(--acc);color:#fff;font-family:Roboto,sans-serif;font-weight:800;cursor:pointer;">Inserir</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -1725,12 +1997,12 @@ function _openSignaturePad() {
   function _addText(e) {
     const p = _pos(e);
     const input = document.createElement('input');
-    input.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;font-size:${size*4+12}px;color:${color};background:transparent;border:none;outline:1px dashed ${color};font-family:'Syne',sans-serif;z-index:9999;min-width:80px;`;
+    input.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;font-size:${size*4+12}px;color:${color};background:transparent;border:none;outline:1px dashed ${color};font-family:Roboto,sans-serif;z-index:9999;min-width:80px;`;
     document.body.appendChild(input); input.focus();
     input.addEventListener('blur', () => {
       if (input.value.trim()) {
         _saveHistory();
-        ctx.font = `${size*4+12}px Syne,sans-serif`;
+        ctx.font = `${size*4+12}px Roboto,sans-serif`;
         ctx.fillStyle = color; ctx.globalAlpha = 1;
         ctx.fillText(input.value, p.x, p.y);
       }
@@ -2042,7 +2314,7 @@ function _buildPackButtons() {
       flex-shrink:0;height:28px;padding:0 14px;
       border:1.5px solid var(--border);border-radius:999px;
       background:var(--toolbar-pill);cursor:pointer;
-      font-family:'Syne',sans-serif;font-size:.68rem;font-weight:700;
+      font-family:Roboto,sans-serif;font-size:.68rem;font-weight:700;
       color:var(--sub);white-space:nowrap;transition:all .12s;`;
     btn.addEventListener('click', () => selectPack(pack.id));
     container.appendChild(btn);
@@ -2082,7 +2354,7 @@ function _renderPack(packId, filter) {
   status.textContent = `${pack.label} · ${list.length} ícones`;
 
   if (list.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:28px 0;font-family:Syne,sans-serif;font-size:.82rem;color:var(--sub);">Sem resultados</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:28px 0;font-family:Roboto,sans-serif;font-size:.82rem;color:var(--sub);">Sem resultados</div>';
     return;
   }
 
