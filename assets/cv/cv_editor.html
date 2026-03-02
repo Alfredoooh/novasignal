@@ -85,7 +85,7 @@ html,body { height:100%; margin:0; background:var(--bg); color:var(--text); font
 .wb-el.selected { outline:2.5px solid var(--acc); outline-offset:1px; }
 .wb-el[data-locked="1"] { cursor:default; }
 .wb-img { display:block; width:100%; height:100%; object-fit:contain; pointer-events:none; border-radius:3px; }
-.wb-text { width:100%; height:100%; padding:10px 12px; font-family:'Roboto',sans-serif; font-size:16px; color:#1a1a1a; word-break:break-word; overflow:hidden; white-space:pre-wrap; line-height:1.5; background:transparent; }
+.wb-text { width:100%; min-height:22px; padding:8px 10px; font-family:'Roboto',sans-serif; font-size:16px; color:#1a1a1a; word-break:break-word; overflow:visible; white-space:pre-wrap; line-height:1.5; background:transparent; box-sizing:border-box; }
 .wb-text.editing { outline:none; cursor:text; overflow:auto; }
 
 /* Handles */
@@ -172,6 +172,10 @@ input[type=range] { accent-color:var(--acc); width:100%; margin:0; }
 .pdf-spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.2);border-top:3px solid var(--acc);border-radius:50%;animation:_spin .7s linear infinite}
 @keyframes _spin{to{transform:rotate(360deg)}}
 #pdf-loading p{color:#fff;font-family:'Space Mono',monospace;font-size:.78rem;letter-spacing:.04em;margin:0}
+
+/* Text element auto-height */
+.wb-el[data-type="text"]{height:auto!important;min-height:32px;}
+.wb-el[data-type="sticky"]{height:auto;min-height:80px;}
 </style>
 </head>
 <body>
@@ -326,7 +330,10 @@ let _bsize=4, _dcolor='#FA6559';
 let _sel=null, _hist=[], _redo=[], _eid=0;
 let _drawing=false, _dctx=null;
 let _curFont='Roboto',_curSize=16,_curColor='#111111',_curBg='#ffff00';
-let _activeTouches=0,_zbt=null;
+let _zbt=null;
+const _ptrs=new Set(); // global active pointer IDs
+let _dragPID=-1;       // pointer ID of current element drag
+let _isPinching=false; // true while 2+ pointers are active
 
 const WRAP   = ()=>document.getElementById('wrap');
 const VP     = ()=>document.getElementById('viewport');
@@ -348,10 +355,20 @@ window.setTheme=d=>{ document.body.dataset.theme=d?'dark':'light'; };
 // ════════════════════════════════════════════════
 // VIEWPORT
 // ════════════════════════════════════════════════
+let _rafT=0;
 function applyT(sm){
-  if(sm){VP().classList.add('smooth');setTimeout(()=>VP().classList.remove('smooth'),240);}
-  VP().style.transform=`translate(${_px}px,${_py}px) scale(${_z})`;
-  _zBadge();
+  if(sm){
+    VP().style.transition='transform .22s cubic-bezier(.25,.8,.25,1)';
+    setTimeout(()=>VP().style.transition='',240);
+    VP().style.transform=`translate(${_px}px,${_py}px) scale(${_z})`;
+    _zBadge();return;
+  }
+  if(_rafT)return;
+  _rafT=requestAnimationFrame(()=>{
+    _rafT=0;
+    VP().style.transform=`translate(${_px}px,${_py}px) scale(${_z})`;
+    _zBadge();
+  });
 }
 function _zBadge(){const b=document.getElementById('zoom-badge');b.textContent=Math.round(_z*100)+'%';b.classList.add('show');clearTimeout(_zbt);_zbt=setTimeout(()=>b.classList.remove('show'),1600);}
 function zoomStep(f){const wr=WRAP().getBoundingClientRect();zoomAt(_z*f,wr.left+wr.width/2,wr.top+wr.height/2);}
@@ -359,7 +376,8 @@ function zoomAt(nz,sx,sy){
   nz=Math.max(.06,Math.min(5,nz));
   _cacheWR();
   const cx=sx-_wrL,cy=sy-_wrT;
-  _px=cx-(cx-_px)*nz/_z; _py=cy-(cy-_py)*nz/_z; _z=nz; applyT(false); _updCtx();
+  _px=cx-(cx-_px)*nz/_z; _py=cy-(cy-_py)*nz/_z; _z=nz; applyT(false);
+  if(_sel)_schedCtx();
 }
 function fitScreen(sm){
   const wr=WRAP().getBoundingClientRect(),m=24;
@@ -375,21 +393,32 @@ function s2c(sx,sy){return{x:(sx-_wrL-_px)/_z,y:(sy-_wrT-_py)/_z};}
 WRAP().addEventListener('wheel',e=>{
   e.preventDefault();
   if(e.ctrlKey||e.metaKey) zoomAt(_z*(e.deltaY<0?1.09:.92),e.clientX,e.clientY);
-  else{ _px-=e.deltaX; _py-=e.deltaY; applyT(false); _updCtx(); }
+  else{ _px-=e.deltaX; _py-=e.deltaY; applyT(false); if(_sel)_schedCtx(); }
 },{passive:false});
 
 // Pinch
 let _ts={},_pd=0;
-WRAP().addEventListener('touchstart',e=>{_activeTouches=e.touches.length;[...e.changedTouches].forEach(t=>_ts[t.identifier]={x:t.clientX,y:t.clientY}); if(Object.keys(_ts).length===2)_pd=_pDist();},{passive:true});
+// Global pointer tracking — reliable multi-touch detection
+document.addEventListener('pointerdown',e=>{
+  _ptrs.add(e.pointerId);
+  if(_ptrs.size>1){
+    _isPinching=true;_dragPID=-1;_panning=false;
+    WRAP().classList.remove('panning');
+  }
+},{capture:true});
+document.addEventListener('pointerup',e=>{_ptrs.delete(e.pointerId);if(_ptrs.size<=1)_isPinching=false;},{capture:true});
+document.addEventListener('pointercancel',e=>{_ptrs.delete(e.pointerId);if(_ptrs.size<=1)_isPinching=false;},{capture:true});
+
+WRAP().addEventListener('touchstart',e=>{[...e.changedTouches].forEach(t=>_ts[t.identifier]={x:t.clientX,y:t.clientY}); if(Object.keys(_ts).length===2)_pd=_pDist();},{passive:true});
 WRAP().addEventListener('touchmove',e=>{
   if(e.touches.length<2)return; e.preventDefault();
   [...e.changedTouches].forEach(t=>_ts[t.identifier]={x:t.clientX,y:t.clientY});
   const p=Object.values(_ts); if(p.length<2)return;
   const d=_pDist(); if(!_pd){_pd=d;return;}
   const mid={x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2};
-  zoomAt(_z*(d/_pd),mid.x,mid.y); _pd=d; _updCtx();
+  zoomAt(_z*(d/_pd),mid.x,mid.y); _pd=d;
 },{passive:false});
-WRAP().addEventListener('touchend',e=>{_activeTouches=e.touches.length;[...e.changedTouches].forEach(t=>delete _ts[t.identifier]);_pd=0;},{passive:true});
+WRAP().addEventListener('touchend',e=>{[...e.changedTouches].forEach(t=>delete _ts[t.identifier]);_pd=0;},{passive:true});
 function _pDist(){ const p=Object.values(_ts); return p.length<2?0:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); }
 
 // Pan
@@ -400,7 +429,13 @@ WRAP().addEventListener('pointerdown',e=>{
   _panning=true; _ps={x:e.clientX,y:e.clientY,px:_px,py:_py};
   WRAP().setPointerCapture(e.pointerId); WRAP().classList.add('panning');
 });
-WRAP().addEventListener('pointermove',e=>{ if(!_panning)return; _px=_ps.px+(e.clientX-_ps.x); _py=_ps.py+(e.clientY-_ps.y); applyT(false); _updCtx(); });
+WRAP().addEventListener('pointermove',e=>{
+  if(!_panning||_isPinching)return;
+  _px=_ps.px+(e.clientX-_ps.x); _py=_ps.py+(e.clientY-_ps.y);
+  applyT(false);
+  // ctx-tb update throttled - don't getBCR on every frame
+  if(_sel)_schedCtx();
+});
 WRAP().addEventListener('pointerup',()=>{ _panning=false; WRAP().classList.remove('panning'); });
 WRAP().addEventListener('click',e=>{
   if(e.target===WRAP()||e.target===CV()||e.target===VP()){
@@ -510,8 +545,10 @@ window.insertImageBase64=function(b64,mime){
 // ════════════════════════════════════════════════
 // SELECTION + HANDLES
 // ════════════════════════════════════════════════
+let _rafCtx=0;
+function _schedCtx(){if(_rafCtx)return;_rafCtx=requestAnimationFrame(()=>{_rafCtx=0;_updCtx();});}
 function deselect(){ if(_sel){_sel.classList.remove('selected');_rmH(_sel);_sel=null;} document.getElementById('ctx-tb').classList.remove('show'); }
-function selectEl(el){ if(_sel===el){_updCtx();return;} deselect();_sel=el;el.classList.add('selected');_addH(el);_updCtx(); }
+function selectEl(el){ if(_sel===el){_schedCtx();return;} deselect();_sel=el;el.classList.add('selected');_addH(el);_schedCtx(); }
 function _updCtx(){
   if(!_sel){document.getElementById('ctx-tb').classList.remove('show');return;}
   const tb=document.getElementById('ctx-tb'); tb.classList.add('show');
@@ -536,18 +573,27 @@ function _wireEl(el){
   const inn=el.querySelector('.wb-text');
   if(inn){ if(inn._wbBL)inn.removeEventListener('blur',inn._wbBL); if(inn._wbPD)inn.removeEventListener('pointerdown',inn._wbPD); }
   el._wbPD=e=>{
+    if(_isPinching)return;
     if(e.target.classList.contains('rh')||e.target.classList.contains('rot-h'))return;
     if(el.dataset.locked==='1')return;
     if(el.querySelector('[contenteditable="true"]'))return;
     e.stopPropagation(); selectEl(el);
     _cacheWR();
+    _dragPID=e.pointerId;
     const p0=s2c(e.clientX,e.clientY),ox=p0.x-(parseFloat(el.style.left)||0),oy=p0.y-(parseFloat(el.style.top)||0);
     el.setPointerCapture(e.pointerId);
     const mv=ev=>{
-      if(_activeTouches>1)return;
-      const p=s2c(ev.clientX,ev.clientY); el.style.left=(p.x-ox)+'px'; el.style.top=(p.y-oy)+'px'; _updCtx();
+      if(_isPinching||ev.pointerId!==_dragPID)return;
+      const p=s2c(ev.clientX,ev.clientY);
+      el.style.left=(p.x-ox)+'px'; el.style.top=(p.y-oy)+'px';
+      // Don't _updCtx() every frame — too expensive
     };
-    const up=()=>{ el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); saveSnap(); };
+    const up=ev=>{
+      if(ev.pointerId!==_dragPID)return;
+      _dragPID=-1;
+      el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up);
+      _schedCtx(); saveSnap();
+    };
     el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up);
   };
   el.addEventListener('pointerdown',el._wbPD);
@@ -560,10 +606,12 @@ function _wireEl(el){
 }
 function _addResEv(h,el,hd){
   h.addEventListener('pointerdown',e=>{
+    if(_isPinching)return;
     e.stopPropagation(); e.preventDefault(); h.setPointerCapture(e.pointerId);
     _cacheWR();
+    const pid=e.pointerId;
     const p0=s2c(e.clientX,e.clientY),sw=el.offsetWidth,sh=el.offsetHeight,sl=parseFloat(el.style.left)||0,st=parseFloat(el.style.top)||0;
-    const mv=ev=>{ const p=s2c(ev.clientX,ev.clientY),dx=p.x-p0.x,dy=p.y-p0.y; let w=sw,ht=sh,l=sl,t=st;
+    const mv=ev=>{ if(_isPinching||ev.pointerId!==pid)return; const p=s2c(ev.clientX,ev.clientY),dx=p.x-p0.x,dy=p.y-p0.y; let w=sw,ht=sh,l=sl,t=st;
       if(hd.dx===1)w=Math.max(30,sw+dx); else if(hd.dx===0){w=Math.max(30,sw-dx);l=sl+sw-w;}
       if(hd.dy===1)ht=Math.max(20,sh+dy); else if(hd.dy===0){ht=Math.max(20,sh-dy);t=st+sh-ht;}
       el.style.width=w+'px';el.style.height=ht+'px';el.style.left=l+'px';el.style.top=t+'px'; _updCtx(); };
@@ -573,8 +621,10 @@ function _addResEv(h,el,hd){
 }
 function _addRotEv(h,el){
   h.addEventListener('pointerdown',e=>{
+    if(_isPinching)return;
     e.stopPropagation(); e.preventDefault(); h.setPointerCapture(e.pointerId);
-    const mv=ev=>{ const r=el.getBoundingClientRect(),ang=Math.atan2(ev.clientY-(r.top+r.height/2),ev.clientX-(r.left+r.width/2))*180/Math.PI+90; el.style.transform=`rotate(${ang}deg)`; el.dataset.rot=ang; };
+    const pid=e.pointerId;
+    const mv=ev=>{ if(_isPinching||ev.pointerId!==pid)return; const r=el.getBoundingClientRect(),ang=Math.atan2(ev.clientY-(r.top+r.height/2),ev.clientX-(r.left+r.width/2))*180/Math.PI+90; el.style.transform=`rotate(${ang}deg)`; el.dataset.rot=ang; };
     const up=()=>{ h.removeEventListener('pointermove',mv); h.removeEventListener('pointerup',up); saveSnap(); };
     h.addEventListener('pointermove',mv); h.addEventListener('pointerup',up);
   });
@@ -591,33 +641,40 @@ function _mk(type,x,y,w,h){
   CV().insertBefore(el,DC()); _wireEl(el); return el;
 }
 
-// Texto simples
+// Texto simples — auto-height
+function _mkTxtEl(type,x,y,w,extraStyle){
+  const el=document.createElement('div');
+  el.className='wb-el'; el.dataset.type=type; el.dataset.id=++_eid;
+  el.style.cssText=`left:${x}px;top:${y}px;width:${w}px;min-height:32px;height:auto;z-index:${_mxZ()+1};${extraStyle||''}`;
+  CV().insertBefore(el,DC()); _wireEl(el); return el;
+}
 function mkTextEl(x,y,txt){
-  const el=_mk('text',x-120,y-22,240,60);
+  const el=_mkTxtEl('text',x-120,y-16,240);
   const inn=document.createElement('div'); inn.className='wb-text'; inn.contentEditable='false';
-  inn.style.cssText='font-size:16px;color:#1a1a1a;font-family:Roboto,sans-serif;'; inn.textContent=txt||'Texto';
+  inn.style.cssText='font-size:16px;color:#1a1a1a;font-family:Roboto,sans-serif;'; inn.textContent=txt||'';
   el.appendChild(inn); _wireEl(el); selectEl(el); saveSnap();
-  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); inn.textContent=''; },40);
+  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); },40);
 }
-function insertSimpleText(){ const{x,y}=_ctr(240,60); mkTextEl(x,y,'Texto'); }
+function insertSimpleText(){ const{x,y}=_ctr(240,36); mkTextEl(x,y,''); }
 
-// Caixa de texto
+// Caixa de texto — auto height
 function insertTextBox(){
-  const{x,y}=_ctr(280,110); const el=_mk('text',x,y,280,110);
-  el.style.cssText+=';background:#f8f8f8;border-radius:8px;border:1.5px solid #e2e5eb;';
+  const{x,y}=_ctr(280,80);
+  const el=_mkTxtEl('text',x,y,280,'background:#f8f8f8;border-radius:8px;border:1.5px solid #e2e5eb;');
   const inn=document.createElement('div'); inn.className='wb-text'; inn.contentEditable='false';
-  inn.style.cssText='font-size:14px;color:#1a1a1a;font-family:Roboto,sans-serif;'; inn.textContent='Caixa de texto';
+  inn.style.cssText='font-size:14px;color:#1a1a1a;font-family:Roboto,sans-serif;'; inn.textContent='';
   el.appendChild(inn); _wireEl(el); selectEl(el); saveSnap();
-  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); inn.textContent=''; },40);
+  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); },40);
 }
 
-// Título
+// Título — auto height
 function insertHeading(){
-  const{x,y}=_ctr(400,56); const el=_mk('text',x,y,400,56);
+  const{x,y}=_ctr(400,50);
+  const el=_mkTxtEl('text',x,y,400);
   const inn=document.createElement('div'); inn.className='wb-text'; inn.contentEditable='false';
-  inn.style.cssText='font-size:28px;font-weight:900;color:#1a1a1a;font-family:Roboto,sans-serif;line-height:1.2;'; inn.textContent='Título';
+  inn.style.cssText='font-size:28px;font-weight:900;color:#1a1a1a;font-family:Roboto,sans-serif;line-height:1.2;padding:4px 8px;'; inn.textContent='';
   el.appendChild(inn); _wireEl(el); selectEl(el); saveSnap();
-  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); inn.textContent=''; },40);
+  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); },40);
 }
 
 // Imagem
@@ -662,12 +719,12 @@ function insertDivider(){
 
 // Post-it
 function insertSticky(){
-  const{x,y}=_ctr(200,170); const el=_mk('sticky',x,y,200,170);
-  el.style.cssText+=';background:#ffd60a;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.18),2px 2px 0 rgba(0,0,0,.06)';
-  const inn=document.createElement('div'); inn.className='wb-text'; inn.contentEditable='false'; inn.textContent='Nota…';
+  const{x,y}=_ctr(200,100);
+  const el=_mkTxtEl('sticky',x,y,200,'background:#ffd60a;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.18)');
+  const inn=document.createElement('div'); inn.className='wb-text'; inn.contentEditable='false'; inn.textContent='';
   inn.style.cssText='color:#333;padding:14px;font-size:14px;font-family:Roboto,sans-serif;';
   el.appendChild(inn); _wireEl(el); selectEl(el); saveSnap();
-  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); inn.textContent=''; },40);
+  setTimeout(()=>{ inn.contentEditable='true'; inn.classList.add('editing'); inn.focus(); },40);
 }
 
 // Barra de progresso
