@@ -212,7 +212,7 @@ class _CvEditorScreenState extends State<CvEditorScreen> {
       final title = _titleCtrl.text.trim().isEmpty ? 'curriculo' : _titleCtrl.text.trim();
       final safe  = title.replaceAll(RegExp(r'[^\w\s\-]'), '_').trim();
       final bytes = base64Decode(b64);
-      await NotificationService().saveAndNotify(bytes, '$safe.pdf', 'application/pdf');
+      await NotificationService.instance.saveAndNotify(bytes, '$safe.pdf', 'application/pdf');
       _showSnack('PDF guardado em Transferências ✓');
     } catch (e) { _showSnack('Erro ao guardar PDF.', isError: true); }
   }
