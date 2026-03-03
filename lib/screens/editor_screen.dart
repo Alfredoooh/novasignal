@@ -72,7 +72,7 @@ class _EditorScreenState extends State<EditorScreen>
     await DocumentService.instance.save(doc);
 
     if (AuthService.instance.loggedIn) {
-      AuthService.instance.syncDocument(doc).ignore();
+      AuthService.instance.syncDocument(doc.toJson()).ignore();
     }
 
     if (mounted) setState(() {});
