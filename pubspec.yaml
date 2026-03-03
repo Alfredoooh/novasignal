@@ -1,5 +1,5 @@
-name: nexusvpn
-description: NexusVPN — Real VPN with SNI Tunneling
+name: write
+description: Write - Editor de documentos
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,14 +9,69 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  ionicons: ^0.2.2
+  
+  flutter_inappwebview: ^6.0.0
+  flutter_svg: ^2.0.10+1
+  video_player: any
+  animations: ^2.0.11
+  timezone: any
+  image_picker: any
+  file_picker: any
   google_fonts: ^6.2.1
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.2.3
+  uuid: ^4.4.0
+  intl: ^0.19.0
+  share_plus: ^10.0.3
+  path_provider: ^2.1.3
+  open_file: ^3.3.2
+  permission_handler: ^11.3.1
+  path: ^1.9.0
+  mime: ^1.0.5
+  flutter_local_notifications: ^18.0.0
+  flutter_background_service: ^5.0.7
+  flutter_tts: ^4.2.0
+  just_audio: ^0.9.40
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_native_splash: ^2.3.8
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/editor/editor.html
+    - assets/splash_logo.png
+    - assets/splash_text.svg
+    - assets/icons/ic_documento.png
+    - assets/icons/ic_nota.png
+    - assets/images/background1.png
+    - assets/icons/folder.png
+    - assets/cv/cv_editor.html  
+    
+
+ 
+
+# Configuração do Splash Screen
+flutter_native_splash:
+  color: "#18191A"
+  image: assets/splash_logo.png
+
+  color_dark: "#18191A"
+  image_dark: assets/splash_logo.png
+
+  android_12:
+    image: assets/splash_logo.png
+    color: "#18191A"
+    icon_background_color: "#18191A"
+
+  android: true
+  ios: false  # DESABILITADO - reduz tamanho
+  web: false
+
+  android_gravity: center
+  fullscreen: true
+  android_disable_fullscreen: false

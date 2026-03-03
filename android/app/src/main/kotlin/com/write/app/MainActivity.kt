@@ -1,7 +1,7 @@
 // ==================== MainActivity.kt ====================
-// Localização: android/app/src/main/kotlin/com/nexa/novasignal/MainActivity.kt
+// Localização: android/app/src/main/kotlin/com/write/app/MainActivity.kt
 
-package com.nexa.novasignal
+package com.write.app
 
 import android.os.Bundle
 import android.webkit.WebView
