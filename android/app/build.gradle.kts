@@ -10,7 +10,6 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true          // ← ADICIONADO
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -21,12 +20,13 @@ android {
 
     defaultConfig {
         applicationId = "com.nexa.novasignal"
-        minSdk = 21                                    // ← mínimo para background service
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
-
+        
+        // Força usar SÓ arm64 (elimina 50% do tamanho)
         ndk {
             abiFilters.clear()
             abiFilters += "arm64-v8a"
@@ -39,13 +39,14 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-
+            
+            // Compressão AGRESSIVA de recursos
             ndk {
                 debugSymbolLevel = "NONE"
             }
         }
     }
-
+    
     packagingOptions {
         resources {
             excludes += setOf(
@@ -67,6 +68,5 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.3")   // ← ADICIONADO
     implementation("androidx.multidex:multidex:2.0.1")
 }

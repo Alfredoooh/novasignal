@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -71,7 +70,7 @@ class _AriaAppState extends State<AriaApp> {
     final lightTheme = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+      scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.light(
         primary: AppColors.acc,
         surface: AppColors.surface,
@@ -229,9 +228,8 @@ class _MainShellState extends State<MainShell> {
     final pages = <Widget>[
       HomeScreen(key: _homeKey),
       CriarScreen(onDocCreated: () {
-        // Reload home in background without switching tabs —
-        // user stays on Criar after returning from editor/nota
-        Future.delayed(const Duration(milliseconds: 200), _reloadHome);
+        setState(() => _idx = 0);
+        Future.delayed(const Duration(milliseconds: 300), _reloadHome);
       }),
       const TemplatesScreen(),
     ];
@@ -283,56 +281,46 @@ class _MainShellState extends State<MainShell> {
             FadeTransition(opacity: anim, child: child),
         child: KeyedSubtree(key: ValueKey(_idx), child: pages[_idx]),
       ),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  navBg.withOpacity(0.82),
-                  navBg.withOpacity(0.96),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(height: 0.5, color: divColor),
+          Container(
+            color: navBg,
+            height: 64,
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  _AnimatedNavItem(
+                    outlineSvg: _homeOutline,
+                    filledSvg: _homeFilled,
+                    label: 'Início',
+                    selected: _idx == 0,
+                    isDark: isDark,
+                    onTap: () => setState(() => _idx = 0),
+                  ),
+                  _AnimatedNavItem(
+                    outlineSvg: _criarOutline,
+                    filledSvg: _criarFilled,
+                    label: 'Criar',
+                    selected: _idx == 1,
+                    isDark: isDark,
+                    onTap: () => setState(() => _idx = 1),
+                  ),
+                  _AnimatedNavItem(
+                    outlineSvg: _templatesOutline,
+                    filledSvg: _templatesFilled,
+                    label: 'Templates',
+                    selected: _idx == 2,
+                    isDark: isDark,
+                    onTap: () => setState(() => _idx = 2),
+                  ),
                 ],
               ),
             ),
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                height: 62,
-                child: Row(
-                  children: [
-                    _AnimatedNavItem(
-                      outlineSvg: _homeOutline,
-                      filledSvg: _homeFilled,
-                      label: 'Início',
-                      selected: _idx == 0,
-                      isDark: isDark,
-                      onTap: () => setState(() => _idx = 0),
-                    ),
-                    _AnimatedNavItem(
-                      outlineSvg: _criarOutline,
-                      filledSvg: _criarFilled,
-                      label: 'Criar',
-                      selected: _idx == 1,
-                      isDark: isDark,
-                      onTap: () => setState(() => _idx = 1),
-                    ),
-                    _AnimatedNavItem(
-                      outlineSvg: _templatesOutline,
-                      filledSvg: _templatesFilled,
-                      label: 'Templates',
-                      selected: _idx == 2,
-                      isDark: isDark,
-                      onTap: () => setState(() => _idx = 2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -555,7 +543,7 @@ class _LoggedSheet extends StatelessWidget {
         child: Text((auth.user?.name ?? 'U')[0].toUpperCase(),
             style: TextStyle(color: acc, fontSize: 26, fontWeight: FontWeight.w800))),
     const SizedBox(height: 12),
-    Text(auth.user?.name ?? '', style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.w700, color: tp)),
+    Text(auth.user?.name ?? '', style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.w700, color: tp)),
     const SizedBox(height: 4),
     Text(auth.user?.phone ?? auth.user?.email ?? '',
         style: GoogleFonts.roboto(fontSize: 13.5, color: ts)),
@@ -595,7 +583,7 @@ class _GuestSheet extends StatelessWidget {
   Widget build(BuildContext context) => Column(mainAxisSize: MainAxisSize.min, children: [
     Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(color: ts.withOpacity(.3), borderRadius: BorderRadius.circular(2))),
-    Text('Sem sessão iniciada', style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.w700, color: tp)),
+    Text('Sem sessão iniciada', style: GoogleFonts.syne(fontSize: 18, fontWeight: FontWeight.w700, color: tp)),
     const SizedBox(height: 8),
     Text('Entra para guardar os teus documentos\ne histórico na nuvem.',
         textAlign: TextAlign.center,

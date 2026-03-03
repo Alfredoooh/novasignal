@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../widgets/theme.dart';
+import '../services/notification_service.dart';
+import '../services/tts_service.dart';
 import 'editor_screen.dart';
 
 // ── Design tokens ─────────────────────────────────────
@@ -30,7 +32,8 @@ class _NativeEditorView extends StatefulWidget {
 }
 
 class _NativeEditorViewState extends State<_NativeEditorView> {
-  static   static String _ariaToken = '';
+  static const _kWorkerUrl = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
+  static String _ariaToken = '';
 
   InAppWebViewController? _wvc;
   bool _loading = true;
@@ -573,22 +576,31 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   // PDF EXPORT
   // ═════════════════════════════════════════════════════
   Future<void> _handleExportPdf(Map<String,dynamic> data) async {
-    try {
-      final base64Str = data['base64'] as String? ?? '';
-      final title     = (data['title'] as String?)?.isNotEmpty == true
-          ? data['title'] as String : 'documento';
-      if (base64Str.isEmpty) {
-        _showSnack('Erro ao gerar PDF.', isError: true); return;
+    final base64Str = data['base64'] as String? ?? '';
+    final title = (data['title'] as String?)?.isNotEmpty == true
+        ? data['title'] as String : 'documento';
+    if (base64Str.isEmpty) {
+      _showSnack('Erro ao gerar PDF.', isError: true); return;
+    }
+    // Guardar em Downloads/ + notificação automática
+    final path = await NotificationService.instance.savePdfBase64(
+      base64Data: base64Str,
+      title: title,
+    );
+    if (path != null) {
+      _showSnack('"$title" guardado em Downloads ✓');
+    } else {
+      // Fallback: share sheet
+      try {
+        final bytes = base64Decode(base64Str);
+        final dir   = await getTemporaryDirectory();
+        final safe  = title.replaceAll(RegExp(r'[^\w\s\-]'), '_').trim();
+        final file  = File('\${dir.path}/\$safe.pdf');
+        await file.writeAsBytes(bytes);
+        await Share.shareXFiles([XFile(file.path, mimeType: 'application/pdf')], subject: title);
+      } catch (e) {
+        _showSnack('Erro ao exportar PDF.', isError: true);
       }
-      final bytes    = base64Decode(base64Str);
-      final dir      = await getTemporaryDirectory();
-      final safeName = title.replaceAll(RegExp(r'[^\w\s\-]'), '_').trim();
-      final file     = File('${dir.path}/$safeName.pdf');
-      await file.writeAsBytes(bytes);
-      await Share.shareXFiles([XFile(file.path, mimeType: 'application/pdf')], subject: title);
-    } catch (e) {
-      debugPrint('PDF export error: $e');
-      _showSnack('Erro ao exportar PDF.', isError: true);
     }
   }
 
@@ -1261,6 +1273,18 @@ class _AiScreenState extends State<_AiScreen> {
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
                 child: Text(msg.text,
                   style: GoogleFonts.roboto(color: _tp, fontSize: 14, height: 1.6)),
+              ),
+
+            // Botão TTS — ouvir resposta
+            if (!msg.isHtml)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 4, 10, 0),
+                child: Row(children: [
+                  TtsButton(text: msg.text, color: widget.acc, size: 18),
+                  const SizedBox(width: 4),
+                  Text('Ouvir', style: GoogleFonts.roboto(
+                    color: widget.acc, fontSize: 11, fontWeight: FontWeight.w600)),
+                ]),
               ),
 
             // Botão "Passar para o projeto"

@@ -156,7 +156,7 @@ body, .view, .ed-header, .fmt-bar, .doc-scroll, .wb-toolbar {
   background:var(--bg); padding:20px 0 80px;
   -webkit-overflow-scrolling:touch;
 }
-.doc-pages { display:flex; flex-direction:column; align-items:center; gap:16px; padding:0 12px; }
+.doc-pages { display:flex; flex-direction:column; align-items:center; gap:16px; }
 
 /* ── Página A4 ── */
 .page-wrap {
@@ -729,13 +729,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
 const PAGE_W    = 794;
 const PAGE_H    = 1123;
 const PAD       = 94;
-// CONTENT_H agora é calculado dinamicamente a partir do editor real
-function getContentH() {
-  const ed = pages[0]?.editor;
-  if (ed) return ed.parentElement.clientHeight - 2;
-  return PAGE_H - PAD * 2;
-}
-const CONTENT_H = PAGE_H - PAD * 2; // fallback para código legado
+const CONTENT_H = PAGE_H - PAD * 2;
 const ARIA_WORKER = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
 let   ARIA_TOKEN  = '';
 
@@ -852,10 +846,10 @@ function getScale() {
 function applyScale() {
   const s = getScale();
   document.querySelectorAll('.page-wrap').forEach(p => {
-    p.style.zoom         = s;
-    p.style.marginBottom = `${(PAGE_H * s) - PAGE_H + 16}px`;
+    p.style.transform    = `scale(${s})`;
+    p.style.marginBottom = `${(PAGE_H * s) - PAGE_H}px`;
   });
-  document.getElementById('doc-pages').style.gap = '0';
+  document.getElementById('doc-pages').style.gap = `${Math.round(16 / s)}px`;
 }
 window.addEventListener('resize', applyScale);
 
@@ -882,7 +876,9 @@ function createPage(idx) {
   wrap.appendChild(ed);
   wrap.appendChild(num);
   document.getElementById('doc-pages').appendChild(wrap);
-  wrap.style.zoom = getScale();
+  const s = getScale();
+  wrap.style.transform    = `scale(${s})`;
+  wrap.style.marginBottom = `${(PAGE_H * s) - PAGE_H}px`;
   pages.push({ wrap, editor: ed });
   return ed;
 }
@@ -898,16 +894,15 @@ function onInput(idx) {
 }
 
 function reflow(startIdx) {
-  const CH = getContentH();
   // Passa para a frente: conteúdo que transborda vai para a página seguinte
   for (let i = startIdx; i < pages.length; i++) {
     const ed = pages[i].editor;
-    if (ed.scrollHeight <= CH) break;
+    if (ed.scrollHeight <= CONTENT_H) break;
     if (i + 1 >= pages.length) { createPage(pages.length); applyScale(); }
     const next = pages[i + 1].editor;
     // Batch: recolhe TODOS os nós a mover antes de inserir
     const toMove = [];
-    while (ed.scrollHeight > CH && ed.lastChild) {
+    while (ed.scrollHeight > CONTENT_H && ed.lastChild) {
       toMove.unshift(ed.lastChild);
       ed.removeChild(ed.lastChild);
     }
@@ -923,7 +918,7 @@ function reflow(startIdx) {
       const node = next.firstChild;
       next.removeChild(node);
       ed.appendChild(node);
-      if (ed.scrollHeight > CH) {
+      if (ed.scrollHeight > CONTENT_H) {
         ed.removeChild(node);
         next.insertBefore(node, next.firstChild);
         break;
@@ -1275,8 +1270,8 @@ function _renderTemplateHtml(html) {
   pages.push({ wrap, editor: fakeEd });
 
   const s = getScale();
-  wrap.style.zoom         = s;
-  wrap.style.marginBottom = `${(1123 * s) - 1123 + 16}px`;
+  wrap.style.transform    = `scale(${s})`;
+  wrap.style.marginBottom = `${(1123 * s) - 1123}px`;
 
   updateMeta(); showToast('Template carregado ✓');
 }
@@ -1372,12 +1367,12 @@ async function exportPDF() {
     const pdf = new jsPDF({ unit:'px', format:[794,1123], orientation:'portrait', hotfixes:['px_scaling'] });
     for (let i = 0; i < pages.length; i++) {
       const wrap = pages[i].wrap;
-      const origZoom = wrap.style.zoom, origM = wrap.style.marginBottom;
-      wrap.style.zoom = '1'; wrap.style.marginBottom = '0';
+      const origT = wrap.style.transform, origM = wrap.style.marginBottom;
+      wrap.style.transform = 'none'; wrap.style.marginBottom = '0';
       wrap.style.background = '#fff';
       pages[i].editor.style.color = '#111';
       const canvas = await html2canvas(wrap, { scale:2, useCORS:true, logging:false, backgroundColor:'#fff', width:794, height:1123 });
-      wrap.style.zoom = origZoom; wrap.style.marginBottom = origM;
+      wrap.style.transform = origT; wrap.style.marginBottom = origM;
       wrap.style.background = ''; pages[i].editor.style.color = '';
       if (i > 0) pdf.addPage([794,1123],'portrait');
       pdf.addImage(canvas.toDataURL('image/jpeg',.92),'JPEG',0,0,794,1123);
@@ -1538,6 +1533,19 @@ window._aiResponse = function(data) {
 
 // ════════════════════════════════════════════════
 // SISTEMA DE SELECÇÃO CANVA-LIKE
+// ════════════════════════════════════════════════
+
+// ── Overlay de selecção ──
+const _selOverlay = document.createElement('div');
+_selOverlay.id = 'sel-overlay';
+_selOverlay.style.cssText = `
+  display:none;position:fixed;pointer-events:none;z-index:9999;
+  box-sizing:border-box;
+`;
+document.body.appendChild(_selOverlay);
+
+// ════════════════════════════════════════════════
+// SISTEMA DE SELECÇÃO CANVA-LIKE — corrigido
 // ════════════════════════════════════════════════
 
 const ACC_SEL = '#FA6559';
