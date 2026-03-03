@@ -54,6 +54,8 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   void initState() {
     super.initState();
     themeNotifier.addListener(_onThemeChanged);
+    NotificationService.instance.init();
+    NotificationService.instance.requestPermission();
   }
 
 
