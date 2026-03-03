@@ -23,14 +23,16 @@ class _WriteAppState extends State<WriteApp> {
   @override
   void initState() {
     super.initState();
-    themeNotifier.addListener(() => setState(() {}));
+    themeNotifier.addListener(_onTheme);
   }
 
   @override
   void dispose() {
-    themeNotifier.removeListener(() => setState(() {}));
+    themeNotifier.removeListener(_onTheme);
     super.dispose();
   }
+
+  void _onTheme() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -49,20 +51,20 @@ class _WriteAppState extends State<WriteApp> {
         useMaterial3: true,
         brightness: Brightness.light,
         scaffoldBackgroundColor: const Color(0xFFFFFFFF),
-        colorScheme: ColorScheme.light(
-          primary: accColor(false),
-          surface: AppColors.surface,
-          onSurface: AppColors.textPrimary,
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFFF13223),
+          surface: Color(0xFFFFFFFF),
+          onSurface: Color(0xFF000000),
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.darkBackground,
-        colorScheme: ColorScheme.dark(
-          primary: accColor(true),
-          surface: AppColors.darkSurface,
-          onSurface: AppColors.darkTextPrimary,
+        scaffoldBackgroundColor: const Color(0xFF1B1B1B),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFFA6559),
+          surface: Color(0xFF343434),
+          onSurface: Color(0xFFFFE8E3),
         ),
       ),
       home: const AuthGate(),
@@ -70,7 +72,6 @@ class _WriteAppState extends State<WriteApp> {
   }
 }
 
-// Decide: mostra AuthScreen ou vai directo ao editor
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
   @override
