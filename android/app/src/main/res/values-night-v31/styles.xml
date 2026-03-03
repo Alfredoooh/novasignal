@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- android/app/src/main/res/values-night-v31/styles.xml -->
+<resources>
+    <!-- Theme para Android 12+ (API 31+) - MODO ESCURO -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <!-- Splash do Flutter com imagem de fundo escura -->
+        <item name="android:windowBackground">@drawable/launch_background_dark</item>
+
+        <!-- SPLASH NATIVO - Ícone para modo ESCURO -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_dark</item>
+
+        <!-- Cor de fundo do ícone do Android 12 (transparente para não interferir) -->
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+
+        <!-- Cor de fundo do splash nativo (escuro) -->
+        <item name="android:windowSplashScreenBackground">#18191A</item>
+
+        <!-- Duração da animação do splash -->
+        <item name="android:windowSplashScreenAnimationDuration">300</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>
