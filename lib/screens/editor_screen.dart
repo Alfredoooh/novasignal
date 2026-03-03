@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../widgets/theme.dart';
 import 'auth_screen.dart';
 import 'editor_screen_native.dart';
+import 'agenda_screen.dart';
 
 // ─────────────────────────────────────────────
 // SVGs
