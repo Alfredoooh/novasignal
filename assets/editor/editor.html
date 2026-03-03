@@ -29,17 +29,17 @@
 /* ── Variáveis de tema ── */
 :root {
   --acc:#e0185e; --acc-rgb:224,24,94; --acc-c:#fff;
-  --bg:#ffffff; --card:#ffffff; --border:#f0f0f0;
-  --text:#111; --sub:#8e8e93; --danger:#ff3b30;
-  --paper:#ffffff; --paper-text:#111;
-  --toolbar-bg:#ffffff; --toolbar-pill:#f2f2f7;
+  --bg:#ffffff; --card:#ffffff; --border:#e0e0e0;
+  --text:#000000; --sub:#6b6b6b; --danger:#e53935;
+  --paper:#ffffff; --paper-text:#000000;
+  --toolbar-bg:#ffffff; --toolbar-pill:#f5f5f5;
 }
 body[data-theme="dark"] {
-  --acc:#ff6b9d; --acc-rgb:255,107,157; --acc-c:#000;
-  --bg:#242424; --card:#363636; --border:#404040;
-  --text:#e8e8e8; --sub:#8e8e93; --danger:#ff453a;
-  --paper:#2e2e2e; --paper-text:#e0e0e0;
-  --toolbar-bg:#363636; --toolbar-pill:#404040;
+  --acc:#ffffff; --acc-rgb:255,255,255; --acc-c:#000;
+  --bg:#0d0d0d; --card:#272727; --border:#2c2c2c;
+  --text:#ffffff; --sub:#8e8e8e; --danger:#e53935;
+  --paper:#272727; --paper-text:#ffffff;
+  --toolbar-bg:#0d0d0d; --toolbar-pill:#3a3a3a;
 }
 
 /* ── Reset ── */
@@ -267,7 +267,7 @@ body[data-theme="dark"] .wb-canvas-wrap { background:#1a1a1a; }
         </svg>
       </button>
       <span class="ed-title" id="doc-title-text" onclick="openRenameDialog()" title="Toque para renomear">Sem título</span>
-      <button class="bar-btn-text" onclick="window.saveDocument()">Guardar</button>
+      <button class="bar-btn" onclick="window.saveDocument()" title="Guardar"><svg viewBox="0 0 24 24" width="20" height="20" fill="var(--text)"><path d="M9.878,18.122a3,3,0,0,0,4.244,0l3.211-3.211A1,1,0,0,0,15.919,13.5l-2.926,2.927L13,1a1,1,0,0,0-1-1h0a1,1,0,0,0-1,1l-.009,15.408L8.081,13.5a1,1,0,0,0-1.414,1.415Z"/><path d="M23,16h0a1,1,0,0,0-1,1v4a1,1,0,0,1-1,1H3a1,1,0,0,1-1-1V17a1,1,0,0,0-1-1H1a1,1,0,0,0-1,1v4a3,3,0,0,0,3,3H21a3,3,0,0,0,3-3V17A1,1,0,0,0,23,16Z"/></svg></button>
       <button class="bar-btn" onclick="openOpcoes()">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--sub)">
           <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-4-10c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm11,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Zm-5.5,0c0,.828-.672,1.5-1.5,1.5s-1.5-.672-1.5-1.5.672-1.5,1.5-1.5,1.5.672,1.5,1.5Z"/>
