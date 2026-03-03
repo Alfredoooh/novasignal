@@ -302,7 +302,7 @@ class _AppDrawerState extends State<_AppDrawer> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const AgendaPage()));
+                  MaterialPageRoute(builder: (_) => AgendaPage()));
               },
             ),
             const Spacer(),
