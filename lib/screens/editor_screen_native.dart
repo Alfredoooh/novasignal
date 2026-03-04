@@ -31,7 +31,7 @@ class _NativeEditorView extends StatefulWidget {
   State<_NativeEditorView> createState() => _NativeEditorViewState();
 }
 
-class _NativeEditorViewState extends State<_NativeEditorView> {
+class _NativeEditorViewState extends State<_NativeEditorView> with AutomaticKeepAliveClientMixin {
   static const _kWorkerUrl = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
   static String _ariaToken = '';
 
@@ -51,9 +51,14 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   );
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     themeNotifier.addListener(_onThemeChanged);
+    NotificationService.instance.init();
+    NotificationService.instance.requestPermission();
   }
 
 
@@ -676,6 +681,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   // ═════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final isDark = themeNotifier.isDark;
     final bg     = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE8E8E8);
 

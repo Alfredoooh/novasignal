@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -239,17 +241,12 @@ class _AnimatedTabViewState extends State<_AnimatedTabView> {
       children: List.generate(widget.children.length, (i) {
         final isActive = i == widget.controller.index;
         return AnimatedOpacity(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
           opacity: isActive ? 1.0 : 0.0,
-          child: AnimatedSlide(
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeOutCubic,
-            offset: isActive ? Offset.zero : const Offset(0, 0.1),
-            child: IgnorePointer(
-              ignoring: !isActive,
-              child: widget.children[i],
-            ),
+          child: IgnorePointer(
+            ignoring: !isActive,
+            child: widget.children[i],
           ),
         );
       }),
@@ -361,7 +358,9 @@ class _ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<_ChatScreen> {
+  static const _kWorker = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
   final _ctrl = TextEditingController();
+  bool _busy = false;
   final _scroll = ScrollController();
   final _messages = <_ChatMessage>[];
   bool _isDark = false;
@@ -385,20 +384,65 @@ class _ChatScreenState extends State<_ChatScreen> {
 
   void _send() {
     final text = _ctrl.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _busy) return;
     setState(() {
       _messages.add(_ChatMessage(text: text, isUser: true));
       _ctrl.clear();
+      _busy = true;
     });
+    _scrollToBottom();
+    _callAI(text);
+  }
+
+  void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scroll.hasClients) {
         _scroll.animateTo(_scroll.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
-    // TODO: ligar à IA
   }
 
+  Future<void> _callAI(String prompt) async {
+    try {
+      final history = _messages
+        .map((m) => {'role': m.isUser ? 'user' : 'assistant', 'content': m.text})
+        .toList();
+
+      final res = await http.post(
+        Uri.parse('$_kWorker/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'messages': history,
+          'model': 'compound-beta',
+          'max_tokens': 2048,
+        }),
+      ).timeout(const Duration(seconds: 60));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final choices = data['choices'] as List?;
+        final reply = choices?.isNotEmpty == true
+          ? (choices!.first['message']?['content'] as String? ?? 'Sem resposta')
+          : (data['content'] as String? ?? 'Sem resposta');
+        if (mounted) setState(() {
+          _messages.add(_ChatMessage(text: reply.trim(), isUser: false));
+          _busy = false;
+        });
+      } else {
+        if (mounted) setState(() {
+          _messages.add(_ChatMessage(text: 'Erro \${res.statusCode}', isUser: false));
+          _busy = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _messages.add(_ChatMessage(text: 'Erro: \$e', isUser: false));
+        _busy = false;
+      });
+    }
+    _scrollToBottom();
+  }
   @override
   Widget build(BuildContext context) {
     final isDark   = _isDark;
@@ -406,7 +450,7 @@ class _ChatScreenState extends State<_ChatScreen> {
     final surface  = isDark ? AppColors.darkSurface    : const Color(0xFFF5F5F5);
     final textP    = isDark ? AppColors.darkTextPrimary   : AppColors.textPrimary;
     final textS    = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
-    final inputBg  = isDark ? AppColors.darkSurface    : AppColors.background;
+    final inputBg  = isDark ? AppColors.darkBackground : AppColors.background;
     final border   = isDark ? AppColors.darkDivider    : AppColors.divider;
     final selected = isDark ? AppColors.darkNavSelected : AppColors.navSelected;
 
@@ -441,8 +485,19 @@ class _ChatScreenState extends State<_ChatScreen> {
           : ListView.builder(
               controller: _scroll,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _messages.length,
+              itemCount: _messages.length + (_busy ? 1 : 0),
               itemBuilder: (_, i) {
+                if (i == _messages.length) {
+                  return _busy ? Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(children: [
+                      SizedBox(width: 6, height: 6,
+                        child: CircularProgressIndicator(strokeWidth: 1.5, color: textS)),
+                      const SizedBox(width: 6),
+                      Text('A pensar…', style: TextStyle(color: textS, fontSize: 13)),
+                    ]),
+                  ) : const SizedBox.shrink();
+                }
                 final msg = _messages[i];
                 if (msg.isUser) {
                   // Mensagem do utilizador — em container
