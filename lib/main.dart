@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter/services.dart';
 import 'services/document_service.dart';
 import 'services/auth_service.dart';
@@ -10,8 +11,32 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.instance.init();
   await DocumentService.instance.load();
+  await _initBackgroundService();
   runApp(const WriteApp());
 }
+
+Future<void> _initBackgroundService() async {
+  final service = FlutterBackgroundService();
+  await service.configure(
+    androidConfiguration: AndroidConfiguration(
+      onStart: _onBgStart,
+      autoStart: true,
+      isForegroundMode: false,
+      autoStartOnBoot: true,
+    ),
+    iosConfiguration: IosConfiguration(
+      autoStart: true,
+      onForeground: _onBgStart,
+      onBackground: _onIosBg,
+    ),
+  );
+}
+
+@pragma('vm:entry-point')
+void _onBgStart(ServiceInstance service) {}
+
+@pragma('vm:entry-point')
+Future<bool> _onIosBg(ServiceInstance service) async => true;
 
 class WriteApp extends StatefulWidget {
   const WriteApp({super.key});
@@ -46,6 +71,7 @@ class _WriteAppState extends State<WriteApp> {
     return MaterialApp(
       title: 'Write',
       debugShowCheckedModeBanner: false,
+        restorationScopeId: 'novasignal_root',
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         useMaterial3: true,
