@@ -54,8 +54,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
   void initState() {
     super.initState();
     themeNotifier.addListener(_onThemeChanged);
-    NotificationService.instance.init();
-    NotificationService.instance.requestPermission();
   }
 
 
@@ -793,35 +791,6 @@ class _NativeEditorViewState extends State<_NativeEditorView> {
           ),
         ),
 
-      // ── FAB IA — gradient circular, sem sombra ──────────
-      if (!_loading)
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: GestureDetector(
-            onTap: () => _showAiWriteModal(),
-            child: Container(
-              width: 52, height: 52,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFFF13223), Color(0xFFFA6559)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text('IA',
-                style: GoogleFonts.roboto(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .5,
-                ),
-              ),
-            ),
-          ),
-        ),
     ]);
   }
 }
