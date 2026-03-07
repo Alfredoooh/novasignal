@@ -1,24 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- android/app/src/main/res/values-v31/styles.xml -->
 <resources>
-    <!-- Theme para Android 12+ (API 31+) - MODO CLARO -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- Splash do Flutter com imagem de fundo -->
         <item name="android:windowBackground">@drawable/launch_background</item>
-
-        <!-- SPLASH NATIVO - Ícone para modo CLARO -->
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_light</item>
-
-        <!-- Cor de fundo do ícone do Android 12 (transparente para não interferir) -->
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
-
-        <!-- Cor de fundo do splash nativo (branco) -->
         <item name="android:windowSplashScreenBackground">#FFFFFF</item>
-
-        <!-- Duração da animação do splash -->
         <item name="android:windowSplashScreenAnimationDuration">300</item>
     </style>
-
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>

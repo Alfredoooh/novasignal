@@ -1,7 +1,7 @@
 // ==================== MainActivity.kt ====================
-// Localização: android/app/src/main/kotlin/com/write/app/MainActivity.kt
+// Localização: android/app/src/main/kotlin/com.patrulha.xx/MainActivity.kt
 
-package com.write.app
+package com.patrulha.xx
 
 import android.os.Bundle
 import android.webkit.WebView

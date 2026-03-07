@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- android/app/src/main/res/drawable/launch_background.xml -->
-<!-- Splash Screen MODO CLARO com imagem de fundo em tela cheia -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Imagem de fundo em tela cheia -->
+    <item android:drawable="@drawable/splash_background_light"/>
     <item>
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/splash_background_light" />
+        <bitmap android:src="@drawable/splash_icon_light"
+            android:gravity="center"/>
     </item>
 </layer-list>
