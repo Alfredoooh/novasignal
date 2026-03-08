@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- android/app/src/main/res/drawable/launch_background_dark.xml -->
+<!-- Splash Screen MODO ESCURO com imagem de fundo em tela cheia -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/black" />
+    <!-- Imagem de fundo em tela cheia -->
+    <item>
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/splash_background_dark" />
+    </item>
 </layer-list>

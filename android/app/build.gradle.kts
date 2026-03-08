@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.patrulha.xx"
+    namespace = "com.write.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.patrulha.xx"
+        applicationId = "com.write.app"
         minSdk = 21                                    // ← mínimo para background service
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
