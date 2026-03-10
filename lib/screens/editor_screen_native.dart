@@ -37,6 +37,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> with AutomaticKeep
 
   InAppWebViewController? _wvc;
   bool _loading = true;
+  String _docTitle = 'Sem título';
   String _selectedModel = 'google/gemini-2.0-flash-001'; // Gemini 2.0
   final _settings = InAppWebViewSettings(
     javaScriptEnabled: true,
@@ -685,7 +686,44 @@ class _NativeEditorViewState extends State<_NativeEditorView> with AutomaticKeep
     final isDark = themeNotifier.isDark;
     final bg     = isDark ? const Color(0xFF1A1A1A) : const Color(0xFFE8E8E8);
 
-    return Stack(children: [
+    final isDarkNow = themeNotifier.isDark;
+    final textP = isDarkNow ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+    final textS = isDarkNow ? const Color(0xFF8E8E8E) : const Color(0xFF6B6B6B);
+    final appBarBg = isDarkNow ? const Color(0xFF0D0D0D) : const Color(0xFFFFFFFF);
+
+    return Column(children: [
+      // ── AppBar nativo ────────────────────────────────
+      Container(
+        color: appBarBg,
+        height: kToolbarHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          IconButton(
+            icon: _DrawerIcon(color: textP),
+            onPressed: widget.controller.handleBack,
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _wvc?.evaluateJavascript(
+                source: "if(window.flutter_inappwebview) window.flutter_inappwebview.callHandler('FlutterBridge', JSON.stringify({action:'modal',type:'rename',current:(document.getElementById('doc-title-text')||{}).textContent||''}));"),
+              child: Text(_docTitle,
+                style: TextStyle(color: textP, fontSize: 17, fontWeight: FontWeight.w700),
+                overflow: TextOverflow.ellipsis),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.download_rounded, color: textP, size: 22),
+            onPressed: () => _wvc?.evaluateJavascript(source: 'if(typeof window.saveDocument==="function") window.saveDocument();'),
+          ),
+          IconButton(
+            icon: Icon(Icons.more_horiz_rounded, color: textS, size: 22),
+            onPressed: () => _wvc?.evaluateJavascript(
+              source: "if(window.flutter_inappwebview) window.flutter_inappwebview.callHandler('FlutterBridge', JSON.stringify({action:'modal',type:'opcoes'}));"),
+          ),
+        ]),
+      ),
+
+      Expanded(child: Stack(children: [
       InAppWebView(
         initialFile: 'assets/editor/editor.html',
         initialSettings: _settings,
@@ -708,6 +746,10 @@ class _NativeEditorViewState extends State<_NativeEditorView> with AutomaticKeep
                     break;
                   case 'back':
                     widget.controller.handleBack();
+                    break;
+                  case 'titleChanged':
+                    final nt = d['title'] as String? ?? '';
+                    if (nt.isNotEmpty && mounted) setState(() => _docTitle = nt);
                     break;
                   case 'exportPDF':
                     await _handleExportPdf(d);
@@ -777,6 +819,25 @@ class _NativeEditorViewState extends State<_NativeEditorView> with AutomaticKeep
             );
           }
           _inject();
+          // Título: lê inicial + observa mudanças
+          Future.delayed(const Duration(milliseconds: 500), () async {
+            if (!mounted) return;
+            final raw = await ctrl.evaluateJavascript(
+              source: "(function(){ var el=document.getElementById('doc-title-text'); return el?el.textContent:''; })()");
+            final s = (raw as String?)?.replaceAll('"','').trim() ?? '';
+            if (s.isNotEmpty && mounted) setState(() => _docTitle = s);
+            await ctrl.evaluateJavascript(source: '''
+              (function(){
+                var el = document.getElementById('doc-title-text');
+                if (!el) return;
+                new MutationObserver(function(){
+                  if (window.flutter_inappwebview)
+                    window.flutter_inappwebview.callHandler('FlutterBridge',
+                      JSON.stringify({action:'titleChanged', title:el.textContent}));
+                }).observe(el, {childList:true, characterData:true, subtree:true});
+              })();
+            ''');
+          });
         },
 
         onConsoleMessage: (ctrl, msg) => debugPrint('[WebView] ${msg.message}'),
@@ -797,6 +858,7 @@ class _NativeEditorViewState extends State<_NativeEditorView> with AutomaticKeep
           ),
         ),
 
+      ])),
     ]);
   }
 }
