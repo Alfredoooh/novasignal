@@ -20,6 +20,24 @@ const _kCard  = 18.0;
 const _kModal = 20.0;
 
 // ── Aria Worker ───────────────────────────────────────
+// ── Drawer icon (duplicado aqui para independência de ficheiro) ──
+class _DrawerIcon extends StatelessWidget {
+  final Color color;
+  const _DrawerIcon({required this.color});
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(width: 22, height: 2,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(height: 5),
+      Container(width: 14, height: 2,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+    ],
+  );
+}
+
 Widget buildEditorView(BuildContext context, EditorController controller) =>
     _NativeEditorView(controller: controller);
 
