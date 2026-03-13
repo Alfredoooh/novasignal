@@ -9,6 +9,7 @@ import '../services/document_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/theme.dart';
 import 'auth_screen.dart';
+import 'settings_screen.dart';
 import 'agenda_screen.dart';
 import 'editor_screen_native.dart';
 
@@ -29,7 +30,7 @@ const _svgDesign = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
 
 // ─── Worker & model ────────────────────────────────────────────────
 const _kWorker = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
-const _kModel  = 'google/gemini-2.0-flash-001';
+
 
 // ─── Chat Models ───────────────────────────────────────────────────
 class ChatMessage {
@@ -38,13 +39,19 @@ class ChatMessage {
   ChatMessage({required this.text, required this.isUser});
 }
 
+// Modelos disponíveis
+const _kModelCompound     = 'compound-beta';
+const _kModelCompoundMini = 'compound-beta-mini';
+
 class ChatConversation {
   final String id;
   String title;
   final List<ChatMessage> messages;
   final DateTime createdAt;
+  String model;
   ChatConversation({required this.id, required this.title,
-    required this.messages, required this.createdAt});
+    required this.messages, required this.createdAt,
+    this.model = _kModelCompound});
 }
 
 class ConversationStore {
@@ -53,10 +60,10 @@ class ConversationStore {
   final List<ChatConversation> _convs = [];
   List<ChatConversation> get all => List.unmodifiable(_convs);
 
-  ChatConversation newConversation() {
+  ChatConversation newConversation({String model = _kModelCompound}) {
     final c = ChatConversation(
-      id: const Uuid().v4(), title: 'Nova conversa',
-      messages: [], createdAt: DateTime.now());
+      id: const Uuid().v4(), title: '…',
+      messages: [], createdAt: DateTime.now(), model: model);
     _convs.insert(0, c);
     return c;
   }
@@ -325,6 +332,12 @@ class _ChatScreen extends StatefulWidget {
   @override State<_ChatScreen> createState() => _ChatScreenState();
 }
 
+// Model label helper
+String _modelLabel(String m) {
+  if (m == _kModelCompoundMini) return 'Compound Mini';
+  return 'Compound';
+}
+
 class _ChatScreenState extends State<_ChatScreen> with AutomaticKeepAliveClientMixin {
   @override bool get wantKeepAlive => true;
 
@@ -374,10 +387,7 @@ class _ChatScreenState extends State<_ChatScreen> with AutomaticKeepAliveClientM
       _ctrl.clear();
       _busy = true;
     });
-    if (isFirst) {
-      ConversationStore.instance.updateTitle(widget.conversation.id, text);
-      widget.onConvUpdated();
-    }
+    if (isFirst) _generateTitle(text);
     _scrollBottom();
     _callAI(text);
   }
@@ -386,22 +396,23 @@ class _ChatScreenState extends State<_ChatScreen> with AutomaticKeepAliveClientM
     try {
       final history = _msgs
         .where((m) => m.isUser)
-        .take(4)
-        .map((m) => {'role': 'user', 'content': m.text})
+        .skip(1) // skip first (já é o prompt)
+        .take(8)
+        .map((m) => {'role': m.isUser ? 'user' : 'assistant', 'content': m.text})
         .toList();
 
       final body = jsonEncode({
         'prompt': prompt,
-        'model': _kModel,
+        'model': widget.conversation.model,
         'history': history,
-        'selectedText': '',
+        'session_id': widget.conversation.id,
       });
 
       final client = HttpClient();
       final req = await client.postUrl(Uri.parse('$_kWorker/chat'));
       req.headers.set('Content-Type', 'application/json');
       req.write(body);
-      final res = await req.close();
+      final res = await req.close().timeout(const Duration(seconds: 90));
       final raw = await res.transform(utf8.decoder).join();
       final data = jsonDecode(raw) as Map<String, dynamic>;
 
@@ -420,6 +431,26 @@ class _ChatScreenState extends State<_ChatScreen> with AutomaticKeepAliveClientM
       });
     }
     _scrollBottom();
+  }
+
+  // Gera título com IA (compound-beta-mini, rápido)
+  Future<void> _generateTitle(String firstMessage) async {
+    try {
+      final client = HttpClient();
+      final req = await client.postUrl(Uri.parse('$_kWorker/title'));
+      req.headers.set('Content-Type', 'application/json');
+      req.write(jsonEncode({'message': firstMessage}));
+      final res = await req.close().timeout(const Duration(seconds: 15));
+      final raw = await res.transform(utf8.decoder).join();
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final title = data['title'] as String? ?? '';
+      if (title.isNotEmpty) {
+        widget.conversation.title = title;
+        if (mounted) widget.onConvUpdated();
+      }
+    } catch (_) {
+      // silencia — título fica como está
+    }
   }
 
   @override
@@ -452,8 +483,33 @@ class _ChatScreenState extends State<_ChatScreen> with AutomaticKeepAliveClientM
                   icon: Icon(Icons.arrow_back_ios_new_rounded, color: textP, size: 20),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-              Text('Chat IA',
-                style: TextStyle(color: textP, fontSize: 20, fontWeight: FontWeight.w700)),
+              Expanded(
+                child: Text(
+                  widget.conversation.title,
+                  style: TextStyle(color: textP, fontSize: 17, fontWeight: FontWeight.w700),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Selector de modelo
+              GestureDetector(
+                onTap: () {
+                  final next = widget.conversation.model == _kModelCompound
+                    ? _kModelCompoundMini : _kModelCompound;
+                  setState(() => widget.conversation.model = next);
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFF0F0F0),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    _modelLabel(widget.conversation.model),
+                    style: TextStyle(color: textS, fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ),
             ]),
           ),
         ),
@@ -683,10 +739,8 @@ class _AppDrawerState extends State<_AppDrawer> {
               GestureDetector(
                 onTap: () {
                   Navigator.pop(context);
-                  if (!AuthService.instance.loggedIn) {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => AuthScreen(onDone: () => Navigator.pop(context))));
-                  }
+                  Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()));
                 },
                 child: Container(
                   width: 52, height: 52,

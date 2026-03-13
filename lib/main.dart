@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'services/document_service.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
+import 'screens/settings_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/editor_screen.dart';
 import 'widgets/theme.dart';
@@ -12,6 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AuthService.instance.init();
   await DocumentService.instance.load();
+  await AppSettings.instance.load();
   await NotificationService.instance.init();
   await NotificationService.instance.requestPermission();
   await _initBackgroundService();
