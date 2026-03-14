@@ -11,6 +11,12 @@ import '../widgets/theme.dart';
 import 'auth_screen.dart';
 import 'settings_screen.dart';
 import 'agenda_screen.dart';
+import 'criar_designs_screen.dart';
+import 'criar_notas_screen.dart';
+import 'criar_codigos_screen.dart';
+import 'lembretes_screen.dart';
+import 'remover_fundo_screen.dart';
+import 'limpar_imagem_screen.dart';
 import 'editor_screen_native.dart';
 
 // ─── SVGs ──────────────────────────────────────────────────────────
@@ -29,7 +35,7 @@ const _svgReminder = '<svg version="1.1" viewBox="0 0 32 32" xmlns="http://www.w
 const _svgDesign = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.565,15.019c-2.496,0-4.527,2.019-4.527,4.5,0,2.576,2.646,4.5,5.013,4.5h3.489c.822,0,1.592-.387,2.058-1.034.44-.611.557-1.368.321-2.076-1.269-3.799-3.525-5.891-6.354-5.891Zm4.411,6.797c-.092.127-.254.203-.436.203h-3.489c-1.365,0-3.013-1.115-3.013-2.5s1.133-2.5,2.527-2.5c2.435,0,3.768,2.46,4.457,4.524.012.035.048.142-.046.272Zm2.062-18.174c0-.969-.376-1.878-1.06-2.562h-.001c-1.367-1.368-3.76-1.368-5.122,0L1.558,17.375c-.98.981-1.52,2.284-1.52,3.67v1.973c0,.552.448,1,1,1h1.974c1.387,0,2.69-.54,3.67-1.52L22.979,6.203c.684-.684,1.06-1.593,1.06-2.562ZM5.269,21.085c-.603.603-1.404.934-2.256.934h-.974v-.973c0-.852.332-1.654.934-2.256L15.319,6.444l2.295,2.295-12.345,12.345ZM21.564,4.789l-2.537,2.537-2.295-2.295,2.538-2.538c.61-.611,1.682-.61,2.293,0h.001c.305.307.474.714.474,1.149s-.168.842-.474,1.147ZM1.098,6.203C.415,5.519.039,4.609.039,3.642S.415,1.763,1.098,1.08c1.369-1.37,3.759-1.369,5.125,0l3.839,3.839c.391.391.391,1.023,0,1.414s-1.023.391-1.414,0l-3.84-3.84c-.611-.612-1.683-.611-2.294,0-.307.307-.475.714-.475,1.149s.168.842.474,1.148l3.839,3.839c.391.39.391,1.023,0,1.414-.195.195-.451.293-.707.293s-.512-.098-.707-.293l-3.84-3.839Z"/></svg>';
 
 // ─── Worker & model ────────────────────────────────────────────────
-const _kWorker = 'https://dawn-sun-590a.alfredopjonas.workers.dev';
+String get _kWorker => AppSettings.instance.workerUrl;
 
 
 // ─── Chat Models ───────────────────────────────────────────────────
@@ -42,6 +48,8 @@ class ChatMessage {
 // Modelos disponíveis
 const _kModelCompound     = 'compound-beta';
 const _kModelCompoundMini = 'compound-beta-mini';
+// Default model from settings
+String get _kDefaultModel => AppSettings.instance.model;
 
 class ChatConversation {
   final String id;
@@ -60,10 +68,11 @@ class ConversationStore {
   final List<ChatConversation> _convs = [];
   List<ChatConversation> get all => List.unmodifiable(_convs);
 
-  ChatConversation newConversation({String model = _kModelCompound}) {
+  ChatConversation newConversation({String? model}) {
+    model ??= AppSettings.instance.model;
     final c = ChatConversation(
       id: const Uuid().v4(), title: '…',
-      messages: [], createdAt: DateTime.now(), model: model);
+      messages: [], createdAt: DateTime.now(), model: model ?? _kModelCompound);
     _convs.insert(0, c);
     return c;
   }
@@ -401,11 +410,15 @@ class _ChatScreenState extends State<_ChatScreen> with AutomaticKeepAliveClientM
         .map((m) => {'role': m.isUser ? 'user' : 'assistant', 'content': m.text})
         .toList();
 
+      final s = AppSettings.instance;
       final body = jsonEncode({
         'prompt': prompt,
         'model': widget.conversation.model,
         'history': history,
         'session_id': widget.conversation.id,
+        'temperature': s.temperature,
+        'max_tokens': s.maxTokens,
+        if (s.systemPrompt.isNotEmpty) 'system': s.systemPrompt,
       });
 
       final client = HttpClient();
@@ -676,27 +689,27 @@ class _AppDrawerState extends State<_AppDrawer> {
 
           // ── Criar notas
           _DrawerItem(svg: _svgNote, label: 'Criar notas',
-            textColor: textP, iconColor: textS, onTap: () => Navigator.pop(context)),
+            textColor: textP, iconColor: textS, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const CriarNotasPage())); }),
 
           // ── Criar designs
           _DrawerItem(svg: _svgDesign, label: 'Criar designs',
-            textColor: textP, iconColor: textS, onTap: () => Navigator.pop(context)),
+            textColor: textP, iconColor: textS, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const CriarDesignsPage())); }),
 
           // ── Criar códigos
           _DrawerItem(svg: _svgCode, label: 'Criar códigos',
-            textColor: textP, iconColor: textS, onTap: () => Navigator.pop(context)),
+            textColor: textP, iconColor: textS, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const CriarCodigosPage())); }),
 
           // ── Lembretes
           _DrawerItem(svg: _svgReminder, label: 'Lembretes',
-            textColor: textP, iconColor: textS, onTap: () => Navigator.pop(context)),
+            textColor: textP, iconColor: textS, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const LembretesPage())); }),
 
           // ── Remover fundo
           _DrawerItem(svg: _svgRemoveBg, label: 'Remover fundo',
-            textColor: textP, iconColor: textS, onTap: () => Navigator.pop(context)),
+            textColor: textP, iconColor: textS, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const RemoverFundoPage())); }),
 
           // ── Limpar imagem
           _DrawerItem(svg: _svgClearImg, label: 'Limpar imagem',
-            textColor: textP, iconColor: textS, onTap: () => Navigator.pop(context)),
+            textColor: textP, iconColor: textS, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const LimparImagemPage())); }),
 
           const SizedBox(height: 4),
 
