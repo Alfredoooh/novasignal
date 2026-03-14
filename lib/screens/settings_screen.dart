@@ -117,10 +117,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String _model;
   bool _saving = false;
 
-  static const _models = [
-    {'id': 'compound-beta',      'label': 'Compound (Groq)'},
-    {'id': 'compound-beta-mini', 'label': 'Compound Mini (Groq)'},
-  ];
+  List<Map<String,String>> _models = [];
+  bool _loadingModels = true;
 
   @override
   void initState() {
@@ -132,6 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _maxTokens  = s.maxTokens;
     _model      = s.model;
     themeNotifier.addListener(_rebuild);
+    _loadModels();
   }
 
   @override
@@ -143,6 +142,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _rebuild() => setState(() {});
+
+  Future<void> _loadModels() async {
+    try {
+      final client = HttpClient();
+      final req = await client.getUrl(
+        Uri.parse('${AppSettings.instance.workerUrl}/models'));
+      final res = await req.close().timeout(const Duration(seconds: 10));
+      final raw = await res.transform(utf8.decoder).join();
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final list = (data['models'] as List? ?? [])
+        .map((m) => {'id': m['id'] as String, 'label': m['id'] as String})
+        .toList();
+      if (mounted) setState(() { _models = list; _loadingModels = false; });
+    } catch (_) {
+      // fallback
+      if (mounted) setState(() {
+        _models = [
+          {'id': 'compound-beta',      'label': 'compound-beta'},
+          {'id': 'compound-beta-mini', 'label': 'compound-beta-mini'},
+        ];
+        _loadingModels = false;
+      });
+    }
+  }
 
   Future<void> _saveAll() async {
     setState(() => _saving = true);
@@ -209,15 +232,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
 
             _Label('Modelo IA', textS),
-            _Card(surface: surface, border: border, child: Column(
-              children: _models.asMap().entries.map((e) => _RadioTile(
-                label: e.value['label']!,
-                selected: _model == e.value['id'],
-                isLast: e.key == _models.length - 1,
-                border: border, textP: textP, accent: accent,
-                onTap: () => setState(() => _model = e.value['id']!),
-              )).toList(),
-            )),
+            _Card(surface: surface, border: border, child: _loadingModels
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(children: [
+                    SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: accent)),
+                    const SizedBox(width: 12),
+                    Text('A carregar modelos…', style: TextStyle(color: textS, fontSize: 14)),
+                  ]))
+              : Column(
+                  children: _models.asMap().entries.map((e) => _RadioTile(
+                    label: e.value['label']!,
+                    selected: _model == e.value['id'],
+                    isLast: e.key == _models.length - 1,
+                    border: border, textP: textP, accent: accent,
+                    onTap: () => setState(() => _model = e.value['id']!),
+                  )).toList(),
+                )),
 
             const SizedBox(height: 20),
             _Label('Temperatura  (${_temp.toStringAsFixed(1)})', textS),
