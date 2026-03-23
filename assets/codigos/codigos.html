@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Códigos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<style>
+:root {
+  --bg:#ffffff; --card:#f5f5f5; --border:#e0e0e0;
+  --text:#000000; --sub:#6b6b6b; --acc:#000000;
+  --input-bg:#f0f0f0; --btn-bg:#000000; --btn-text:#ffffff;
+}
+body[data-theme="dark"] {
+  --bg:#0d0d0d; --card:#1a1a1a; --border:#2c2c2c;
+  --text:#ffffff; --sub:#8e8e8e; --acc:#ffffff;
+  --input-bg:#272727; --btn-bg:#ffffff; --btn-text:#000000;
+}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,Roboto,sans-serif;height:100%;overflow-x:hidden;}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10;}
+.tab{flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:500;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+.tab.active{color:var(--text);border-bottom-color:var(--acc);}
+
+/* ── Content ── */
+.view{display:none;padding:20px 16px 40px;}
+.view.active{display:block;}
+
+/* ── Form ── */
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase;}
+.field input,.field textarea,.field select{
+  width:100%;padding:12px 14px;background:var(--input-bg);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-size:15px;outline:none;
+  font-family:inherit;resize:none;appearance:none;
+}
+.field textarea{min-height:90px;}
+.field select option{background:var(--card);}
+
+.row{display:flex;gap:10px;}
+.row .field{flex:1;}
+
+/* ── Botão principal ── */
+.btn{
+  width:100%;padding:14px;background:var(--btn-bg);color:var(--btn-text);
+  border:none;border-radius:14px;font-size:15px;font-weight:700;
+  cursor:pointer;margin-top:4px;transition:opacity .15s;
+}
+.btn:active{opacity:.75;}
+.btn.sec{background:var(--input-bg);color:var(--text);}
+
+/* ── Resultado ── */
+.result-box{
+  display:none;margin-top:24px;padding:20px;background:var(--card);
+  border:1px solid var(--border);border-radius:16px;text-align:center;
+}
+.result-box.show{display:block;}
+#qr-output,#bar-output{display:flex;justify-content:center;margin:12px 0;}
+#qr-output canvas,#qr-output img{border-radius:8px;}
+#bar-output svg,#bar-output canvas{max-width:100%;}
+
+.result-actions{display:flex;gap:10px;margin-top:14px;}
+.result-actions .btn{margin-top:0;}
+
+/* ── WiFi extra fields ── */
+.wifi-enc{display:flex;gap:8px;margin-bottom:16px;}
+.enc-btn{
+  flex:1;padding:10px;border:1px solid var(--border);border-radius:10px;
+  background:transparent;color:var(--sub);font-size:13px;font-weight:500;cursor:pointer;
+}
+.enc-btn.active{background:var(--btn-bg);color:var(--btn-text);border-color:var(--btn-bg);}
+
+/* ── Badge tipo ── */
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.type-card{
+  padding:14px 8px;border:1px solid var(--border);border-radius:14px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--card);
+}
+.type-card.active{border-color:var(--acc);background:var(--acc);color:var(--btn-text);}
+.type-card .icon{font-size:22px;margin-bottom:4px;}
+.type-card .lbl{font-size:11px;font-weight:600;}
+.type-card.active .lbl{color:var(--btn-text);}
+
+/* ── Barcode types ── */
+.bar-types{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.bar-type{
+  padding:7px 14px;border:1px solid var(--border);border-radius:99px;
+  font-size:12px;font-weight:500;cursor:pointer;background:var(--card);color:var(--sub);
+}
+.bar-type.active{background:var(--btn-bg);color:var(--btn-text);border-color:var(--btn-bg);}
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('qr')">QR Code</div>
+  <div class="tab" onclick="switchTab('barcode')">Código de barras</div>
+</div>
+
+<!-- ══ QR CODE ══ -->
+<div class="view active" id="view-qr">
+
+  <!-- Tipo de QR -->
+  <div class="type-grid">
+    <div class="type-card active" onclick="setQrType('url')" id="qt-url">
+      <div class="icon">🔗</div><div class="lbl">URL</div>
+    </div>
+    <div class="type-card" onclick="setQrType('text')" id="qt-text">
+      <div class="icon">📝</div><div class="lbl">Texto</div>
+    </div>
+    <div class="type-card" onclick="setQrType('wifi')" id="qt-wifi">
+      <div class="icon">📶</div><div class="lbl">WiFi</div>
+    </div>
+    <div class="type-card" onclick="setQrType('email')" id="qt-email">
+      <div class="icon">✉️</div><div class="lbl">Email</div>
+    </div>
+    <div class="type-card" onclick="setQrType('tel')" id="qt-tel">
+      <div class="icon">📞</div><div class="lbl">Telefone</div>
+    </div>
+    <div class="type-card" onclick="setQrType('vcard')" id="qt-vcard">
+      <div class="icon">👤</div><div class="lbl">Contacto</div>
+    </div>
+  </div>
+
+  <!-- URL -->
+  <div id="qf-url">
+    <div class="field"><label>URL</label>
+      <input type="url" id="q-url" placeholder="https://exemplo.com" oninput="liveQr()"/>
+    </div>
+  </div>
+
+  <!-- Texto -->
+  <div id="qf-text" style="display:none">
+    <div class="field"><label>Texto</label>
+      <textarea id="q-text" placeholder="Escreve aqui…" oninput="liveQr()"></textarea>
+    </div>
+  </div>
+
+  <!-- WiFi -->
+  <div id="qf-wifi" style="display:none">
+    <div class="field"><label>Nome da rede (SSID)</label>
+      <input type="text" id="q-ssid" placeholder="MinhaRede" oninput="liveQr()"/>
+    </div>
+    <div class="field"><label>Palavra-passe</label>
+      <input type="password" id="q-wpass" placeholder="••••••••" oninput="liveQr()"/>
+    </div>
+    <div class="field"><label>Encriptação</label>
+      <div class="wifi-enc">
+        <button class="enc-btn active" onclick="setEnc('WPA')" id="enc-wpa">WPA/WPA2</button>
+        <button class="enc-btn" onclick="setEnc('WEP')" id="enc-wep">WEP</button>
+        <button class="enc-btn" onclick="setEnc('nopass')" id="enc-none">Nenhuma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email -->
+  <div id="qf-email" style="display:none">
+    <div class="field"><label>Para</label>
+      <input type="email" id="q-eto" placeholder="email@exemplo.com" oninput="liveQr()"/>
+    </div>
+    <div class="field"><label>Assunto</label>
+      <input type="text" id="q-esub" placeholder="Assunto" oninput="liveQr()"/>
+    </div>
+    <div class="field"><label>Mensagem</label>
+      <textarea id="q-ebody" placeholder="Mensagem…" oninput="liveQr()"></textarea>
+    </div>
+  </div>
+
+  <!-- Tel -->
+  <div id="qf-tel" style="display:none">
+    <div class="field"><label>Número de telefone</label>
+      <input type="tel" id="q-tel" placeholder="+351 912 345 678" oninput="liveQr()"/>
+    </div>
+  </div>
+
+  <!-- vCard -->
+  <div id="qf-vcard" style="display:none">
+    <div class="row">
+      <div class="field"><label>Nome</label><input type="text" id="q-vname" placeholder="Nome" oninput="liveQr()"/></div>
+      <div class="field"><label>Apelido</label><input type="text" id="q-vlast" placeholder="Apelido" oninput="liveQr()"/></div>
+    </div>
+    <div class="field"><label>Telefone</label><input type="tel" id="q-vtel" placeholder="+351…" oninput="liveQr()"/></div>
+    <div class="field"><label>Email</label><input type="email" id="q-vemail" placeholder="email@…" oninput="liveQr()"/></div>
+    <div class="field"><label>Empresa</label><input type="text" id="q-vorg" placeholder="Empresa" oninput="liveQr()"/></div>
+    <div class="field"><label>Website</label><input type="url" id="q-vurl" placeholder="https://…" oninput="liveQr()"/></div>
+  </div>
+
+  <!-- Tamanho -->
+  <div class="field"><label>Tamanho</label>
+    <select id="q-size" onchange="liveQr()">
+      <option value="200">Pequeno (200×200)</option>
+      <option value="300" selected>Médio (300×300)</option>
+      <option value="400">Grande (400×400)</option>
+      <option value="600">Extra grande (600×600)</option>
+    </select>
+  </div>
+
+  <!-- Resultado QR -->
+  <div class="result-box show" id="qr-result">
+    <div id="qr-output"></div>
+    <div class="result-actions">
+      <button class="btn sec" onclick="downloadQr()">Guardar imagem</button>
+      <button class="btn" onclick="shareQr()">Partilhar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BARCODE ══ -->
+<div class="view" id="view-barcode">
+  <div class="field"><label>Tipo de código</label>
+    <div class="bar-types">
+      <div class="bar-type active" onclick="setBar('CODE128')" id="bt-CODE128">CODE 128</div>
+      <div class="bar-type" onclick="setBar('EAN13')" id="bt-EAN13">EAN-13</div>
+      <div class="bar-type" onclick="setBar('EAN8')" id="bt-EAN8">EAN-8</div>
+      <div class="bar-type" onclick="setBar('UPC')" id="bt-UPC">UPC-A</div>
+      <div class="bar-type" onclick="setBar('CODE39')" id="bt-CODE39">CODE 39</div>
+      <div class="bar-type" onclick="setBar('ITF14')" id="bt-ITF14">ITF-14</div>
+      <div class="bar-type" onclick="setBar('MSI')" id="bt-MSI">MSI</div>
+      <div class="bar-type" onclick="setBar('pharmacode')" id="bt-pharmacode">Pharmacode</div>
+    </div>
+  </div>
+
+  <div class="field"><label>Valor</label>
+    <input type="text" id="b-val" placeholder="Escreve o valor…" oninput="liveBar()"/>
+  </div>
+
+  <div class="row">
+    <div class="field"><label>Largura linha</label>
+      <select id="b-width" onchange="liveBar()">
+        <option value="1">Fina</option>
+        <option value="2" selected>Normal</option>
+        <option value="3">Larga</option>
+      </select>
+    </div>
+    <div class="field"><label>Altura</label>
+      <select id="b-height" onchange="liveBar()">
+        <option value="60">Baixa (60)</option>
+        <option value="100" selected>Normal (100)</option>
+        <option value="150">Alta (150)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="result-box show" id="bar-result">
+    <div id="bar-output"><svg id="barcode-svg"></svg></div>
+    <div id="bar-error" style="color:#e53935;font-size:13px;display:none;margin-bottom:8px;"></div>
+    <div class="result-actions">
+      <button class="btn sec" onclick="downloadBar()">Guardar imagem</button>
+      <button class="btn" onclick="shareBar()">Partilhar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Theme ──
+window.setTheme = function(dark) {
+  document.body.setAttribute('data-theme', dark ? 'dark' : 'light');
+  regenQr(); regenBar();
+};
+
+// ── Tabs ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) =>
+    t.classList.toggle('active', (tab==='qr'&&i===0)||(tab==='barcode'&&i===1)));
+  document.getElementById('view-qr').classList.toggle('active', tab==='qr');
+  document.getElementById('view-barcode').classList.toggle('active', tab==='barcode');
+}
+
+// ══ QR CODE ══
+var _qrType = 'url', _qrEnc = 'WPA', _qrObj = null;
+
+function setQrType(t) {
+  _qrType = t;
+  ['url','text','wifi','email','tel','vcard'].forEach(x => {
+    document.getElementById('qf-'+x).style.display = x===t ? '' : 'none';
+    document.getElementById('qt-'+x).classList.toggle('active', x===t);
+  });
+  liveQr();
+}
+
+function setEnc(e) {
+  _qrEnc = e;
+  ['wpa','wep','none'].forEach(x =>
+    document.getElementById('enc-'+x).classList.toggle('active',
+      (e==='WPA'&&x==='wpa')||(e==='WEP'&&x==='wep')||(e==='nopass'&&x==='none')));
+  liveQr();
+}
+
+function buildQrContent() {
+  switch(_qrType) {
+    case 'url':  return document.getElementById('q-url').value || 'https://';
+    case 'text': return document.getElementById('q-text').value || ' ';
+    case 'wifi': {
+      const s=document.getElementById('q-ssid').value;
+      const p=document.getElementById('q-wpass').value;
+      return `WIFI:T:${_qrEnc};S:${s};P:${p};;`;
+    }
+    case 'email': {
+      const to=document.getElementById('q-eto').value;
+      const sub=encodeURIComponent(document.getElementById('q-esub').value);
+      const body=encodeURIComponent(document.getElementById('q-ebody').value);
+      return `mailto:${to}?subject=${sub}&body=${body}`;
+    }
+    case 'tel': return `tel:${document.getElementById('q-tel').value}`;
+    case 'vcard': {
+      const n=document.getElementById('q-vname').value;
+      const l=document.getElementById('q-vlast').value;
+      const t=document.getElementById('q-vtel').value;
+      const e=document.getElementById('q-vemail').value;
+      const o=document.getElementById('q-vorg').value;
+      const u=document.getElementById('q-vurl').value;
+      return `BEGIN:VCARD\nVERSION:3.0\nN:${l};${n}\nFN:${n} ${l}\nTEL:${t}\nEMAIL:${e}\nORG:${o}\nURL:${u}\nEND:VCARD`;
+    }
+  }
+  return '';
+}
+
+function regenQr() {
+  const out = document.getElementById('qr-output');
+  out.innerHTML = '';
+  const size = parseInt(document.getElementById('q-size').value);
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  const content = buildQrContent();
+  if (!content.trim()) return;
+  try {
+    _qrObj = new QRCode(out, {
+      text: content, width: size, height: size,
+      colorDark: isDark ? '#ffffff' : '#000000',
+      colorLight: isDark ? '#1a1a1a' : '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  } catch(e) {}
+}
+
+var _qrTimer = null;
+function liveQr() {
+  clearTimeout(_qrTimer);
+  _qrTimer = setTimeout(regenQr, 300);
+}
+
+function downloadQr() {
+  const canvas = document.querySelector('#qr-output canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = 'qrcode.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+function shareQr() {
+  const canvas = document.querySelector('#qr-output canvas');
+  if (!canvas) return;
+  canvas.toBlob(blob => {
+    if (navigator.share && blob) {
+      navigator.share({ files: [new File([blob],'qrcode.png',{type:'image/png'})] }).catch(()=>{});
+    } else {
+      downloadQr();
+    }
+  });
+}
+
+// ══ BARCODE ══
+var _barType = 'CODE128';
+
+function setBar(t) {
+  _barType = t;
+  document.querySelectorAll('.bar-type').forEach(el =>
+    el.classList.toggle('active', el.id === 'bt-'+t));
+  liveBar();
+}
+
+function regenBar() {
+  const val = document.getElementById('b-val').value;
+  const errEl = document.getElementById('bar-error');
+  errEl.style.display = 'none';
+  if (!val) { document.getElementById('barcode-svg').innerHTML=''; return; }
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
+  try {
+    JsBarcode('#barcode-svg', val, {
+      format: _barType,
+      lineColor: isDark ? '#ffffff' : '#000000',
+      background: isDark ? '#1a1a1a' : '#ffffff',
+      width: parseInt(document.getElementById('b-width').value),
+      height: parseInt(document.getElementById('b-height').value),
+      displayValue: true,
+      font: '-apple-system, Roboto, sans-serif',
+      fontSize: 14,
+    });
+  } catch(e) {
+    errEl.textContent = 'Valor inválido para este tipo de código';
+    errEl.style.display = 'block';
+    document.getElementById('barcode-svg').innerHTML = '';
+  }
+}
+
+var _barTimer = null;
+function liveBar() {
+  clearTimeout(_barTimer);
+  _barTimer = setTimeout(regenBar, 300);
+}
+
+function downloadBar() {
+  const svg = document.getElementById('barcode-svg');
+  if (!svg.innerHTML) return;
+  const data = new XMLSerializer().serializeToString(svg);
+  const blob = new Blob([data], {type:'image/svg+xml'});
+  const a = document.createElement('a');
+  a.download = 'barcode.svg';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+}
+
+function shareBar() { downloadBar(); }
+
+// Init
+regenQr();
+</script>
+</body>
+</html>
