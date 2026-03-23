@@ -51,7 +51,9 @@ flutter:
     - assets/icons/ic_nota.png
     - assets/images/background1.png
     - assets/icons/folder.png
-    - assets/cv/cv_editor.html  
+    - assets/cv/cv_editor.html 
+    - assets/codigos/  
+    
     
 
  
