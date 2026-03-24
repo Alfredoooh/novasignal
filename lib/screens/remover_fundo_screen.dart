@@ -10,13 +10,13 @@ Widget _svgW(String data, Color color, {double size = 22}) =>
   SvgPicture.string(data, width: size, height: size,
     colorFilter: ColorFilter.mode(color, BlendMode.srcIn));
 
-class _AppBarActions extends StatelessWidget {{
+class _AppBarActions extends StatelessWidget {
   final bool isDark;
   final Color textP;
   final List<PopupMenuEntry<String>> items;
-  const _AppBarActions({{required this.isDark, required this.textP, required this.items}});
+  const _AppBarActions({required this.isDark, required this.textP, required this.items});
 
-  void _show(BuildContext context) async {{
+  void _show(BuildContext context) async {
     final btn     = context.findRenderObject() as RenderBox;
     final overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
     final pos = RelativeRect.fromRect(
@@ -35,14 +35,14 @@ class _AppBarActions extends StatelessWidget {{
       ),
       items: items,
     );
-  }}
+  }
 
   @override
   Widget build(BuildContext context) => IconButton(
     icon: _svgW(_svgOpcoes, textP, size: 22),
     onPressed: () => _show(context),
   );
-}}
+}
 
 class RemoverFundoPage extends StatefulWidget {
   const RemoverFundoPage({super.key});
