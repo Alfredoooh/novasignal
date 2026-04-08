@@ -1,132 +1,3 @@
-/*import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter/services.dart';
-import 'services/document_service.dart';
-import 'services/auth_service.dart';
-import 'services/notification_service.dart';
-import 'screens/settings_screen.dart';
-import 'screens/auth_screen.dart';
-import 'screens/editor_screen.dart';
-import 'widgets/theme.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await AuthService.instance.init();
-  await DocumentService.instance.load();
-  await AppSettings.instance.load();
-  await NotificationService.instance.init();
-  await NotificationService.instance.requestPermission();
-  await _initBackgroundService();
-  runApp(const WriteApp());
-}
-
-Future<void> _initBackgroundService() async {
-  final service = FlutterBackgroundService();
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: _onBgStart,
-      autoStart: true,
-      isForegroundMode: false,
-      autoStartOnBoot: true,
-    ),
-    iosConfiguration: IosConfiguration(
-      autoStart: true,
-      onForeground: _onBgStart,
-      onBackground: _onIosBg,
-    ),
-  );
-}
-
-@pragma('vm:entry-point')
-void _onBgStart(ServiceInstance service) {}
-
-@pragma('vm:entry-point')
-Future<bool> _onIosBg(ServiceInstance service) async => true;
-
-class WriteApp extends StatefulWidget {
-  const WriteApp({super.key});
-  @override
-  State<WriteApp> createState() => _WriteAppState();
-}
-
-class _WriteAppState extends State<WriteApp> {
-  @override
-  void initState() {
-    super.initState();
-    themeNotifier.addListener(_onTheme);
-  }
-
-  @override
-  void dispose() {
-    themeNotifier.removeListener(_onTheme);
-    super.dispose();
-  }
-
-  void _onTheme() => setState(() {});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = themeNotifier.isDark;
-
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-    ));
-
-    return MaterialApp(
-      title: 'Write',
-      debugShowCheckedModeBanner: false,
-        restorationScopeId: 'novasignal_root',
-      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFFFFFF),
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFFF13223),
-          surface: Color(0xFFFFFFFF),
-          onSurface: Color(0xFF000000),
-        ),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF1B1B1B),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFA6559),
-          surface: Color(0xFF343434),
-          onSurface: Color(0xFFFFE8E3),
-        ),
-      ),
-      home: const AuthGate(),
-    );
-  }
-}
-
-class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
-  @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  bool _authed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _authed = AuthService.instance.loggedIn;
-  }
-
-  void _onDone() => setState(() => _authed = true);
-
-  @override
-  Widget build(BuildContext context) {
-    if (_authed) return const EditorScreen(isRoot: true);
-    return AuthScreen(onDone: _onDone);
-  }
-}*/
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
@@ -252,8 +123,8 @@ class _YouTubeScraperPageState extends State<YouTubeScraperPage> {
           .toList();
 
       final titles = ids
-          .map((id) => 'Título do vídeo $id')  // Simulando a coleta do título
-          .toList(); // Aqui você pode melhorar pegando o título real da página
+          .map((id) => 'Título do vídeo $id')
+          .toList();
 
       setState(() {
         _videoIds = ids;
@@ -294,11 +165,10 @@ class _YouTubeScraperPageState extends State<YouTubeScraperPage> {
       subtitle: Text(url),
       onTap: () => _openAudioPlayer(url),
       trailing: IconButton(
-        icon: Icon(Icons.download),
+        icon: const Icon(Icons.download),
         onPressed: () {
-          // Implementar download do áudio (por enquanto vazio)
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Função de download não implementada")),
+            const SnackBar(content: Text("Função de download não implementada")),
           );
         },
       ),
@@ -308,6 +178,7 @@ class _YouTubeScraperPageState extends State<YouTubeScraperPage> {
   @override
   void dispose() {
     _controller.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -354,10 +225,34 @@ class _YouTubeScraperPageState extends State<YouTubeScraperPage> {
   }
 }
 
-class AudioPlayerPage extends StatelessWidget {
+class AudioPlayerPage extends StatefulWidget {
   final String url;
 
   const AudioPlayerPage({super.key, required this.url});
+
+  @override
+  State<AudioPlayerPage> createState() => _AudioPlayerPageState();
+}
+
+class _AudioPlayerPageState extends State<AudioPlayerPage> {
+  final AudioPlayer _player = AudioPlayer();
+  bool _playing = false;
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _togglePlay() async {
+    if (_playing) {
+      await _player.pause();
+      setState(() => _playing = false);
+    } else {
+      await _player.play(UrlSource(widget.url)); // ✅ correção aplicada aqui
+      setState(() => _playing = true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -369,21 +264,18 @@ class AudioPlayerPage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Tocando: $url'),
+            Text('Tocando: ${widget.url}'),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // Usando o Audioplayer para tocar o áudio do URL
-                final player = AudioPlayer();
-                player.setSourceUrl(url);  // Método correto para URL
-                player.play();
-              },
-              child: const Text('Tocar Áudio'),
+              onPressed: _togglePlay,
+              child: Text(_playing ? 'Pausar' : 'Tocar Áudio'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Adicionar download, se tiver solução para isso
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Função de download não implementada")),
+                );
               },
               child: const Text('Baixar Áudio'),
             ),
