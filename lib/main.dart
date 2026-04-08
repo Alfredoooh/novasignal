@@ -129,10 +129,8 @@ class _AuthGateState extends State<AuthGate> {
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert';
 
 void main() {
   runApp(const YouTubeScraperApp());
@@ -175,8 +173,7 @@ class _YouTubeScraperPageState extends State<YouTubeScraperPage> {
   List<String> _watchLinks = [];
   List<String> _embedLinks = [];
 
-  late WebViewController _webViewController;
-  final Audioplayer _audioPlayer = Audioplayer();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   String cleanQuery(String value) {
     return value.trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -310,6 +307,7 @@ class _YouTubeScraperPageState extends State<YouTubeScraperPage> {
 
   @override
   void dispose() {
+    _controller.dispose();
     super.dispose();
   }
 
@@ -375,11 +373,10 @@ class AudioPlayerPage extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // Aqui você pode usar audioplayers para tocar o áudio
+                // Usando o Audioplayer para tocar o áudio do URL
                 final player = AudioPlayer();
-                player.setUrl(url).then((value) {
-                  player.play();
-                });
+                player.setSourceUrl(url);  // Método correto para URL
+                player.play();
               },
               child: const Text('Tocar Áudio'),
             ),
