@@ -15,6 +15,7 @@ dependencies:
   video_player: any
   animations: ^2.0.11
   timezone: any
+  url_launcher: any
   image_picker: any
   file_picker: any
   google_fonts: ^6.2.1
